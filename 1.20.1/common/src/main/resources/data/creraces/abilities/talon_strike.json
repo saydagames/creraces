@@ -1,0 +1,42 @@
+{
+    "name": "Talon Strike",
+    "description": "Leap downwards with <span style='color:#d08b0a'>1.5 (+50% AD)</span> power. On landing, deal 10.0 damage in an area.",
+    "type": "ACTIVE",
+    "icon": "creraces:textures/items/talon.png",
+    "cooldown": 60,
+    "cost": 5,
+    "race": [
+        "creraces:harpy"
+    ],
+    "on_activate": [
+        {
+            "type": "creraces:conditional",
+            "condition": {
+                "type": "flying",
+                "value": true
+            },
+            "if_true": [
+                {
+                    "type": "creraces:dash",
+                    "power": {
+                        "base": 1.5,
+                        "ad": 0.5
+                    },
+                    "direction": "down"
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:entity.phantom.bite",
+                    "volume": 1.0,
+                    "pitch": 0.8
+                },
+                {
+                    "type": "creraces:set_state",
+                    "state": "slot",
+                    "value": 1.0
+                }
+            ],
+            "if_false": []
+        }
+    ]
+}

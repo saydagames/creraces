@@ -1,0 +1,27 @@
+{
+    "name": "race.creraces.nymph.name",
+    "legacy_id": 11.0,
+    "description": "race.creraces.nymph.description",
+    "icon": "creraces:textures/screens/nymph_icon.png",
+    "splash": "creraces:textures/screens/nymph_splash.png",
+    "portrait": "creraces:textures/screens/nymph_portrait.png",
+    "base_ap": 10,
+    "base_ad": 5,
+    "base_ah": 10,
+    "base_cr": 5,
+    "resource_type": "MANA",
+    "max_resource": 100,
+    "tier": "creraces:common",
+    "difficulty": 1,
+    "passives": {
+        "regeneration_multiplier": 1.1
+    },
+    "traits": [
+        {
+            "type": "creraces:attribute_modifier",
+            "attribute": "minecraft:generic.max_health",
+            "value": 4.0,
+            "operation": "addition"
+        }
+    ]
+}

@@ -1,0 +1,40 @@
+{
+    "name": "Deadly Venom",
+    "description": "Collapse Rat Venom stacks on nearby enemies to deal damage.",
+    "type": "ACTIVE",
+    "icon": "minecraft:textures/item/spider_eye.png",
+    "cooldown": 100,
+    "cost": 20,
+    "race": [
+        "creraces:ratkin"
+    ],
+    "on_activate": [
+        {
+            "type": "creraces:aoe",
+            "damage": {
+                "base": 1.0,
+                "scaling": {
+                    "ad": 1.0
+                }
+            },
+            "damage_per_stack": {
+                "base": 1.0,
+                "scaling": {
+                    "ad": 0.1
+                }
+            },
+            "range": 16.0,
+            "target_players": true,
+            "required_effect": "creraces:rat_venom",
+            "remove_effect": true,
+            "source": "caster",
+            "damage_type": "minecraft:magic"
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:entity.spider.ambient",
+            "volume": 1.0,
+            "pitch": 0.8
+        }
+    ]
+}

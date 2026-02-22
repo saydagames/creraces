@@ -1,0 +1,21 @@
+{
+    "name": "ability.creraces.low_pressure_area.name",
+    "description": "ability.creraces.low_pressure_area.description",
+    "icon": "minecraft:feather",
+    "cooldown": 200,
+    "mana_cost": 20,
+    "actions": [
+        {
+            "type": "creraces:aoe",
+            "radius": 12.0,
+            "actions": [
+                {
+                    "type": "creraces:apply_velocity",
+                    "mode": "pull",
+                    "strength": 1.2,
+                    "use_target": true
+                }
+            ]
+        }
+    ]
+}

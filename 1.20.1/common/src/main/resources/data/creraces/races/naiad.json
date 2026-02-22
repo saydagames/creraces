@@ -1,0 +1,54 @@
+{
+    "name": "race.creraces.naiad.name",
+    "parent_race": "creraces:nymph",
+    "legacy_id": 13.0,
+    "description": "race.creraces.naiad.description",
+    "icon": "creraces:textures/screens/naiad_icon.png",
+    "splash": "creraces:textures/screens/naiad_splash.png",
+    "portrait": "creraces:textures/screens/naiad_portrait.png",
+    "base_ap": 10,
+    "base_ad": 5,
+    "base_ah": 12,
+    "base_cr": 8,
+    "resource_type": "MANA",
+    "max_resource": 100,
+    "tier": "creraces:common",
+    "difficulty": 1,
+    "passives": {
+        "regeneration_multiplier": 1.1
+    },
+    "abilities": [
+        "creraces:flowing_tides",
+        "creraces:whirlpool",
+        "creraces:quick_current",
+        "creraces:aqua_pura"
+    ],
+    "traits": [
+        {
+            "type": "creraces:on_tick",
+            "interval": 100,
+            "condition": {
+                "type": "in_water"
+            },
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:strength",
+                    "duration": 200,
+                    "amplifier": 0
+                },
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:conduit_power",
+                    "duration": 200,
+                    "amplifier": 0
+                },
+                {
+                    "type": "creraces:apply_velocity",
+                    "y": 0.05,
+                    "relative": false
+                }
+            ]
+        }
+    ]
+}

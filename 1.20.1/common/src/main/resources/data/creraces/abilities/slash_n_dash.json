@@ -1,0 +1,38 @@
+{
+    "name": "Slash n' Dash",
+    "description": "Dash forward, dealing damage to the first enemy hit.",
+    "icon": "minecraft:iron_sword",
+    "cooldown": 100,
+    "cost": 15.0,
+    "race": [
+        "creraces:velox"
+    ],
+    "on_activate": [
+        {
+            "type": "creraces:dash",
+            "power": 2.0
+        },
+        {
+            "type": "creraces:aoe",
+            "range": 2.0,
+            "damage": {
+                "base": 4.0,
+                "scales_with": "ad",
+                "factor": 0.04
+            },
+            "target_players": true,
+            "source": "caster"
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:block.anvil.hit",
+            "volume": 1.0,
+            "pitch": 1.0
+        },
+        {
+            "type": "creraces:spawn_particles",
+            "particle": "minecraft:witch",
+            "count": 5
+        }
+    ]
+}

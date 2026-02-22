@@ -1,0 +1,29 @@
+{
+    "name": "race.creraces.giant.name",
+    "legacy_id": 11.0,
+    "scale": 2.0,
+    "description": "race.creraces.giant.description",
+    "icon": "creraces:textures/screens/giant_icon.png",
+    "splash": "creraces:textures/screens/giant_splash.png",
+    "base_ap": 10,
+    "base_ad": 15,
+    "base_ah": 25,
+    "base_cr": 5,
+    "resource_type": "GRIT",
+    "max_resource": 100,
+    "tier": "creraces:uncommon",
+    "difficulty": 3,
+    "passives": {
+        "immune_to_knockback": true
+    },
+    "traits": [
+        {
+            "type": "creraces:attribute_modifier",
+            "attribute": "minecraft:generic.attack_damage",
+            "value": 5.0,
+            "operation": "addition"
+        }
+    ],
+    "portrait": "creraces:textures/screens/giant_portrait.png",
+    "name_texture": "creraces:textures/screens/giant_text.png"
+}

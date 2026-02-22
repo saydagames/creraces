@@ -1,0 +1,107 @@
+# ---------- .gitignore ----------
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs (IntelliJ, Eclipse, VS Code)
+/.idea/
+/*.iml
+/*.ipr
+/*.iws
+/.vscode/
+
+# Build outputs
+/build/
+/out/
+/bin/
+/target/
+/run/
+/run-data/
+
+# Gradle caches and local config
+/.gradle/
+gradle-local.properties
+
+# Project metadata (Eclipse)
+/.classpath
+/.project
+/.settings/
+
+# Logs and temporary files
+*.log
+hs_err_pid*
+*.tmp
+*.swp
+
+# Minecraft / Forge MDK local caches and run folders
+*.lock
+*.cache
+run/
+run-data/
+build/
+out/
+
+# Miscellaneous
+.idea_modules/
+coverage/
+tmp/
+.cache/
+*.bak
+*.bak2
+*.orig
+.env
+
+# IDE workspace folders
+.claude/
+
+# Windows shortcuts & legacy
+*.lnk
+NUL
+/.legacy/
+
+# Assistants & Local Tools
+.gemini/
+.history/
+
+# Additional Minecraft Junk
+crash-reports/
+usercache.json
+usernamecache.json
+stats/
+advancements/
+backups/
+screenshots/
+logs/
+!/src/**/logs/
+replay_mod_recordings/
+.mixin.out/
+.mixin.out
+
+# Additional IDE & System
+.factorypath
+*.code-workspace
+*.launch
+.nb-gradle
+.vscode-test/
+desktop.ini
+$RECYCLE.BIN/
+System Volume Information/
+*.patch
+*.diff
+
+# Java & Local Config
+local.properties
+.apt_generated/
+*.jar
+!gradle-wrapper.jar
+
+# Umbrella Ignores
+*.md
+!README.md
+
+*.txt
+!LICENSE.txt
+!CREDITS.txt
+*.ps1
+/1.20.1/common/bin

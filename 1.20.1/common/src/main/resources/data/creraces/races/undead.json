@@ -1,0 +1,61 @@
+{
+    "name": "race.creraces.undead.name",
+    "legacy_id": 1.0,
+    "description": "race.creraces.undead.description",
+    "icon": "creraces:textures/screens/undead_icon.png",
+    "splash": "creraces:textures/screens/undead_splash.png",
+    "base_ap": 10,
+    "base_ad": 5,
+    "base_ah": 10,
+    "base_cr": 5,
+    "resource_type": "MANA",
+    "max_resource": 100,
+    "tier": "creraces:uncommon",
+    "difficulty": 1,
+    "portrait": "creraces:textures/screens/undead_portrait.png",
+    "name_texture": "creraces:textures/screens/undead_text.png",
+    "passives": {
+        "can_breathe_underwater": true,
+        "burns_in_sunlight": true,
+        "no_natural_regeneration": true,
+        "hated_by_entities": [
+            "minecraft:villager",
+            "minecraft:iron_golem"
+        ],
+        "respected_by_entities": [
+            "#minecraft:undead",
+            "#minecraft:skeletons"
+        ],
+        "defended_by_entities": [
+            "#minecraft:undead"
+        ]
+    },
+    "traits": [
+        {
+            "type": "creraces:on_kill",
+            "actions": [
+                {
+                    "type": "creraces:heal",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "type": "creraces:on_hit",
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "creraces:life_drain",
+                    "duration": 200,
+                    "amplifier": 0,
+                    "visible": true,
+                    "target_enemies": true
+                }
+            ]
+        }
+    ],
+    "starting_abilities": [
+        "creraces:fruitful_sacrifice",
+        "creraces:fruitful_harvest"
+    ]
+}

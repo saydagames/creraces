@@ -1,0 +1,27 @@
+{
+    "name": "Fire Slash",
+    "description": "Slash in an arc, dealing <span style='color:#4f50b4'>6.0 (+50% AP)</span> damage and igniting enemies for 5s.",
+    "type": "ACTIVE",
+    "icon": "minecraft:textures/item/blaze_powder.png",
+    "cooldown": 60,
+    "cost": 5,
+    "on_activate": [
+        {
+            "type": "creraces:aoe",
+            "damage": {
+                "base": 6.0,
+                "ap": 0.5
+            },
+            "range": 4.0,
+            "set_on_fire": true,
+            "fire_duration": 5,
+            "target_players": false
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:entity.blaze.shoot",
+            "volume": 1.0,
+            "pitch": 1.0
+        }
+    ]
+}

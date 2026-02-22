@@ -1,0 +1,38 @@
+{
+    "name": "Rageful Bloodlust",
+    "description": "Consumes all stored Rage to heal. Heals for 1 health plus 10% of the consumed Rage.",
+    "type": "ACTIVE",
+    "icon": "minecraft:textures/item/ghast_tear.png",
+    "cooldown": 400,
+    "cost": 0,
+    "race": [
+        "creraces:orc"
+    ],
+    "on_activate": [
+        {
+            "type": "creraces:heal",
+            "amount": {
+                "base": 1.0,
+                "scales_with": "var:rage",
+                "factor": 0.1
+            }
+        },
+        {
+            "type": "creraces:modify_resource",
+            "resource": "rage",
+            "operation": "set",
+            "value": 0
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "entity.player.burp",
+            "volume": 1.0,
+            "pitch": 0.5
+        },
+        {
+            "type": "creraces:spawn_particles",
+            "particle": "minecraft:heart",
+            "count": 5
+        }
+    ]
+}

@@ -1,0 +1,20 @@
+{
+    "name": "Slime",
+    "legacy_id": 19.0,
+    "description": "Amorphous being of living gel.",
+    "icon": "creraces:textures/screens/slime_icon.png",
+    "splash": "creraces:textures/screens/slime_splash.png",
+    "base_ap": 15,
+    "base_ad": 5,
+    "base_ah": 10,
+    "base_cr": 5,
+    "resource_type": "MANA",
+    "max_resource": 100,
+    "tier": "creraces:rare",
+    "difficulty": 0,
+    "passives": {
+        "fall_damage_multiplier": 0.0
+    },
+    "portrait": "creraces:textures/screens/slime_portrait.png",
+    "name_texture": "creraces:textures/screens/slime_text.png"
+}

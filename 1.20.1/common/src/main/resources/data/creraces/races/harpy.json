@@ -1,0 +1,166 @@
+{
+    "name": "race.creraces.harpy.name",
+    "legacy_id": 4.0,
+    "scale": 0.92,
+    "description": "race.creraces.harpy.description",
+    "icon": "creraces:textures/screens/harpy_icon.png",
+    "splash": "creraces:textures/screens/harpy_splash.png",
+    "resource_type": "ENERGY",
+    "traits": [
+        {
+            "type": "creraces:attribute_modifier",
+            "attribute": "creraces:ability_power",
+            "value": 10.0,
+            "operation": "addition"
+        },
+        {
+            "type": "creraces:attribute_modifier",
+            "attribute": "minecraft:generic.attack_damage",
+            "value": 5.0,
+            "operation": "addition"
+        },
+        {
+            "type": "creraces:on_kill",
+            "actions": [
+                {
+                    "type": "creraces:set_cooldown",
+                    "ability": "creraces:dash",
+                    "value": 0
+                },
+                {
+                    "type": "creraces:set_cooldown",
+                    "ability": "creraces:talon_strike",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "type": "creraces:item_interaction",
+            "item": "minecraft:feather",
+            "consume": true,
+            "actions": [
+                {
+                    "type": "creraces:launch_projectile",
+                    "projectile": "minecraft:feather",
+                    "damage": 1.0,
+                    "speed": 2.5,
+                    "inaccuracy": 1.0
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:entity.player.attack.sweep",
+                    "volume": 1.0,
+                    "pitch": 1.5
+                }
+            ]
+        },
+        {
+            "type": "creraces:item_interaction",
+            "item": "creraces:harpy_feather",
+            "consume": true,
+            "actions": [
+                {
+                    "type": "creraces:launch_projectile",
+                    "projectile": "creraces:harpy_feather",
+                    "damage": 2.5,
+                    "speed": 2.5,
+                    "inaccuracy": 1.0
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:entity.player.attack.sweep",
+                    "volume": 1.0,
+                    "pitch": 1.5
+                }
+            ]
+        },
+        {
+            "type": "creraces:addon",
+            "addon_id": "twilight_lib:short_torso",
+            "permanent": true
+        },
+        {
+            "type": "creraces:flight",
+            "resource": "ENERGY",
+            "drain_rate": 0.1,
+            "condition": {
+                "type": "ability_state",
+                "ability": "creraces:talon_strike",
+                "value": 0.0
+            }
+        },
+        {
+            "type": "creraces:on_land",
+            "condition": {
+                "type": "ability_state",
+                "ability": "creraces:talon_strike",
+                "value": 1.0
+            },
+            "actions": [
+                {
+                    "type": "creraces:aoe",
+                    "range": 4.0,
+                    "damage": 10.0
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:entity.generic.explode",
+                    "volume": 0.8,
+                    "pitch": 1.2
+                },
+                {
+                    "type": "creraces:spawn_particles",
+                    "particle": "minecraft:explosion",
+                    "count": 5,
+                    "speed": 0.1
+                },
+                {
+                    "type": "creraces:set_state",
+                    "ability": "creraces:talon_strike",
+                    "value": 0.0
+                }
+            ]
+        },
+        {
+            "type": "creraces:on_ability_use",
+            "actions": [
+                {
+                    "type": "creraces:drop_item",
+                    "item": "creraces:harpy_feather",
+                    "count": 1,
+                    "chance": 0.1
+                }
+            ]
+        }
+    ],
+    "max_resource": 100,
+    "starting_abilities": [
+        "creraces:dash",
+        "creraces:talon_strike"
+    ],
+    "tier": "creraces:rare",
+    "difficulty": 2,
+    "customization": [
+        {
+            "id": "feather_color",
+            "type": "tint",
+            "defaultValue": "#FFFFFF"
+        },
+        {
+            "id": "leg_color",
+            "type": "tint",
+            "defaultValue": "#FFFFFF"
+        },
+        {
+            "id": "leg_style",
+            "type": "property",
+            "options": [
+                "standard",
+                "alt"
+            ],
+            "defaultValue": "standard"
+        }
+    ],
+    "portrait": "creraces:textures/screens/harpy_portrait.png",
+    "name_texture": "creraces:textures/screens/harpy_text.png"
+}

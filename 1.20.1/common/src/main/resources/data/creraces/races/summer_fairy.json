@@ -1,0 +1,18 @@
+{
+    "name": "Summer Fairy",
+    "legacy_id": 5.4,
+    "description": "Fae spirit of scorching heat and vitality.",
+    "icon": "creraces:textures/screens/summer_fairy_icon.png",
+    "splash": "creraces:textures/screens/summer_fairy_splash.png",
+    "parent_race": "creraces:fairy",
+    "base_ap": 16,
+    "base_ad": 5,
+    "base_ah": 15,
+    "base_cr": 8,
+    "resource_type": "MANA",
+    "max_resource": 100,
+    "tier": "creraces:rare",
+    "difficulty": 2,
+    "portrait": "creraces:textures/screens/summer_fairy_portrait.png",
+    "name_texture": "creraces:textures/screens/summer_fairy_text.png"
+}

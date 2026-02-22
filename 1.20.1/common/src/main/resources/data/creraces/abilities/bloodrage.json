@@ -1,0 +1,41 @@
+{
+    "name": "ability.creraces.bloodrage.name",
+    "description": "ability.creraces.bloodrage.description",
+    "type": "ACTIVE",
+    "icon": "minecraft:textures/item/diamond_sword.png",
+    "cooldown": 600,
+    "cost": 30,
+    "race": [
+        "creraces:orc"
+    ],
+    "on_activate": [
+        {
+            "type": "creraces:apply_effect",
+            "effect": "minecraft:strength",
+            "duration": 200,
+            "amplifier": 1,
+            "visible": true
+        },
+        {
+            "type": "creraces:apply_effect",
+            "effect": "minecraft:speed",
+            "duration": 200,
+            "amplifier": 0,
+            "visible": true
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "entity.ender_dragon.growl",
+            "volume": 1.0,
+            "pitch": 0.8
+        },
+        {
+            "type": "creraces:dash",
+            "power": {
+                "base": 0.5,
+                "ad": 0.1
+            },
+            "direction": "forward"
+        }
+    ]
+}

@@ -1,0 +1,50 @@
+package mc.sayda.creraces.network;
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.ability.AbilityManager;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Supplier;
+
+/**
+ * Syncs the entire AbilityRegistry (in JSON form) from server to client.
+ */
+public class SyncAbilitiesPacket {
+    public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "sync_abilities");
+    private final Map<ResourceLocation, String> abilityData;
+
+    public SyncAbilitiesPacket(Map<ResourceLocation, String> abilityData) {
+        this.abilityData = abilityData;
+    }
+
+    public SyncAbilitiesPacket(FriendlyByteBuf buf) {
+        this.abilityData = new HashMap<>();
+        int size = buf.readInt();
+        for (int i = 0; i < size; i++) {
+            this.abilityData.put(buf.readResourceLocation(), buf.readUtf(262144));
+        }
+    }
+
+    public void encode(FriendlyByteBuf buf) {
+        buf.writeInt(abilityData.size());
+        abilityData.forEach((id, json) -> {
+            buf.writeResourceLocation(id);
+            buf.writeUtf(json, 262144);
+        });
+    }
+
+    public void handle(Supplier<dev.architectury.networking.NetworkManager.PacketContext> contextSupplier) {
+        var context = contextSupplier.get();
+        context.queue(() -> {
+            dev.architectury.utils.EnvExecutor.runInEnv(dev.architectury.utils.Env.CLIENT, () -> () -> {
+                mc.sayda.creraces.client.ClientAccess.handleAbilitySync(this.abilityData);
+            });
+        });
+    }
+}

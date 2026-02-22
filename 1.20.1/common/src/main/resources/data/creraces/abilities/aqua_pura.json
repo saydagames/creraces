@@ -1,0 +1,20 @@
+{
+    "name": "ability.creraces.aqua_pura.name",
+    "description": "ability.creraces.aqua_pura.description",
+    "icon": "minecraft:water_bucket",
+    "mana_cost": 1,
+    "actions": [
+        {
+            "type": "creraces:apply_effect",
+            "effect": "creraces:true_invisibility",
+            "duration": 100,
+            "amplifier": 0
+        },
+        {
+            "type": "creraces:apply_effect",
+            "effect": "minecraft:weakness",
+            "duration": 100,
+            "amplifier": 1
+        }
+    ]
+}

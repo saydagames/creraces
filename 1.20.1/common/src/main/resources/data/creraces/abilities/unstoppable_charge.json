@@ -1,0 +1,34 @@
+{
+    "name": "ability.creraces.unstoppable_charge.name",
+    "description": "ability.creraces.unstoppable_charge.description",
+    "type": "ACTIVE",
+    "icon": "minecraft:textures/item/iron_chestplate.png",
+    "cooldown": 120,
+    "cost": 20,
+    "race": [
+        "creraces:dwarf"
+    ],
+    "on_activate": [
+        {
+            "type": "creraces:dash",
+            "power": {
+                "base": 2.0,
+                "ad": 0.3
+            },
+            "direction": "forward"
+        },
+        {
+            "type": "creraces:apply_effect",
+            "effect": "minecraft:absorption",
+            "duration": 600,
+            "amplifier": 0,
+            "visible": true
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:entity.iron_golem.hurt",
+            "volume": 1.0,
+            "pitch": 0.7
+        }
+    ]
+}

@@ -1,0 +1,14 @@
+{
+    "name": "ability.creraces.camouflage.name",
+    "description": "ability.creraces.camouflage.description",
+    "icon": "minecraft:fern",
+    "mana_cost": 1,
+    "actions": [
+        {
+            "type": "creraces:apply_effect",
+            "effect": "creraces:true_invisibility",
+            "duration": 100,
+            "amplifier": 0
+        }
+    ]
+}

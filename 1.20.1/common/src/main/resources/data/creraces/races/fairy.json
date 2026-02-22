@@ -1,0 +1,84 @@
+{
+    "name": "race.creraces.fairy.name",
+    "legacy_id": 5.0,
+    "scale": 0.2,
+    "description": "race.creraces.fairy.description",
+    "icon": "minecraft:textures/item/feather.png",
+    "portrait": "creraces:textures/screens/fairy_portrait.png",
+    "splash": "creraces:textures/screens/fairy_splash.png",
+    "base_ap": 10,
+    "base_ad": 5,
+    "base_ah": 10,
+    "base_cr": 5,
+    "resource_type": "MANA",
+    "max_resource": 100,
+    "tier": "creraces:uncommon",
+    "difficulty": 1,
+    "traits": [
+        {
+            "type": "creraces:food_multiplier",
+            "multiplier": 2.0
+        },
+        {
+            "type": "creraces:flight",
+            "resource": "MANA",
+            "drain_rate": 0.0,
+            "condition": {
+                "type": "creraces:not",
+                "condition": {
+                    "type": "creraces:has_effect",
+                    "effect": "creraces:soggy"
+                }
+            }
+        },
+        {
+            "type": "creraces:on_tick",
+            "interval": 20,
+            "actions": [
+                {
+                    "type": "creraces:conditional",
+                    "condition": {
+                        "type": "creraces:or",
+                        "conditions": [
+                            {
+                                "type": "creraces:in_water"
+                            },
+                            {
+                                "type": "creraces:exposed_to_rain"
+                            }
+                        ]
+                    },
+                    "if_true": [
+                        {
+                            "type": "creraces:apply_effect",
+                            "effect": "creraces:soggy",
+                            "duration": 10000,
+                            "amplifier": 0
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "creraces:item_interaction",
+            "item": "minecraft:paper",
+            "consume": true,
+            "condition": {
+                "type": "creraces:has_effect",
+                "effect": "creraces:soggy"
+            },
+            "actions": [
+                {
+                    "type": "creraces:remove_effect",
+                    "effect": "creraces:soggy"
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:item.book.page_turn",
+                    "volume": 1.0,
+                    "pitch": 1.5
+                }
+            ]
+        }
+    ]
+}

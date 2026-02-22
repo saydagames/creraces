@@ -1,0 +1,18 @@
+{
+    "name": "Winter Fairy",
+    "legacy_id": 5.6,
+    "description": "Fae spirit of frost and endurance.",
+    "icon": "creraces:textures/screens/winter_fairy_icon.png",
+    "splash": "creraces:textures/screens/winter_fairy_splash.png",
+    "parent_race": "creraces:fairy",
+    "base_ap": 12,
+    "base_ad": 3,
+    "base_ah": 15,
+    "base_cr": 12,
+    "resource_type": "MANA",
+    "max_resource": 100,
+    "tier": "creraces:rare",
+    "difficulty": 2,
+    "portrait": "creraces:textures/screens/winter_fairy_portrait.png",
+    "name_texture": "creraces:textures/screens/winter_fairy_text.png"
+}

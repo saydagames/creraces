@@ -1,0 +1,72 @@
+package mc.sayda.creraces.engine.actions;
+
+import com.google.gson.JsonObject;
+import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.engine.ActionRegistry;
+import mc.sayda.creraces.util.GsonHelper;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.entity.player.Player;
+
+public class RemoveEffectAction implements ActionRegistry.RaceAction {
+
+    private final MobEffect effect;
+    private final double radius;
+    private final boolean targetEnemies;
+    private final boolean targetPlayers;
+
+    public RemoveEffectAction(MobEffect effect, double radius, boolean targetEnemies, boolean targetPlayers) {
+        this.effect = effect;
+        this.radius = radius;
+        this.targetEnemies = targetEnemies;
+        this.targetPlayers = targetPlayers;
+    }
+
+    @Override
+    public void execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
+        if (effect == null)
+            return;
+
+        java.util.function.Consumer<net.minecraft.world.entity.LivingEntity> remove = e -> {
+            e.removeEffect(effect);
+        };
+
+        if (radius > 0) {
+            net.minecraft.world.phys.AABB area = player.getBoundingBox().inflate(radius);
+            java.util.List<net.minecraft.world.entity.LivingEntity> targets = player.level().getEntitiesOfClass(
+                    net.minecraft.world.entity.LivingEntity.class,
+                    area,
+                    entity -> {
+                        if (entity == player)
+                            return !targetEnemies;
+                        if (!targetPlayers && entity instanceof Player)
+                            return false;
+                        if (targetEnemies && entity instanceof net.minecraft.world.entity.Mob)
+                            return true;
+                        return targetPlayers && entity instanceof Player;
+                    });
+
+            for (net.minecraft.world.entity.LivingEntity e : targets) {
+                remove.accept(e);
+            }
+        } else if (target != null && targetEnemies) {
+            remove.accept(target);
+        } else {
+            remove.accept(player);
+        }
+    }
+
+    public static void register() {
+        ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "remove_effect"), json -> {
+            String effectId = GsonHelper.getAsString(json, "effect");
+            MobEffect effect = BuiltInRegistries.MOB_EFFECT.get(new ResourceLocation(effectId));
+            double radius = GsonHelper.getAsDouble(json, "radius", 0.0);
+            boolean targetEnemies = GsonHelper.getAsBoolean(json, "target_enemies", false);
+            boolean targetPlayers = GsonHelper.getAsBoolean(json, "target_players", false);
+
+            return new RemoveEffectAction(effect, radius, targetEnemies, targetPlayers);
+        });
+    }
+}

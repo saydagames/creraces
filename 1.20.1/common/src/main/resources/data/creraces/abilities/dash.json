@@ -1,0 +1,25 @@
+{
+    "name": "Dash",
+    "description": "Propels you forward with 2.2 velocity.",
+    "type": "ACTIVE",
+    "icon": "minecraft:textures/item/feather.png",
+    "cooldown": 40,
+    "cost": 3,
+    "on_activate": [
+        {
+            "type": "creraces:dash",
+            "direction": "forward",
+            "power": {
+                "base": 2.2,
+                "y_multiplier": 0.8,
+                "y_boost": 0.4
+            }
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:entity.breeze.wind_burst",
+            "volume": 1.0,
+            "pitch": 1.2
+        }
+    ]
+}

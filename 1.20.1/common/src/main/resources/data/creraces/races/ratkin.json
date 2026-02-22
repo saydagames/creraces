@@ -1,0 +1,46 @@
+{
+    "name": "race.creraces.ratkin.name",
+    "legacy_id": 13.0,
+    "scale": 0.65,
+    "description": "race.creraces.ratkin.description",
+    "icon": "creraces:textures/screens/ratkin_icon.png",
+    "splash": "creraces:textures/screens/ratkin_splash.png",
+    "base_ap": 10,
+    "base_ad": 5,
+    "base_ah": 10,
+    "base_cr": 5,
+    "resource_type": "ENERGY",
+    "max_resource": 100,
+    "tier": "creraces:common",
+    "difficulty": 2,
+    "portrait": "creraces:textures/screens/ratkin_portrait.png",
+    "name_texture": "creraces:textures/screens/ratkin_text.png",
+    "starting_abilities": [
+        "creraces:cowardly_skirmish",
+        "creraces:deadly_venom"
+    ],
+    "traits": [
+        {
+            "type": "creraces:on_hit",
+            "condition": {
+                "type": "creraces:attack_charged"
+            },
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "creraces:rat_venom",
+                    "duration": {
+                        "base": 100
+                    },
+                    "amplifier": {
+                        "base": 0
+                    },
+                    "target_enemies": true,
+                    "target_players": true,
+                    "increment_amplifier": true,
+                    "visible": true
+                }
+            ]
+        }
+    ]
+}

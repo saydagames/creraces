@@ -1,0 +1,27 @@
+{
+    "name": "ability.creraces.rampant_growth.name",
+    "description": "ability.creraces.rampant_growth.description",
+    "icon": "minecraft:oak_sapling",
+    "cooldown": 400,
+    "mana_cost": 40,
+    "actions": [
+        {
+            "type": "creraces:apply_effect",
+            "effect": "creraces:rooted",
+            "duration": 200,
+            "amplifier": 0
+        },
+        {
+            "type": "creraces:apply_effect",
+            "effect": "minecraft:resistance",
+            "duration": 200,
+            "amplifier": 1
+        },
+        {
+            "type": "creraces:apply_effect",
+            "effect": "minecraft:slowness",
+            "duration": 200,
+            "amplifier": 254
+        }
+    ]
+}

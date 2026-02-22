@@ -1,0 +1,18 @@
+{
+    "name": "race.creraces.dragonborn_earth.name",
+    "legacy_id": 3.3,
+    "description": "race.creraces.dragonborn_earth.description",
+    "icon": "creraces:textures/screens/dragonborn_earth_icon.png",
+    "splash": "creraces:textures/screens/dragonborn_earth_splash.png",
+    "parent_race": "creraces:dragonborn",
+    "base_ap": 10,
+    "base_ad": 12,
+    "base_ah": 8,
+    "base_cr": 5,
+    "resource_type": "RAGE",
+    "max_resource": 100,
+    "tier": "creraces:rare",
+    "difficulty": 3,
+    "portrait": "creraces:textures/screens/dragonborn_earth_portrait.png",
+    "name_texture": "creraces:textures/screens/dragonborn_text.png"
+}

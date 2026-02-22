@@ -1,0 +1,104 @@
+{
+    "name": "Cowardly Skirmish",
+    "description": "Gain Speed and Haste. Recast to slow and weaken nearby enemies.",
+    "type": "ACTIVE",
+    "icon": "minecraft:textures/item/iron_sword.png",
+    "cooldown": 240,
+    "cost": 15,
+    "race": [
+        "creraces:ratkin"
+    ],
+    "on_activate": [
+        {
+            "type": "creraces:conditional",
+            "condition": {
+                "type": "state_equals",
+                "state": "slot",
+                "value": 1
+            },
+            "if_true": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:slowness",
+                    "amplifier": {
+                        "base": 2
+                    },
+                    "duration": {
+                        "base": 120
+                    },
+                    "radius": 10.0,
+                    "target_enemies": true,
+                    "target_players": true
+                },
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:weakness",
+                    "amplifier": {
+                        "base": 2
+                    },
+                    "duration": {
+                        "base": 120
+                    },
+                    "radius": 10.0,
+                    "target_enemies": true,
+                    "target_players": true
+                },
+                {
+                    "type": "creraces:set_state",
+                    "state": "slot",
+                    "value": 0
+                },
+                {
+                    "type": "creraces:set_cooldown",
+                    "ability": "creraces:cowardly_skirmish",
+                    "value": 240
+                }
+            ],
+            "if_false": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:speed",
+                    "amplifier": {
+                        "base": 0
+                    },
+                    "duration": {
+                        "base": 240
+                    },
+                    "target_enemies": false
+                },
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:haste",
+                    "amplifier": {
+                        "base": 1
+                    },
+                    "duration": {
+                        "base": 240
+                    },
+                    "target_enemies": false
+                },
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:weakness",
+                    "amplifier": {
+                        "base": 4
+                    },
+                    "duration": {
+                        "base": 240
+                    },
+                    "target_enemies": false
+                },
+                {
+                    "type": "creraces:set_state",
+                    "state": "slot",
+                    "value": 1
+                },
+                {
+                    "type": "creraces:set_cooldown",
+                    "ability": "creraces:cowardly_skirmish",
+                    "value": 20
+                }
+            ]
+        }
+    ]
+}

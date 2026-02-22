@@ -1,0 +1,18 @@
+{
+    "name": "race.creraces.autumn_fairy.name",
+    "legacy_id": 5.5,
+    "description": "race.creraces.autumn_fairy.description",
+    "icon": "creraces:textures/screens/autumn_fairy_icon.png",
+    "splash": "creraces:textures/screens/autumn_fairy_splash.png",
+    "parent_race": "creraces:fairy",
+    "base_ap": 14,
+    "base_ad": 5,
+    "base_ah": 14,
+    "base_cr": 10,
+    "resource_type": "MANA",
+    "max_resource": 100,
+    "tier": "creraces:rare",
+    "difficulty": 2,
+    "portrait": "creraces:textures/screens/autumn_fairy_portrait.png",
+    "name_texture": "creraces:textures/screens/autumn_fairy_text.png"
+}

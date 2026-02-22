@@ -1,0 +1,55 @@
+{
+    "name": "Fox Form",
+    "description": "Transform into a fox, reducing your size to 50% and gaining increased mobility.",
+    "type": "ACTIVE",
+    "icon": "creraces:textures/screens/kitsune_icon.png",
+    "cooldown": 200,
+    "cost": 20,
+    "persistent": true,
+    "race": [
+        "creraces:kitsune"
+    ],
+    "on_activate": [
+        {
+            "type": "creraces:conditional",
+            "condition": {
+                "type": "morphed",
+                "value": false
+            },
+            "if_true": [
+                {
+                    "type": "creraces:morph",
+                    "entity_type": "minecraft:fox"
+                },
+                {
+                    "type": "creraces:set_state",
+                    "state": "slot",
+                    "value": 1.0
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:entity.fox.ambient",
+                    "volume": 1.0,
+                    "pitch": 1.0
+                }
+            ],
+            "if_false": [
+                {
+                    "type": "creraces:morph",
+                    "entity_type": ""
+                },
+                {
+                    "type": "creraces:set_state",
+                    "state": "slot",
+                    "value": 0.0
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:entity.fox.teleport",
+                    "volume": 1.0,
+                    "pitch": 1.0
+                }
+            ]
+        }
+    ]
+}

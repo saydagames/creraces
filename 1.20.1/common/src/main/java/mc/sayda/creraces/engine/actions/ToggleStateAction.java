@@ -1,0 +1,88 @@
+package mc.sayda.creraces.engine.actions;
+
+import com.google.gson.JsonElement;
+import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.engine.ActionRegistry;
+import mc.sayda.creraces.util.GsonHelper;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class ToggleStateAction implements ActionRegistry.RaceAction {
+
+    private final String stateVariable;
+    private final @javax.annotation.Nullable ResourceLocation abilityId;
+    private final double onValue;
+    private final double offValue;
+    private final List<ActionRegistry.RaceAction> onEnable;
+    private final List<ActionRegistry.RaceAction> onDisable;
+
+    public ToggleStateAction(String stateVariable, @javax.annotation.Nullable ResourceLocation abilityId,
+            double onValue, double offValue,
+            List<ActionRegistry.RaceAction> onEnable,
+            List<ActionRegistry.RaceAction> onDisable) {
+        this.stateVariable = stateVariable;
+        this.abilityId = abilityId;
+        this.onValue = onValue;
+        this.offValue = offValue;
+        this.onEnable = onEnable;
+        this.onDisable = onDisable;
+    }
+
+    @Override
+    public void execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
+        DataUtils.getVariables(player).ifPresent(vars -> {
+            ResourceLocation targetAbilityId = abilityId;
+
+            if (targetAbilityId == null && "slot".equalsIgnoreCase(stateVariable) && slot != null) {
+                targetAbilityId = vars.getAbilityInSlot(slot);
+            }
+
+            if (targetAbilityId == null)
+                return;
+
+            double current = vars.getAbilityState(targetAbilityId);
+
+            if (Math.abs(current - offValue) < 0.001) {
+                vars.setAbilityState(targetAbilityId, onValue);
+                onEnable.forEach(a -> a.execute(player, target, slot));
+            } else {
+                vars.setAbilityState(targetAbilityId, offValue);
+                onDisable.forEach(a -> a.execute(player, target, slot));
+            }
+
+            mc.sayda.creraces.network.BoundaryHandler.resyncVariables(player, player);
+        });
+    }
+
+    public static void register() {
+        ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "toggle_state"), json -> {
+            String state = GsonHelper.getAsString(json, "state", "slot");
+            double on = GsonHelper.getAsDouble(json, "on_value", 1.0);
+            double off = GsonHelper.getAsDouble(json, "off_value", 0.0);
+
+            List<ActionRegistry.RaceAction> onEnable = new ArrayList<>();
+            if (json.has("on_enable")) {
+                for (JsonElement e : json.getAsJsonArray("on_enable")) {
+                    onEnable.add(ActionRegistry.fromJson(e.getAsJsonObject()));
+                }
+            }
+
+            List<ActionRegistry.RaceAction> onDisable = new ArrayList<>();
+            if (json.has("on_disable")) {
+                for (JsonElement e : json.getAsJsonArray("on_disable")) {
+                    onDisable.add(ActionRegistry.fromJson(e.getAsJsonObject()));
+                }
+            }
+
+            String ability = GsonHelper.getAsString(json, "ability", null);
+            ResourceLocation abilityLoc = ability != null ? new ResourceLocation(ability) : null;
+
+            return new ToggleStateAction(state, abilityLoc, on, off, onEnable, onDisable);
+        });
+    }
+}

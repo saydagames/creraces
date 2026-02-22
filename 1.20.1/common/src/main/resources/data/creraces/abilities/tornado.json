@@ -1,0 +1,35 @@
+{
+    "name": "ability.creraces.tornado.name",
+    "description": "ability.creraces.tornado.description",
+    "icon": "minecraft:cobweb",
+    "cooldown": 400,
+    "mana_cost": 35,
+    "actions": [
+        {
+            "type": "creraces:aoe",
+            "radius": 6.0,
+            "actions": [
+                {
+                    "type": "creraces:apply_velocity",
+                    "mode": "push",
+                    "strength": 0.5,
+                    "y": 0.2,
+                    "use_target": true
+                },
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:nausea",
+                    "duration": 100,
+                    "amplifier": 0,
+                    "use_target": true
+                }
+            ]
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:entity.phantom.flap",
+            "volume": 1.0,
+            "pitch": 0.5
+        }
+    ]
+}

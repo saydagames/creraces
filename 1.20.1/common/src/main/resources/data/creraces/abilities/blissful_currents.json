@@ -1,0 +1,13 @@
+{
+    "name": "ability.creraces.blissful_currents.name",
+    "description": "ability.creraces.blissful_currents.description",
+    "icon": "minecraft:elytra",
+    "cooldown": 40,
+    "mana_cost": 10,
+    "actions": [
+        {
+            "type": "creraces:dash",
+            "power": 2.0
+        }
+    ]
+}

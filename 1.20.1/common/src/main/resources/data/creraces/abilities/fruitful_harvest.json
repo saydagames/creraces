@@ -1,0 +1,35 @@
+{
+    "name": "ability.creraces.fruitful_harvest.name",
+    "description": "ability.creraces.fruitful_harvest.description",
+    "type": "ACTIVE",
+    "icon": "minecraft:textures/item/glistering_melon_slice.png",
+    "cooldown": 100,
+    "cost": 10,
+    "race": [
+        "creraces:undead"
+    ],
+    "on_activate": [
+        {
+            "type": "creraces:aoe",
+            "damage": {
+                "base": 2.0
+            },
+            "range": 16.0,
+            "set_on_fire": false,
+            "target_players": false,
+            "required_effect": "creraces:life_drain",
+            "remove_effect": true,
+            "heal_per_hit": {
+                "base": 2.0
+            },
+            "source": "caster",
+            "damage_type": "minecraft:wither"
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:entity.player.burp",
+            "volume": 1.0,
+            "pitch": 0.8
+        }
+    ]
+}

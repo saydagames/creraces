@@ -1,0 +1,70 @@
+{
+    "name": "race.creraces.elf.name",
+    "description": "race.creraces.elf.description",
+    "icon": "creraces:textures/screens/elf_icon.png",
+    "splash": "creraces:textures/screens/elf_splash.png",
+    "portrait": "creraces:textures/screens/race.png",
+    "name_texture": "creraces:textures/screens/elf_text.png",
+    "tier": "creraces:common",
+    "difficulty": 1,
+    "resource_type": "ENERGY",
+    "traits": [
+        {
+            "type": "creraces:attribute_modifier",
+            "attribute": "minecraft:generic.movement_speed",
+            "value": 0.12,
+            "operation": "addition"
+        },
+        {
+            "type": "creraces:attribute_modifier",
+            "attribute": "minecraft:generic.attack_speed",
+            "value": 4.5,
+            "operation": "addition"
+        },
+        {
+            "type": "creraces:on_tick",
+            "interval": 20,
+            "actions": [
+                {
+                    "type": "creraces:conditional",
+                    "condition": {
+                        "type": "creraces:wearing_armor",
+                        "tag": "#forge:armors/iron"
+                    },
+                    "if_true": [
+                        {
+                            "type": "creraces:apply_effect",
+                            "effect": "minecraft:weakness",
+                            "duration": 100,
+                            "amplifier": 0,
+                            "visible": true
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "creraces:on_hurt",
+            "condition": {
+                "type": "creraces:holding_item",
+                "use_target": true,
+                "tag": "#minecraft:iron_tools"
+            },
+            "actions": [
+                {
+                    "type": "creraces:damage",
+                    "amount": 2.0,
+                    "damage_type": "minecraft:generic",
+                    "source": "target"
+                }
+            ]
+        }
+    ],
+    "customization": [
+        {
+            "id": "color",
+            "type": "tint",
+            "defaultValue": "#AADDAA"
+        }
+    ]
+}

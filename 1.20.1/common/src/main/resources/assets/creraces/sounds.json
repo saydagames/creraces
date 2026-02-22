@@ -1,0 +1,20 @@
+{
+    "slash": {
+        "subtitle": "subtitles.slash",
+        "sounds": [
+            {
+                "name": "creraces:slash",
+                "stream": false
+            }
+        ]
+    },
+    "magical-soundbible.com-224013670": {
+        "subtitle": "subtitles.magical-sound",
+        "sounds": [
+            {
+                "name": "creraces:magical-soundbible.com-224013670",
+                "stream": false
+            }
+        ]
+    }
+}

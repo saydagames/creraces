@@ -1,0 +1,42 @@
+{
+    "name": "race.creraces.dryad.name",
+    "parent_race": "creraces:nymph",
+    "legacy_id": 14.0,
+    "description": "race.creraces.dryad.description",
+    "icon": "creraces:textures/screens/dryad_icon.png",
+    "splash": "creraces:textures/screens/dryad_splash.png",
+    "portrait": "creraces:textures/screens/dryad_portrait.png",
+    "base_ap": 8,
+    "base_ad": 6,
+    "base_ah": 15,
+    "base_cr": 12,
+    "resource_type": "MANA",
+    "max_resource": 120,
+    "tier": "creraces:common",
+    "difficulty": 2,
+    "passives": {
+        "regeneration_multiplier": 1.15
+    },
+    "abilities": [
+        "creraces:camouflage",
+        "creraces:rampant_growth",
+        "creraces:entanglement"
+    ],
+    "traits": [
+        {
+            "type": "creraces:on_hurt",
+            "condition": {
+                "type": "holding_item",
+                "tag": "#minecraft:fox_food",
+                "use_target": true
+            },
+            "actions": [
+                {
+                    "type": "creraces:damage",
+                    "amount": 2.0,
+                    "damage_type": "minecraft:generic"
+                }
+            ]
+        }
+    ]
+}

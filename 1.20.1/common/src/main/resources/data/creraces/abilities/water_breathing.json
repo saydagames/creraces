@@ -1,0 +1,8 @@
+{
+    "name": "Water Breathing",
+    "description": "Passive: Grants eternal Water Breathing.",
+    "type": "INNATE",
+    "icon": "minecraft:textures/item/pufferfish.png",
+    "cooldown": 0,
+    "cost": 0
+}

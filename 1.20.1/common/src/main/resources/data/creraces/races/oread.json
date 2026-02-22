@@ -1,0 +1,50 @@
+{
+    "name": "race.creraces.oread.name",
+    "parent_race": "creraces:nymph",
+    "legacy_id": 12.0,
+    "description": "race.creraces.oread.description",
+    "icon": "creraces:textures/screens/oread_icon.png",
+    "splash": "creraces:textures/screens/oread_splash.png",
+    "portrait": "creraces:textures/screens/oread_portrait.png",
+    "base_ap": 12,
+    "base_ad": 6,
+    "base_ah": 8,
+    "base_cr": 10,
+    "resource_type": "MANA",
+    "max_resource": 120,
+    "tier": "creraces:rare",
+    "difficulty": 2,
+    "passives": {
+        "regeneration_multiplier": 1.1,
+        "immune_to_damage_types": [
+            "fire",
+            "lava",
+            "in_fire",
+            "on_fire"
+        ]
+    },
+    "traits": [
+        {
+            "type": "creraces:on_tick",
+            "interval": 100,
+            "condition": {
+                "type": "altitude",
+                "min": 100.0
+            },
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:strength",
+                    "duration": 200,
+                    "amplifier": 0
+                },
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:resistance",
+                    "duration": 200,
+                    "amplifier": 0
+                }
+            ]
+        }
+    ]
+}

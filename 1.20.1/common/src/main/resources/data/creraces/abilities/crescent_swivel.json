@@ -1,0 +1,64 @@
+{
+  "name": "Crescent Swivel",
+  "description": "A spinning dash that deals damage to all nearby enemies.",
+  "icon": "minecraft:netherite_sword",
+  "cooldown": 160,
+  "cost": 25.0,
+  "race": [
+    "creraces:velox"
+  ],
+  "on_activate": [
+    {
+      "type": "creraces:conditional",
+      "condition": {
+        "type": "creraces:entity_data",
+        "key": "creraces:foul_play_stacks",
+        "operator": ">=",
+        "value": 2,
+        "use_target": true
+      },
+      "if_true": [
+        {
+          "type": "creraces:aoe",
+          "range": 2.5,
+          "damage": {
+            "base": 4.0,
+            "scales_with": "ad",
+            "factor": 0.04
+          },
+          "target_players": true,
+          "source": "caster"
+        }
+      ],
+      "if_false": [
+        {
+          "type": "creraces:aoe",
+          "range": 2.5,
+          "damage": {
+            "base": 2.0,
+            "scales_with": "ad",
+            "factor": 0.02
+          },
+          "target_players": true,
+          "source": "caster"
+        }
+      ]
+    },
+    {
+      "type": "creraces:play_sound",
+      "sound": "creraces:slash",
+      "volume": 0.5,
+      "pitch": 1.0
+    },
+    {
+      "type": "creraces:spawn_particles",
+      "particle": "minecraft:witch",
+      "count": 5
+    },
+    {
+      "type": "creraces:spawn_particles",
+      "particle": "minecraft:sweep_attack",
+      "count": 5
+    }
+  ]
+}

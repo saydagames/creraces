@@ -1,0 +1,45 @@
+{
+    "name": "Boost Morale",
+    "description": "Grants Strength and Speed to yourself and nearby allies.",
+    "type": "ACTIVE",
+    "icon": "minecraft:textures/item/golden_sword.png",
+    "cooldown": 600,
+    "cost": 15,
+    "race": [
+        "creraces:undead"
+    ],
+    "on_activate": [
+        {
+            "type": "creraces:apply_effect",
+            "effect": "minecraft:strength",
+            "amplifier": {
+                "base": 0
+            },
+            "duration": {
+                "base": 200
+            },
+            "radius": 10.0,
+            "target_enemies": false,
+            "target_players": true
+        },
+        {
+            "type": "creraces:apply_effect",
+            "effect": "minecraft:speed",
+            "amplifier": {
+                "base": 0
+            },
+            "duration": {
+                "base": 200
+            },
+            "radius": 10.0,
+            "target_enemies": false,
+            "target_players": true
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:entity.wither.ambient",
+            "volume": 1.0,
+            "pitch": 0.5
+        }
+    ]
+}

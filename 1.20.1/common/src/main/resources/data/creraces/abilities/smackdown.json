@@ -1,0 +1,45 @@
+{
+    "name": "ability.creraces.smackdown.name",
+    "description": "ability.creraces.smackdown.description",
+    "icon": "minecraft:anvil",
+    "cooldown": 300,
+    "mana_cost": 30,
+    "actions": [
+        {
+            "type": "creraces:aoe",
+            "radius": 8.0,
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:levitation",
+                    "duration": 20,
+                    "amplifier": 14,
+                    "use_target": true
+                },
+                {
+                    "type": "creraces:delay",
+                    "ticks": 20,
+                    "actions": [
+                        {
+                            "type": "creraces:apply_velocity",
+                            "y": -4.0,
+                            "use_target": true
+                        },
+                        {
+                            "type": "creraces:damage",
+                            "amount": 2.0,
+                            "damage_type": "minecraft:fall",
+                            "use_target": true
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:entity.generic.explode",
+            "volume": 0.5,
+            "pitch": 1.5
+        }
+    ]
+}

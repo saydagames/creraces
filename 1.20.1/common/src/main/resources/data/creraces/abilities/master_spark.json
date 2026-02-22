@@ -1,0 +1,7 @@
+{
+    "name": "ability.creraces.master_spark.name",
+    "description": "ability.creraces.master_spark.description",
+    "icon": "minecraft:feather",
+    "cooldown": 200,
+    "mana_cost": 20
+}

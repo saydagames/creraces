@@ -1,0 +1,54 @@
+{
+    "name": "ability.creraces.fruitful_sacrifice.name",
+    "description": "ability.creraces.fruitful_sacrifice.description",
+    "type": "ACTIVE",
+    "icon": "minecraft:textures/item/ghast_tear.png",
+    "cooldown": 200,
+    "cost": 15,
+    "race": [
+        "creraces:undead"
+    ],
+    "on_activate": [
+        {
+            "type": "creraces:apply_effect",
+            "effect": "creraces:life_drain",
+            "duration": 200,
+            "amplifier": 0,
+            "visible": true,
+            "radius": 16,
+            "target_enemies": true
+        },
+        {
+            "type": "creraces:apply_effect",
+            "effect": "minecraft:slowness",
+            "duration": 160,
+            "amplifier": 0,
+            "visible": true,
+            "radius": 16,
+            "target_enemies": true
+        },
+        {
+            "type": "creraces:apply_effect",
+            "effect": "minecraft:speed",
+            "duration": 160,
+            "amplifier": 0,
+            "visible": true
+        },
+        {
+            "type": "creraces:damage",
+            "damage": {
+                "base": 0.25,
+                "hp": 0.25
+            },
+            "damage_type": "minecraft:wither",
+            "knockback": 0.0,
+            "source": "caster"
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:entity.wither.ambient",
+            "volume": 1.0,
+            "pitch": 1.2
+        }
+    ]
+}

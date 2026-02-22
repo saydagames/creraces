@@ -1,0 +1,17 @@
+{
+    "name": "race.creraces.human.name",
+    "legacy_id": 0.0,
+    "description": "race.creraces.human.description",
+    "icon": "creraces:textures/screens/human_icon.png",
+    "base_ap": 10,
+    "base_ad": 5,
+    "base_ah": 10,
+    "base_cr": 5,
+    "resource_type": "NONE",
+    "max_resource": 0,
+    "tier": "creraces:common",
+    "difficulty": 0,
+    "portrait": "creraces:textures/screens/human_portrait.png",
+    "splash": "creraces:textures/screens/human_splash.png",
+    "name_texture": "creraces:textures/screens/human_text.png"
+}

@@ -1,0 +1,24 @@
+{
+    "name": "race.creraces.dragonborn.name",
+    "legacy_id": 3.0,
+    "description": "race.creraces.dragonborn.description",
+    "icon": "minecraft:textures/item/dragon_breath.png",
+    "portrait": "creraces:textures/screens/dragonborn_portrait.png",
+    "splash": "creraces:textures/screens/dragonborn_splash.png",
+    "base_ap": 10,
+    "base_ad": 10,
+    "base_ah": 10,
+    "base_cr": 5,
+    "resource_type": "RAGE",
+    "max_resource": 100,
+    "tier": "creraces:rare",
+    "difficulty": 3,
+    "traits": [
+        {
+            "type": "creraces:attribute_modifier",
+            "attribute": "minecraft:generic.attack_damage",
+            "value": 2.0,
+            "operation": "addition"
+        }
+    ]
+}

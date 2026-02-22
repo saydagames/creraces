@@ -1,0 +1,42 @@
+{
+    "name": "ability.creraces.whirlpool.name",
+    "description": "ability.creraces.whirlpool.description",
+    "icon": "minecraft:nautilus_shell",
+    "cooldown": 200,
+    "mana_cost": 20,
+    "actions": [
+        {
+            "type": "creraces:conditional",
+            "condition": {
+                "type": "in_water"
+            },
+            "actions": [
+                {
+                    "type": "creraces:aoe",
+                    "radius": 5.0,
+                    "actions": [
+                        {
+                            "type": "creraces:apply_velocity",
+                            "mode": "pull",
+                            "strength": 0.5,
+                            "use_target": true
+                        },
+                        {
+                            "type": "creraces:modify_resource",
+                            "resource": "air",
+                            "operation": "add",
+                            "value": -20.0,
+                            "use_target": true
+                        }
+                    ]
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:block.bubble_column.whirlpool_inside",
+                    "volume": 1.0,
+                    "pitch": 1.0
+                }
+            ]
+        }
+    ]
+}

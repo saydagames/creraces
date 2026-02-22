@@ -1,0 +1,91 @@
+{
+    "name": "race.creraces.aurai.name",
+    "parent_race": "creraces:nymph",
+    "legacy_id": 15.0,
+    "description": "race.creraces.aurai.description",
+    "icon": "creraces:textures/screens/aurai_icon.png",
+    "splash": "creraces:textures/screens/aurai_splash.png",
+    "portrait": "creraces:textures/screens/aurai_portrait.png",
+    "base_ap": 12,
+    "base_ad": 4,
+    "base_ah": 8,
+    "base_cr": 15,
+    "resource_type": "MANA",
+    "max_resource": 150,
+    "tier": "creraces:rare",
+    "difficulty": 2,
+    "passives": {
+        "regeneration_multiplier": 1.1
+    },
+    "abilities": [
+        "creraces:blissful_currents",
+        "creraces:tornado",
+        "creraces:smackdown",
+        "creraces:low_pressure_area"
+    ],
+    "traits": [
+        {
+            "type": "creraces:flight"
+        },
+        {
+            "type": "creraces:on_tick",
+            "interval": 200,
+            "condition": {
+                "type": "altitude",
+                "max": 120.0
+            },
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:weakness",
+                    "duration": 400,
+                    "amplifier": 0
+                }
+            ]
+        },
+        {
+            "type": "creraces:on_tick",
+            "interval": 200,
+            "condition": {
+                "type": "altitude",
+                "max": 62.0
+            },
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:weakness",
+                    "duration": 400,
+                    "amplifier": 1
+                },
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:slowness",
+                    "duration": 400,
+                    "amplifier": 0
+                }
+            ]
+        },
+        {
+            "type": "creraces:on_tick",
+            "interval": 200,
+            "condition": {
+                "type": "altitude",
+                "max": 0.0
+            },
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:weakness",
+                    "duration": 400,
+                    "amplifier": 254
+                },
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:slowness",
+                    "duration": 400,
+                    "amplifier": 1
+                }
+            ]
+        }
+    ]
+}

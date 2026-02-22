@@ -1,0 +1,21 @@
+{
+    "name": "ability.creraces.flowing_tides.name",
+    "description": "ability.creraces.flowing_tides.description",
+    "icon": "minecraft:prismarine_crystals",
+    "cooldown": 20,
+    "mana_cost": 5,
+    "actions": [
+        {
+            "type": "creraces:conditional",
+            "condition": {
+                "type": "in_water"
+            },
+            "actions": [
+                {
+                    "type": "creraces:dash",
+                    "power": 1.2
+                }
+            ]
+        }
+    ]
+}
