@@ -24,8 +24,9 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public void execute(Player player, @javax.annotation.Nullable LivingEntity target,
-            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
+    public boolean execute(Player player, @javax.annotation.Nullable LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
         LivingEntity entity = (useTarget && target != null) ? target : player;
         String res = resource.toLowerCase();
 
@@ -46,13 +47,13 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
                 newValue = value;
 
             if (res.equals("air"))
-                entity.setAirSupply((int) newValue);
+                entity.setAirSupply((int) Math.max(0, Math.min(newValue, entity.getMaxAirSupply())));
             else if (res.equals("health"))
-                entity.setHealth((float) newValue);
+                entity.setHealth((float) Math.max(0, Math.min(newValue, entity.getMaxHealth())));
             else if (res.equals("food") && entity instanceof Player p)
-                p.getFoodData().setFoodLevel((int) newValue);
+                p.getFoodData().setFoodLevel((int) Math.max(0, Math.min(newValue, 20)));
 
-            return;
+            return true;
         }
 
         // Handle Custom Variables (only for Players)
@@ -98,6 +99,7 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
                 mc.sayda.creraces.network.BoundaryHandler.resyncVariables(p, p);
             });
         }
+        return true;
     }
 
     public static void register() {

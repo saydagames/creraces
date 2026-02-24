@@ -1,11 +1,12 @@
 {
     "name": "race.creraces.aurai.name",
     "parent_race": "creraces:nymph",
-    "legacy_id": 15.0,
+    "legacy_id": 9.4,
     "description": "race.creraces.aurai.description",
     "icon": "creraces:textures/screens/aurai_icon.png",
     "splash": "creraces:textures/screens/aurai_splash.png",
     "portrait": "creraces:textures/screens/aurai_portrait.png",
+    "name_texture": "creraces:textures/screens/aurai_text.png",
     "base_ap": 12,
     "base_ad": 4,
     "base_ah": 8,
@@ -87,5 +88,15 @@
                 }
             ]
         }
-    ]
+    ],
+    "remote_description": {
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "fallback": "race.creraces.aurai.description",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Aurai\u0026prop=wikitext"
+    },
+    "remote_passive": {
+        "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "fallback": "No passive documentation found on wiki.",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Aurai\u0026prop=wikitext"
+    }
 }

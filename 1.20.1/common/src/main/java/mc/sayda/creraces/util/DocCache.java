@@ -23,7 +23,8 @@ public class DocCache {
     private static File cacheFile;
 
     public static void init(Path configDir) {
-        cacheFile = configDir.resolve("cache/docs.json").toFile();
+        cacheFile = configDir.resolve(mc.sayda.creraces.config.CreRacesConfig.DOC_CACHE_DIR.get())
+                .resolve(mc.sayda.creraces.config.CreRacesConfig.DOC_CACHE_FILENAME.get()).toFile();
         load();
     }
 
@@ -32,6 +33,14 @@ public class DocCache {
             return;
         CACHE.put(id, content);
         save();
+    }
+
+    public static void clear() {
+        CACHE.clear();
+        if (cacheFile != null && cacheFile.exists()) {
+            cacheFile.delete();
+        }
+        CreRaces.LOGGER.info("Remote documentation cache cleared.");
     }
 
     public static String get(ResourceLocation id) {

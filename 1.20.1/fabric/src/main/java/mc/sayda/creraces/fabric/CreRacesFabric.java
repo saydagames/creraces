@@ -6,6 +6,7 @@ import net.fabricmc.api.ModInitializer;
 public class CreRacesFabric implements ModInitializer {
     @Override
     public void onInitialize() {
+        mc.sayda.creraces.config.fabric.FabricConfig.load();
         CreRaces.init();
     }
 }

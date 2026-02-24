@@ -3,12 +3,15 @@
     "description": "ability.creraces.whirlpool.description",
     "icon": "minecraft:nautilus_shell",
     "cooldown": 200,
-    "mana_cost": 20,
+    "cost": 20,
+    "race": [
+        "creraces:naiad"
+    ],
     "actions": [
         {
             "type": "creraces:conditional",
             "condition": {
-                "type": "in_water"
+                "type": "creraces:in_water"
             },
             "actions": [
                 {
@@ -38,5 +41,15 @@
                 }
             ]
         }
-    ]
+    ],
+    "remote_description": {
+        "selector": "",
+        "fallback": "ability.creraces.whirlpool.description",
+        "source": "https://creraces.wiki.gg/api.php?action=cargoquery\u0026format=json\u0026tables=Abilities\u0026fields=Description\u0026where=Name=\u0027Whirlpool\u0027"
+    },
+    "remote_full_description": {
+        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
+        "fallback": "ability.creraces.whirlpool.description",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Ability:Whirlpool\u0026prop=wikitext"
+    }
 }

@@ -50,12 +50,12 @@ public class ItemInteractionTrait implements TraitRegistry.RaceTrait {
     @Override
     public boolean onInteraction(Player player, ItemStack stack) {
         if (ItemUtils.matches(stack, itemDefinition)) {
-            if (condition != null && !condition.evaluate(player, null, null)) {
+            if (condition != null && !condition.evaluate(player, null, null, null)) {
                 return false;
             }
 
             for (ActionRegistry.RaceAction action : actions) {
-                action.execute(player, null, null);
+                action.execute(player, null, null, null);
             }
 
             if (consumeItem && !player.isCreative()) {

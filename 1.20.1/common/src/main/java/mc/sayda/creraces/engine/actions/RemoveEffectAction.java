@@ -1,6 +1,5 @@
 package mc.sayda.creraces.engine.actions;
 
-import com.google.gson.JsonObject;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.util.GsonHelper;
@@ -24,10 +23,11 @@ public class RemoveEffectAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public void execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
-            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
+    public boolean execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
         if (effect == null)
-            return;
+            return true;
 
         java.util.function.Consumer<net.minecraft.world.entity.LivingEntity> remove = e -> {
             e.removeEffect(effect);
@@ -56,6 +56,7 @@ public class RemoveEffectAction implements ActionRegistry.RaceAction {
         } else {
             remove.accept(player);
         }
+        return true;
     }
 
     public static void register() {

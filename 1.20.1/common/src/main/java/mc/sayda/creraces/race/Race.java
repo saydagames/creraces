@@ -26,7 +26,7 @@ public record Race(
                 int baseAd,
                 int baseAh,
                 int baseCr,
-                float scale,
+                @Nonnull RaceScale scale,
                 int maxResource,
                 @Nonnull ResourceType resourceType,
                 @Nonnull ResourceLocation bgTexture, // background image (standard vs spirit)
@@ -75,8 +75,10 @@ public record Race(
 
                         // Food & Hunger
                         boolean noHunger,
+                        boolean noHungerDrain, // Hunger bar never decreases; eating still requires < 20 hunger
                         double fixedHunger, // 0 = disabled, 1-20 = locked hunger level
                         boolean canEatMeat, // false = vegetarian
+                        boolean canEatWhenFull, // Can eat even at max hunger
 
                         // Social & Interaction - Dynamic lists
                         @Nonnull List<String> hatedByEntities, // These entities attack this race on sight
@@ -98,7 +100,8 @@ public record Race(
                                 1.0, false, 1.0, false, false, false, // Movement (1.0 = normal)
                                 false, 1.0, // Health (1.0 = normal regen)
                                 false, 1.0, // Combat (1.0 = normal invuln)
-                                false, 0.0, true, // Food (0 = no fixed hunger, true = can eat meat)
+                                false, false, 0.0, true, false, // Food (noHunger, noHungerDrain, fixedHunger,
+                                                                // canEatMeat, canEatWhenFull)
                                 List.of(), List.of(), List.of(), // Social (empty lists)
                                 false, false, false, false, // Equipment
                                 null // Special

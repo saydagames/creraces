@@ -1,6 +1,5 @@
 package mc.sayda.creraces.engine.actions;
 
-import com.google.gson.JsonObject;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.engine.ActionRegistry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -17,14 +16,15 @@ import java.util.Optional;
 public class SmeltItemAction implements ActionRegistry.RaceAction {
 
     @Override
-    public void execute(Player player, net.minecraft.world.entity.LivingEntity target,
-            mc.sayda.creraces.ability.AbilitySlot slot) {
+    public boolean execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
         if (!(player instanceof ServerPlayer serverPlayer))
-            return;
+            return true;
 
         ItemStack stack = player.getMainHandItem();
         if (stack.isEmpty())
-            return;
+            return true;
 
         Optional<SmeltingRecipe> recipe = player.level().getRecipeManager()
                 .getRecipeFor(RecipeType.SMELTING, new SimpleContainer(stack), player.level());
@@ -34,6 +34,7 @@ public class SmeltItemAction implements ActionRegistry.RaceAction {
             result.setCount(stack.getCount());
             player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, result);
         }
+        return true;
     }
 
     public static void register() {

@@ -1,6 +1,5 @@
 package mc.sayda.creraces.engine.actions;
 
-import com.google.gson.JsonObject;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.util.GsonHelper;
@@ -25,14 +24,15 @@ public class ModifyEntityDataAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public void execute(Player player, @javax.annotation.Nullable LivingEntity target,
-            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
+    public boolean execute(Player player, @javax.annotation.Nullable LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
         LivingEntity entity = (useTarget && target != null) ? target : player;
         CompoundTag persistentData = ((IPersistentDataAccessor) entity).creraces$getPersistentData();
 
         if (operation.equalsIgnoreCase("remove")) {
             persistentData.remove(key);
-            return;
+            return true;
         }
 
         double current = persistentData.getDouble(key);
@@ -45,6 +45,7 @@ public class ModifyEntityDataAction implements ActionRegistry.RaceAction {
         }
 
         persistentData.putDouble(key, newValue);
+        return true;
     }
 
     public static void register() {

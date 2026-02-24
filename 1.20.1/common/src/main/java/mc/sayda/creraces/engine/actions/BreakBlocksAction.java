@@ -20,8 +20,9 @@ public class BreakBlocksAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public void execute(Player player, @javax.annotation.Nullable LivingEntity target,
-            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
+    public boolean execute(Player player, @javax.annotation.Nullable LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
         BlockPos center = player.blockPosition();
         for (int x = -radius; x <= radius; x++) {
             for (int y = -radius; y <= radius; y++) {
@@ -36,6 +37,7 @@ public class BreakBlocksAction implements ActionRegistry.RaceAction {
                 }
             }
         }
+        return true;
     }
 
     public static void register() {

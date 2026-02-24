@@ -1,0 +1,85 @@
+{
+    "name": "race.creraces.elves.name",
+    "scale": {
+        "base": 1.0,
+        "height": 1.1
+    },
+    "legacy_id": 12.0,
+    "description": "race.creraces.elves.description",
+    "icon": "creraces:textures/screens/elves_icon.png",
+    "splash": "creraces:textures/screens/elves_splash.png",
+    "portrait": "creraces:textures/screens/elves_portrait.png",
+    "name_texture": "creraces:textures/screens/elves_text.png",
+    "tier": "creraces:common",
+    "difficulty": 1,
+    "resource_type": "ENERGY",
+    "traits": [
+        {
+            "type": "creraces:attribute_modifier",
+            "attribute": "minecraft:generic.movement_speed",
+            "value": 0.12,
+            "operation": "addition"
+        },
+        {
+            "type": "creraces:attribute_modifier",
+            "attribute": "minecraft:generic.attack_speed",
+            "value": 4.5,
+            "operation": "addition"
+        },
+        {
+            "type": "creraces:on_tick",
+            "interval": 20,
+            "actions": [
+                {
+                    "type": "creraces:conditional",
+                    "condition": {
+                        "type": "creraces:wearing_armor",
+                        "tag": "#forge:armors/iron"
+                    },
+                    "if_true": [
+                        {
+                            "type": "creraces:apply_effect",
+                            "effect": "minecraft:weakness",
+                            "duration": 100,
+                            "amplifier": 0,
+                            "visible": true
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "creraces:on_hurt",
+            "condition": {
+                "type": "creraces:holding_item",
+                "use_target": true,
+                "tag": "#minecraft:iron_tools"
+            },
+            "actions": [
+                {
+                    "type": "creraces:damage",
+                    "amount": 2.0,
+                    "damage_type": "minecraft:generic",
+                    "source": "target"
+                }
+            ]
+        }
+    ],
+    "customization": [
+        {
+            "id": "color",
+            "type": "tint",
+            "defaultValue": "#AADDAA"
+        }
+    ],
+    "remote_description": {
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "fallback": "race.creraces.elves.description",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Elves\u0026prop=wikitext"
+    },
+    "remote_passive": {
+        "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "fallback": "No passive documentation found on wiki.",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Elves\u0026prop=wikitext"
+    }
+}

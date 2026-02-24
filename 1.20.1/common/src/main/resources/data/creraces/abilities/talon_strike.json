@@ -1,18 +1,18 @@
 {
-    "name": "Talon Strike",
-    "description": "Leap downwards with <span style='color:#d08b0a'>1.5 (+50% AD)</span> power. On landing, deal 10.0 damage in an area.",
+    "name": "ability.creraces.talon_strike.name",
+    "description": "ability.creraces.talon_strike.description",
     "type": "ACTIVE",
-    "icon": "creraces:textures/items/talon.png",
+    "icon": "creraces:textures/item/harpy_feather.png",
     "cooldown": 60,
     "cost": 5,
     "race": [
         "creraces:harpy"
     ],
-    "on_activate": [
+    "actions": [
         {
             "type": "creraces:conditional",
             "condition": {
-                "type": "flying",
+                "type": "creraces:flying",
                 "value": true
             },
             "if_true": [
@@ -32,11 +32,21 @@
                 },
                 {
                     "type": "creraces:set_state",
-                    "state": "slot",
+                    "ability": "creraces:talon_strike",
                     "value": 1.0
                 }
             ],
             "if_false": []
         }
-    ]
+    ],
+    "remote_description": {
+        "selector": "",
+        "fallback": "ability.creraces.talon_strike.description",
+        "source": "https://creraces.wiki.gg/api.php?action=cargoquery\u0026format=json\u0026tables=Abilities\u0026fields=Description\u0026where=Name=\u0027Talon Strike\u0027"
+    },
+    "remote_full_description": {
+        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
+        "fallback": "ability.creraces.talon_strike.description",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Ability:Talon_Strike\u0026prop=wikitext"
+    }
 }

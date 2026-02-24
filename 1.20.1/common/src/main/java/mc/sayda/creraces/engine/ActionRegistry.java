@@ -10,8 +10,9 @@ import mc.sayda.creraces.CreRaces;
 public class ActionRegistry {
 
     public interface RaceAction {
-        void execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
-                @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot);
+        boolean execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
+                @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+                @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos);
     }
 
     public interface ActionFactory {
@@ -27,26 +28,25 @@ public class ActionRegistry {
     public static RaceAction fromJson(JsonObject json) {
         if (!json.has("type")) {
             CreRaces.LOGGER.error("Action missing 'type' field — skipping. JSON: {}", json);
-            return (player, target, slot) -> {
-            };
+            return (player, target, slot, interactionPos) -> true;
         }
         String typeStr = json.get("type").getAsString();
         ResourceLocation type = new ResourceLocation(typeStr);
         ActionFactory factory = REGISTRY.get(type);
         if (factory == null) {
             CreRaces.LOGGER.error("Unknown action type '{}' — skipping. Did you forget to register it?", type);
-            return (player, target, slot) -> {
-            };
+            return (player, target, slot, interactionPos) -> true;
         }
         try {
             RaceAction action = factory.create(json);
 
             if (json.has("chance")) {
                 double chance = json.get("chance").getAsDouble();
-                return (player, target, slot) -> {
+                return (player, target, slot, interactionPos) -> {
                     if (player.getRandom().nextDouble() < chance) {
-                        action.execute(player, target, slot);
+                        return action.execute(player, target, slot, interactionPos);
                     }
+                    return true;
                 };
             }
 
@@ -55,8 +55,7 @@ public class ActionRegistry {
             CreRaces.LOGGER.error(
                     "Failed to parse action '{}': {} — action will be skipped at runtime. JSON: {}",
                     type, e.getMessage(), json);
-            return (player, target, slot) -> {
-            };
+            return (player, target, slot, interactionPos) -> true;
         }
     }
 
@@ -71,6 +70,7 @@ public class ActionRegistry {
         mc.sayda.creraces.engine.actions.DashAction.register();
         mc.sayda.creraces.engine.actions.DamageAction.register();
         mc.sayda.creraces.engine.actions.HealAction.register();
+        mc.sayda.creraces.engine.actions.PocketEntryAction.register();
         mc.sayda.creraces.engine.actions.ToggleStateAction.register();
         mc.sayda.creraces.engine.actions.SpawnParticlesAction.register();
         mc.sayda.creraces.engine.actions.MorphAction.register();
@@ -94,5 +94,7 @@ public class ActionRegistry {
         mc.sayda.creraces.engine.actions.DisableShieldAction.register();
         mc.sayda.creraces.engine.actions.OpenGUIAction.register();
         mc.sayda.creraces.engine.actions.SmeltItemAction.register();
+        mc.sayda.creraces.engine.actions.TeleportAction.register();
+        mc.sayda.creraces.engine.actions.SetCustomizationAction.register();
     }
 }

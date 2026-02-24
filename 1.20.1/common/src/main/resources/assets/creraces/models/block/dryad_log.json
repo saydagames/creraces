@@ -1,0 +1,13 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "down": "creraces:block/dryad_log_bot",
+    "up": "creraces:block/dryad_log_bot",
+    "north": "creraces:block/dryad_log",
+    "east": "creraces:block/dryad_log",
+    "south": "creraces:block/dryad_log",
+    "west": "creraces:block/dryad_log",
+    "particle": "creraces:block/dryad_log_bot"
+  },
+  "render_type": "solid"
+}

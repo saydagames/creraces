@@ -115,6 +115,11 @@ public class BoundaryHandler {
             pkt.handle(() -> context);
         });
 
+        NetworkManager.registerReceiver(NetworkManager.Side.S2C, ClearRemoteCachePacket.ID, (buf, context) -> {
+            var pkt = new ClearRemoteCachePacket(buf);
+            pkt.handle(() -> context);
+        });
+
         LOGGER.info("Yukari has established the client network boundaries.");
     }
 
@@ -190,6 +195,16 @@ public class BoundaryHandler {
 
     public static void sendItemAnimation(ServerPlayer player, ResourceLocation itemId) {
         send(player, ShowItemAnimationPacket.ID, buf -> buf.writeResourceLocation(itemId));
+    }
+
+    public static void broadcastClearCache() {
+        var server = dev.architectury.utils.GameInstance.getServer();
+        if (server != null) {
+            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                send(player, ClearRemoteCachePacket.ID, buf -> {
+                });
+            }
+        }
     }
 
     public static void sendEquipAbility(EquipAbilityPacket pkt) {

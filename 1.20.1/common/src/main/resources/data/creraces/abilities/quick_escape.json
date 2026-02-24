@@ -1,0 +1,54 @@
+{
+    "name": "ability.creraces.quick_escape.name",
+    "description": "ability.creraces.quick_escape.description",
+    "icon": "minecraft:textures/item/ender_pearl.png",
+    "cost": 40.0,
+    "cooldown": 600,
+    "race": [
+        "creraces:dryad"
+    ],
+    "actions": [
+        {
+            "type": "creraces:conditional",
+            "condition": {
+                "type": "creraces:and",
+                "conditions": [
+                    {
+                        "type": "creraces:has_customization",
+                        "id": "tx"
+                    },
+                    {
+                        "type": "creraces:has_customization",
+                        "id": "ty"
+                    },
+                    {
+                        "type": "creraces:has_customization",
+                        "id": "tz"
+                    }
+                ]
+            },
+            "if_true": [
+                {
+                    "type": "creraces:teleport",
+                    "x": "custom:tx",
+                    "y": "custom:ty",
+                    "z": "custom:tz"
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:entity.enderman.teleport"
+                }
+            ]
+        }
+    ],
+    "remote_description": {
+        "selector": "",
+        "fallback": "ability.creraces.quick_escape.description",
+        "source": "https://creraces.wiki.gg/api.php?action=cargoquery\u0026format=json\u0026tables=Abilities\u0026fields=Description\u0026where=Name=\u0027Quick Escape\u0027"
+    },
+    "remote_full_description": {
+        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
+        "fallback": "ability.creraces.quick_escape.description",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Ability:Quick_Escape\u0026prop=wikitext"
+    }
+}

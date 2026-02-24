@@ -25,14 +25,16 @@ public class DropItemAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public void execute(Player player, @Nullable net.minecraft.world.entity.LivingEntity target,
-            @Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
+    public boolean execute(Player player, @Nullable net.minecraft.world.entity.LivingEntity target,
+            @Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @Nullable net.minecraft.core.BlockPos interactionPos) {
         Item item = BuiltInRegistries.ITEM.get(itemId);
         if (item != null && player.level() != null) {
             ItemEntity itemEntity = new ItemEntity(player.level(), player.getX(), player.getY(), player.getZ(),
                     new ItemStack(item, count));
             player.level().addFreshEntity(itemEntity);
         }
+        return true;
     }
 
     public static void register() {

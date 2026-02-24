@@ -1,6 +1,5 @@
 package mc.sayda.creraces.engine.actions;
 
-import com.google.gson.JsonObject;
 import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.network.BoundaryHandler;
 import mc.sayda.creraces.util.GsonHelper;
@@ -31,10 +30,12 @@ public class ItemAnimationAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public void execute(@Nonnull Player p, @Nullable net.minecraft.world.entity.LivingEntity target,
-            @Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
+    public boolean execute(@Nonnull Player p, @Nullable net.minecraft.world.entity.LivingEntity target,
+            @Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @Nullable net.minecraft.core.BlockPos interactionPos) {
         if (p instanceof ServerPlayer serverPlayer) {
             BoundaryHandler.sendItemAnimation(serverPlayer, itemId);
         }
+        return true;
     }
 }

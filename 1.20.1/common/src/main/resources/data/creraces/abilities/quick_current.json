@@ -3,7 +3,10 @@
     "description": "ability.creraces.quick_current.description",
     "icon": "minecraft:kelp",
     "cooldown": 100,
-    "mana_cost": 15,
+    "cost": 15,
+    "race": [
+        "creraces:naiad"
+    ],
     "actions": [
         {
             "type": "creraces:aoe",
@@ -15,8 +18,34 @@
                     "duration": 100,
                     "amplifier": 0,
                     "use_target": true
+                },
+                {
+                    "type": "creraces:apply_particles",
+                    "particle": "minecraft:bubble",
+                    "count": 15,
+                    "spread_x": 1.0,
+                    "spread_y": 0.5,
+                    "spread_z": 1.0,
+                    "use_target": true
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:block.wet_grass.place",
+                    "volume": 1.0,
+                    "pitch": 0.8,
+                    "at_target": true
                 }
             ]
         }
-    ]
+    ],
+    "remote_description": {
+        "selector": "",
+        "fallback": "ability.creraces.quick_current.description",
+        "source": "https://creraces.wiki.gg/api.php?action=cargoquery\u0026format=json\u0026tables=Abilities\u0026fields=Description\u0026where=Name=\u0027Quick Current\u0027"
+    },
+    "remote_full_description": {
+        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
+        "fallback": "ability.creraces.quick_current.description",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Ability:Quick_Current\u0026prop=wikitext"
+    }
 }

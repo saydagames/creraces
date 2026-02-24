@@ -9,31 +9,36 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.player.Player;
+import mc.sayda.creraces.engine.ScalingValue;
+import mc.sayda.creraces.engine.condition.Condition;
+import javax.annotation.Nullable;
 
 public class AttributeModifierTrait implements TraitRegistry.RaceTrait {
 
     private final Attribute attribute;
-    private final double value;
+    private final ScalingValue value;
     private final AttributeModifier.Operation operation;
-    // We don't tick attributes, we just hold the data.
-    // The AttributeIncidents class will extract this data.
+    @Nullable
+    private final Condition condition;
 
-    public AttributeModifierTrait(Attribute attribute, double value, AttributeModifier.Operation operation) {
+    public AttributeModifierTrait(Attribute attribute, ScalingValue value, AttributeModifier.Operation operation,
+            @Nullable Condition condition) {
         this.attribute = attribute;
         this.value = value;
         this.operation = operation;
+        this.condition = condition;
     }
 
     @Override
     public void tick(Player player) {
-        // No-op for attributes, they are applied statically
+        // No-op for attributes, they are applied statically or via AttributeIncidents
     }
 
     public Attribute getAttribute() {
         return attribute;
     }
 
-    public double getValue() {
+    public ScalingValue getValue() {
         return value;
     }
 
@@ -41,12 +46,15 @@ public class AttributeModifierTrait implements TraitRegistry.RaceTrait {
         return operation;
     }
 
+    @Nullable
+    public Condition getCondition() {
+        return condition;
+    }
+
     public static void register() {
         TraitRegistry.register(new ResourceLocation(CreRaces.MODID, "attribute_modifier"), json -> {
             String attrId = GsonHelper.getAsString(json, "attribute");
 
-            // Handle aliases again here? Or assume full ID + ScalingValue aliases
-            // Let's implement basic alias support here too for consistency
             String statKey = attrId.toLowerCase();
             Attribute attribute = null;
 
@@ -63,11 +71,16 @@ public class AttributeModifierTrait implements TraitRegistry.RaceTrait {
             else
                 attribute = BuiltInRegistries.ATTRIBUTE.get(new ResourceLocation(attrId));
 
-            double value = GsonHelper.getAsDouble(json, "value", 0.0);
+            ScalingValue value = ScalingValue.fromJson(json, "value", 0.0);
             String opStr = GsonHelper.getAsString(json, "operation", "addition").toUpperCase();
             AttributeModifier.Operation op = AttributeModifier.Operation.valueOf(opStr);
 
-            return new AttributeModifierTrait(attribute, value, op);
+            Condition condition = null;
+            if (json.has("condition")) {
+                condition = Condition.fromJson(json.getAsJsonObject("condition"));
+            }
+
+            return new AttributeModifierTrait(attribute, value, op, condition);
         });
     }
 }

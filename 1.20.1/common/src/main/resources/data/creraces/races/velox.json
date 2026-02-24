@@ -1,10 +1,11 @@
 {
-    "parent_race": "creraces:elf",
-    "name": "Velox",
-    "description": "Deadly assassins that strike from the shadows with blinding speed.",
+    "parent_race": "creraces:elves",
+    "legacy_id": 12.2,
+    "name": "race.creraces.velox.name",
+    "description": "race.creraces.velox.description",
     "icon": "creraces:textures/screens/velox_icon.png",
     "splash": "creraces:textures/screens/velox_splash.png",
-    "portrait": "creraces:textures/screens/race.png",
+    "portrait": "creraces:textures/screens/velox_portrait.png",
     "name_texture": "creraces:textures/screens/velox_text.png",
     "tier": "creraces:rare",
     "difficulty": 3,
@@ -52,7 +53,7 @@
                     "condition": {
                         "type": "creraces:entity_data",
                         "key": "creraces:foul_play_stacks",
-                        "operator": ">=",
+                        "operator": "\u003e=",
                         "value": 3,
                         "use_target": true
                     },
@@ -105,5 +106,15 @@
     "starting_abilities": [
         "creraces:slash_n_dash",
         "creraces:crescent_swivel"
-    ]
+    ],
+    "remote_description": {
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "fallback": "race.creraces.velox.description",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Velox\u0026prop=wikitext"
+    },
+    "remote_passive": {
+        "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "fallback": "No passive documentation found on wiki.",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Velox\u0026prop=wikitext"
+    }
 }

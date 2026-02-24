@@ -72,18 +72,19 @@ public class ApplyEffectAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public void execute(@Nonnull Player p, @Nullable LivingEntity target,
-            @Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
-        LivingEntity entity = useTarget ? target : p;
+    public boolean execute(@Nonnull Player player, @Nullable LivingEntity target,
+            @Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @Nullable net.minecraft.core.BlockPos interactionPos) {
+        LivingEntity entity = useTarget ? target : player;
         if (entity == null)
-            return;
+            return true;
 
         @Nonnull
         MobEffect effect = BuiltInRegistries.MOB_EFFECT.get(effectId);
         if (effect != null) {
             int finalAmplifier = amplifier;
             if (scalingResource != null) {
-                finalAmplifier += mc.sayda.creraces.capability.DataUtils.getVariables(p).map(vars -> {
+                finalAmplifier += mc.sayda.creraces.capability.DataUtils.getVariables(player).map(vars -> {
                     double val = switch (scalingResource.toLowerCase()) {
                         case "stacks" -> vars.getStacks();
                         case "mana" -> vars.getMana();
@@ -97,5 +98,6 @@ public class ApplyEffectAction implements ActionRegistry.RaceAction {
             }
             entity.addEffect(new MobEffectInstance(effect, duration, finalAmplifier, ambient, visible));
         }
+        return true;
     }
 }

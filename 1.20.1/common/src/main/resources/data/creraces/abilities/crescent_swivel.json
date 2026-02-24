@@ -1,64 +1,74 @@
 {
-  "name": "Crescent Swivel",
-  "description": "A spinning dash that deals damage to all nearby enemies.",
-  "icon": "minecraft:netherite_sword",
-  "cooldown": 160,
-  "cost": 25.0,
-  "race": [
-    "creraces:velox"
-  ],
-  "on_activate": [
-    {
-      "type": "creraces:conditional",
-      "condition": {
-        "type": "creraces:entity_data",
-        "key": "creraces:foul_play_stacks",
-        "operator": ">=",
-        "value": 2,
-        "use_target": true
-      },
-      "if_true": [
+    "name": "ability.creraces.crescent_swivel.name",
+    "description": "ability.creraces.crescent_swivel.description",
+    "icon": "minecraft:netherite_sword",
+    "cooldown": 160,
+    "cost": 25.0,
+    "race": [
+        "creraces:velox"
+    ],
+    "actions": [
         {
-          "type": "creraces:aoe",
-          "range": 2.5,
-          "damage": {
-            "base": 4.0,
-            "scales_with": "ad",
-            "factor": 0.04
-          },
-          "target_players": true,
-          "source": "caster"
-        }
-      ],
-      "if_false": [
+            "type": "creraces:conditional",
+            "condition": {
+                "type": "creraces:entity_data",
+                "key": "creraces:foul_play_stacks",
+                "operator": "\u003e=",
+                "value": 2,
+                "use_target": true
+            },
+            "if_true": [
+                {
+                    "type": "creraces:aoe",
+                    "range": 2.5,
+                    "damage": {
+                        "base": 4.0,
+                        "scales_with": "ad",
+                        "factor": 0.04
+                    },
+                    "target_players": true,
+                    "source": "caster"
+                }
+            ],
+            "if_false": [
+                {
+                    "type": "creraces:aoe",
+                    "range": 2.5,
+                    "damage": {
+                        "base": 2.0,
+                        "scales_with": "ad",
+                        "factor": 0.02
+                    },
+                    "target_players": true,
+                    "source": "caster"
+                }
+            ]
+        },
         {
-          "type": "creraces:aoe",
-          "range": 2.5,
-          "damage": {
-            "base": 2.0,
-            "scales_with": "ad",
-            "factor": 0.02
-          },
-          "target_players": true,
-          "source": "caster"
+            "type": "creraces:play_sound",
+            "sound": "creraces:slash",
+            "volume": 0.5,
+            "pitch": 1.0
+        },
+        {
+            "type": "creraces:spawn_particles",
+            "particle": "minecraft:witch",
+            "count": 5
+        },
+        {
+            "type": "creraces:spawn_particles",
+            "particle": "minecraft:sweep_attack",
+            "count": 5
         }
-      ]
+    ],
+    "remote_description": {
+        "selector": "",
+        "fallback": "ability.creraces.crescent_swivel.description",
+        "source": "https://creraces.wiki.gg/api.php?action=cargoquery\u0026format=json\u0026tables=Abilities\u0026fields=Description\u0026where=Name=\u0027Crescent Swivel\u0027"
     },
-    {
-      "type": "creraces:play_sound",
-      "sound": "creraces:slash",
-      "volume": 0.5,
-      "pitch": 1.0
-    },
-    {
-      "type": "creraces:spawn_particles",
-      "particle": "minecraft:witch",
-      "count": 5
-    },
-    {
-      "type": "creraces:spawn_particles",
-      "particle": "minecraft:sweep_attack",
-      "count": 5
+    "remote_full_description": {
+        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
+        "fallback": "ability.creraces.crescent_swivel.description",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Ability:Crescent_Swivel\u0026prop=wikitext"
     }
-  ]
 }

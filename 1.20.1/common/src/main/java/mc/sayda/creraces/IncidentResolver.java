@@ -58,6 +58,21 @@ public class IncidentResolver {
             return dev.architectury.event.CompoundEventResult.<net.minecraft.world.item.ItemStack>pass();
         });
 
+        dev.architectury.event.events.common.InteractionEvent.RIGHT_CLICK_BLOCK
+                .register((player, hand, pos, direction) -> {
+                    if (player instanceof ServerPlayer sp) {
+                        return onIncidentBlockInteraction(sp, hand, pos);
+                    }
+                    return dev.architectury.event.EventResult.pass();
+                });
+
+        dev.architectury.event.events.common.BlockEvent.PLACE.register((level, pos, state, placer) -> {
+            if (placer instanceof ServerPlayer sp && !level.isClientSide()) {
+                return onIncidentBlockPlace(sp, pos, state);
+            }
+            return dev.architectury.event.EventResult.pass();
+        });
+
         dev.architectury.event.events.common.EntityEvent.LIVING_HURT.register((entity, source, amount) -> {
             if (source.getEntity() instanceof ServerPlayer player) {
                 onIncidentAttack(player, entity);
@@ -82,6 +97,41 @@ public class IncidentResolver {
             }
         }
         return dev.architectury.event.CompoundEventResult.pass();
+    }
+
+    private static dev.architectury.event.EventResult onIncidentBlockInteraction(ServerPlayer player,
+            net.minecraft.world.InteractionHand hand, net.minecraft.core.BlockPos pos) {
+        net.minecraft.world.level.block.state.BlockState state = player.level().getBlockState(pos);
+        java.util.Optional<mc.sayda.creraces.capability.IPlayerVariables> varsOpt = DataUtils.getVariables(player);
+        if (varsOpt.isPresent()) {
+            mc.sayda.creraces.capability.IPlayerVariables vars = varsOpt.get();
+            mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
+            if (race != null && race.traits() != null) {
+                for (mc.sayda.creraces.engine.TraitRegistry.RaceTrait trait : race.traits()) {
+                    if (trait.onBlockInteraction(player, pos, state)) {
+                        return dev.architectury.event.EventResult.interruptTrue();
+                    }
+                }
+            }
+        }
+        return dev.architectury.event.EventResult.pass();
+    }
+
+    private static dev.architectury.event.EventResult onIncidentBlockPlace(ServerPlayer player,
+            net.minecraft.core.BlockPos pos, net.minecraft.world.level.block.state.BlockState state) {
+        java.util.Optional<mc.sayda.creraces.capability.IPlayerVariables> varsOpt = DataUtils.getVariables(player);
+        if (varsOpt.isPresent()) {
+            mc.sayda.creraces.capability.IPlayerVariables vars = varsOpt.get();
+            mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
+            if (race != null && race.traits() != null) {
+                for (mc.sayda.creraces.engine.TraitRegistry.RaceTrait trait : race.traits()) {
+                    if (trait.onBlockPlace(player, pos, state)) {
+                        return dev.architectury.event.EventResult.pass();
+                    }
+                }
+            }
+        }
+        return dev.architectury.event.EventResult.pass();
     }
 
     private static void onIncidentAttack(ServerPlayer player, net.minecraft.world.entity.LivingEntity victim) {
@@ -198,6 +248,20 @@ public class IncidentResolver {
     }
 
     private static void onGensokyoTick(net.minecraft.server.MinecraftServer server) {
+        if (mc.sayda.creraces.config.CreRacesConfig.FORCED_SELECTION.get()) {
+            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                DataUtils.getVariables(player).ifPresent(vars -> {
+                    if (!vars.hasChosenRace()) {
+                        net.minecraft.world.effect.MobEffect res = net.minecraft.world.effect.MobEffects.DAMAGE_RESISTANCE;
+                        if (res != null) {
+                            player.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                                    res, 40, 255, false, false, false));
+                        }
+                    }
+                });
+            }
+        }
+
         sakuyaWatchTick.incrementAndGet();
 
         // Ticking down resources/cooldowns

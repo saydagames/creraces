@@ -31,12 +31,6 @@ public class RaceDetailsScreen extends Screen {
         @Nonnull
         private static final ResourceLocation ARROW_RIGHT = new ResourceLocation("creraces",
                         "textures/screens/atlas/arrow_right.png");
-        @Nonnull
-        private static final ResourceLocation TRAITS_BUTTON = new ResourceLocation("creraces",
-                        "textures/screens/atlas/imagebutton_traits_button.png");
-        @Nonnull
-        private static final ResourceLocation INFO_BUTTON = new ResourceLocation("creraces",
-                        "textures/screens/atlas/imagebutton_info_button.png");
 
         @Nonnull
         private static final ResourceLocation INFO_ICON = new ResourceLocation("creraces", "textures/screens/info.png");
@@ -55,9 +49,6 @@ public class RaceDetailsScreen extends Screen {
         private final Race race;
         private int leftPos, topPos;
 
-        private final java.util.Map<ResourceLocation, Component> fetchedDescription = new java.util.concurrent.ConcurrentHashMap<>();
-        private final java.util.Set<ResourceLocation> isFetching = java.util.concurrent.ConcurrentHashMap.newKeySet();
-
         public RaceDetailsScreen(Screen parent, Race race) {
                 super(race != null ? race.name() : Component.literal("Unknown Race"));
                 this.parent = parent;
@@ -66,8 +57,11 @@ public class RaceDetailsScreen extends Screen {
 
         private int infoPage = 0;
         private int maxInfoPages = 1;
+        private double scrollAmount = 0;
+        private int maxScroll = 0;
 
         @Override
+        @SuppressWarnings("null")
         protected void init() {
                 this.leftPos = (this.width - 176) / 2;
                 this.topPos = (this.height - 166) / 2;
@@ -91,6 +85,7 @@ public class RaceDetailsScreen extends Screen {
                                                 this.leftPos + -41, this.topPos + -35, 48, 20,
                                                 Component.translatable("gui.creraces.button.select"),
                                                 btn -> {
+                                                        mc.sayda.creraces.client.ClientAccess.isWaitingForRaceSelection = true;
                                                         BoundaryHandler.sendSetRace(new SetRacePacket(race.id()));
                                                         if (this.minecraft != null && this.minecraft.player != null) {
                                                                 this.minecraft.player.closeContainer();
@@ -111,6 +106,7 @@ public class RaceDetailsScreen extends Screen {
                                 btn -> {
                                         if (infoPage > 0) {
                                                 infoPage--;
+                                                scrollAmount = 0;
                                         }
                                 }));
 
@@ -120,7 +116,51 @@ public class RaceDetailsScreen extends Screen {
                                 btn -> {
                                         if (infoPage < maxInfoPages - 1) {
                                                 infoPage++;
+                                                scrollAmount = 0;
                                         }
+                                }));
+
+                // Dynamic Wiki Button
+                this.addRenderableWidget(new ImageButton(
+                                this.leftPos + 2, this.topPos - 2, 16, 16,
+                                0, 0, 16, INFO_ICON, 16, 32,
+                                btn -> {
+                                        String url;
+                                        if (infoPage < 2) {
+                                                url = mc.sayda.creraces.util.WikiUtils.getRaceUrl(race.name());
+                                        } else {
+                                                int abilityIdx = infoPage - 2;
+                                                ResourceLocation abilityId = race.startingAbilities().get(abilityIdx);
+                                                mc.sayda.creraces.ability.Ability ability = mc.sayda.creraces.ability.AbilityRegistry
+                                                                .get(abilityId);
+                                                if (ability != null) {
+                                                        url = mc.sayda.creraces.util.WikiUtils
+                                                                        .getAbilityUrl(ability.name());
+                                                } else {
+                                                        url = mc.sayda.creraces.util.WikiUtils.getBaseWikiUrl();
+                                                }
+                                        }
+                                        if (this.minecraft != null) {
+                                                this.minecraft.setScreen(
+                                                                new net.minecraft.client.gui.screens.ConfirmLinkScreen(
+                                                                                confirmed -> {
+                                                                                        if (confirmed) {
+                                                                                                net.minecraft.Util
+                                                                                                                .getPlatform()
+                                                                                                                .openUri(url);
+                                                                                        }
+                                                                                        this.minecraft.setScreen(this);
+                                                                                }, url, true));
+                                        }
+                                }));
+
+                // Doc Refresh Button
+                this.addRenderableWidget(new ImageButton(
+                                this.leftPos + 2, this.topPos + 16, 16, 16,
+                                16, 0, 16, INFO_ICON, 16, 32,
+                                btn -> {
+                                        mc.sayda.creraces.util.DocCache.clear();
+                                        mc.sayda.creraces.util.RemoteDocFetcher.clearCache();
                                 }));
         }
 
@@ -136,6 +176,7 @@ public class RaceDetailsScreen extends Screen {
         }
 
         @Override
+        @SuppressWarnings("null")
         public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
                 this.renderBackground(graphics);
                 if (this.race == null) {
@@ -175,8 +216,6 @@ public class RaceDetailsScreen extends Screen {
 
                 graphics.blit(diffTex, this.leftPos + 41, this.topPos + 179, 0, 0, 93, 12, 93, 12);
 
-                graphics.blit(INFO_ICON, this.leftPos + 2, this.topPos + -2, 0, 0, 16, 16, 16, 16);
-
                 // 6. Decorations
                 Calendar now = Calendar.getInstance();
                 int month = now.get(Calendar.MONTH);
@@ -193,6 +232,7 @@ public class RaceDetailsScreen extends Screen {
                 super.render(graphics, mouseX, mouseY, partialTick);
         }
 
+        @SuppressWarnings("null")
         private void renderInfoPanel(GuiGraphics graphics) {
                 if (race == null)
                         return;
@@ -210,24 +250,10 @@ public class RaceDetailsScreen extends Screen {
                         var config = mc.sayda.creraces.race.RaceRegistry.getRemoteDoc(race.id());
                         content.add(getRemoteDescription(race.id(), config, race.description()));
                 } else if (infoPage == 1) {
-                        title = Component.translatable("gui.creraces.race_info.passives");
-                        var passives = race.passives();
-                        if (passives != null) {
-                                if (passives.canBreatheUnderwater())
-                                        content.add(Component
-                                                        .translatable("gui.creraces.passive.can_breathe_underwater"));
-                                if (passives.canFly())
-                                        content.add(Component.translatable("gui.creraces.passive.can_fly"));
-                                if (passives.immuneToKnockback())
-                                        content.add(Component.translatable("gui.creraces.passive.immune_to_knockback"));
-                                if (passives.burnsInSunlight())
-                                        content.add(Component.translatable("gui.creraces.passive.burns_in_sunlight"));
-                                if (passives.noNaturalRegeneration())
-                                        content.add(Component
-                                                        .translatable("gui.creraces.passive.no_natural_regeneration"));
-                                if (passives.nightVision())
-                                        content.add(Component.translatable("gui.creraces.passive.night_vision"));
-                        }
+                        title = Component.translatable("gui.creraces.race_info.passive");
+                        var config = mc.sayda.creraces.race.RaceRegistry.getRemotePassive(race.id());
+                        content.add(getRemotePassive(race.id(), config,
+                                        Component.literal("No passive information available.")));
                 } else {
                         int abilityIdx = infoPage - 2;
                         if (race.startingAbilities() != null && abilityIdx < race.startingAbilities().size()) {
@@ -236,8 +262,18 @@ public class RaceDetailsScreen extends Screen {
                                                 .get(abilityId);
                                 if (ability != null) {
                                         title = ability.name();
-                                        var config = mc.sayda.creraces.ability.AbilityRegistry.getRemoteDoc(abilityId);
-                                        content.add(getRemoteDescription(abilityId, config, ability.description()));
+                                        var fullConfig = mc.sayda.creraces.ability.AbilityRegistry
+                                                        .getRemoteFullDoc(abilityId);
+                                        if (fullConfig != null) {
+                                                content.add(mc.sayda.creraces.util.RemoteDocFetcher
+                                                                .getRemoteFullDescription(abilityId, fullConfig,
+                                                                                ability.description()));
+                                        } else {
+                                                var config = mc.sayda.creraces.ability.AbilityRegistry
+                                                                .getRemoteDoc(abilityId);
+                                                content.add(getRemoteDescription(abilityId, config,
+                                                                ability.description()));
+                                        }
                                 } else {
                                         title = Component.literal("Unknown Ability");
                                 }
@@ -248,10 +284,36 @@ public class RaceDetailsScreen extends Screen {
 
                 // Draw Panel Content
                 graphics.drawString(this.font, title, x, y - 15, 0xFFFFFF, true);
+
+                int panelHeight = 170;
+                int totalContentHeight = 0;
+                for (Component comp : content) {
+                        totalContentHeight += this.font.wordWrapHeight(comp, width) + 5;
+                }
+
+                this.maxScroll = Math.max(0, totalContentHeight - panelHeight);
+                this.scrollAmount = net.minecraft.util.Mth.clamp(this.scrollAmount, 0, this.maxScroll);
+
+                graphics.enableScissor(x, y, x + width, y + panelHeight);
+                com.mojang.blaze3d.vertex.PoseStack pose = graphics.pose();
+                pose.pushPose();
+                pose.translate(0, -this.scrollAmount, 0);
+
                 int lineY = y;
                 for (Component comp : content) {
                         graphics.drawWordWrap(this.font, comp, x, lineY, width, 0xCCCCCC);
                         lineY += this.font.wordWrapHeight(comp, width) + 5;
+                }
+
+                pose.popPose();
+                graphics.disableScissor();
+
+                // Draw Scrollbar
+                if (maxScroll > 0) {
+                        int scrollbarX = x + width + 2;
+                        int barHeight = Math.max(10, panelHeight * panelHeight / totalContentHeight);
+                        int barTop = y + (int) ((panelHeight - barHeight) * (this.scrollAmount / maxScroll));
+                        graphics.fill(scrollbarX, barTop, scrollbarX + 2, barTop + barHeight, 0xAAFFFFFF);
                 }
 
                 // Draw Pagination Counter
@@ -259,54 +321,20 @@ public class RaceDetailsScreen extends Screen {
                 graphics.drawCenteredString(this.font, counter, this.leftPos - 110, this.topPos + 180, 0xFFFFFF);
         }
 
+        @Override
+        public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+                this.scrollAmount -= delta * 12;
+                return true;
+        }
+
         private Component getRemoteDescription(ResourceLocation id, mc.sayda.creraces.util.RemoteDocConfig config,
                         Component fallback) {
-                if (config == null || config.source().isEmpty())
-                        return fallback;
+                return mc.sayda.creraces.util.RemoteDocFetcher.getRemoteDescription(id, config, fallback);
+        }
 
-                Component alreadyFetched = fetchedDescription.get(id);
-                if (alreadyFetched != null) {
-                        return alreadyFetched;
-                }
-
-                String cached = mc.sayda.creraces.util.DocCache.get(id);
-                if (cached != null) {
-                        Component comp = Component.literal(cached);
-                        fetchedDescription.put(id, comp);
-                        return comp;
-                }
-
-                if (!isFetching.contains(id)) {
-                        isFetching.add(id);
-                        mc.sayda.creraces.util.DocFetcher.fetch(config.source(), config.selector())
-                                        .handle((result, ex) -> {
-                                                try {
-                                                        String contentStr = (result != null && !result.isEmpty())
-                                                                        ? result
-                                                                        : config.fallback();
-                                                        if (contentStr == null || contentStr.isEmpty()) {
-                                                                if (ex != null) {
-                                                                        contentStr = Component.translatable(
-                                                                                        "gui.creraces.failed_to_load")
-                                                                                        .getString();
-                                                                } else {
-                                                                        contentStr = fallback.getString();
-                                                                }
-                                                        }
-
-                                                        final String finalContent = contentStr;
-                                                        if (result != null && !result.isEmpty()) {
-                                                                mc.sayda.creraces.util.DocCache.store(id, finalContent);
-                                                        }
-                                                        fetchedDescription.put(id, Component.literal(finalContent));
-                                                } finally {
-                                                        isFetching.remove(id);
-                                                }
-                                                return null;
-                                        });
-                }
-
-                return Component.translatable("gui.creraces.loading");
+        private Component getRemotePassive(ResourceLocation id, mc.sayda.creraces.util.RemoteDocConfig config,
+                        Component fallback) {
+                return mc.sayda.creraces.util.RemoteDocFetcher.getRemotePassive(id, config, fallback);
         }
 
         @Override

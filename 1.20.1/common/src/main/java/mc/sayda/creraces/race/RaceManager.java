@@ -98,7 +98,7 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                 int baseAh = GsonHelper.getAsInt(jsonObject, "base_ah", 0);
                 int baseCr = GsonHelper.getAsInt(jsonObject, "base_cr", 0);
                 int maxResource = GsonHelper.getAsInt(jsonObject, "max_resource", 100);
-                float scale = GsonHelper.getAsFloat(jsonObject, "scale", 1.0f);
+                RaceScale scale = RaceScale.fromJson(jsonObject.get("scale"));
                 String resourceTypeStr = GsonHelper.getAsString(jsonObject, "resource_type", "NONE");
                 ResourceType resourceType = ResourceType.valueOf(resourceTypeStr.toUpperCase());
 
@@ -166,6 +166,14 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                             .fromJson(jsonObject.getAsJsonObject("remote_description"));
                     if (remoteConfig != null) {
                         RaceRegistry.registerRemoteDoc(id, remoteConfig);
+                    }
+                }
+
+                if (jsonObject.has("remote_passive")) {
+                    mc.sayda.creraces.util.RemoteDocConfig remoteConfig = mc.sayda.creraces.util.RemoteDocConfig
+                            .fromJson(jsonObject.getAsJsonObject("remote_passive"));
+                    if (remoteConfig != null) {
+                        RaceRegistry.registerRemotePassive(id, remoteConfig);
                     }
                 }
 
@@ -344,8 +352,10 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
 
                 // Food & Hunger
                 GsonHelper.getAsBoolean(p, "no_hunger", false),
+                GsonHelper.getAsBoolean(p, "no_hunger_drain", false),
                 p.has("fixed_hunger") ? p.get("fixed_hunger").getAsDouble() : 0.0,
                 GsonHelper.getAsBoolean(p, "can_eat_meat", true),
+                GsonHelper.getAsBoolean(p, "can_eat_when_full", false),
 
                 // Social & Interaction
                 hatedByEntities,

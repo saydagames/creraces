@@ -33,8 +33,8 @@ public class OnHitTrait implements TraitRegistry.RaceTrait {
             return;
         }
 
-        if (condition == null || condition.evaluate(player, target, null)) {
-            actions.forEach(action -> action.execute(player, target, null));
+        if (condition == null || condition.evaluate(player, target, null, null)) {
+            actions.forEach(action -> action.execute(player, target, null, null));
         }
     }
 

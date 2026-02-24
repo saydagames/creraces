@@ -39,11 +39,11 @@ public class OnTickTrait implements TraitRegistry.RaceTrait {
         if (tickCounter >= interval) {
             tickCounter = 0;
 
-            if (condition != null && !condition.evaluate(player, null, null)) {
+            if (condition != null && !condition.evaluate(player, null, null, null)) {
                 if (!failed) {
                     failed = true;
                     for (ActionRegistry.RaceAction action : onFail) {
-                        action.execute(player, null, null);
+                        action.execute(player, null, null, null);
                     }
                 }
                 return;
@@ -51,7 +51,7 @@ public class OnTickTrait implements TraitRegistry.RaceTrait {
 
             failed = false;
             for (ActionRegistry.RaceAction action : actions) {
-                action.execute(player, null, null);
+                action.execute(player, null, null, null);
             }
         }
     }

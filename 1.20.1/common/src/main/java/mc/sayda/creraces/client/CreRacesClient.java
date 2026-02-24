@@ -41,17 +41,16 @@ public class CreRacesClient {
         ClientTickEvent.CLIENT_POST.register(minecraft -> {
             if (minecraft.player != null && !minecraft.player.isRemoved()) {
                 DataUtils.getVariables(minecraft.player).ifPresent(vars -> {
-                    // Tick local cooldowns for UI responsiveness
-                    vars.sakuyaTimeLeap();
-
                     // Client-side resource ticking for smooth UI updates
                     // PREDICTION: We run the ticker locally to predict resource regen/decay
                     mc.sayda.creraces.race.ResourceTicker.tick(minecraft.player);
 
-                    // Auto-open race selection if not chosen yet
-                    if (mc.sayda.creraces.client.ClientAccess.hasReceivedInitialSync && !vars.hasChosenRace()
+                    // Forced selection logic
+                    if (mc.sayda.creraces.config.CreRacesConfig.FORCED_SELECTION.get() && !vars.hasChosenRace()
+                            && mc.sayda.creraces.client.ClientAccess.hasReceivedInitialSync
+                            && !mc.sayda.creraces.client.ClientAccess.isWaitingForRaceSelection
                             && minecraft.screen == null) {
-                        minecraft.setScreen(new mc.sayda.creraces.client.screen.RaceSelectionScreen());
+                        mc.sayda.creraces.network.BoundaryHandler.sendOpenMenu();
                     }
                 });
             }

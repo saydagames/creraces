@@ -25,10 +25,11 @@ public class OnDeathTrait implements TraitRegistry.RaceTrait {
     @Override
     public void onDeath(Player player, DamageSource source) {
         if (condition == null || condition.evaluate(player,
-                source.getEntity() instanceof net.minecraft.world.entity.LivingEntity le ? le : null, null)) {
+                source.getEntity() instanceof net.minecraft.world.entity.LivingEntity le ? le : null, null, null)) {
             for (ActionRegistry.RaceAction action : actions) {
                 action.execute(player,
-                        source.getEntity() instanceof net.minecraft.world.entity.LivingEntity le ? le : null, null);
+                        source.getEntity() instanceof net.minecraft.world.entity.LivingEntity le ? le : null, null,
+                        null);
             }
         }
     }

@@ -1,11 +1,16 @@
 {
     "name": "race.creraces.harpy.name",
     "legacy_id": 4.0,
-    "scale": 0.92,
+    "scale": {
+        "base": 1.0,
+        "height": 0.92
+    },
     "description": "race.creraces.harpy.description",
     "icon": "creraces:textures/screens/harpy_icon.png",
     "splash": "creraces:textures/screens/harpy_splash.png",
     "resource_type": "ENERGY",
+    "max_resource": 100,
+    "difficulty": 2,
     "traits": [
         {
             "type": "creraces:attribute_modifier",
@@ -75,16 +80,11 @@
             ]
         },
         {
-            "type": "creraces:addon",
-            "addon_id": "twilight_lib:short_torso",
-            "permanent": true
-        },
-        {
             "type": "creraces:flight",
             "resource": "ENERGY",
             "drain_rate": 0.1,
             "condition": {
-                "type": "ability_state",
+                "type": "creraces:ability_state",
                 "ability": "creraces:talon_strike",
                 "value": 0.0
             }
@@ -92,7 +92,7 @@
         {
             "type": "creraces:on_land",
             "condition": {
-                "type": "ability_state",
+                "type": "creraces:ability_state",
                 "ability": "creraces:talon_strike",
                 "value": 1.0
             },
@@ -133,17 +133,22 @@
             ]
         }
     ],
-    "max_resource": 100,
     "starting_abilities": [
         "creraces:dash",
         "creraces:talon_strike"
     ],
-    "tier": "creraces:rare",
-    "difficulty": 2,
     "customization": [
+        {
+            "id": "torso",
+            "type": "property",
+            "addonId": "twilight_lib:short_torso",
+            "defaultValue": "true",
+            "hidden": true
+        },
         {
             "id": "feather_color",
             "type": "tint",
+            "addonId": "twilight_lib:harpy_wings",
             "defaultValue": "#FFFFFF"
         },
         {
@@ -158,9 +163,41 @@
                 "standard",
                 "alt"
             ],
-            "defaultValue": "standard"
+            "defaultValue": "standard",
+            "addons": {
+                "standard": [
+                    {
+                        "id": "twilight_lib:harpy_thighs",
+                        "tint": "{feather_color}"
+                    },
+                    {
+                        "id": "twilight_lib:harpy_legs",
+                        "tint": "{leg_color}"
+                    }
+                ],
+                "alt": [
+                    {
+                        "id": "twilight_lib:harpy_thighs_alt",
+                        "tint": "{feather_color}"
+                    },
+                    {
+                        "id": "twilight_lib:harpy_legs_alt",
+                        "tint": "{leg_color}"
+                    }
+                ]
+            }
         }
     ],
     "portrait": "creraces:textures/screens/harpy_portrait.png",
-    "name_texture": "creraces:textures/screens/harpy_text.png"
+    "name_texture": "creraces:textures/screens/harpy_text.png",
+    "remote_description": {
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "fallback": "race.creraces.harpy.description",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Harpy\u0026prop=wikitext"
+    },
+    "remote_passive": {
+        "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "fallback": "No passive documentation found on wiki.",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Harpy\u0026prop=wikitext"
+    }
 }

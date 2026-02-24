@@ -1,0 +1,9 @@
+{
+  "parent": "creraces:custom/fairyorb",
+  "textures": {
+    "all": "creraces:block/autumn_grass",
+    "particle": "creraces:block/autumn_grass",
+    "0": "creraces:block/autumn_grass"
+  },
+  "render_type": "solid"
+}

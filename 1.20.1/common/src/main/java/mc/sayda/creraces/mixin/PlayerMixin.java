@@ -23,6 +23,39 @@ public class PlayerMixin implements IPlayerVariables {
     @Unique
     private final PlayerVariables creraces$variables = new PlayerVariables();
 
+    @Inject(method = "attack", at = @At("HEAD"), cancellable = true)
+    private void creraces$cancelAttack(net.minecraft.world.entity.Entity target, CallbackInfo ci) {
+        Player player = (Player) (Object) this;
+        if (player.hasEffect(mc.sayda.creraces.registry.ModMobEffects.STUNNED.get()) ||
+                player.hasEffect(mc.sayda.creraces.registry.ModMobEffects.DISARMED.get())) {
+            ci.cancel();
+        }
+    }
+
+    @Inject(method = "canEat", at = @At("HEAD"), cancellable = true)
+    private void creraces$canEatWhenFull(boolean ignoreHunger, CallbackInfoReturnable<Boolean> cir) {
+        Player player = (Player) (Object) this;
+        if (!player.level().isClientSide()) {
+            mc.sayda.creraces.capability.DataUtils.getVariables(player).ifPresent(vars -> {
+                mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
+                if (race != null && race.passives() != null && race.passives().canEatWhenFull()) {
+                    cir.setReturnValue(true);
+                }
+            });
+        }
+    }
+
+    @Inject(method = "interactOn", at = @At("HEAD"), cancellable = true)
+    private void creraces$cancelInteraction(net.minecraft.world.entity.Entity target,
+            net.minecraft.world.InteractionHand hand,
+            CallbackInfoReturnable<net.minecraft.world.InteractionResult> cir) {
+        Player player = (Player) (Object) this;
+        if (player.hasEffect(mc.sayda.creraces.registry.ModMobEffects.STUNNED.get()) ||
+                player.hasEffect(mc.sayda.creraces.registry.ModMobEffects.DISARMED.get())) {
+            cir.setReturnValue(net.minecraft.world.InteractionResult.FAIL);
+        }
+    }
+
     @Inject(method = "createAttributes", at = @At("RETURN"))
     private static void creraces$createAttributes(CallbackInfoReturnable<AttributeSupplier.Builder> cir) {
         // This mixin allows attributes to be registered on both Fabric and Forge
@@ -344,6 +377,86 @@ public class PlayerMixin implements IPlayerVariables {
     @Override
     public void setGState(int state) {
         creraces$variables.setGState(state);
+    }
+
+    @Override
+    public boolean hasPocket() {
+        return creraces$variables.hasPocket();
+    }
+
+    @Override
+    public void setHasPocket(boolean hasPocket) {
+        creraces$variables.setHasPocket(hasPocket);
+    }
+
+    @Override
+    public double getPocketX() {
+        return creraces$variables.getPocketX();
+    }
+
+    @Override
+    public void setPocketX(double x) {
+        creraces$variables.setPocketX(x);
+    }
+
+    @Override
+    public double getPocketY() {
+        return creraces$variables.getPocketY();
+    }
+
+    @Override
+    public void setPocketY(double y) {
+        creraces$variables.setPocketY(y);
+    }
+
+    @Override
+    public double getPocketZ() {
+        return creraces$variables.getPocketZ();
+    }
+
+    @Override
+    public void setPocketZ(double z) {
+        creraces$variables.setPocketZ(z);
+    }
+
+    @Override
+    public double getReturnX() {
+        return creraces$variables.getReturnX();
+    }
+
+    @Override
+    public void setReturnX(double x) {
+        creraces$variables.setReturnX(x);
+    }
+
+    @Override
+    public double getReturnY() {
+        return creraces$variables.getReturnY();
+    }
+
+    @Override
+    public void setReturnY(double y) {
+        creraces$variables.setReturnY(y);
+    }
+
+    @Override
+    public double getReturnZ() {
+        return creraces$variables.getReturnZ();
+    }
+
+    @Override
+    public void setReturnZ(double z) {
+        creraces$variables.setReturnZ(z);
+    }
+
+    @Override
+    public String getReturnDim() {
+        return creraces$variables.getReturnDim();
+    }
+
+    @Override
+    public void setReturnDim(String dim) {
+        creraces$variables.setReturnDim(dim);
     }
 
     @Override

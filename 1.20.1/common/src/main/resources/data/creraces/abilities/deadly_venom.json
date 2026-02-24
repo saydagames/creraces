@@ -1,6 +1,6 @@
 {
-    "name": "Deadly Venom",
-    "description": "Collapse Rat Venom stacks on nearby enemies to deal damage.",
+    "name": "ability.creraces.deadly_venom.name",
+    "description": "ability.creraces.deadly_venom.description",
     "type": "ACTIVE",
     "icon": "minecraft:textures/item/spider_eye.png",
     "cooldown": 100,
@@ -8,7 +8,7 @@
     "race": [
         "creraces:ratkin"
     ],
-    "on_activate": [
+    "actions": [
         {
             "type": "creraces:aoe",
             "damage": {
@@ -36,5 +36,15 @@
             "volume": 1.0,
             "pitch": 0.8
         }
-    ]
+    ],
+    "remote_description": {
+        "selector": "",
+        "fallback": "ability.creraces.deadly_venom.description",
+        "source": "https://creraces.wiki.gg/api.php?action=cargoquery\u0026format=json\u0026tables=Abilities\u0026fields=Description\u0026where=Name=\u0027Deadly Venom\u0027"
+    },
+    "remote_full_description": {
+        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
+        "fallback": "ability.creraces.deadly_venom.description",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Ability:Deadly_Venom\u0026prop=wikitext"
+    }
 }

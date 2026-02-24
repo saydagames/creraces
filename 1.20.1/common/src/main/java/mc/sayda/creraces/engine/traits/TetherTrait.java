@@ -53,7 +53,7 @@ public class TetherTrait implements TraitRegistry.RaceTrait {
 
         for (LivingEntity target : targets) {
             for (ActionRegistry.RaceAction action : actions) {
-                action.execute(player, target, null);
+                action.execute(player, target, null, null);
             }
             // Logic for visual beam would go here (packet to client)
         }

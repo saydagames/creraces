@@ -1,11 +1,12 @@
 {
     "name": "race.creraces.dryad.name",
     "parent_race": "creraces:nymph",
-    "legacy_id": 14.0,
+    "legacy_id": 9.3,
     "description": "race.creraces.dryad.description",
     "icon": "creraces:textures/screens/dryad_icon.png",
     "splash": "creraces:textures/screens/dryad_splash.png",
     "portrait": "creraces:textures/screens/dryad_portrait.png",
+    "name_texture": "creraces:textures/screens/dryad_text.png",
     "base_ap": 8,
     "base_ad": 6,
     "base_ah": 15,
@@ -20,23 +21,190 @@
     "abilities": [
         "creraces:camouflage",
         "creraces:rampant_growth",
-        "creraces:entanglement"
+        "creraces:entanglement",
+        "creraces:quick_escape"
     ],
     "traits": [
         {
-            "type": "creraces:on_hurt",
+            "type": "creraces:damage_multiplier",
+            "multiplier": 0.0,
             "condition": {
-                "type": "holding_item",
-                "tag": "#minecraft:fox_food",
+                "type": "creraces:entity",
+                "tag": "#minecraft:is_peaceful",
                 "use_target": true
+            }
+        },
+        {
+            "type": "creraces:block_interaction",
+            "block": "creraces:dryad_sapling",
+            "condition": {
+                "type": "not",
+                "condition": {
+                    "type": "creraces:has_customization",
+                    "id": "tx"
+                }
             },
             "actions": [
                 {
-                    "type": "creraces:damage",
-                    "amount": 2.0,
-                    "damage_type": "minecraft:generic"
+                    "type": "creraces:set_customization",
+                    "key": "tx",
+                    "mode": "TARGET_BLOCK_X",
+                    "offset_y": -1
+                },
+                {
+                    "type": "creraces:set_customization",
+                    "key": "ty",
+                    "mode": "TARGET_BLOCK_Y",
+                    "offset_y": -1
+                },
+                {
+                    "type": "creraces:set_customization",
+                    "key": "tz",
+                    "mode": "TARGET_BLOCK_Z",
+                    "offset_y": -1
+                },
+                {
+                    "type": "creraces:place_block",
+                    "block": "creraces:dryad_root",
+                    "use_target_block": true,
+                    "offset_y": -1
+                },
+                {
+                    "type": "creraces:apply_particles",
+                    "particle": "minecraft:happy_villager",
+                    "count": 15,
+                    "spread_x": 0.5,
+                    "spread_y": 0.5,
+                    "spread_z": 0.5,
+                    "at_target": true
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:item.bone_meal.use",
+                    "volume": 1.0,
+                    "pitch": 1.0,
+                    "at_target": true
+                }
+            ]
+        },
+        {
+            "type": "creraces:block_interaction",
+            "block": "creraces:dryad_log",
+            "condition": {
+                "type": "creraces:sneaking"
+            },
+            "actions": [
+                {
+                    "type": "creraces:enter_pocket"
+                }
+            ]
+        },
+        {
+            "type": "creraces:block_interaction",
+            "block": "creraces:dryad_root",
+            "condition": {
+                "type": "and",
+                "conditions": [
+                    {
+                        "type": "creraces:sneaking"
+                    },
+                    {
+                        "type": "creraces:is_position",
+                        "x": "var:tx",
+                        "y": "var:ty",
+                        "z": "var:tz"
+                    }
+                ]
+            },
+            "actions": [
+                {
+                    "type": "creraces:set_customization",
+                    "key": "tx",
+                    "value": "0"
+                },
+                {
+                    "type": "creraces:set_customization",
+                    "key": "ty",
+                    "value": "0"
+                },
+                {
+                    "type": "creraces:set_customization",
+                    "key": "tz",
+                    "value": "0"
+                },
+                {
+                    "type": "creraces:place_block",
+                    "use_target_block": true,
+                    "block": "minecraft:dirt"
+                }
+            ]
+        },
+        {
+            "type": "creraces:continuous_effect",
+            "effect": "creraces:nymph_call",
+            "visible": false,
+            "duration": 18000,
+            "condition": {
+                "type": "or",
+                "conditions": [
+                    {
+                        "type": "distance",
+                        "x": "custom:tx",
+                        "y": "custom:ty",
+                        "z": "custom:tz",
+                        "max_distance": 32.0
+                    },
+                    {
+                        "type": "dimension",
+                        "value": "creraces:pocket"
+                    }
+                ]
+            }
+        },
+        {
+            "type": "creraces:continuous_effect",
+            "effect": "creraces:true_invisibility",
+            "resource": "MANA",
+            "drain_rate": 0.2,
+            "duration": 2,
+            "visible": false,
+            "condition": {
+                "type": "creraces:ability_state",
+                "ability": "creraces:camouflage",
+                "value": 1.0
+            },
+            "on_fail": [
+                {
+                    "type": "creraces:set_state",
+                    "ability": "creraces:camouflage",
+                    "value": 0.0
+                }
+            ]
+        },
+        {
+            "type": "creraces:on_hurt",
+            "condition": {
+                "type": "creraces:ability_state",
+                "ability": "creraces:camouflage",
+                "value": 1.0
+            },
+            "actions": [
+                {
+                    "type": "creraces:set_state",
+                    "ability": "creraces:camouflage",
+                    "value": 0.0
                 }
             ]
         }
-    ]
+    ],
+    "remote_description": {
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "fallback": "race.creraces.dryad.description",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Dryad\u0026prop=wikitext"
+    },
+    "remote_passive": {
+        "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "fallback": "No passive documentation found on wiki.",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Dryad\u0026prop=wikitext"
+    }
 }

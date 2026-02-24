@@ -1,10 +1,13 @@
 {
     "name": "race.creraces.nymph.name",
-    "legacy_id": 11.0,
+    "scale": {
+        "base": 1.0,
+        "height": 1.1
+    },
+    "legacy_id": 9.0,
     "description": "race.creraces.nymph.description",
-    "icon": "creraces:textures/screens/nymph_icon.png",
-    "splash": "creraces:textures/screens/nymph_splash.png",
-    "portrait": "creraces:textures/screens/nymph_portrait.png",
+    "name_texture": "creraces:textures/screens/nymphs_text.png",
+    "portrait": "creraces:textures/screens/nymphs_portrait.png",
     "base_ap": 10,
     "base_ad": 5,
     "base_ah": 10,
@@ -22,6 +25,26 @@
             "attribute": "minecraft:generic.max_health",
             "value": 4.0,
             "operation": "addition"
+        },
+        {
+            "type": "creraces:permanent_effect",
+            "effect": "creraces:nymph_call",
+            "amplifier": 0,
+            "visible": false,
+            "condition": {
+                "type": "creraces:race_equals",
+                "race": "creraces:nymph"
+            }
         }
-    ]
+    ],
+    "remote_description": {
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "fallback": "race.creraces.nymph.description",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Nymph\u0026prop=wikitext"
+    },
+    "remote_passive": {
+        "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "fallback": "No passive documentation found on wiki.",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Nymph\u0026prop=wikitext"
+    }
 }

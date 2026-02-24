@@ -104,12 +104,9 @@ public record ScalingValue(double base, @javax.annotation.Nullable String scalin
                         case "coins" -> vars.getCoins();
                         default -> 0.0;
                     };
-                } else if (statKey.matches("a[1-5]")) {
-                    int slotIdx = Integer.parseInt(statKey.substring(1)) - 1;
-                    mc.sayda.creraces.ability.AbilitySlot slot = mc.sayda.creraces.ability.AbilitySlot
-                            .values()[slotIdx];
-                    ResourceLocation abilityId = vars.getAbilityInSlot(slot);
-                    return abilityId != null ? vars.getAbilityState(abilityId) : 0.0;
+                } else if (statKey.startsWith("ability:")) {
+                    ResourceLocation abilityId = new ResourceLocation(statKey.substring(8));
+                    return vars.getAbilityState(abilityId);
                 }
             }
         }
@@ -168,6 +165,9 @@ public record ScalingValue(double base, @javax.annotation.Nullable String scalin
             }
 
             return new ScalingValue(base, stat, factor, additional);
+        } else if (json.get(key).isJsonPrimitive() && json.get(key).getAsJsonPrimitive().isString()) {
+            // String shorthand: treat as a stat key with factor 1.0 and base 0.0
+            return new ScalingValue(0.0, json.get(key).getAsString(), 1.0, new ArrayList<>());
         } else {
             // Simple number
             return new ScalingValue(json.get(key).getAsDouble(), null, 0, new ArrayList<>());

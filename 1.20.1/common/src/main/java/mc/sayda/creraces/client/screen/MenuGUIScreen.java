@@ -74,7 +74,7 @@ public class MenuGUIScreen extends AbstractContainerScreen<MenuGUIMenu> {
         this.addRenderableWidget(
                 (Button) Button.builder(Component.translatable("gui.creraces.menu_gui.button_wiki"), b -> {
                     if (this.minecraft != null) {
-                        String url = "https://creraces.fandom.com/wiki/CreRaces_Wiki";
+                        String url = mc.sayda.creraces.util.WikiUtils.getBaseWikiUrl();
                         this.minecraft.setScreen(new ConfirmLinkScreen(confirmed -> {
                             if (confirmed) {
                                 Util.getPlatform().openUri(url);

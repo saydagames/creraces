@@ -124,4 +124,36 @@ public interface IPlayerVariables extends ISerializableData {
     int getGState();
 
     void setGState(int state);
+
+    boolean hasPocket();
+
+    void setHasPocket(boolean hasPocket);
+
+    double getPocketX();
+
+    void setPocketX(double x);
+
+    double getPocketY();
+
+    void setPocketY(double y);
+
+    double getPocketZ();
+
+    void setPocketZ(double z);
+
+    double getReturnX();
+
+    void setReturnX(double x);
+
+    double getReturnY();
+
+    void setReturnY(double y);
+
+    double getReturnZ();
+
+    void setReturnZ(double z);
+
+    String getReturnDim();
+
+    void setReturnDim(String dim);
 }

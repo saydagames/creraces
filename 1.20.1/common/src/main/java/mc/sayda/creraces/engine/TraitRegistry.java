@@ -30,6 +30,11 @@ public class TraitRegistry {
         default void onHurt(Player player, net.minecraft.world.damagesource.DamageSource source, float amount) {
         }
 
+        default float modifyDamageTaken(Player player, net.minecraft.world.damagesource.DamageSource source,
+                float amount) {
+            return amount;
+        }
+
         default void onDeath(Player player, net.minecraft.world.damagesource.DamageSource source) {
         }
 
@@ -37,6 +42,16 @@ public class TraitRegistry {
         }
 
         default void onItemPickup(Player player, net.minecraft.world.item.ItemStack stack) {
+        }
+
+        default boolean onBlockInteraction(Player player, net.minecraft.core.BlockPos pos,
+                net.minecraft.world.level.block.state.BlockState state) {
+            return false;
+        }
+
+        default boolean onBlockPlace(Player player, net.minecraft.core.BlockPos pos,
+                net.minecraft.world.level.block.state.BlockState state) {
+            return false;
         }
     }
 
@@ -81,6 +96,10 @@ public class TraitRegistry {
         mc.sayda.creraces.engine.traits.AddonTrait.register();
         mc.sayda.creraces.engine.traits.PermanentEffectTrait.register();
         mc.sayda.creraces.engine.traits.FlightTrait.register();
+        mc.sayda.creraces.engine.traits.ContinuousEffectTrait.register();
+        mc.sayda.creraces.engine.traits.DamageMultiplierTrait.register();
+        mc.sayda.creraces.engine.traits.BlockInteractionTrait.register();
+        mc.sayda.creraces.engine.traits.BlockPlaceTrait.register();
         mc.sayda.creraces.engine.traits.OnTickTrait.register();
         mc.sayda.creraces.engine.traits.OnKillTrait.register();
         mc.sayda.creraces.engine.traits.OnHitTrait.register();

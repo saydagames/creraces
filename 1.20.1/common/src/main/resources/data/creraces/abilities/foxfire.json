@@ -1,6 +1,6 @@
 {
-    "name": "Foxfire",
-    "description": "Summon foxfire to gain flight. Active: Dash upwards with 0.4 power.",
+    "name": "ability.creraces.foxfire.name",
+    "description": "ability.creraces.foxfire.description",
     "type": "ACTIVE",
     "icon": "minecraft:textures/item/blaze_powder.png",
     "cooldown": 20,
@@ -9,10 +9,10 @@
     "race": [
         "creraces:kitsune"
     ],
-    "on_activate": [
+    "actions": [
         {
             "type": "creraces:toggle_state",
-            "state": "slot",
+            "ability": "creraces:foxfire",
             "on_value": 2,
             "off_value": 0,
             "on_enable": [
@@ -48,5 +48,15 @@
                 }
             ]
         }
-    ]
+    ],
+    "remote_description": {
+        "selector": "",
+        "fallback": "ability.creraces.foxfire.description",
+        "source": "https://creraces.wiki.gg/api.php?action=cargoquery\u0026format=json\u0026tables=Abilities\u0026fields=Description\u0026where=Name=\u0027Foxfire\u0027"
+    },
+    "remote_full_description": {
+        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
+        "fallback": "ability.creraces.foxfire.description",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Ability:Foxfire\u0026prop=wikitext"
+    }
 }

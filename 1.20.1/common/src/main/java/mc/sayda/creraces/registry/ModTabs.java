@@ -17,10 +17,24 @@ public class ModTabs {
 
     public static final RegistrySupplier<CreativeModeTab> MAIN_TAB = TABS.register("main",
             () -> CreativeModeTab.builder(CreativeModeTab.Row.TOP, 0)
-                    .icon(() -> new ItemStack(ModItems.ABILITY_SCROLL.get()))
+                    .icon(() -> new ItemStack(ModItems.DRYAD_SAPLING_ITEM.get()))
                     .title(Component.translatable("itemGroup.creraces.main"))
                     .displayItems((parameters, output) -> {
-                        // Add default items
+                        // Add all items except scrolls
+                        for (RegistrySupplier<net.minecraft.world.item.Item> itemSupplier : ModItems.ITEMS) {
+                            if (!(itemSupplier.get() instanceof ScrollItem)
+                                    && itemSupplier.get() != ModItems.ABILITY_SCROLL.get()) {
+                                output.accept(itemSupplier.get());
+                            }
+                        }
+                    }).build());
+
+    public static final RegistrySupplier<CreativeModeTab> SCROLLS_TAB = TABS.register("scrolls",
+            () -> CreativeModeTab.builder(CreativeModeTab.Row.TOP, 1)
+                    .icon(() -> new ItemStack(ModItems.ABILITY_SCROLL.get()))
+                    .title(Component.translatable("itemGroup.creraces.scrolls"))
+                    .displayItems((parameters, output) -> {
+                        // Add default scroll
                         output.accept(ModItems.ABILITY_SCROLL.get());
 
                         // Add all specific scrolls

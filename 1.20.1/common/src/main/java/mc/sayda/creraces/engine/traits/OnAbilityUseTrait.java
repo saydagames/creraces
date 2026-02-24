@@ -27,9 +27,9 @@ public class OnAbilityUseTrait implements TraitRegistry.RaceTrait {
 
     @Override
     public void onAbilityUse(Player player, Ability ability) {
-        if (condition == null || condition.evaluate(player, null, null)) {
+        if (condition == null || condition.evaluate(player, null, null, null)) {
             for (ActionRegistry.RaceAction action : actions) {
-                action.execute(player, null, null);
+                action.execute(player, null, null, null);
             }
         }
     }

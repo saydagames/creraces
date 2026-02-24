@@ -1,7 +1,7 @@
 {
-    "name": "Summer Fairy",
+    "name": "race.creraces.summer_fairy.name",
     "legacy_id": 5.4,
-    "description": "Fae spirit of scorching heat and vitality.",
+    "description": "race.creraces.summer_fairy.description",
     "icon": "creraces:textures/screens/summer_fairy_icon.png",
     "splash": "creraces:textures/screens/summer_fairy_splash.png",
     "parent_race": "creraces:fairy",
@@ -14,5 +14,15 @@
     "tier": "creraces:rare",
     "difficulty": 2,
     "portrait": "creraces:textures/screens/summer_fairy_portrait.png",
-    "name_texture": "creraces:textures/screens/summer_fairy_text.png"
+    "name_texture": "creraces:textures/screens/summer_fairy_text.png",
+    "remote_description": {
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "fallback": "race.creraces.summer_fairy.description",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Summer_Fairy\u0026prop=wikitext"
+    },
+    "remote_passive": {
+        "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "fallback": "No passive documentation found on wiki.",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Summer_Fairy\u0026prop=wikitext"
+    }
 }

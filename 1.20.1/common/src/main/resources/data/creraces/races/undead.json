@@ -18,6 +18,8 @@
         "can_breathe_underwater": true,
         "burns_in_sunlight": true,
         "no_natural_regeneration": true,
+        "no_hunger_drain": true,
+        "can_eat_when_full": true,
         "hated_by_entities": [
             "minecraft:villager",
             "minecraft:iron_golem"
@@ -57,5 +59,15 @@
     "starting_abilities": [
         "creraces:fruitful_sacrifice",
         "creraces:fruitful_harvest"
-    ]
+    ],
+    "remote_description": {
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "fallback": "race.creraces.undead.description",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Undead\u0026prop=wikitext"
+    },
+    "remote_passive": {
+        "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "fallback": "No passive documentation found on wiki.",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Undead\u0026prop=wikitext"
+    }
 }

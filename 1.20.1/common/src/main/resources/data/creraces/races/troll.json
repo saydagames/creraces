@@ -1,8 +1,8 @@
 {
-    "name": "Troll",
+    "name": "race.creraces.troll.name",
     "legacy_id": 15.0,
     "scale": 1.2,
-    "description": "Regenerating brute of the wilds.",
+    "description": "race.creraces.troll.description",
     "icon": "creraces:textures/screens/troll_icon.png",
     "splash": "creraces:textures/screens/troll_splash.png",
     "resource_type": "RAGE",
@@ -31,5 +31,15 @@
     ],
     "starting_abilities": [],
     "portrait": "creraces:textures/screens/troll_portrait.png",
-    "name_texture": "creraces:textures/screens/troll_text.png"
+    "name_texture": "creraces:textures/screens/troll_text.png",
+    "remote_description": {
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "fallback": "race.creraces.troll.description",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Troll\u0026prop=wikitext"
+    },
+    "remote_passive": {
+        "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "fallback": "No passive documentation found on wiki.",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Troll\u0026prop=wikitext"
+    }
 }

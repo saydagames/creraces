@@ -30,10 +30,11 @@ public class LaunchProjectileAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public void execute(Player player, @Nullable net.minecraft.world.entity.LivingEntity target,
-            @Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
+    public boolean execute(Player player, @Nullable net.minecraft.world.entity.LivingEntity target,
+            @Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @Nullable net.minecraft.core.BlockPos interactionPos) {
         if (player.level() == null)
-            return;
+            return true;
 
         if ("arrow".equals(projectileType) || "minecraft:arrow".equals(projectileType)) {
             Arrow arrow = new Arrow(player.level(), player);
@@ -57,6 +58,7 @@ public class LaunchProjectileAction implements ActionRegistry.RaceAction {
             // Generic fallback for other entities if we want to support them later
             // For now, let's stick to these
         }
+        return true;
     }
 
     public static void register() {

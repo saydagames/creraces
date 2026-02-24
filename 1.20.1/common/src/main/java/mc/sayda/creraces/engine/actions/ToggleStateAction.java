@@ -33,8 +33,10 @@ public class ToggleStateAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public void execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
-            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
+    public boolean execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+        boolean[] success = { true };
         DataUtils.getVariables(player).ifPresent(vars -> {
             ResourceLocation targetAbilityId = abilityId;
 
@@ -49,14 +51,25 @@ public class ToggleStateAction implements ActionRegistry.RaceAction {
 
             if (Math.abs(current - offValue) < 0.001) {
                 vars.setAbilityState(targetAbilityId, onValue);
-                onEnable.forEach(a -> a.execute(player, target, slot));
+                for (ActionRegistry.RaceAction a : onEnable) {
+                    if (!a.execute(player, target, slot, interactionPos)) {
+                        success[0] = false;
+                        break;
+                    }
+                }
             } else {
                 vars.setAbilityState(targetAbilityId, offValue);
-                onDisable.forEach(a -> a.execute(player, target, slot));
+                for (ActionRegistry.RaceAction a : onDisable) {
+                    if (!a.execute(player, target, slot, interactionPos)) {
+                        success[0] = false;
+                        break;
+                    }
+                }
             }
 
             mc.sayda.creraces.network.BoundaryHandler.resyncVariables(player, player);
         });
+        return success[0];
     }
 
     public static void register() {

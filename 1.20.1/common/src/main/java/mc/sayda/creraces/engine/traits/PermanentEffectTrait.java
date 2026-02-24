@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.engine.TraitRegistry;
 import mc.sayda.creraces.engine.ScalingValue;
+import mc.sayda.creraces.engine.condition.Condition;
 import mc.sayda.creraces.util.GsonHelper;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -17,17 +18,21 @@ public class PermanentEffectTrait implements TraitRegistry.RaceTrait {
     private final int amplifier;
     private final boolean ambient;
     private final boolean showParticles;
+    @javax.annotation.Nullable
+    private final Condition condition;
 
-    public PermanentEffectTrait(MobEffect effect, int amplifier, boolean ambient, boolean showParticles) {
+    public PermanentEffectTrait(MobEffect effect, int amplifier, boolean ambient, boolean showParticles,
+            @javax.annotation.Nullable Condition condition) {
         this.effect = effect;
         this.amplifier = amplifier;
         this.ambient = ambient;
         this.showParticles = showParticles;
+        this.condition = condition;
     }
 
     @Override
     public void tick(Player player) {
-        if (effect != null) {
+        if (effect != null && (condition == null || condition.evaluate(player, null, null, null))) {
             // Apply for moderate duration to avoid flickering, but short enough to clear if
             // race changes
             player.addEffect(new MobEffectInstance(effect, 220, amplifier, ambient, showParticles));
@@ -43,7 +48,12 @@ public class PermanentEffectTrait implements TraitRegistry.RaceTrait {
             boolean ambient = GsonHelper.getAsBoolean(json, "ambient", false);
             boolean showParticles = GsonHelper.getAsBoolean(json, "visible", false); // Default invisible for passives
 
-            return new PermanentEffectTrait(effect, amplifier, ambient, showParticles);
+            mc.sayda.creraces.engine.condition.Condition condition = null;
+            if (json.has("condition")) {
+                condition = mc.sayda.creraces.engine.condition.Condition.fromJson(json.getAsJsonObject("condition"));
+            }
+
+            return new PermanentEffectTrait(effect, amplifier, ambient, showParticles, condition);
         });
     }
 }

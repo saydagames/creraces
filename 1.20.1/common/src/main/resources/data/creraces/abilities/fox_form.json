@@ -1,6 +1,6 @@
 {
-    "name": "Fox Form",
-    "description": "Transform into a fox, reducing your size to 50% and gaining increased mobility.",
+    "name": "ability.creraces.fox_form.name",
+    "description": "ability.creraces.fox_form.description",
     "type": "ACTIVE",
     "icon": "creraces:textures/screens/kitsune_icon.png",
     "cooldown": 200,
@@ -9,21 +9,21 @@
     "race": [
         "creraces:kitsune"
     ],
-    "on_activate": [
+    "actions": [
         {
             "type": "creraces:conditional",
             "condition": {
-                "type": "morphed",
+                "type": "creraces:morphed",
                 "value": false
             },
             "if_true": [
                 {
                     "type": "creraces:morph",
-                    "entity_type": "minecraft:fox"
+                    "entity_type": "twilight_lib:{color}_fox"
                 },
                 {
                     "type": "creraces:set_state",
-                    "state": "slot",
+                    "ability": "creraces:fox_form",
                     "value": 1.0
                 },
                 {
@@ -40,7 +40,7 @@
                 },
                 {
                     "type": "creraces:set_state",
-                    "state": "slot",
+                    "ability": "creraces:fox_form",
                     "value": 0.0
                 },
                 {
@@ -51,5 +51,15 @@
                 }
             ]
         }
-    ]
+    ],
+    "remote_description": {
+        "selector": "",
+        "fallback": "ability.creraces.fox_form.description",
+        "source": "https://creraces.wiki.gg/api.php?action=cargoquery\u0026format=json\u0026tables=Abilities\u0026fields=Description\u0026where=Name=\u0027Fox Form\u0027"
+    },
+    "remote_full_description": {
+        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
+        "fallback": "ability.creraces.fox_form.description",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Ability:Fox_Form\u0026prop=wikitext"
+    }
 }

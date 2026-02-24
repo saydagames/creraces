@@ -10,7 +10,8 @@ public record EntityDataCondition(String key, String operator, double value, boo
 
     @Override
     public boolean evaluate(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
-            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
         net.minecraft.world.entity.LivingEntity entity = (useTarget && target != null) ? target : player;
 
         // Use creraces$getPersistentData() from IPersistentDataAccessor

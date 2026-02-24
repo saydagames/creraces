@@ -23,8 +23,9 @@ public class SetStateAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public void execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
-            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
+    public boolean execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
         DataUtils.getVariables(player).ifPresent(vars -> {
             ResourceLocation targetAbilityId = abilityId;
 
@@ -37,6 +38,7 @@ public class SetStateAction implements ActionRegistry.RaceAction {
             }
             mc.sayda.creraces.network.BoundaryHandler.resyncVariables(player, player);
         });
+        return true;
     }
 
     public static void register() {

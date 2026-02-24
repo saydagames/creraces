@@ -13,6 +13,9 @@ public class CreRacesForge {
 
     public CreRacesForge() {
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
+        net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
+                net.minecraftforge.fml.config.ModConfig.Type.COMMON,
+                mc.sayda.creraces.config.forge.ForgeConfig.COMMON_SPEC);
 
         dev.architectury.platform.forge.EventBuses.registerModEventBus(CreRaces.MODID, modBus);
         CreRaces.init();

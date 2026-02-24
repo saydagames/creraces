@@ -1,11 +1,12 @@
 {
     "name": "race.creraces.naiad.name",
     "parent_race": "creraces:nymph",
-    "legacy_id": 13.0,
+    "legacy_id": 9.2,
     "description": "race.creraces.naiad.description",
     "icon": "creraces:textures/screens/naiad_icon.png",
     "splash": "creraces:textures/screens/naiad_splash.png",
     "portrait": "creraces:textures/screens/naiad_portrait.png",
+    "name_texture": "creraces:textures/screens/naiad_text.png",
     "base_ap": 10,
     "base_ad": 5,
     "base_ah": 12,
@@ -49,6 +50,36 @@
                     "relative": false
                 }
             ]
+        },
+        {
+            "type": "creraces:continuous_effect",
+            "effect": "creraces:true_invisibility",
+            "resource": "MANA",
+            "duration": 2,
+            "drain_rate": 0.2,
+            "visible": false,
+            "condition": {
+                "type": "creraces:ability_state",
+                "ability": "creraces:camouflage",
+                "value": 1.0
+            },
+            "on_fail": [
+                {
+                    "type": "creraces:set_state",
+                    "ability": "creraces:camouflage",
+                    "value": 0.0
+                }
+            ]
         }
-    ]
+    ],
+    "remote_description": {
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "fallback": "race.creraces.naiad.description",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Naiad\u0026prop=wikitext"
+    },
+    "remote_passive": {
+        "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "fallback": "No passive documentation found on wiki.",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Naiad\u0026prop=wikitext"
+    }
 }

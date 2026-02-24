@@ -22,6 +22,15 @@ public abstract class LivingEntityMixin {
     @Shadow
     protected abstract int decreaseAirSupply(int air);
 
+    @Inject(method = "jumpFromGround", at = @At("HEAD"), cancellable = true)
+    private void creraces$cancelJump(CallbackInfo ci) {
+        LivingEntity entity = (LivingEntity) (Object) this;
+        if (entity.hasEffect(mc.sayda.creraces.registry.ModMobEffects.STUNNED.get()) ||
+                entity.hasEffect(mc.sayda.creraces.registry.ModMobEffects.ROOTED.get())) {
+            ci.cancel();
+        }
+    }
+
     @Inject(method = "baseTick", at = @At("TAIL"))
     private void creraces$landSuffocation(CallbackInfo ci) {
         if ((Object) this instanceof Player player && player.isAlive() && !player.level().isClientSide()) {
@@ -52,6 +61,31 @@ public abstract class LivingEntityMixin {
                     cir.setReturnValue(true);
                 }
             });
+        }
+    }
+
+    /**
+     * Suppress vanilla's automatic air refill when the player is not in water but
+     * their
+     * race cannot breathe on land. Without this, vanilla fills air back up on the
+     * same
+     * tick that our baseTick drain runs, creating the oscillation bubble effect.
+     */
+    @Inject(method = "increaseAirSupply", at = @At("HEAD"), cancellable = true)
+    private void creraces$suppressLandAirRefill(int air, CallbackInfoReturnable<Integer> cir) {
+        if ((Object) this instanceof Player player && !player.level().isClientSide()) {
+            var varsOpt = DataUtils.getVariables(player);
+            if (varsOpt.isPresent()) {
+                Race race = RaceRegistry.get(varsOpt.get().getRace());
+                if (race != null && race.passives() != null
+                        && !race.passives().canBreatheOnLand()
+                        && !player.isInWaterRainOrBubble()
+                        && !player.hasEffect(net.minecraft.world.effect.MobEffects.WATER_BREATHING)) {
+                    // Return air unchanged — do not let vanilla refill it while we're draining on
+                    // land
+                    cir.setReturnValue(air);
+                }
+            }
         }
     }
 
@@ -115,6 +149,24 @@ public abstract class LivingEntityMixin {
                 cir.setReturnValue(false);
                 return;
             }
+        }
+
+        // Apply damage modifiers from traits
+        final float[] finalAmount = { amount };
+        if ((Object) this instanceof Player player) {
+            DataUtils.getVariables(player).ifPresent(vars -> {
+                Race race = RaceRegistry.get(vars.getRace());
+                if (race != null && race.traits() != null) {
+                    for (mc.sayda.creraces.engine.TraitRegistry.RaceTrait trait : race.traits()) {
+                        finalAmount[0] = trait.modifyDamageTaken(player, source, finalAmount[0]);
+                    }
+                }
+            });
+        }
+
+        if (finalAmount[0] <= 0) {
+            cir.setReturnValue(false);
+            return;
         }
 
         if (source.getEntity() instanceof Player player && !player.level().isClientSide()) {

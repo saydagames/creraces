@@ -48,59 +48,70 @@ public class DynamicMirrorScreen extends Screen {
         DataUtils.getVariables(minecraft.player).ifPresent(vars -> {
             this.race = RaceRegistry.get(vars.getRace());
             if (this.race != null && this.race.customization() != null) {
-                this.originalCustomizations.clear();
-                this.originalCustomizations.putAll(vars.getCustomizations());
-                this.tempCustomizations.clear();
-                this.tempCustomizations.putAll(vars.getCustomizations());
+                // Populate original state ONLY if empty (avoids revert on window resize)
+                if (this.originalCustomizations.isEmpty()) {
+                    this.originalCustomizations.putAll(vars.getCustomizations());
+                    this.tempCustomizations.putAll(vars.getCustomizations());
+                }
 
                 // Calculate anchors to match render() logic
                 int mirrorWidth = 128;
                 int mirrorHeight = 240;
-                // Mirror center is at width/2 + 60
                 int mirrorX = this.width / 2 + 60 - (mirrorWidth / 2);
                 int mirrorY = this.height / 2 + 25 - (mirrorHeight / 2);
 
-                // Position buttons to the left of the mirror
-                int leftAnchorX = mirrorX - 150; // 150px left of mirror left edge
-                int startY = mirrorY + 20; // Start slightly down from mirror top
+                // Position buttons/labels to the left of the mirror
+                int leftAnchorX = mirrorX - 150;
+                int yOffset = mirrorY + 10;
 
-                int yOffset = startY;
                 for (RaceCustomization cust : this.race.customization()) {
                     if (cust.hidden())
                         continue;
 
-                    // Ensure defaults are present in temp map if missing
+                    // Use temp map for state
                     if (!tempCustomizations.containsKey(cust.id())) {
                         tempCustomizations.put(cust.id(), cust.defaultValue());
                     }
 
                     String initialValue = tempCustomizations.getOrDefault(cust.id(), cust.defaultValue());
 
-                    addRenderableWidget(CycleButton
-                            .builder((String val) -> Component
-                                    .translatable("gui.creraces.mirror." + cust.id() + "." + val))
-                            .withValues(cust.options())
-                            .withInitialValue(initialValue)
-                            .create(leftAnchorX, yOffset, 140, 20,
-                                    Component.translatable("cust.creraces." + cust.id()), (button, value) -> {
-                                        tempCustomizations.put(cust.id(), value);
-                                        // Live Update: apply to local variables immediately
-                                        vars.setCustomization(cust.id(), value);
-                                        // Bridge to Twilight Lib for visual preview
-                                        updatePreviewAddons(minecraft.player, vars);
-                                    }));
-                    yOffset += 25;
+                    // Widget Label component
+                    Component label = Component.translatable("cust.creraces." + cust.id());
+
+                    if (cust.options().isEmpty()) {
+                        // Text Entry for Hex/Free choice
+                        net.minecraft.client.gui.components.EditBox editBox = new net.minecraft.client.gui.components.EditBox(
+                                this.font, leftAnchorX, yOffset + 12, 140, 20, label);
+                        editBox.setValue(initialValue);
+                        editBox.setResponder(value -> {
+                            tempCustomizations.put(cust.id(), value);
+                            vars.setCustomization(cust.id(), value);
+                            updatePreviewAddons(minecraft.player, vars);
+                        });
+                        addRenderableWidget(editBox);
+                    } else {
+                        // Cycle Button for fixed options
+                        addRenderableWidget(CycleButton
+                                .builder((String val) -> Component
+                                        .translatable("gui.creraces.mirror." + cust.id() + "." + val))
+                                .withValues(cust.options())
+                                .withInitialValue(initialValue)
+                                .create(leftAnchorX, yOffset + 12, 140, 20,
+                                        Component.empty(), (button, value) -> {
+                                            tempCustomizations.put(cust.id(), value);
+                                            vars.setCustomization(cust.id(), value);
+                                            updatePreviewAddons(minecraft.player, vars);
+                                        }));
+                    }
+                    yOffset += 40; // Spacing for title + widget
                 }
                 // Initial update for preview
                 updatePreviewAddons(minecraft.player, vars);
             }
         });
 
-        // Rotation Buttons - Anchored to Player Render Position
+        // Rotation Buttons
         int mirrorCenterX = this.width / 2 + 60;
-        // Mirror Y start is height/2 - 95. +180 puts it near bottom of model
-        // (Model is at +128, feet around there).
-        // Let's go +190 from mirror top.
         int arrowY = (this.height / 2 - 95) + 160;
 
         addRenderableWidget(Button.builder(Component.literal("<-"), b -> previewRotation -= 90)
@@ -108,9 +119,7 @@ public class DynamicMirrorScreen extends Screen {
         addRenderableWidget(Button.builder(Component.literal("->"), b -> previewRotation += 90)
                 .bounds(mirrorCenterX + 25, arrowY, 20, 20).build());
 
-        // Save & Cancel Buttons - Restored to bottom of screen
         int controlsY = this.height - 30;
-
         addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> save())
                 .bounds(this.width / 2 - 100, controlsY, 90, 20).build());
         addRenderableWidget(Button.builder(Component.translatable("gui.cancel"), b -> onClose())
@@ -125,12 +134,12 @@ public class DynamicMirrorScreen extends Screen {
 
     @Override
     public void onClose() {
-        // Revert live changes if we didn't save
         if (!saved && minecraft != null && minecraft.player != null) {
             DataUtils.getVariables(minecraft.player).ifPresent(vars -> {
+                // Clear all current temp changes
+                vars.getCustomizations().keySet().forEach(key -> vars.setCustomization(key, null));
+                // Restore old values
                 originalCustomizations.forEach(vars::setCustomization);
-                // Also remove any new keys that weren't in the original if any were added
-                // Re-sync visual preview to original
                 if (this.race != null) {
                     CosmeticIncidents.applyCustomizations(minecraft.player, originalCustomizations, this.race);
                 }
@@ -140,11 +149,10 @@ public class DynamicMirrorScreen extends Screen {
     }
 
     @Override
+    @SuppressWarnings("null")
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         this.renderBackground(graphics);
 
-        // Title - anchored to top, might desync with centered UI?
-        // Let's move title to slightly above the mirror frame top
         int mirrorWidth = 128;
         int mirrorHeight = 240;
         int mirrorY = this.height / 2 + 25 - (mirrorHeight / 2);
@@ -152,48 +160,49 @@ public class DynamicMirrorScreen extends Screen {
         graphics.drawCenteredString(this.font, this.title, this.width / 2, mirrorY - 15, 0xFFFFFF);
 
         if (minecraft != null && minecraft.player != null) {
-            // Render the mirror frame background FIRST to be behind buttons
             int mirrorX = this.width / 2 + 60 - (mirrorWidth / 2);
 
             RenderSystem.setShaderTexture(0, MIRROR_TEXTURE);
             graphics.blit(MIRROR_TEXTURE, mirrorX, mirrorY, 0, 0, mirrorWidth, mirrorHeight, 128, 240);
 
-            // Preview the player with hybrid rotation (mouse sway + button rotation)
             Player player = minecraft.player;
             float scale = 55.0F;
             int x = this.width / 2 + 60;
-            // Legacy render pos was topPos + 108.
-            // Relative to mirror start, that's +128px down.
             int y = mirrorY + 128;
 
-            // Calculate mouse offsets for "follow mouse" effect
             float mouseYawOffset = (float) Math.atan((x - mouseX) / 40.0F);
             float mousePitchOffset = (float) Math.atan((y - mouseY) / 40.0F);
 
-            // Store original rotations
             float oldYRot = player.getYRot();
             float oldXRot = player.getXRot();
             float oldYBodyRot = player.yBodyRot;
             float oldYHeadRot = player.yHeadRot;
             float oldYHeadRotO = player.yHeadRotO;
 
-            // Apply hybrid rotation
-            // 180 is "front" in InventoryScreen.
-            // previewRotation is the base offset from buttons.
             player.yBodyRot = 180.0F + previewRotation + (mouseYawOffset * 20.0F);
             player.setYRot(180.0F + previewRotation + (mouseYawOffset * 40.0F));
             player.setXRot(-mousePitchOffset * 20.0F);
             player.yHeadRot = player.getYRot();
             player.yHeadRotO = player.getYRot();
 
-            // Render with base flip (standard for InventoryScreen)
             Quaternionf rotation = new Quaternionf().rotationZ((float) Math.PI);
-            // Tilt slightly to see the model better
             rotation.mul(new Quaternionf().rotationX((float) Math.toRadians(-10)));
 
-            InventoryScreen.renderEntityInInventory(graphics, x, y, (int) scale, rotation, null, player);
+            InventoryScreen.renderEntityInInventory(graphics, x, y, (int) scale, rotation, new Quaternionf(), player);
 
-            // Restore original rotations immediately
+            // Draw Titles above widgets
+            if (this.race != null && this.race.customization() != null) {
+                int leftX = mirrorX - 150;
+                int labelY = mirrorY + 10;
+                for (RaceCustomization cust : this.race.customization()) {
+                    if (cust.hidden())
+                        continue;
+                    graphics.drawString(this.font, Component.translatable("cust.creraces." + cust.id()), leftX, labelY,
+                            0xFFAAAAAA);
+                    labelY += 40;
+                }
+            }
+
             player.setYRot(oldYRot);
             player.setXRot(oldXRot);
             player.yBodyRot = oldYBodyRot;
@@ -207,9 +216,6 @@ public class DynamicMirrorScreen extends Screen {
     private void updatePreviewAddons(Player player, IPlayerVariables vars) {
         if (this.race == null)
             return;
-
-        // Use central logic to ensure consistency, passing the TEMP map which has
-        // current state + defaults
         CosmeticIncidents.applyCustomizations(player, tempCustomizations, this.race);
     }
 

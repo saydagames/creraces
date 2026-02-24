@@ -1,6 +1,5 @@
 package mc.sayda.creraces.engine.actions;
 
-import com.google.gson.JsonObject;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.engine.ActionRegistry;
 import net.minecraft.resources.ResourceLocation;
@@ -19,12 +18,13 @@ public class StealItemAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public void execute(Player player, @javax.annotation.Nullable LivingEntity target,
-            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
+    public boolean execute(Player player, @javax.annotation.Nullable LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
         if (!(target instanceof Player targetPlayer))
-            return;
+            return true;
         if (player.level().random.nextDouble() > chance)
-            return;
+            return true;
 
         ItemStack stolenStack = ItemStack.EMPTY;
         if (targetSlot.equals("mainhand")) {
@@ -42,6 +42,7 @@ public class StealItemAction implements ActionRegistry.RaceAction {
                 player.drop(stolenStack, false);
             }
         }
+        return true;
     }
 
     public static void register() {

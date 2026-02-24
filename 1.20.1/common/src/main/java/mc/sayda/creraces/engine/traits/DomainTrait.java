@@ -37,10 +37,10 @@ public class DomainTrait implements TraitRegistry.RaceTrait {
             return;
         timer = 0;
 
-        if (condition == null || condition.evaluate(player, null, null)) {
+        if (condition == null || condition.evaluate(player, null, null, null)) {
             // Apply actions to the player while in their own domain
             for (ActionRegistry.RaceAction action : actions) {
-                action.execute(player, null, null);
+                action.execute(player, null, null, null);
             }
 
             // Regional effects to OTHERS in the domain
@@ -48,7 +48,7 @@ public class DomainTrait implements TraitRegistry.RaceTrait {
                     player.getBoundingBox().inflate(radius), p -> p != player);
             for (Player other : others) {
                 for (ActionRegistry.RaceAction action : actions) {
-                    action.execute(player, other, null);
+                    action.execute(player, other, null, null);
                 }
             }
         }

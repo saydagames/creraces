@@ -1,8 +1,18 @@
 {
-    "name": "Water Breathing",
-    "description": "Passive: Grants eternal Water Breathing.",
+    "name": "ability.creraces.water_breathing.name",
+    "description": "ability.creraces.water_breathing.description",
     "type": "INNATE",
     "icon": "minecraft:textures/item/pufferfish.png",
     "cooldown": 0,
-    "cost": 0
+    "cost": 0,
+    "remote_description": {
+        "selector": "",
+        "fallback": "ability.creraces.water_breathing.description",
+        "source": "https://creraces.wiki.gg/api.php?action=cargoquery\u0026format=json\u0026tables=Abilities\u0026fields=Description\u0026where=Name=\u0027Water Breathing\u0027"
+    },
+    "remote_full_description": {
+        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
+        "fallback": "ability.creraces.water_breathing.description",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Ability:Water_Breathing\u0026prop=wikitext"
+    }
 }

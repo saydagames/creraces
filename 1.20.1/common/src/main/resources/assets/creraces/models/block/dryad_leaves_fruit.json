@@ -1,0 +1,7 @@
+{
+  "parent": "block/cube_all",
+  "textures": {
+    "all": "creraces:block/dryad_leaves_flowering_fruit",
+    "particle": "creraces:block/dryad_leaves_flowering_fruit"
+  }
+}

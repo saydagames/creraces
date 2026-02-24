@@ -25,6 +25,26 @@ public class ModMobEffects {
         public static final RegistrySupplier<MobEffect> SOGGY = MOB_EFFECTS.register("soggy",
                         () -> new mc.sayda.creraces.effect.SoggyEffect());
 
+        public static final RegistrySupplier<MobEffect> NYMPH_CALL = MOB_EFFECTS.register("nymph_call",
+                        () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.BENEFICIAL, 0x00FF00));
+
+        public static final RegistrySupplier<MobEffect> ROOTED = MOB_EFFECTS.register("rooted",
+                        () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.HARMFUL, 0x654321)
+                                        .addAttributeModifier(
+                                                        net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED,
+                                                        "68ac4f36-0016-4680-b3be-c6a4c37a0265", -1.0D,
+                                                        net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.MULTIPLY_TOTAL));
+
+        public static final RegistrySupplier<MobEffect> DISARMED = MOB_EFFECTS.register("disarmed",
+                        () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.HARMFUL, 0x808080));
+
+        public static final RegistrySupplier<MobEffect> STUNNED = MOB_EFFECTS.register("stunned",
+                        () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.HARMFUL, 0xFFFF00)
+                                        .addAttributeModifier(
+                                                        net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED,
+                                                        "4cb5918e-e21c-480d-a10d-b1f3712f1e06", -1.0D,
+                                                        net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.MULTIPLY_TOTAL));
+
         public static void register() {
                 MOB_EFFECTS.register();
         }

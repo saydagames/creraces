@@ -50,6 +50,11 @@ public class AttributeIncidents {
                 // Generic Trait Application
                 for (mc.sayda.creraces.engine.TraitRegistry.RaceTrait trait : race.traits()) {
                     if (trait instanceof mc.sayda.creraces.engine.traits.AttributeModifierTrait amt) {
+                        // Check condition if present
+                        if (amt.getCondition() != null && !amt.getCondition().evaluate(player, null, null, null)) {
+                            continue;
+                        }
+
                         // Use uniform UUID per attribute (Only one race active at a time)
                         String descId = amt.getAttribute().getDescriptionId();
                         if (descId != null) { // Type check, though getDescriptionId likely returns non-null
@@ -58,7 +63,7 @@ public class AttributeIncidents {
                             if (instance != null) {
                                 if (instance.getModifier(uuid) == null) {
                                     instance.addPermanentModifier(new AttributeModifier(uuid, "Race Trait",
-                                            amt.getValue(), amt.getOperation()));
+                                            amt.getValue().evaluate(player), amt.getOperation()));
                                 }
                             }
                         }

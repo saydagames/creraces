@@ -68,8 +68,18 @@ public class SkillWheelScreen extends Screen {
                     graphics.fill(x - 2, y - 2, x + ITEM_SIZE + 2, y + ITEM_SIZE + 2, 0x80FFFFFF);
 
                     // Tooltip
-                    graphics.renderComponentTooltip(this.font, List.of(ability.name(), ability.description()), mouseX,
-                            mouseY);
+                    mc.sayda.creraces.util.RemoteDocConfig config = AbilityRegistry.getRemoteDoc(id);
+                    Component description = mc.sayda.creraces.util.RemoteDocFetcher.getRemoteDescription(id, config,
+                            ability.description());
+
+                    List<Component> tooltip = new ArrayList<>();
+                    tooltip.add(ability.name());
+                    tooltip.add(description);
+                    tooltip.add(Component.literal(""));
+                    tooltip.add(Component.translatable("creraces.screen.click_for_wiki")
+                            .withStyle(net.minecraft.ChatFormatting.BLUE, net.minecraft.ChatFormatting.ITALIC));
+
+                    graphics.renderComponentTooltip(this.font, tooltip, mouseX, mouseY);
                 }
 
                 // Icon
@@ -104,6 +114,25 @@ public class SkillWheelScreen extends Screen {
         });
 
         super.render(graphics, mouseX, mouseY, partialTick);
+    }
+
+    @Override
+    @SuppressWarnings("null")
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0 && this.hoveredAbility != null) {
+            Ability ability = AbilityRegistry.get(this.hoveredAbility);
+            if (ability != null) {
+                String url = mc.sayda.creraces.util.WikiUtils.getAbilityUrl(ability.name());
+                Minecraft.getInstance().setScreen(new net.minecraft.client.gui.screens.ConfirmLinkScreen(confirmed -> {
+                    if (confirmed) {
+                        net.minecraft.Util.getPlatform().openUri(url);
+                    }
+                    Minecraft.getInstance().setScreen(this);
+                }, url, true));
+                return true;
+            }
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override

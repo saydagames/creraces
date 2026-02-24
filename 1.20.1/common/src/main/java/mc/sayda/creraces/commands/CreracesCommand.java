@@ -158,6 +158,10 @@ public class CreracesCommand {
                                                 .requires(src -> src.hasPermission(2))
                                                 .executes(ctx -> executeReload(ctx.getSource())))
 
+                                // refresh (Available to everyone)
+                                .then(Commands.literal("refresh")
+                                                .executes(ctx -> executeRefresh(ctx.getSource())))
+
                                 // modify <target> <variable> <value> (Admin Only)
                                 .then(Commands.literal("modify")
                                                 .requires(src -> src.hasPermission(2))
@@ -244,6 +248,14 @@ public class CreracesCommand {
                                                                         .withStyle(ChatFormatting.DARK_GRAY)),
                                         false);
                 }
+
+                source.sendSuccess(
+                                () -> (Component) Component.literal("/creraces refresh")
+                                                .withStyle(ChatFormatting.GRAY)
+                                                .append(Component.literal(" - Refreshes your attributes and cosmetics")
+                                                                .withStyle(ChatFormatting.DARK_GRAY)),
+                                false);
+
                 return 1;
         }
 
@@ -312,10 +324,29 @@ public class CreracesCommand {
         private static int executeReload(CommandSourceStack source) {
                 source.sendSuccess(() -> Component.translatable("creraces.command.reloading")
                                 .withStyle(ChatFormatting.YELLOW), true);
+
                 List<String> ids = new ArrayList<>(source.getServer().getPackRepository().getSelectedIds());
-                source.getServer().reloadResources(ids);
-                source.sendSuccess(() -> Component.translatable("creraces.command.reloaded")
-                                .withStyle(ChatFormatting.GREEN), true);
+
+                // reloadResources() is async — chain on the server thread so we push fresh data
+                // to clients only AFTER the reload has fully completed.
+                source.getServer().reloadResources(ids).thenRunAsync(() -> {
+                        mc.sayda.creraces.network.SyncRacesPacket racePacket = mc.sayda.creraces.race.RaceManager
+                                        .createSyncPacket();
+                        mc.sayda.creraces.network.SyncAbilitiesPacket abilityPacket = mc.sayda.creraces.ability.AbilityManager
+                                        .createSyncPacket();
+
+                        for (ServerPlayer player : source.getServer().getPlayerList().getPlayers()) {
+                                mc.sayda.creraces.network.BoundaryHandler.syncRacesToPlayer(player, racePacket);
+                                mc.sayda.creraces.network.BoundaryHandler.syncAbilitiesToPlayer(player, abilityPacket);
+                        }
+
+                        // Clear remote wiki-text cache after definitions are pushed
+                        mc.sayda.creraces.network.BoundaryHandler.broadcastClearCache();
+
+                        source.sendSuccess(() -> Component.translatable("creraces.command.reloaded")
+                                        .withStyle(ChatFormatting.GREEN), true);
+                }, source.getServer()); // run on the main server thread
+
                 return 1;
         }
 
@@ -335,8 +366,9 @@ public class CreracesCommand {
 
                         boolean core = switch (varLower) {
                                 case "mana", "energy", "grit", "rage", "karma", "ap", "ad", "ah", "cr", "coins",
-                                                "souls",
-                                                "a1", "a2", "a3", "a4", "a5" ->
+                                                "souls", "stacks",
+                                                "a1", "a2", "a3", "a4", "a5",
+                                                "c1", "c2", "c3", "c4", "c5" ->
                                         true;
                                 default -> false;
                         };
@@ -354,6 +386,8 @@ public class CreracesCommand {
                                         case "cr" -> vars.setCr(Double.parseDouble(finalValue));
                                         case "coins" -> vars.setCoins(Double.parseDouble(finalValue));
                                         case "souls" -> vars.setSouls(Double.parseDouble(finalValue));
+                                        case "stacks" -> vars.setStacks(Double.parseDouble(finalValue));
+                                        case "morphed" -> vars.setMorphed(finalValue.equals("1.0"));
                                         case "gstate" -> vars.setGState(Integer.parseInt(finalValue));
                                         case "a1" -> {
                                                 ResourceLocation id = vars.getAbilityInSlot(
@@ -385,7 +419,37 @@ public class CreracesCommand {
                                                 if (id != null)
                                                         vars.setAbilityState(id, Double.parseDouble(finalValue));
                                         }
-                                        default -> vars.setCustomization(variable, value);
+                                        case "c1" -> {
+                                                ResourceLocation id = vars.getAbilityInSlot(
+                                                                mc.sayda.creraces.ability.AbilitySlot.A1);
+                                                if (id != null)
+                                                        vars.setCooldown(id, (int) Double.parseDouble(finalValue));
+                                        }
+                                        case "c2" -> {
+                                                ResourceLocation id = vars.getAbilityInSlot(
+                                                                mc.sayda.creraces.ability.AbilitySlot.A2);
+                                                if (id != null)
+                                                        vars.setCooldown(id, (int) Double.parseDouble(finalValue));
+                                        }
+                                        case "c3" -> {
+                                                ResourceLocation id = vars.getAbilityInSlot(
+                                                                mc.sayda.creraces.ability.AbilitySlot.A3);
+                                                if (id != null)
+                                                        vars.setCooldown(id, (int) Double.parseDouble(finalValue));
+                                        }
+                                        case "c4" -> {
+                                                ResourceLocation id = vars.getAbilityInSlot(
+                                                                mc.sayda.creraces.ability.AbilitySlot.A4);
+                                                if (id != null)
+                                                        vars.setCooldown(id, (int) Double.parseDouble(finalValue));
+                                        }
+                                        case "c5" -> {
+                                                ResourceLocation id = vars.getAbilityInSlot(
+                                                                mc.sayda.creraces.ability.AbilitySlot.A5);
+                                                if (id != null)
+                                                        vars.setCooldown(id, (int) Double.parseDouble(finalValue));
+                                        }
+                                        default -> vars.setCustomization(variable.toLowerCase(), value);
                                 }
                         } catch (NumberFormatException e) {
                                 source.sendFailure(Component.literal("Invalid number: " + value));
@@ -393,7 +457,7 @@ public class CreracesCommand {
                         }
 
                         // Sync To Client
-                        mc.sayda.creraces.network.BoundaryHandler.resyncVariables(target, target);
+                        RaceIncidents.refreshPlayer(target);
 
                         ChatFormatting color = core ? ChatFormatting.GREEN : ChatFormatting.AQUA;
                         source.sendSuccess(() -> Component.literal("Modified " + variable + " to " + value
@@ -402,6 +466,17 @@ public class CreracesCommand {
 
                         return 1;
                 }).orElse(0);
+        }
+
+        private static int executeRefresh(CommandSourceStack source) {
+                ServerPlayer player = source.getPlayer();
+                if (player == null)
+                        return 0;
+
+                RaceIncidents.refreshPlayer(player);
+                source.sendSuccess(() -> Component.literal("Refreshed racial state.")
+                                .withStyle(ChatFormatting.GREEN), false);
+                return 1;
         }
 
         private static CompletableFuture<Suggestions> suggestRaces(CommandContext<CommandSourceStack> context,
@@ -416,11 +491,12 @@ public class CreracesCommand {
         private static CompletableFuture<Suggestions> suggestVariables(CommandContext<CommandSourceStack> context,
                         SuggestionsBuilder builder) {
                 // Core Stats
-                List.of("mana", "energy", "grit", "rage", "karma", "ap", "ad", "ah", "cr", "coins", "souls", "gstate")
+                List.of("mana", "energy", "grit", "rage", "karma", "ap", "ad", "ah", "cr", "coins", "souls", "stacks",
+                                "gstate", "morphed")
                                 .forEach(builder::suggest);
 
-                // Ability Slots
-                List.of("a1", "a2", "a3", "a4", "a5").forEach(builder::suggest);
+                // Ability Slots (State and Cooldown)
+                List.of("a1", "a2", "a3", "a4", "a5", "c1", "c2", "c3", "c4", "c5").forEach(builder::suggest);
 
                 // Dynamic Customizations from target
                 try {
@@ -444,14 +520,10 @@ public class CreracesCommand {
                         return builder.buildFuture();
                 }
 
-                // General boolean suggestions
-                builder.suggest("true");
-                builder.suggest("false");
-
-                // Numeric suggestions for common values
-                if (List.of("mana", "energy", "grit", "rage", "souls").contains(variable)) {
-                        builder.suggest("100");
-                        builder.suggest("0");
+                if (variable.equals("morphed")) {
+                        builder.suggest("true");
+                        builder.suggest("false");
+                        return builder.buildFuture();
                 }
 
                 return builder.buildFuture();

@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RaceRegistry {
     private static final Map<ResourceLocation, Race> RACES = new ConcurrentHashMap<>();
     private static final Map<ResourceLocation, mc.sayda.creraces.util.RemoteDocConfig> REMOTE_DOCS = new ConcurrentHashMap<>();
+    private static final Map<ResourceLocation, mc.sayda.creraces.util.RemoteDocConfig> REMOTE_PASSIVES = new ConcurrentHashMap<>();
 
     // Default race if none selected (Human or None)
     public static final ResourceLocation NONE = new ResourceLocation("creraces", "none");
@@ -33,6 +34,7 @@ public class RaceRegistry {
     public static void clear() {
         RACES.clear();
         REMOTE_DOCS.clear();
+        REMOTE_PASSIVES.clear();
     }
 
     public static void registerRemoteDoc(ResourceLocation id, mc.sayda.creraces.util.RemoteDocConfig config) {
@@ -41,6 +43,14 @@ public class RaceRegistry {
 
     public static mc.sayda.creraces.util.RemoteDocConfig getRemoteDoc(ResourceLocation id) {
         return REMOTE_DOCS.get(id);
+    }
+
+    public static void registerRemotePassive(ResourceLocation id, mc.sayda.creraces.util.RemoteDocConfig config) {
+        REMOTE_PASSIVES.put(id, config);
+    }
+
+    public static mc.sayda.creraces.util.RemoteDocConfig getRemotePassive(ResourceLocation id) {
+        return REMOTE_PASSIVES.get(id);
     }
 
     public static Collection<Race> getRaces() {

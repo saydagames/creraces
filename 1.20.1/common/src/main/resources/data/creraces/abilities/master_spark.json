@@ -3,5 +3,23 @@
     "description": "ability.creraces.master_spark.description",
     "icon": "minecraft:feather",
     "cooldown": 200,
-    "mana_cost": 20
+    "cost": 20,
+    "actions": [
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:entity.ender_dragon.growl",
+            "volume": 1.0,
+            "pitch": 0.5
+        }
+    ],
+    "remote_description": {
+        "selector": "",
+        "fallback": "ability.creraces.master_spark.description",
+        "source": "https://creraces.wiki.gg/api.php?action=cargoquery\u0026format=json\u0026tables=Abilities\u0026fields=Description\u0026where=Name=\u0027Master Spark\u0027"
+    },
+    "remote_full_description": {
+        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
+        "fallback": "ability.creraces.master_spark.description",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Ability:Master_Spark\u0026prop=wikitext"
+    }
 }

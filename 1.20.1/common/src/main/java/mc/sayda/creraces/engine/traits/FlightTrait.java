@@ -8,6 +8,7 @@ import mc.sayda.creraces.race.ResourceType;
 import mc.sayda.creraces.util.GsonHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
+import mc.sayda.creraces.engine.ScalingValue;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -20,14 +21,14 @@ import mc.sayda.creraces.engine.ActionRegistry;
  */
 public class FlightTrait implements TraitRegistry.RaceTrait {
     private final ResourceType resource;
-    private final double drainRate;
+    private final ScalingValue drainRate;
     private final boolean forceFly;
     @Nullable
     private final Condition condition;
     private final List<ActionRegistry.RaceAction> onFail;
     private boolean failed = false;
 
-    public FlightTrait(ResourceType resource, double drainRate, boolean forceFly, @Nullable Condition condition,
+    public FlightTrait(ResourceType resource, ScalingValue drainRate, boolean forceFly, @Nullable Condition condition,
             List<ActionRegistry.RaceAction> onFail) {
         this.resource = resource;
         this.drainRate = drainRate;
@@ -39,7 +40,7 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
     @Override
     public void tick(Player player) {
 
-        boolean conditionMet = condition == null || condition.evaluate(player, null, null);
+        boolean conditionMet = condition == null || condition.evaluate(player, null, null, null);
 
         DataUtils.getVariables(player).ifPresent(vars -> {
             double currentResource = switch (resource) {
@@ -52,7 +53,8 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
                 default -> 100.0;
             };
 
-            boolean canFly = conditionMet && currentResource > drainRate;
+            double evaluatedDrain = drainRate.evaluate(player);
+            boolean canFly = conditionMet && currentResource > evaluatedDrain;
             boolean wasMayfly = player.getAbilities().mayfly;
             boolean wasFlying = player.getAbilities().flying;
 
@@ -67,11 +69,11 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
                 if (player.getAbilities().flying) {
                     // Drain resource
                     switch (resource) {
-                        case MANA -> vars.setMana(Math.max(0, vars.getMana() - drainRate));
-                        case ENERGY -> vars.setEnergy(Math.max(0, vars.getEnergy() - drainRate));
-                        case GRIT -> vars.setGrit(Math.max(0, vars.getGrit() - drainRate));
-                        case RAGE -> vars.setRage(Math.max(0, vars.getRage() - drainRate));
-                        case SOULS -> vars.setSouls(Math.max(0, vars.getSouls() - drainRate));
+                        case MANA -> vars.setMana(Math.max(0, vars.getMana() - evaluatedDrain));
+                        case ENERGY -> vars.setEnergy(Math.max(0, vars.getEnergy() - evaluatedDrain));
+                        case GRIT -> vars.setGrit(Math.max(0, vars.getGrit() - evaluatedDrain));
+                        case RAGE -> vars.setRage(Math.max(0, vars.getRage() - evaluatedDrain));
+                        case SOULS -> vars.setSouls(Math.max(0, vars.getSouls() - evaluatedDrain));
                         case NONE -> {
                         } // No resource to drain
                     }
@@ -85,16 +87,16 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
                     }
 
                     // On Fail Logic
-                    if (conditionMet && currentResource < drainRate && !failed) {
+                    if (conditionMet && currentResource < evaluatedDrain && !failed) {
                         failed = true;
                         for (ActionRegistry.RaceAction action : onFail) {
-                            action.execute(player, null, null);
+                            action.execute(player, null, null, null);
                         }
                     }
                 }
             }
 
-            if (conditionMet && currentResource >= drainRate) {
+            if (conditionMet && currentResource >= evaluatedDrain) {
                 failed = false;
             }
 
@@ -109,7 +111,7 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
         TraitRegistry.register(new ResourceLocation(CreRaces.MODID, "flight"), json -> {
             String resStr = GsonHelper.getAsString(json, "resource", "ENERGY").toUpperCase();
             ResourceType resource = ResourceType.valueOf(resStr);
-            double drainRate = GsonHelper.getAsDouble(json, "drain_rate", 0.1);
+            ScalingValue drainRate = ScalingValue.fromJson(json, "drain_rate", 0.1);
             boolean forceFly = GsonHelper.getAsBoolean(json, "force_fly", false);
 
             Condition condition = null;

@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class AbilityRegistry {
     private static final Map<ResourceLocation, Ability> ABILITIES = new ConcurrentHashMap<>();
     private static final Map<ResourceLocation, mc.sayda.creraces.util.RemoteDocConfig> REMOTE_DOCS = new ConcurrentHashMap<>();
+    private static final Map<ResourceLocation, mc.sayda.creraces.util.RemoteDocConfig> REMOTE_FULL_DOCS = new ConcurrentHashMap<>();
 
     public static void register(Ability ability) {
         ABILITIES.put(ability.id(), ability);
@@ -37,6 +38,14 @@ public class AbilityRegistry {
 
     public static mc.sayda.creraces.util.RemoteDocConfig getRemoteDoc(ResourceLocation id) {
         return REMOTE_DOCS.get(id);
+    }
+
+    public static void registerRemoteFullDoc(ResourceLocation id, mc.sayda.creraces.util.RemoteDocConfig config) {
+        REMOTE_FULL_DOCS.put(id, config);
+    }
+
+    public static mc.sayda.creraces.util.RemoteDocConfig getRemoteFullDoc(ResourceLocation id) {
+        return REMOTE_FULL_DOCS.get(id);
     }
 
     public static boolean isEmpty() {

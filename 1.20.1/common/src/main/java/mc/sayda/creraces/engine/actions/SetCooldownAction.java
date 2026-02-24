@@ -23,12 +23,14 @@ public class SetCooldownAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public void execute(Player player, @Nullable net.minecraft.world.entity.LivingEntity target,
-            @Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
+    public boolean execute(Player player, @Nullable net.minecraft.world.entity.LivingEntity target,
+            @Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @Nullable net.minecraft.core.BlockPos interactionPos) {
         DataUtils.getVariables(player).ifPresent(vars -> {
-            vars.setCooldown(abilityId, value);
+            vars.setCooldown(abilityId, Math.max(0, value));
             mc.sayda.creraces.network.BoundaryHandler.resyncVariables(player, player);
         });
+        return false;
     }
 
     public static void register() {

@@ -1,6 +1,6 @@
 {
-    "name": "Cowardly Skirmish",
-    "description": "Gain Speed and Haste. Recast to slow and weaken nearby enemies.",
+    "name": "ability.creraces.cowardly_skirmish.name",
+    "description": "ability.creraces.cowardly_skirmish.description",
     "type": "ACTIVE",
     "icon": "minecraft:textures/item/iron_sword.png",
     "cooldown": 240,
@@ -8,12 +8,12 @@
     "race": [
         "creraces:ratkin"
     ],
-    "on_activate": [
+    "actions": [
         {
             "type": "creraces:conditional",
             "condition": {
-                "type": "state_equals",
-                "state": "slot",
+                "type": "creraces:state_equals",
+                "state": "creraces:cowardly_skirmish",
                 "value": 1
             },
             "if_true": [
@@ -45,13 +45,19 @@
                 },
                 {
                     "type": "creraces:set_state",
-                    "state": "slot",
+                    "ability": "creraces:cowardly_skirmish",
                     "value": 0
                 },
                 {
                     "type": "creraces:set_cooldown",
                     "ability": "creraces:cowardly_skirmish",
                     "value": 240
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:entity.iron_golem.repair",
+                    "volume": 1.0,
+                    "pitch": 1.5
                 }
             ],
             "if_false": [
@@ -90,15 +96,31 @@
                 },
                 {
                     "type": "creraces:set_state",
-                    "state": "slot",
+                    "ability": "creraces:cowardly_skirmish",
                     "value": 1
                 },
                 {
                     "type": "creraces:set_cooldown",
                     "ability": "creraces:cowardly_skirmish",
                     "value": 20
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:entity.cat.hiss",
+                    "volume": 1.0,
+                    "pitch": 1.2
                 }
             ]
         }
-    ]
+    ],
+    "remote_description": {
+        "selector": "",
+        "fallback": "ability.creraces.cowardly_skirmish.description",
+        "source": "https://creraces.wiki.gg/api.php?action=cargoquery\u0026format=json\u0026tables=Abilities\u0026fields=Description\u0026where=Name=\u0027Cowardly Skirmish\u0027"
+    },
+    "remote_full_description": {
+        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
+        "fallback": "ability.creraces.cowardly_skirmish.description",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Ability:Cowardly_Skirmish\u0026prop=wikitext"
+    }
 }

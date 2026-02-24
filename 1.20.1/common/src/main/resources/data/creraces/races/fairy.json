@@ -1,7 +1,11 @@
 {
     "name": "race.creraces.fairy.name",
+    "scale": {
+        "base": 1.0,
+        "height": 0.2,
+        "width": 0.2
+    },
     "legacy_id": 5.0,
-    "scale": 0.2,
     "description": "race.creraces.fairy.description",
     "icon": "minecraft:textures/item/feather.png",
     "portrait": "creraces:textures/screens/fairy_portrait.png",
@@ -80,5 +84,15 @@
                 }
             ]
         }
-    ]
+    ],
+    "remote_description": {
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "fallback": "race.creraces.fairy.description",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Fairy\u0026prop=wikitext"
+    },
+    "remote_passive": {
+        "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "fallback": "No passive documentation found on wiki.",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Fairy\u0026prop=wikitext"
+    }
 }

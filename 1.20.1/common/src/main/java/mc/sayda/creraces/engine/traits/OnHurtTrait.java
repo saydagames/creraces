@@ -26,10 +26,11 @@ public class OnHurtTrait implements TraitRegistry.RaceTrait {
     @Override
     public void onHurt(Player player, DamageSource source, float amount) {
         if (condition == null || condition.evaluate(player,
-                source.getEntity() instanceof net.minecraft.world.entity.LivingEntity le ? le : null, null)) {
+                source.getEntity() instanceof net.minecraft.world.entity.LivingEntity le ? le : null, null, null)) {
             for (ActionRegistry.RaceAction action : actions) {
                 action.execute(player,
-                        source.getEntity() instanceof net.minecraft.world.entity.LivingEntity le ? le : null, null);
+                        source.getEntity() instanceof net.minecraft.world.entity.LivingEntity le ? le : null, null,
+                        null);
             }
         }
     }

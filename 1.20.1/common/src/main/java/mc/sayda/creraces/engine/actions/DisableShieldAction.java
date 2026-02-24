@@ -10,10 +10,13 @@ import net.minecraft.world.entity.player.Player;
 public class DisableShieldAction implements ActionRegistry.RaceAction {
 
     @Override
-    public void execute(Player player, LivingEntity target, mc.sayda.creraces.ability.AbilitySlot slot) {
+    public boolean execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
         if (target instanceof Player targetPlayer) {
             targetPlayer.disableShield(true);
         }
+        return true;
     }
 
     public static void register() {

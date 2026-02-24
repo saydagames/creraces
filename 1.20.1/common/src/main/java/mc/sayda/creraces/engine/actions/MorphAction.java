@@ -1,6 +1,5 @@
 package mc.sayda.creraces.engine.actions;
 
-import com.google.gson.JsonObject;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.engine.ActionRegistry;
@@ -25,8 +24,9 @@ public class MorphAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public void execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
-            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
+    public boolean execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
         DataUtils.getVariables(player).ifPresent(vars -> {
             // Get Twilight Lib morph data
             mc.sayda.twilight_lib.capabilities.IMorph morphData = mc.sayda.twilight_lib.capabilities.DataUtils
@@ -49,8 +49,12 @@ public class MorphAction implements ActionRegistry.RaceAction {
                             "scale reset @s");
                 }
             } else {
+                // Resolve placeholders
+                String resolvedType = mc.sayda.creraces.race.CosmeticIncidents.resolvePlaceholders(entityType,
+                        vars.getCustomizations());
+
                 // Apply morph
-                ResourceLocation entityId = new ResourceLocation(entityType);
+                ResourceLocation entityId = new ResourceLocation(resolvedType);
                 vars.setMorphed(true);
                 morphData.setEntityType(Optional.of(entityId));
 
@@ -60,9 +64,9 @@ public class MorphAction implements ActionRegistry.RaceAction {
                                 player.getUUID(), Optional.of(entityId)));
 
                 // Apply scale if specified
-                if (scale > 0 && scale != 1.0 && player.getServer() != null && player instanceof ServerPlayer) {
-                    player.getServer().getCommands().performPrefixedCommand(
-                            player.createCommandSourceStack().withPermission(4).withSuppressedOutput(),
+                if (scale > 0 && scale != 1.0 && player.getServer() != null && player instanceof ServerPlayer sp) {
+                    sp.getServer().getCommands().performPrefixedCommand(
+                            sp.createCommandSourceStack().withPermission(4).withSuppressedOutput(),
                             "scale set pehkui:base " + scale + " @s");
                 }
             }
@@ -70,6 +74,7 @@ public class MorphAction implements ActionRegistry.RaceAction {
             // Sync variables
             mc.sayda.creraces.network.BoundaryHandler.resyncVariables(player, player);
         });
+        return true;
     }
 
     public static void register() {

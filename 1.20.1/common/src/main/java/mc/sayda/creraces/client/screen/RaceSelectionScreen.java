@@ -158,6 +158,7 @@ public class RaceSelectionScreen extends Screen {
         }
 
         @Override
+        @SuppressWarnings("null")
         public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
                 this.renderBackground(graphics);
                 RenderSystem.setShaderColor(1, 1, 1, 1);

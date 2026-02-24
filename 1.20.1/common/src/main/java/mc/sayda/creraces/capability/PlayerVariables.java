@@ -42,6 +42,14 @@ public class PlayerVariables implements IPlayerVariables {
     private UUID teamId = null;
     private String teamName = "";
     private int gState = 0;
+    private boolean hasPocket = false;
+    private double pocketX = 0.0;
+    private double pocketY = 0.0;
+    private double pocketZ = 0.0;
+    private double returnX = 0.0;
+    private double returnY = 0.0;
+    private double returnZ = 0.0;
+    private String returnDim = "minecraft:overworld";
 
     @Override
     public ResourceLocation getRace() {
@@ -387,6 +395,86 @@ public class PlayerVariables implements IPlayerVariables {
     }
 
     @Override
+    public boolean hasPocket() {
+        return hasPocket;
+    }
+
+    @Override
+    public void setHasPocket(boolean hasPocket) {
+        this.hasPocket = hasPocket;
+    }
+
+    @Override
+    public double getPocketX() {
+        return pocketX;
+    }
+
+    @Override
+    public void setPocketX(double x) {
+        this.pocketX = x;
+    }
+
+    @Override
+    public double getPocketY() {
+        return pocketY;
+    }
+
+    @Override
+    public void setPocketY(double y) {
+        this.pocketY = y;
+    }
+
+    @Override
+    public double getPocketZ() {
+        return pocketZ;
+    }
+
+    @Override
+    public void setPocketZ(double z) {
+        this.pocketZ = z;
+    }
+
+    @Override
+    public double getReturnX() {
+        return returnX;
+    }
+
+    @Override
+    public void setReturnX(double x) {
+        this.returnX = x;
+    }
+
+    @Override
+    public double getReturnY() {
+        return returnY;
+    }
+
+    @Override
+    public void setReturnY(double y) {
+        this.returnY = y;
+    }
+
+    @Override
+    public double getReturnZ() {
+        return returnZ;
+    }
+
+    @Override
+    public void setReturnZ(double z) {
+        this.returnZ = z;
+    }
+
+    @Override
+    public String getReturnDim() {
+        return returnDim;
+    }
+
+    @Override
+    public void setReturnDim(String dim) {
+        this.returnDim = dim != null ? dim : "minecraft:overworld";
+    }
+
+    @Override
     public CompoundTag serialize() {
         CompoundTag tag = new CompoundTag();
         tag.putString("race", race.toString());
@@ -437,6 +525,14 @@ public class PlayerVariables implements IPlayerVariables {
         }
         tag.putString("teamName", teamName);
         tag.putInt("gState", gState);
+        tag.putBoolean("hasPocket", hasPocket);
+        tag.putDouble("pocketX", pocketX);
+        tag.putDouble("pocketY", pocketY);
+        tag.putDouble("pocketZ", pocketZ);
+        tag.putDouble("returnX", returnX);
+        tag.putDouble("returnY", returnY);
+        tag.putDouble("returnZ", returnZ);
+        tag.putString("returnDim", returnDim);
 
         return tag;
     }
@@ -528,5 +624,21 @@ public class PlayerVariables implements IPlayerVariables {
             this.teamName = tag.getString("teamName");
         if (tag.contains("gState"))
             this.gState = tag.getInt("gState");
+        if (tag.contains("hasPocket"))
+            this.hasPocket = tag.getBoolean("hasPocket");
+        if (tag.contains("pocketX"))
+            this.pocketX = tag.getDouble("pocketX");
+        if (tag.contains("pocketY"))
+            this.pocketY = tag.getDouble("pocketY");
+        if (tag.contains("pocketZ"))
+            this.pocketZ = tag.getDouble("pocketZ");
+        if (tag.contains("returnX"))
+            this.returnX = tag.getDouble("returnX");
+        if (tag.contains("returnY"))
+            this.returnY = tag.getDouble("returnY");
+        if (tag.contains("returnZ"))
+            this.returnZ = tag.getDouble("returnZ");
+        if (tag.contains("returnDim"))
+            this.returnDim = tag.getString("returnDim");
     }
 }

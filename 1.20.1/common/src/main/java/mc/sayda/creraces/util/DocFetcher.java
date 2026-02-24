@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
  */
 public class DocFetcher {
     private static final HttpClient CLIENT = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(10))
+            .connectTimeout(Duration.ofSeconds(mc.sayda.creraces.config.CreRacesConfig.DOC_FETCH_TIMEOUT_SECONDS.get()))
             .build();
 
     /**
@@ -48,8 +48,10 @@ public class DocFetcher {
     public static CompletableFuture<String> fetch(String url, String selector) {
         return CompletableFuture.supplyAsync(() -> {
             try {
+                CreRaces.LOGGER.debug("DocFetcher: Fetching {}", url);
+
                 HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create(url))
+                        .uri(URI.create(url.replace(" ", "%20")))
                         .header("User-Agent", "CreRaces-Minecraft-Mod/1.0")
                         .GET()
                         .build();
@@ -68,6 +70,8 @@ public class DocFetcher {
                     JsonObject json = JsonParser.parseString(content).getAsJsonObject();
                     if (json.has("parse") && json.getAsJsonObject("parse").has("wikitext")) {
                         content = json.getAsJsonObject("parse").getAsJsonObject("wikitext").get("*").getAsString();
+                    } else {
+                        return null; // No wikitext found, allow fallback
                     }
                 } else if (url.contains("action=cargoquery")) {
                     // Extract first result from cargoquery
@@ -76,12 +80,17 @@ public class DocFetcher {
                         var array = json.getAsJsonArray("cargoquery");
                         if (array.size() > 0) {
                             var titleObj = array.get(0).getAsJsonObject().getAsJsonObject("title");
-                            // Extract first available field
                             var entries = titleObj.entrySet();
                             if (!entries.isEmpty()) {
                                 content = entries.iterator().next().getValue().getAsString();
+                            } else {
+                                return null; // Field not found
                             }
+                        } else {
+                            return null; // Empty array
                         }
+                    } else {
+                        return null; // No cargoquery block
                     }
                 }
 
@@ -91,11 +100,14 @@ public class DocFetcher {
                     Matcher matcher = pattern.matcher(content);
                     if (matcher.find()) {
                         // Return first group if exists, otherwise the whole match
-                        return matcher.groupCount() > 0 ? matcher.group(1) : matcher.group();
+                        String result = matcher.groupCount() > 0 ? matcher.group(1).trim() : matcher.group().trim();
+                        return WikitextUtil.clean(result);
+                    } else {
+                        // If selector was provided but not found, return null to allow fallback
+                        return null;
                     }
                 }
-
-                return content;
+                return WikitextUtil.clean(content != null ? content.trim() : null);
             } catch (Exception e) {
                 CreRaces.LOGGER.error("DocFetcher failed for {}: {}", url, e.getMessage());
                 return null;

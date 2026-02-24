@@ -13,7 +13,11 @@
         {
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.max_health",
-            "value": -16.0,
+            "value": {
+                "base": -18.0,
+                "scales_with": "custom:tail_count",
+                "factor": 2.0
+            },
             "operation": "addition"
         },
         {
@@ -35,12 +39,38 @@
             "operation": "addition"
         },
         {
+            "type": "creraces:attribute_modifier",
+            "attribute": "minecraft:generic.movement_speed",
+            "value": 0.1,
+            "operation": "addition",
+            "condition": {
+                "type": "creraces:ability_state",
+                "ability": "creraces:fox_form",
+                "value": 1.0
+            }
+        },
+        {
+            "type": "creraces:attribute_modifier",
+            "attribute": "minecraft:generic.attack_damage",
+            "value": -100.0,
+            "operation": "addition",
+            "condition": {
+                "type": "creraces:ability_state",
+                "ability": "creraces:fox_form",
+                "value": 1.0
+            }
+        },
+        {
             "type": "creraces:flight",
             "resource": "MANA",
-            "drain_rate": 0.5,
+            "drain_rate": {
+                "base": 10.0,
+                "scales_with": "custom:tail_count",
+                "factor": -1.0
+            },
             "force_fly": true,
             "condition": {
-                "type": "ability_state",
+                "type": "creraces:ability_state",
                 "ability": "creraces:foxfire",
                 "value": 2.0
             },
@@ -53,7 +83,7 @@
                 {
                     "type": "creraces:set_cooldown",
                     "ability": "creraces:foxfire",
-                    "ticks": 100
+                    "value": 100
                 }
             ]
         },
@@ -61,7 +91,7 @@
             "type": "creraces:on_tick",
             "interval": 2,
             "condition": {
-                "type": "ability_state",
+                "type": "creraces:ability_state",
                 "ability": "creraces:foxfire",
                 "value": 2.0
             },
@@ -113,7 +143,7 @@
                 "9"
             ],
             "defaultValue": "1",
-            "hidden": "true"
+            "hidden": true
         },
         {
             "id": "ear_style",
@@ -122,7 +152,11 @@
                 "standard",
                 "alt"
             ],
-            "defaultValue": "standard"
+            "defaultValue": "standard",
+            "addons": {
+                "standard": "twilight_lib:kitsune_ears_{color}",
+                "alt": "twilight_lib:kitsune_ears_{color}_alt"
+            }
         },
         {
             "id": "snout",
@@ -131,7 +165,10 @@
                 "true",
                 "false"
             ],
-            "defaultValue": "true"
+            "defaultValue": "true",
+            "addons": {
+                "true": "twilight_lib:kitsune_snout_{color}"
+            }
         },
         {
             "id": "tail_style",
@@ -140,7 +177,25 @@
                 "standard",
                 "alt"
             ],
-            "defaultValue": "standard"
+            "defaultValue": "standard",
+            "addons": {
+                "standard": "twilight_lib:kitsune_tails_{tail_count}_{color}",
+                "alt": [
+                    {
+                        "id": "twilight_lib:kitsune_tails_{tail_count}_{color}_alt",
+                        "condition": {
+                            "type": "creraces:customization_equals",
+                            "id": "tail_count",
+                            "values": [
+                                "3",
+                                "4",
+                                "5"
+                            ]
+                        }
+                    },
+                    "twilight_lib:kitsune_tails_{tail_count}_{color}"
+                ]
+            }
         },
         {
             "id": "color",
@@ -158,5 +213,15 @@
         }
     ],
     "portrait": "creraces:textures/screens/kitsune_portrait.png",
-    "name_texture": "creraces:textures/screens/kitsune_text.png"
+    "name_texture": "creraces:textures/screens/kitsune_text.png",
+    "remote_description": {
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "fallback": "race.creraces.kitsune.description",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Kitsune\u0026prop=wikitext"
+    },
+    "remote_passive": {
+        "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "fallback": "No passive documentation found on wiki.",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Kitsune\u0026prop=wikitext"
+    }
 }

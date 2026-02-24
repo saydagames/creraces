@@ -8,7 +8,7 @@
     "race": [
         "creraces:dwarf"
     ],
-    "on_activate": [
+    "actions": [
         {
             "type": "creraces:dash",
             "power": {
@@ -30,5 +30,15 @@
             "volume": 1.0,
             "pitch": 0.7
         }
-    ]
+    ],
+    "remote_description": {
+        "selector": "",
+        "fallback": "ability.creraces.unstoppable_charge.description",
+        "source": "https://creraces.wiki.gg/api.php?action=cargoquery\u0026format=json\u0026tables=Abilities\u0026fields=Description\u0026where=Name=\u0027Unstoppable Charge\u0027"
+    },
+    "remote_full_description": {
+        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
+        "fallback": "ability.creraces.unstoppable_charge.description",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Ability:Unstoppable_Charge\u0026prop=wikitext"
+    }
 }

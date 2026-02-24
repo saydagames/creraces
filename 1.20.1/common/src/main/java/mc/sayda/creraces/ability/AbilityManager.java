@@ -90,8 +90,8 @@ public class AbilityManager extends SimplePreparableReloadListener<Map<ResourceL
                 }
 
                 java.util.List<mc.sayda.creraces.engine.ActionRegistry.RaceAction> onActivate = new java.util.ArrayList<>();
-                if (jsonObject.has("on_activate")) {
-                    for (JsonElement e : jsonObject.getAsJsonArray("on_activate")) {
+                if (jsonObject.has("actions")) {
+                    for (JsonElement e : jsonObject.getAsJsonArray("actions")) {
                         onActivate.add(mc.sayda.creraces.engine.ActionRegistry.fromJson(e.getAsJsonObject()));
                     }
                 }
@@ -102,6 +102,14 @@ public class AbilityManager extends SimplePreparableReloadListener<Map<ResourceL
                             .fromJson(jsonObject.getAsJsonObject("remote_description"));
                     if (remoteConfig != null) {
                         AbilityRegistry.registerRemoteDoc(id, remoteConfig);
+                    }
+                }
+
+                if (jsonObject.has("remote_full_description")) {
+                    mc.sayda.creraces.util.RemoteDocConfig remoteConfig = mc.sayda.creraces.util.RemoteDocConfig
+                            .fromJson(jsonObject.getAsJsonObject("remote_full_description"));
+                    if (remoteConfig != null) {
+                        AbilityRegistry.registerRemoteFullDoc(id, remoteConfig);
                     }
                 }
 

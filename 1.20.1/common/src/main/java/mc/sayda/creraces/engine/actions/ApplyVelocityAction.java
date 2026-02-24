@@ -48,11 +48,12 @@ public class ApplyVelocityAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public void execute(@Nonnull Player p, @Nullable LivingEntity target,
-            @Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
+    public boolean execute(@Nonnull Player p, @Nullable LivingEntity target,
+            @Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @Nullable net.minecraft.core.BlockPos interactionPos) {
         LivingEntity entity = useTarget ? target : p;
         if (entity == null)
-            return;
+            return true;
 
         Vec3 velocity;
         if (mode.equalsIgnoreCase("pull")) {
@@ -69,5 +70,6 @@ public class ApplyVelocityAction implements ActionRegistry.RaceAction {
 
         entity.push(velocity.x, velocity.y, velocity.z);
         entity.hurtMarked = true;
+        return true;
     }
 }

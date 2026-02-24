@@ -18,15 +18,18 @@ public class AOEAction implements ActionRegistry.RaceAction {
 
     private final double radius;
     private final boolean targetPlayers;
+    private final boolean targetEnemies;
     private final boolean excludeCaster;
     private final String requiredEffect;
     private final String notEffect;
     private final List<ActionRegistry.RaceAction> actions;
 
-    public AOEAction(double radius, boolean targetPlayers, boolean excludeCaster, String requiredEffect,
+    public AOEAction(double radius, boolean targetPlayers, boolean targetEnemies, boolean excludeCaster,
+            String requiredEffect,
             String notEffect, List<ActionRegistry.RaceAction> actions) {
         this.radius = radius;
         this.targetPlayers = targetPlayers;
+        this.targetEnemies = targetEnemies;
         this.excludeCaster = excludeCaster;
         this.requiredEffect = requiredEffect;
         this.notEffect = notEffect;
@@ -34,8 +37,12 @@ public class AOEAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public void execute(Player player, net.minecraft.world.entity.LivingEntity target,
-            mc.sayda.creraces.ability.AbilitySlot slot) {
+    public boolean execute(@javax.annotation.Nonnull Player player,
+            @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+        if (player.level() == null)
+            return true;
         AABB area = player.getBoundingBox().inflate(radius);
         List<LivingEntity> targets = player.level().getEntitiesOfClass(
                 LivingEntity.class,
@@ -44,6 +51,8 @@ public class AOEAction implements ActionRegistry.RaceAction {
                     if (excludeCaster && e == player)
                         return false;
                     if (!targetPlayers && e instanceof Player)
+                        return false;
+                    if (!targetEnemies && !(e instanceof Player))
                         return false;
 
                     if (requiredEffect != null && !requiredEffect.isEmpty()) {
@@ -67,17 +76,25 @@ public class AOEAction implements ActionRegistry.RaceAction {
                     return mc.sayda.creraces.team.RaceTeamManager.canHurt(e, player);
                 });
 
+        if (targets.isEmpty()) {
+            return false;
+        }
+
         for (LivingEntity e : targets) {
             for (ActionRegistry.RaceAction action : actions) {
-                action.execute(player, e, slot);
+                if (!action.execute(player, e, slot, interactionPos)) {
+                    return false;
+                }
             }
         }
+        return true;
     }
 
     public static void register() {
         ActionRegistry.register(ID, json -> {
-            double radius = GsonHelper.getAsDouble(json, "radius", 5.0);
+            double radius = GsonHelper.getAsDouble(json, "radius", GsonHelper.getAsDouble(json, "range", 5.0));
             boolean targetPlayers = GsonHelper.getAsBoolean(json, "target_players", true);
+            boolean targetEnemies = GsonHelper.getAsBoolean(json, "target_enemies", true);
             boolean excludeCaster = GsonHelper.getAsBoolean(json, "exclude_caster", true);
             String requiredEffect = GsonHelper.getAsString(json, "required_effect", "");
             String notEffect = GsonHelper.getAsString(json, "not_effect", "");
@@ -88,7 +105,8 @@ public class AOEAction implements ActionRegistry.RaceAction {
                     actions.add(ActionRegistry.fromJson(array.get(i).getAsJsonObject()));
                 }
             }
-            return new AOEAction(radius, targetPlayers, excludeCaster, requiredEffect, notEffect, actions);
+            return new AOEAction(radius, targetPlayers, targetEnemies, excludeCaster, requiredEffect, notEffect,
+                    actions);
         });
     }
 }

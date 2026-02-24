@@ -1,11 +1,14 @@
 package mc.sayda.creraces.race;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import mc.sayda.twilight_lib.capabilities.DataUtils;
 import mc.sayda.twilight_lib.capabilities.IAddons;
 import mc.sayda.twilight_lib.capabilities.AddonsData;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.Map;
+import mc.sayda.creraces.engine.traits.AddonTrait;
 
 /**
  * Bridges CreRaces racial customizations with Twilight Lib's cosmetic system.
@@ -21,111 +24,114 @@ public class CosmeticIncidents {
         if (!(addonsRaw instanceof AddonsData addons))
             return;
 
-        // Clear ALL existing racial addons (fixes Harpy addon clearing bug)
+        // 1. Clear ALL existing racial addons
         clearRacialAddons(addons);
 
-        String raceId = race.id().getPath();
+        // 2. Integrated Application (Auto-apply from Customization definitions)
+        for (RaceCustomization cust : race.customization()) {
+            String value = custMap.getOrDefault(cust.id(), cust.defaultValue());
 
-        // Apply addons defined in race traits
+            // Handle addon mapping (Integrated Cosmetics)
+            if (cust.addonData() != null) {
+                applyAddonData(player, cust.addonData(), value, custMap, addons);
+            }
+
+            // Handle simple addonId (legacy/fixed)
+            if (cust.addonId() != null) {
+                addons.setActiveAddon(cust.addonId(), true, true);
+
+                // If the type is 'tint', apply it as a color to this fixed addon
+                if (cust.type().equals("tint")) {
+                    addons.setAddonTint(cust.addonId(), parseHex(value, 0xFFFFFF));
+                }
+            }
+
+            // If it's a tint customization, we can't auto-apply it to "nothing".
+            // It will be picked up by resolveColor in traits or mapping data.
+        }
+
+        // 3. Trait Application (Still used for fixed/complex logic)
         for (var trait : race.traits()) {
-            if (trait instanceof mc.sayda.creraces.engine.traits.AddonTrait addonTrait) {
-                String addonId = addonTrait.getAddonId();
-                String tintSource = addonTrait.getTint();
+            if (trait instanceof AddonTrait addonTrait) {
+                var condition = addonTrait.getCondition();
+                if (condition != null && !condition.evaluate(player, null, null, null)) {
+                    continue;
+                }
 
-                // Resolve addon ID with customization placeholders
-                addonId = resolvePlaceholders(addonId, custMap);
-
-                // Apply addon
+                String addonId = resolvePlaceholders(addonTrait.getAddonId(), custMap);
                 addons.setActiveAddon(addonId, true, true);
 
-                // Apply tint if specified
-                if (tintSource != null && !tintSource.isEmpty()) {
-                    int tintColor = resolveColor(tintSource, custMap);
+                if (addonTrait.getTint() != null && !addonTrait.getTint().isEmpty()) {
+                    int tintColor = resolveColor(addonTrait.getTint(), custMap);
                     addons.setAddonTint(addonId, tintColor);
                 }
             }
         }
+    }
 
-        // LEGACY: Keep hardcoded logic for now (will be removed after full JSON
-        // migration)
-        // Kitsune Logic
-        if ("kitsune".equals(raceId)) {
-            String color = custMap.getOrDefault("color", "white");
-            // Sanity check: If it's a hex code, force back to a named color for
-            // ResourceLocation
-            if (color.startsWith("#")) {
-                color = "white";
-            }
-
-            String earStyle = custMap.getOrDefault("ear_style", "standard");
-            boolean hasSnout = "true".equals(custMap.getOrDefault("snout", "true"));
-            boolean altTails = "alt".equals(custMap.getOrDefault("tail_style", "standard"));
-
-            // Get tail count from stats, fallback to 1
-            int tailCountVal = 1;
-            try {
-                if (custMap.containsKey("tail_count")) {
-                    tailCountVal = Integer.parseInt(custMap.get("tail_count"));
+    private static void applyAddonData(net.minecraft.world.entity.player.Player player, JsonObject data, String value,
+            Map<String, String> custMap, AddonsData addons) {
+        // Can be a direct map: { "standard": "id", "alt": "id" }
+        // Or a complex map: { "standard": { "id": "id", "tint": "{color}" } }
+        // Or a list (Iterate until first match): { "alt": [ { "id": "alt_id",
+        // "condition": {...} }, "standard_id" ] }
+        if (data.has(value)) {
+            JsonElement element = data.get(value);
+            if (element.isJsonArray()) {
+                // List of possible mappings
+                for (JsonElement e : element.getAsJsonArray()) {
+                    if (applyPossibleAddon(player, e, custMap, addons)) {
+                        // If the entry has a condition, treat the whole list as a fallback chain and
+                        // stop here.
+                        // If it's a simple string or object WITHOUT a condition, assume it's a bundle
+                        // and keep applying.
+                        if (e.isJsonObject() && e.getAsJsonObject().has("condition")) {
+                            break;
+                        }
+                    }
                 }
-            } catch (Exception e) {
-            }
-
-            // Ear Style (Standard/Alt)
-            String earId = "twilight_lib:kitsune_ears_" + color + ("alt".equals(earStyle) ? "_alt" : "");
-            addons.setActiveAddon(earId, true, true);
-
-            if (hasSnout) {
-                addons.setActiveAddon("twilight_lib:kitsune_snout_" + color, true, true);
-            }
-
-            // Alt tails only exist for counts 3-5 in twilight-lib
-            boolean supportsTailAlt = tailCountVal >= 3 && tailCountVal <= 5;
-
-            String tailId = "twilight_lib:kitsune_tails_" + tailCountVal + "_" + color
-                    + (altTails && supportsTailAlt ? "_alt" : "");
-            addons.setActiveAddon(tailId, true, true);
-        }
-
-        // Harpy Logic
-        if ("harpy".equals(raceId)) {
-            String fColorStr = custMap.getOrDefault("feather_color", "#FFFFFF");
-            String lColorStr = custMap.getOrDefault("leg_color", "#FFFF00");
-            boolean altLegs = "alt".equals(custMap.getOrDefault("leg_style", "standard"));
-
-            int fColor = parseHex(fColorStr, 0xFFFFFF);
-            int lColor = parseHex(lColorStr, 0xFFFF00);
-
-            // Addons
-            String wingsId = "twilight_lib:harpy_wings";
-            String thighsStandard = "twilight_lib:harpy_thighs";
-            String thighsAlt = "twilight_lib:harpy_thighs_alt";
-            String legsStandard = "twilight_lib:harpy_legs";
-            String legsAlt = "twilight_lib:harpy_legs_alt";
-
-            // Wings always active
-            addons.setActiveAddon(wingsId, true, true);
-            addons.setAddonTint(wingsId, fColor);
-
-            // Legs/Thighs (Toggle)
-            if (altLegs) {
-                addons.setActiveAddon(legsAlt, true, true);
-                addons.setAddonTint(legsAlt, lColor);
-                addons.forceUnequipAddon(legsStandard);
-                addons.setActiveAddon(thighsAlt, true, true);
-                addons.setAddonTint(thighsAlt, fColor);
-                addons.forceUnequipAddon(thighsStandard);
             } else {
-                addons.setActiveAddon(legsStandard, true, true);
-                addons.setAddonTint(legsStandard, lColor);
-                addons.forceUnequipAddon(legsAlt);
-                addons.setActiveAddon(thighsStandard, true, true);
-                addons.setAddonTint(thighsStandard, fColor);
-                addons.forceUnequipAddon(thighsAlt);
+                applyPossibleAddon(player, element, custMap, addons);
+            }
+        }
+
+        // Support for "pattern": "prefix_{self}_{color}"
+        if (data.has("pattern")) {
+            String pattern = data.get("pattern").getAsString();
+            String addonId = pattern.replace("{self}", value);
+            addonId = resolvePlaceholders(addonId, custMap);
+            addons.setActiveAddon(addonId, true, true);
+        }
+    }
+
+    private static boolean applyPossibleAddon(net.minecraft.world.entity.player.Player player, JsonElement element,
+            Map<String, String> custMap, AddonsData addons) {
+        if (element.isJsonPrimitive()) {
+            addons.setActiveAddon(resolvePlaceholders(element.getAsString(), custMap), true, true);
+            return true;
+        } else if (element.isJsonObject()) {
+            JsonObject obj = element.getAsJsonObject();
+
+            // Check condition if present
+            if (obj.has("condition")) {
+                mc.sayda.creraces.engine.condition.Condition cond = mc.sayda.creraces.engine.condition.Condition
+                        .fromJson(obj.getAsJsonObject("condition"));
+                if (!cond.evaluate(player, null, null, null)) {
+                    return false;
+                }
             }
 
-            // Short Torso (Permanent)
-            addons.setActiveAddon("twilight_lib:short_torso", true, true);
+            if (obj.has("id")) {
+                String id = resolvePlaceholders(obj.get("id").getAsString(), custMap);
+                addons.setActiveAddon(id, true, true);
+                if (obj.has("tint")) {
+                    int tint = resolveColor(obj.get("tint").getAsString(), custMap);
+                    addons.setAddonTint(id, tint);
+                }
+                return true;
+            }
         }
+        return false;
     }
 
     /**
@@ -139,17 +145,10 @@ public class CosmeticIncidents {
         }
     }
 
-    /**
-     * Clears all racial addons (kitsune, harpy, etc.) from the player.
-     * This fixes the bug where Harpy addons weren't being removed on race change.
-     */
     private static void clearRacialAddons(AddonsData addons) {
         Set<String> toRemove = new HashSet<>();
         for (String active : addons.getActiveAddons()) {
-            // Remove all twilight_lib addons that are racial (kitsune, harpy, etc.)
-            if (active.startsWith("twilight_lib:kitsune_") ||
-                    active.startsWith("twilight_lib:harpy_") ||
-                    active.equals("twilight_lib:short_torso")) {
+            if (active.startsWith("twilight_lib:")) {
                 toRemove.add(active);
             }
         }
@@ -158,12 +157,7 @@ public class CosmeticIncidents {
         }
     }
 
-    /**
-     * Resolves placeholders in addon IDs using customization values.
-     * Example: "twilight_lib:kitsune_ears_{color}" + color="yellow" =>
-     * "twilight_lib:kitsune_ears_yellow"
-     */
-    private static String resolvePlaceholders(String template, Map<String, String> custMap) {
+    public static String resolvePlaceholders(String template, Map<String, String> custMap) {
         String result = template;
         for (Map.Entry<String, String> entry : custMap.entrySet()) {
             result = result.replace("{" + entry.getKey() + "}", entry.getValue());
@@ -171,18 +165,12 @@ public class CosmeticIncidents {
         return result;
     }
 
-    /**
-     * Resolves a color value from customization or hex string.
-     * Supports both direct hex values (#FFFFFF) and customization keys.
-     */
     private static int resolveColor(String colorSource, Map<String, String> custMap) {
-        // Check if it's a customization key reference (e.g., "{feather_color}")
         if (colorSource.startsWith("{") && colorSource.endsWith("}")) {
             String key = colorSource.substring(1, colorSource.length() - 1);
             String value = custMap.getOrDefault(key, "#FFFFFF");
             return parseHex(value, 0xFFFFFF);
         }
-        // Direct hex value
         return parseHex(colorSource, 0xFFFFFF);
     }
 

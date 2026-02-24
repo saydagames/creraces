@@ -2,13 +2,30 @@
     "name": "ability.creraces.camouflage.name",
     "description": "ability.creraces.camouflage.description",
     "icon": "minecraft:fern",
-    "mana_cost": 1,
+    "cost": 1,
+    "race": [
+        "creraces:dryad",
+        "creraces:naiad"
+    ],
     "actions": [
         {
-            "type": "creraces:apply_effect",
-            "effect": "creraces:true_invisibility",
-            "duration": 100,
-            "amplifier": 0
+            "type": "creraces:toggle_state"
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:block.chorus_flower.death",
+            "volume": 0.5,
+            "pitch": 2.0
         }
-    ]
+    ],
+    "remote_description": {
+        "selector": "",
+        "fallback": "ability.creraces.camouflage.description",
+        "source": "https://creraces.wiki.gg/api.php?action=cargoquery\u0026format=json\u0026tables=Abilities\u0026fields=Description\u0026where=Name=\u0027Camouflage\u0027"
+    },
+    "remote_full_description": {
+        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
+        "fallback": "ability.creraces.camouflage.description",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Ability:Camouflage\u0026prop=wikitext"
+    }
 }

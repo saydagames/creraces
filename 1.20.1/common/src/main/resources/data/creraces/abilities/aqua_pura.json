@@ -2,7 +2,10 @@
     "name": "ability.creraces.aqua_pura.name",
     "description": "ability.creraces.aqua_pura.description",
     "icon": "minecraft:water_bucket",
-    "mana_cost": 1,
+    "cost": 1,
+    "race": [
+        "creraces:naiad"
+    ],
     "actions": [
         {
             "type": "creraces:apply_effect",
@@ -15,6 +18,30 @@
             "effect": "minecraft:weakness",
             "duration": 100,
             "amplifier": 1
+        },
+        {
+            "type": "creraces:apply_particles",
+            "particle": "minecraft:bubble",
+            "count": 10,
+            "spread_x": 0.5,
+            "spread_y": 1.0,
+            "spread_z": 0.5
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:ambient.underwater.enter",
+            "volume": 0.8,
+            "pitch": 1.2
         }
-    ]
+    ],
+    "remote_description": {
+        "selector": "",
+        "fallback": "ability.creraces.aqua_pura.description",
+        "source": "https://creraces.wiki.gg/api.php?action=cargoquery\u0026format=json\u0026tables=Abilities\u0026fields=Description\u0026where=Name=\u0027Aqua Pura\u0027"
+    },
+    "remote_full_description": {
+        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
+        "fallback": "ability.creraces.aqua_pura.description",
+        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Ability:Aqua_Pura\u0026prop=wikitext"
+    }
 }

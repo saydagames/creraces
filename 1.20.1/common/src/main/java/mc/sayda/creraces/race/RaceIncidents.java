@@ -15,11 +15,7 @@ public class RaceIncidents {
                 AttributeIncidents.eikiJudgment(player);
 
                 // Reset Scale
-                try {
-                    virtuoel.pehkui.api.ScaleTypes.BASE.getScaleData(player).setScale(1.0f);
-                    virtuoel.pehkui.api.ScaleTypes.BASE.getScaleData(player).setTargetScale(1.0f);
-                } catch (Throwable ignored) {
-                } // Pehkui might not be present
+                applyScale(player, RaceScale.DEFAULT);
 
                 BoundaryHandler.resyncVariables(player, player);
             });
@@ -39,11 +35,7 @@ public class RaceIncidents {
             vars.setHasChosenRace(true);
 
             // Apply Scale
-            try {
-                virtuoel.pehkui.api.ScaleTypes.BASE.getScaleData(player).setScale(race.scale());
-                virtuoel.pehkui.api.ScaleTypes.BASE.getScaleData(player).setTargetScale(race.scale());
-            } catch (Throwable ignored) {
-            } // Pehkui might not be present
+            applyScale(player, race.scale());
 
             // Apply Base Stats
             vars.setAp(race.baseAp());
@@ -101,5 +93,60 @@ public class RaceIncidents {
                 BoundaryHandler.sendOpenMirror(player);
             }
         });
+    }
+
+    /**
+     * Lightweight refresh for player's race attributes and cosmetics.
+     */
+    public static void refreshPlayer(ServerPlayer player) {
+        DataUtils.getVariables(player).ifPresent(vars -> {
+            ResourceLocation raceId = vars.getRace();
+            Race race = RaceRegistry.get(raceId);
+            if (race == null)
+                return;
+
+            // Re-apply Vanilla Attributes
+            AttributeIncidents.eikiJudgment(player);
+
+            // Re-apply Cosmetics
+            CosmeticIncidents.applyCustomizations(player, vars.getCustomizations(), race);
+
+            // Full Sync to client and trackers
+            BoundaryHandler.resyncVariables(player, player);
+            if (player.level() != null) {
+                player.level().players().forEach(p -> {
+                    if (p instanceof ServerPlayer sp && sp != player) {
+                        BoundaryHandler.resyncVariables(player, sp);
+                    }
+                });
+            }
+        });
+    }
+
+    public static void applyScale(net.minecraft.world.entity.LivingEntity entity, RaceScale scale) {
+        try {
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.BASE, scale.base());
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.WIDTH, scale.width());
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.HEIGHT, scale.height());
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.HITBOX_WIDTH, scale.hitboxWidth());
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.HITBOX_HEIGHT, scale.hitboxHeight());
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.EYE_HEIGHT, scale.eyeHeight());
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.REACH, scale.reach());
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.MINING_SPEED, scale.miningSpeed());
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.MOTION, scale.motion());
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.STEP_HEIGHT, scale.stepHeight());
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.JUMP_HEIGHT, scale.jumpHeight());
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.KNOCKBACK, scale.knockback());
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.FALLING, scale.fallSpeed());
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static void applyScaleType(net.minecraft.world.entity.LivingEntity entity,
+            virtuoel.pehkui.api.ScaleType type,
+            float scale) {
+        virtuoel.pehkui.api.ScaleData data = type.getScaleData(entity);
+        data.setScale(scale);
+        data.setTargetScale(scale);
     }
 }

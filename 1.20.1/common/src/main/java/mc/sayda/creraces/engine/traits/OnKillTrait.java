@@ -46,9 +46,9 @@ public class OnKillTrait implements TraitRegistry.RaceTrait {
             return;
         }
 
-        if (condition == null || condition.evaluate(player, target, null)) {
+        if (condition == null || condition.evaluate(player, target, null, null)) {
             for (ActionRegistry.RaceAction action : actions) {
-                action.execute(player, target, null);
+                action.execute(player, target, null, null);
             }
         }
     }

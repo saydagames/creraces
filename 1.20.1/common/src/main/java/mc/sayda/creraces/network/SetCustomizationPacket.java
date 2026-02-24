@@ -64,6 +64,7 @@ public class SetCustomizationPacket {
                     }
                     // Sync back to tracking players
                     BoundaryHandler.resyncForAllTrackers(player);
+                    mc.sayda.creraces.race.AttributeIncidents.eikiJudgment(player);
                 });
             }
         });

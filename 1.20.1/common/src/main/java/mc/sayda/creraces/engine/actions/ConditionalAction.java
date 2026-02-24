@@ -27,11 +27,24 @@ public class ConditionalAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public void execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
-            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
-        boolean result = condition.evaluate(player, target, slot);
+    public boolean execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+        boolean result = condition.evaluate(player, target, slot, interactionPos);
         List<ActionRegistry.RaceAction> actions = result ? ifTrue : ifFalse;
-        actions.forEach(action -> action.execute(player, target, slot));
+
+        if (actions.isEmpty()) {
+            // If the condition failed and there are no 'if_false' actions, return false.
+            // If the condition succeeded and there are no 'if_true' actions, return true.
+            return result;
+        }
+
+        for (ActionRegistry.RaceAction action : actions) {
+            if (!action.execute(player, target, slot, interactionPos)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static void register() {

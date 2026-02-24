@@ -9,6 +9,7 @@ import net.minecraft.world.item.ItemStack;
 
 public class ClientAccess {
     public static boolean hasReceivedInitialSync = false;
+    public static boolean isWaitingForRaceSelection = false;
 
     public static Level getLevel() {
         return EnvExecutor.getEnvSpecific(() -> () -> net.minecraft.client.Minecraft.getInstance().level,
@@ -45,13 +46,23 @@ public class ClientAccess {
         mc.sayda.creraces.capability.DataUtils.getVariables(finalTarget).ifPresent(vars -> {
             vars.deserialize(data);
             mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
-            if (race != null) {
+
+            // Skip cosmetic application if the local player is in the Mirror Screen
+            // (The Mirror handles its own preview logic and we don't want server sync to
+            // "snap back" unsaved edits)
+            boolean isInMirror = finalTarget == minecraft.player
+                    && minecraft.screen instanceof mc.sayda.creraces.client.screen.DynamicMirrorScreen;
+
+            if (race != null && !isInMirror) {
                 mc.sayda.creraces.race.CosmeticIncidents.applyCustomizations(finalTarget,
                         vars.getCustomizations(),
                         race);
             }
             if (finalTarget == minecraft.player) {
                 hasReceivedInitialSync = true;
+                if (data.contains("RaceChosen")) {
+                    isWaitingForRaceSelection = false;
+                }
             }
         });
     }

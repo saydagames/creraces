@@ -24,8 +24,9 @@ public class DashAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public void execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
-            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
+    public boolean execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
         double p = power.evaluate(player);
         Vec3 look = player.getLookAngle();
         Vec3 motion = player.getDeltaMovement();
@@ -46,6 +47,7 @@ public class DashAction implements ActionRegistry.RaceAction {
         double yScale = "up".equalsIgnoreCase(direction) || "down".equalsIgnoreCase(direction) ? 1.0 : yMultiplier;
         player.setDeltaMovement(motion.add(dashVec.x * p, dashVec.y * p * yScale + yBoost, dashVec.z * p));
         player.hurtMarked = true;
+        return true;
     }
 
     public static void register() {

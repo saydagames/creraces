@@ -54,6 +54,8 @@ public class CreRaces {
         // Entities
         mc.sayda.creraces.registry.ModEntities.register();
 
+        // Blocks
+        mc.sayda.creraces.registry.ModBlocks.register();
         // Items
         mc.sayda.creraces.registry.ModItems.register();
         // Tabs

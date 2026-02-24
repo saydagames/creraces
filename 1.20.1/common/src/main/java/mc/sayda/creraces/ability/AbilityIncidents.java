@@ -82,6 +82,7 @@ public class AbilityIncidents {
             case RAGE -> vars.getRage() >= cost;
             case ENERGY -> vars.getEnergy() >= cost;
             case GRIT -> vars.getGrit() >= cost;
+            case SOULS -> vars.getSouls() >= cost;
             default -> true;
         };
     }
@@ -90,10 +91,11 @@ public class AbilityIncidents {
         if (cost <= 0)
             return;
         switch (race.resourceType()) {
-            case MANA -> vars.setMana(vars.getMana() - cost);
-            case RAGE -> vars.setRage(vars.getRage() - cost);
-            case ENERGY -> vars.setEnergy(vars.getEnergy() - cost);
-            case GRIT -> vars.setGrit(vars.getGrit() - cost);
+            case MANA -> vars.setMana(Math.max(0, vars.getMana() - cost));
+            case RAGE -> vars.setRage(Math.max(0, vars.getRage() - cost));
+            case ENERGY -> vars.setEnergy(Math.max(0, vars.getEnergy() - cost));
+            case GRIT -> vars.setGrit(Math.max(0, vars.getGrit() - cost));
+            case SOULS -> vars.setSouls(Math.max(0, vars.getSouls() - cost));
             case NONE -> {
             }
             default -> {
