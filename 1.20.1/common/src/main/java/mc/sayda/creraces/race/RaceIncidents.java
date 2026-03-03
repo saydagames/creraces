@@ -108,6 +108,9 @@ public class RaceIncidents {
             // Re-apply Vanilla Attributes
             AttributeIncidents.eikiJudgment(player);
 
+            // Re-apply Scale
+            applyScale(player, race.scale());
+
             // Re-apply Cosmetics
             CosmeticIncidents.applyCustomizations(player, vars.getCustomizations(), race);
 
@@ -124,21 +127,35 @@ public class RaceIncidents {
     }
 
     public static void applyScale(net.minecraft.world.entity.LivingEntity entity, RaceScale scale) {
+        if (!(entity instanceof net.minecraft.world.entity.player.Player player))
+            return;
+
         try {
-            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.BASE, scale.base());
-            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.WIDTH, scale.width());
-            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.HEIGHT, scale.height());
-            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.HITBOX_WIDTH, scale.hitboxWidth());
-            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.HITBOX_HEIGHT, scale.hitboxHeight());
-            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.EYE_HEIGHT, scale.eyeHeight());
-            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.REACH, scale.reach());
-            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.MINING_SPEED, scale.miningSpeed());
-            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.MOTION, scale.motion());
-            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.STEP_HEIGHT, scale.stepHeight());
-            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.JUMP_HEIGHT, scale.jumpHeight());
-            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.KNOCKBACK, scale.knockback());
-            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.FALLING, scale.fallSpeed());
-        } catch (Throwable ignored) {
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.BASE, (float) scale.base().evaluate(player));
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.WIDTH, (float) scale.width().evaluate(player));
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.HEIGHT, (float) scale.height().evaluate(player));
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.HITBOX_WIDTH,
+                    (float) scale.hitboxWidth().evaluate(player));
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.HITBOX_HEIGHT,
+                    (float) scale.hitboxHeight().evaluate(player));
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.EYE_HEIGHT,
+                    (float) scale.eyeHeight().evaluate(player));
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.REACH, (float) scale.reach().evaluate(player));
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.MINING_SPEED,
+                    (float) scale.miningSpeed().evaluate(player));
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.MOTION, (float) scale.motion().evaluate(player));
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.STEP_HEIGHT,
+                    (float) scale.stepHeight().evaluate(player));
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.JUMP_HEIGHT,
+                    (float) scale.jumpHeight().evaluate(player));
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.KNOCKBACK,
+                    (float) scale.knockback().evaluate(player));
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.FALLING, (float) scale.fallSpeed().evaluate(player));
+        } catch (Throwable e) {
+            // Pehkui may be absent or throw on unsupported scale types — not fatal, but log
+            // it
+            mc.sayda.creraces.CreRaces.LOGGER.warn("[CreRaces] Failed to apply scale for entity {}: {}",
+                    entity.getName().getString(), e.getMessage());
         }
     }
 

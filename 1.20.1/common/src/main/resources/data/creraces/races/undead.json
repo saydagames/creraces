@@ -38,7 +38,9 @@
             "actions": [
                 {
                     "type": "creraces:heal",
-                    "amount": 2.0
+                    "amount": {
+                        "base": 2.0
+                    }
                 }
             ]
         },
@@ -48,10 +50,13 @@
                 {
                     "type": "creraces:apply_effect",
                     "effect": "creraces:life_drain",
-                    "duration": 200,
-                    "amplifier": 0,
-                    "visible": true,
-                    "target_enemies": true
+                    "duration": {
+                        "base": 200.0
+                    },
+                    "amplifier": {
+                        "base": 0.0
+                    },
+                    "visible": true
                 }
             ]
         }
@@ -63,11 +68,11 @@
     "remote_description": {
         "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
         "fallback": "race.creraces.undead.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Undead\u0026prop=wikitext"
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Undead&prop=wikitext"
     },
     "remote_passive": {
         "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
         "fallback": "No passive documentation found on wiki.",
-        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Undead\u0026prop=wikitext"
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Undead&prop=wikitext"
     }
 }

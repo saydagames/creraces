@@ -6,8 +6,6 @@ import mc.sayda.creraces.util.GsonHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 /**
  * Action that triggers the visual item activation animation on the client.
@@ -30,10 +28,10 @@ public class ItemAnimationAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public boolean execute(@Nonnull Player p, @Nullable net.minecraft.world.entity.LivingEntity target,
-            @Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @Nullable net.minecraft.core.BlockPos interactionPos) {
-        if (p instanceof ServerPlayer serverPlayer) {
+    public boolean execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+        if (player instanceof ServerPlayer serverPlayer) {
             BoundaryHandler.sendItemAnimation(serverPlayer, itemId);
         }
         return true;

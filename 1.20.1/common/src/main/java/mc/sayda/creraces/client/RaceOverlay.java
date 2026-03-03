@@ -13,8 +13,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nonnull;
 
@@ -141,8 +144,10 @@ public class RaceOverlay {
         if (abilityId != null && !abilityId.toString().equals("creraces:none")) {
             Ability ability = AbilityRegistry.get(abilityId);
             if (ability != null) {
-                // Draw Ability Icon
-                graphics.blit(ability.icon(), x + 1, y + 1, 0, 0, 16, 16, 16, 16);
+                // Draw Ability Icon using item render (icon stores an item ID like
+                // minecraft:feather)
+                Item iconItem = BuiltInRegistries.ITEM.get(ability.icon());
+                graphics.renderItem(new ItemStack(iconItem), x + 1, y + 1);
 
                 // Draw Cooldown
                 int cooldown = vars.getCooldown(abilityId);

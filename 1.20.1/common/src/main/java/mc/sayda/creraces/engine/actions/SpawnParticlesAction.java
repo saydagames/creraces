@@ -36,7 +36,7 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
                     ScalingValue radius = ScalingValue.fromJson(json, "radius", 1.0);
                     ScalingValue height = ScalingValue.fromJson(json, "height", 2.0);
                     ScalingValue count = ScalingValue.fromJson(json, "count", 20.0);
-                    double rotations = GsonHelper.getAsDouble(json, "rotations", 1.0);
+                    ScalingValue rotations = ScalingValue.fromJson(json, "rotations", 1.0);
                     yield new HelixPattern(radius, height, count, rotations);
                 }
                 default -> null;
@@ -98,7 +98,7 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
         }
     }
 
-    private record HelixPattern(ScalingValue radius, ScalingValue height, ScalingValue points, double rotations)
+    private record HelixPattern(ScalingValue radius, ScalingValue height, ScalingValue points, ScalingValue rotations)
             implements ParticlePattern {
         @Override
         public void spawn(ServerLevel level, Player player, net.minecraft.world.entity.LivingEntity target,
@@ -106,13 +106,14 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
             double r = radius.evaluate(player, target);
             double h = height.evaluate(player, target);
             int pCount = (int) points.evaluate(player, target);
+            double rot = rotations.evaluate(player, target);
             if (pCount <= 0)
                 return;
 
             double spinOffset = level.getGameTime() * spin;
             for (int i = 0; i < pCount; i++) {
                 double t = (double) i / pCount;
-                double angle = (2 * Math.PI * rotations * t) + spinOffset;
+                double angle = (2 * Math.PI * rot * t) + spinOffset;
                 double dx = Math.cos(angle) * r;
                 double dz = Math.sin(angle) * r;
                 double dy = t * h;
@@ -125,15 +126,16 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
 
     private final ParticleOptions particle;
     private final ScalingValue count;
-    private final double speed;
-    private final double dx, dy, dz;
-    private final double spin;
+    private final ScalingValue speed;
+    private final ScalingValue dx, dy, dz;
+    private final ScalingValue spin;
     @javax.annotation.Nullable
     private final ParticlePattern pattern;
 
-    public SpawnParticlesAction(ParticleOptions particle, ScalingValue count, double speed, double dx, double dy,
-            double dz,
-            double spin, @javax.annotation.Nullable ParticlePattern pattern) {
+    public SpawnParticlesAction(ParticleOptions particle, ScalingValue count, ScalingValue speed, ScalingValue dx,
+            ScalingValue dy,
+            ScalingValue dz,
+            ScalingValue spin, @javax.annotation.Nullable ParticlePattern pattern) {
         this.particle = particle;
         this.count = count;
         this.speed = speed;
@@ -154,17 +156,19 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
                 return true;
 
             if (pattern != null) {
-                pattern.spawn(sl, player, target, particle, pCount, speed, spin);
+                pattern.spawn(sl, player, target, particle, pCount, speed.evaluate(player, target),
+                        spin.evaluate(player, target));
             } else {
-                sl.sendParticles(particle, player.getX(), player.getY() + 1.0, player.getZ(), pCount, dx, dy, dz,
-                        speed);
+                sl.sendParticles(particle, player.getX(), player.getY() + 1.0, player.getZ(), pCount,
+                        dx.evaluate(player, target), dy.evaluate(player, target), dz.evaluate(player, target),
+                        speed.evaluate(player, target));
             }
         }
         return true;
     }
 
     public static void register() {
-        ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "spawn_particles"), json -> {
+        ActionRegistry.ActionFactory factory = json -> {
             String particleId = GsonHelper.getAsString(json, "particle");
             if (particleId == null)
                 return null;
@@ -177,11 +181,11 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
             }
 
             ScalingValue count = ScalingValue.fromJson(json, "count", 1.0);
-            double speed = GsonHelper.getAsDouble(json, "speed", 0.0);
-            double dx = GsonHelper.getAsDouble(json, "dx", 0.0);
-            double dy = GsonHelper.getAsDouble(json, "dy", 0.0);
-            double dz = GsonHelper.getAsDouble(json, "dz", 0.0);
-            double spin = GsonHelper.getAsDouble(json, "spin", 0.0);
+            ScalingValue speed = ScalingValue.fromJson(json, "speed", 0.0);
+            ScalingValue dx = ScalingValue.fromJson(json, "dx", 0.0);
+            ScalingValue dy = ScalingValue.fromJson(json, "dy", 0.0);
+            ScalingValue dz = ScalingValue.fromJson(json, "dz", 0.0);
+            ScalingValue spin = ScalingValue.fromJson(json, "spin", 0.0);
 
             ParticlePattern pattern = null;
             if (json.has("pattern") && json.get("pattern").isJsonObject()) {
@@ -189,6 +193,9 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
             }
 
             return new SpawnParticlesAction(options, count, speed, dx, dy, dz, spin, pattern);
-        });
+        };
+
+        ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "spawn_particles"), factory);
+        ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "apply_particles"), factory);
     }
 }

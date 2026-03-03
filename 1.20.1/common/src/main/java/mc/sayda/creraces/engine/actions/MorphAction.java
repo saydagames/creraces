@@ -3,6 +3,7 @@ package mc.sayda.creraces.engine.actions;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.engine.ActionRegistry;
+import mc.sayda.creraces.engine.ScalingValue;
 import mc.sayda.creraces.util.GsonHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -16,9 +17,9 @@ import java.util.Optional;
 public class MorphAction implements ActionRegistry.RaceAction {
 
     private final String entityType; // null to clear morph
-    private final double scale;
+    private final ScalingValue scale;
 
-    public MorphAction(String entityType, double scale) {
+    public MorphAction(String entityType, ScalingValue scale) {
         this.entityType = entityType;
         this.scale = scale;
     }
@@ -64,10 +65,11 @@ public class MorphAction implements ActionRegistry.RaceAction {
                                 player.getUUID(), Optional.of(entityId)));
 
                 // Apply scale if specified
-                if (scale > 0 && scale != 1.0 && player.getServer() != null && player instanceof ServerPlayer sp) {
+                double s = scale.evaluate(player, target);
+                if (s > 0 && s != 1.0 && player.getServer() != null && player instanceof ServerPlayer sp) {
                     sp.getServer().getCommands().performPrefixedCommand(
                             sp.createCommandSourceStack().withPermission(4).withSuppressedOutput(),
-                            "scale set pehkui:base " + scale + " @s");
+                            "scale set pehkui:base " + s + " @s");
                 }
             }
 
@@ -80,7 +82,7 @@ public class MorphAction implements ActionRegistry.RaceAction {
     public static void register() {
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "morph"), json -> {
             String entityType = GsonHelper.getAsString(json, "entity_type", null);
-            double scale = GsonHelper.getAsDouble(json, "scale", 1.0);
+            ScalingValue scale = ScalingValue.fromJson(json, "scale", 1.0);
             return new MorphAction(entityType, scale);
         });
     }

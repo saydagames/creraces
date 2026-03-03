@@ -10,18 +10,23 @@
     "splash": "creraces:textures/screens/harpy_splash.png",
     "resource_type": "ENERGY",
     "max_resource": 100,
+    "tier": "creraces:rare",
     "difficulty": 2,
     "traits": [
         {
             "type": "creraces:attribute_modifier",
             "attribute": "creraces:ability_power",
-            "value": 10.0,
+            "value": {
+                "base": 10.0
+            },
             "operation": "addition"
         },
         {
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.attack_damage",
-            "value": 5.0,
+            "value": {
+                "base": 5.0
+            },
             "operation": "addition"
         },
         {
@@ -47,7 +52,9 @@
                 {
                     "type": "creraces:launch_projectile",
                     "projectile": "minecraft:feather",
-                    "damage": 1.0,
+                    "damage": {
+                        "base": 1.0
+                    },
                     "speed": 2.5,
                     "inaccuracy": 1.0
                 },
@@ -67,7 +74,9 @@
                 {
                     "type": "creraces:launch_projectile",
                     "projectile": "creraces:harpy_feather",
-                    "damage": 2.5,
+                    "damage": {
+                        "base": 2.5
+                    },
                     "speed": 2.5,
                     "inaccuracy": 1.0
                 },
@@ -82,7 +91,9 @@
         {
             "type": "creraces:flight",
             "resource": "ENERGY",
-            "drain_rate": 0.1,
+            "drain_rate": {
+                "base": 0.1
+            },
             "condition": {
                 "type": "creraces:ability_state",
                 "ability": "creraces:talon_strike",
@@ -94,30 +105,52 @@
             "condition": {
                 "type": "creraces:ability_state",
                 "ability": "creraces:talon_strike",
-                "value": 1.0
+                "value": {
+                    "base": 1.0
+                }
             },
             "actions": [
                 {
                     "type": "creraces:aoe",
-                    "range": 4.0,
-                    "damage": 10.0
+                    "radius": {
+                        "base": 4.0
+                    },
+                    "actions": [
+                        {
+                            "type": "creraces:damage",
+                            "amount": {
+                                "base": 10.0
+                            },
+                            "damage_type": "minecraft:player_attack"
+                        }
+                    ]
                 },
                 {
                     "type": "creraces:play_sound",
                     "sound": "minecraft:entity.generic.explode",
-                    "volume": 0.8,
-                    "pitch": 1.2
+                    "volume": {
+                        "base": 0.8
+                    },
+                    "pitch": {
+                        "base": 1.2
+                    }
                 },
                 {
                     "type": "creraces:spawn_particles",
                     "particle": "minecraft:explosion",
-                    "count": 5,
-                    "speed": 0.1
+                    "count": {
+                        "base": 5.0
+                    },
+                    "speed": {
+                        "base": 0.1
+                    }
                 },
                 {
                     "type": "creraces:set_state",
                     "ability": "creraces:talon_strike",
-                    "value": 0.0
+                    "value": {
+                        "base": 0.0
+                    }
                 }
             ]
         },
@@ -127,8 +160,10 @@
                 {
                     "type": "creraces:drop_item",
                     "item": "creraces:harpy_feather",
-                    "count": 1,
-                    "chance": 0.1
+                    "amount": 1,
+                    "chance": {
+                        "base": 0.1
+                    }
                 }
             ]
         }
@@ -193,11 +228,11 @@
     "remote_description": {
         "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
         "fallback": "race.creraces.harpy.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Harpy\u0026prop=wikitext"
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Harpy&prop=wikitext"
     },
     "remote_passive": {
         "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
         "fallback": "No passive documentation found on wiki.",
-        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Harpy\u0026prop=wikitext"
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Harpy&prop=wikitext"
     }
 }

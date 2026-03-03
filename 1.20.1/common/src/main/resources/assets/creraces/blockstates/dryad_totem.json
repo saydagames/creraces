@@ -1,19 +1,7 @@
 {
   "variants": {
-    "facing=north": {
+    "": {
       "model": "creraces:block/dryad_totem"
-    },
-    "facing=east": {
-      "model": "creraces:block/dryad_totem",
-      "y": 90
-    },
-    "facing=south": {
-      "model": "creraces:block/dryad_totem",
-      "y": 180
-    },
-    "facing=west": {
-      "model": "creraces:block/dryad_totem",
-      "y": 270
     }
   }
 }

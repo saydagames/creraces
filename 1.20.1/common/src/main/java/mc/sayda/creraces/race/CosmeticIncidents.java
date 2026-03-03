@@ -58,7 +58,7 @@ public class CosmeticIncidents {
                     continue;
                 }
 
-                String addonId = resolvePlaceholders(addonTrait.getAddonId(), custMap);
+                String addonId = resolvePlaceholders(addonTrait.getAddonId(), custMap, race);
                 addons.setActiveAddon(addonId, true, true);
 
                 if (addonTrait.getTint() != null && !addonTrait.getTint().isEmpty()) {
@@ -99,7 +99,8 @@ public class CosmeticIncidents {
         if (data.has("pattern")) {
             String pattern = data.get("pattern").getAsString();
             String addonId = pattern.replace("{self}", value);
-            addonId = resolvePlaceholders(addonId, custMap);
+            addonId = resolvePlaceholders(addonId, custMap, null); // Pass null if race not easily available, or
+                                                                   // refactor
             addons.setActiveAddon(addonId, true, true);
         }
     }
@@ -107,7 +108,7 @@ public class CosmeticIncidents {
     private static boolean applyPossibleAddon(net.minecraft.world.entity.player.Player player, JsonElement element,
             Map<String, String> custMap, AddonsData addons) {
         if (element.isJsonPrimitive()) {
-            addons.setActiveAddon(resolvePlaceholders(element.getAsString(), custMap), true, true);
+            addons.setActiveAddon(resolvePlaceholders(element.getAsString(), custMap, null), true, true);
             return true;
         } else if (element.isJsonObject()) {
             JsonObject obj = element.getAsJsonObject();
@@ -122,7 +123,7 @@ public class CosmeticIncidents {
             }
 
             if (obj.has("id")) {
-                String id = resolvePlaceholders(obj.get("id").getAsString(), custMap);
+                String id = resolvePlaceholders(obj.get("id").getAsString(), custMap, null);
                 addons.setActiveAddon(id, true, true);
                 if (obj.has("tint")) {
                     int tint = resolveColor(obj.get("tint").getAsString(), custMap);
@@ -146,22 +147,49 @@ public class CosmeticIncidents {
     }
 
     private static void clearRacialAddons(AddonsData addons) {
-        Set<String> toRemove = new HashSet<>();
-        for (String active : addons.getActiveAddons()) {
-            if (active.startsWith("twilight_lib:")) {
-                toRemove.add(active);
+        // External grants (race-applied) are the only active addons a player can have
+        // WITHOUT owning — player /tlcosmetics selections always require ownership.
+        // So: racial addons = active addons NOT in the player's owned set.
+        // This avoids depending on getExternalGrants() which requires twilight-lib
+        // rebuild.
+        Set<String> owned = new HashSet<>(addons.getAddons());
+        Set<String> active = new HashSet<>(addons.getActiveAddons());
+        for (String id : active) {
+            if (!owned.contains(id)) {
+                addons.forceUnequipAddon(id); // racial grant — safe to remove
             }
-        }
-        for (String id : toRemove) {
-            addons.forceUnequipAddon(id);
         }
     }
 
     public static String resolvePlaceholders(String template, Map<String, String> custMap) {
+        return resolvePlaceholders(template, custMap, null);
+    }
+
+    public static String resolvePlaceholders(String template, Map<String, String> custMap,
+            @javax.annotation.Nullable Race race) {
         String result = template;
+
+        // 1. Fill from provided customization map
         for (Map.Entry<String, String> entry : custMap.entrySet()) {
             result = result.replace("{" + entry.getKey() + "}", entry.getValue());
         }
+
+        // 2. Fill missing placeholders from race defaults if available
+        if (race != null && result.contains("{")) {
+            for (RaceCustomization cust : race.customization()) {
+                String placeholder = "{" + cust.id() + "}";
+                if (result.contains(placeholder)) {
+                    result = result.replace(placeholder, cust.defaultValue());
+                }
+            }
+        }
+
+        // 3. Last resort: Strip remaining placeholders to prevent ResourceLocation
+        // crashes
+        if (result.contains("{")) {
+            result = result.replaceAll("\\{[^}]*\\}", "0");
+        }
+
         return result;
     }
 

@@ -9,6 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,7 +32,6 @@ public class PlayerVariables implements IPlayerVariables {
     private double grit = 0.0;
     private double souls = 0.0;
     private double passiveCooldown = 0.0;
-    private double resourceTimer = 0.0;
     private double stacks = 0.0;
     private final Map<ResourceLocation, Integer> cooldowns = new ConcurrentHashMap<>();
     private final Set<ResourceLocation> unlockedAbilities = ConcurrentHashMap.newKeySet();
@@ -41,6 +41,11 @@ public class PlayerVariables implements IPlayerVariables {
     private boolean morphed = false;
     private UUID teamId = null;
     private String teamName = "";
+    private double resourceTimer = 0.0;
+    private boolean abilityActive = false;
+    private ResourceLocation activeAbility = null;
+    private int activeAbilityDuration = 0;
+    private double activeAbilityDrain = 0.0;
     private int gState = 0;
     private boolean hasPocket = false;
     private double pocketX = 0.0;
@@ -50,6 +55,8 @@ public class PlayerVariables implements IPlayerVariables {
     private double returnY = 0.0;
     private double returnZ = 0.0;
     private String returnDim = "minecraft:overworld";
+    private boolean isInSpiritRealm = false;
+    private boolean smallBuild = false;
 
     @Override
     public ResourceLocation getRace() {
@@ -259,6 +266,13 @@ public class PlayerVariables implements IPlayerVariables {
     }
 
     @Override
+    public void revokeAbility(ResourceLocation abilityId) {
+        unlockedAbilities.remove(abilityId);
+        // Also remove from equipped slots
+        equippedAbilities.entrySet().removeIf(entry -> entry.getValue().equals(abilityId));
+    }
+
+    @Override
     public boolean isAbilityUnlocked(ResourceLocation abilityId) {
         return unlockedAbilities.contains(abilityId);
     }
@@ -307,6 +321,45 @@ public class PlayerVariables implements IPlayerVariables {
         this.morphed = false;
         this.teamId = null;
         this.teamName = "";
+        this.gState = 0;
+        this.hasPocket = false;
+        this.pocketX = 0;
+        this.pocketY = 0;
+        this.pocketZ = 0;
+        this.returnX = 0;
+        this.returnY = 0;
+        this.returnZ = 0;
+        this.returnDim = "minecraft:overworld";
+        this.isInSpiritRealm = false;
+        this.smallBuild = false;
+        this.abilityActive = false;
+        this.activeAbility = null;
+        this.activeAbilityDuration = 0;
+        this.activeAbilityDrain = 0;
+    }
+
+    @Override
+    public void resetOnDeath() {
+        this.mana = 0;
+        this.rage = 0;
+        this.energy = 0;
+        this.grit = 0;
+        this.souls = 0;
+        this.stacks = 0;
+        this.resourceTimer = 0;
+        this.passiveCooldown = 0;
+        this.cooldowns.clear();
+
+        // Clear non-persistent ability states
+        abilityStates.entrySet().removeIf(entry -> {
+            mc.sayda.creraces.ability.Ability ability = mc.sayda.creraces.ability.AbilityRegistry.get(entry.getKey());
+            return ability == null || !ability.persistent();
+        });
+
+        this.abilityActive = false;
+        this.activeAbility = null;
+        this.activeAbilityDuration = 0;
+        this.activeAbilityDrain = 0;
     }
 
     @Override
@@ -475,9 +528,70 @@ public class PlayerVariables implements IPlayerVariables {
     }
 
     @Override
+    public boolean isInSpiritRealm() {
+        return isInSpiritRealm;
+    }
+
+    @Override
+    public void setInSpiritRealm(boolean inSpiritRealm) {
+        this.isInSpiritRealm = inSpiritRealm;
+    }
+
+    @Override
+    public boolean isAbilityActive() {
+        return this.abilityActive;
+    }
+
+    @Override
+    public void setAbilityActive(boolean active) {
+        this.abilityActive = active;
+    }
+
+    @Override
+    public ResourceLocation getActiveAbility() {
+        return this.activeAbility;
+    }
+
+    @Override
+    public void setActiveAbility(ResourceLocation abilityId) {
+        this.activeAbility = abilityId;
+    }
+
+    @Override
+    public int getActiveAbilityDuration() {
+        return this.activeAbilityDuration;
+    }
+
+    @Override
+    public void setActiveAbilityDuration(int ticks) {
+        this.activeAbilityDuration = ticks;
+    }
+
+    @Override
+    public double getActiveAbilityDrain() {
+        return this.activeAbilityDrain;
+    }
+
+    @Override
+    public void setActiveAbilityDrain(double drain) {
+        this.activeAbilityDrain = drain;
+    }
+
+    @Override
+    public boolean isSmallBuild() {
+        return smallBuild;
+    }
+
+    @Override
+    public void setSmallBuild(boolean smallBuild) {
+        this.smallBuild = smallBuild;
+    }
+
+    @Override
+    @SuppressWarnings("null")
     public CompoundTag serialize() {
         CompoundTag tag = new CompoundTag();
-        tag.putString("race", race.toString());
+        tag.putString("race", Objects.requireNonNull(race.toString()));
         tag.putBoolean("hasChosenRace", hasChosenRace);
         tag.putDouble("karma", karma);
         tag.putDouble("ap", ap);
@@ -497,25 +611,27 @@ public class PlayerVariables implements IPlayerVariables {
         ListTag cooldownList = new ListTag();
         cooldowns.forEach((id, ticks) -> {
             CompoundTag c = new CompoundTag();
-            c.putString("id", id.toString());
+            c.putString("id", Objects.requireNonNull(id.toString()));
             c.putInt("ticks", ticks);
             cooldownList.add(c);
         });
         tag.put("cooldowns", cooldownList);
 
         ListTag unlockedList = new ListTag();
-        unlockedAbilities.forEach(id -> unlockedList.add(net.minecraft.nbt.StringTag.valueOf(id.toString())));
+        unlockedAbilities.forEach(
+                id -> unlockedList.add(net.minecraft.nbt.StringTag.valueOf(Objects.requireNonNull(id.toString()))));
         tag.put("unlockedAbilities", unlockedList);
 
         CompoundTag equippedTag = new CompoundTag();
-        equippedAbilities.forEach((slot, id) -> equippedTag.putString(slot.name(), id.toString()));
+        equippedAbilities.forEach((slot, id) -> equippedTag.putString(Objects.requireNonNull(slot.name()),
+                Objects.requireNonNull(id.toString())));
         tag.put("equippedAbilities", equippedTag);
 
         CompoundTag custTag = new CompoundTag();
         customizations.forEach(custTag::putString);
         tag.put("customizations", custTag);
         CompoundTag statesTag = new CompoundTag();
-        abilityStates.forEach((id, val) -> statesTag.putDouble(id.toString(), val));
+        abilityStates.forEach((id, val) -> statesTag.putDouble(Objects.requireNonNull(id.toString()), val));
         tag.put("abilityStates", statesTag);
 
         tag.putBoolean("morphed", morphed);
@@ -523,7 +639,7 @@ public class PlayerVariables implements IPlayerVariables {
         if (teamId != null) {
             tag.putUUID("teamId", teamId);
         }
-        tag.putString("teamName", teamName);
+        tag.putString("teamName", Objects.requireNonNull(teamName));
         tag.putInt("gState", gState);
         tag.putBoolean("hasPocket", hasPocket);
         tag.putDouble("pocketX", pocketX);
@@ -532,15 +648,18 @@ public class PlayerVariables implements IPlayerVariables {
         tag.putDouble("returnX", returnX);
         tag.putDouble("returnY", returnY);
         tag.putDouble("returnZ", returnZ);
-        tag.putString("returnDim", returnDim);
+        tag.putString("returnDim", Objects.requireNonNull(returnDim));
+        tag.putBoolean("isInSpiritRealm", isInSpiritRealm);
+        tag.putBoolean("smallBuild", smallBuild);
 
         return tag;
     }
 
     @Override
+    @SuppressWarnings("null")
     public void deserialize(CompoundTag tag) {
         if (tag.contains("race"))
-            this.race = new ResourceLocation(tag.getString("race"));
+            this.race = new ResourceLocation(Objects.requireNonNull(tag.getString("race")));
         if (tag.contains("hasChosenRace"))
             this.hasChosenRace = tag.getBoolean("hasChosenRace");
         if (tag.contains("karma"))
@@ -579,7 +698,7 @@ public class PlayerVariables implements IPlayerVariables {
             ListTag list = tag.getList("cooldowns", Tag.TAG_COMPOUND);
             for (int i = 0; i < list.size(); i++) {
                 CompoundTag c = list.getCompound(i);
-                this.cooldowns.put(new ResourceLocation(c.getString("id")), c.getInt("ticks"));
+                this.cooldowns.put(new ResourceLocation(Objects.requireNonNull(c.getString("id"))), c.getInt("ticks"));
             }
         }
 
@@ -587,7 +706,7 @@ public class PlayerVariables implements IPlayerVariables {
         if (tag.contains("unlockedAbilities", Tag.TAG_LIST)) {
             ListTag list = tag.getList("unlockedAbilities", Tag.TAG_STRING);
             for (int i = 0; i < list.size(); i++) {
-                this.unlockedAbilities.add(new ResourceLocation(list.getString(i)));
+                this.unlockedAbilities.add(new ResourceLocation(Objects.requireNonNull(list.getString(i))));
             }
         }
 
@@ -596,7 +715,8 @@ public class PlayerVariables implements IPlayerVariables {
             CompoundTag equippedTag = tag.getCompound("equippedAbilities");
             for (AbilitySlot slot : AbilitySlot.values()) {
                 if (equippedTag.contains(slot.name())) {
-                    this.equippedAbilities.put(slot, new ResourceLocation(equippedTag.getString(slot.name())));
+                    this.equippedAbilities.put(slot,
+                            new ResourceLocation(Objects.requireNonNull(equippedTag.getString(slot.name()))));
                 }
             }
         }
@@ -605,7 +725,7 @@ public class PlayerVariables implements IPlayerVariables {
         if (tag.contains("customizations", Tag.TAG_COMPOUND)) {
             CompoundTag custTag = tag.getCompound("customizations");
             for (String key : custTag.getAllKeys()) {
-                this.customizations.put(key, custTag.getString(key));
+                this.customizations.put(key, Objects.requireNonNull(custTag.getString(key)));
             }
         }
         this.abilityStates.clear();
@@ -621,7 +741,7 @@ public class PlayerVariables implements IPlayerVariables {
         if (tag.contains("teamId"))
             this.teamId = tag.getUUID("teamId");
         if (tag.contains("teamName"))
-            this.teamName = tag.getString("teamName");
+            this.teamName = Objects.requireNonNull(tag.getString("teamName"));
         if (tag.contains("gState"))
             this.gState = tag.getInt("gState");
         if (tag.contains("hasPocket"))
@@ -639,6 +759,10 @@ public class PlayerVariables implements IPlayerVariables {
         if (tag.contains("returnZ"))
             this.returnZ = tag.getDouble("returnZ");
         if (tag.contains("returnDim"))
-            this.returnDim = tag.getString("returnDim");
+            this.returnDim = Objects.requireNonNull(tag.getString("returnDim"));
+        if (tag.contains("isInSpiritRealm"))
+            this.isInSpiritRealm = tag.getBoolean("isInSpiritRealm");
+        if (tag.contains("smallBuild"))
+            this.smallBuild = tag.getBoolean("smallBuild");
     }
 }

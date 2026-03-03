@@ -81,11 +81,20 @@ public class AbilityManager extends SimplePreparableReloadListener<Map<ResourceL
                     JsonElement raceElem = jsonObject.get("race");
                     if (raceElem.isJsonArray()) {
                         for (JsonElement e : raceElem.getAsJsonArray()) {
-                            allowedRaces.add(new ResourceLocation(e.getAsString()));
+                            String rStr = e.getAsString();
+                            ResourceLocation rl = ResourceLocation.tryParse(rStr);
+                            if (rl != null)
+                                allowedRaces.add(rl);
+                            else
+                                CreRaces.LOGGER.warn("Ability {} has malformed race ID: {}", id, rStr);
                         }
                     } else {
-                        allowedRaces
-                                .add(new ResourceLocation(java.util.Objects.requireNonNull(raceElem.getAsString())));
+                        String rStr = raceElem.getAsString();
+                        ResourceLocation rl = ResourceLocation.tryParse(rStr);
+                        if (rl != null)
+                            allowedRaces.add(rl);
+                        else
+                            CreRaces.LOGGER.warn("Ability {} has malformed race ID: {}", id, rStr);
                     }
                 }
 
@@ -113,12 +122,19 @@ public class AbilityManager extends SimplePreparableReloadListener<Map<ResourceL
                     }
                 }
 
+                ResourceLocation iconRl = ResourceLocation.tryParse(iconStrFixed);
+                if (iconRl == null) {
+                    CreRaces.LOGGER.warn("Ability {} has malformed icon: {}. Falling back to barrier.", id,
+                            iconStrFixed);
+                    iconRl = new ResourceLocation("minecraft", "textures/item/barrier.png");
+                }
+
                 Ability ability = new Ability(
                         id,
                         Component.translatable(nameStrFixed),
                         Component.translatable(descStrFixed),
                         AbilityType.valueOf(typeStrFixed.toUpperCase()),
-                        new ResourceLocation(iconStrFixed),
+                        iconRl,
                         cooldown,
                         cost,
                         persistent,

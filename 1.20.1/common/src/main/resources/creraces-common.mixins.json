@@ -1,0 +1,32 @@
+{
+    "required": true,
+    "refMap": "creraces-common.refmap.json",
+    "package": "mc.sayda.creraces.mixin",
+    "compatibilityLevel": "JAVA_17",
+    "minVersion": "0.8",
+    "plugin": "mc.sayda.creraces.mixin.MixinConfigPlugin",
+    "mixins": [
+        "PlayerMixin",
+        "EntityMixin",
+        "MobMixin",
+        "FoodDataMixin",
+        "LivingEntityMixin",
+        "BlockStateSolidityMixin",
+        "PlayerSleepMixin",
+        "LivingEntitySleepMixin",
+        "PlayerRespawnMixin",
+        "BlockEntityAccessor"
+    ],
+    "client": [
+        "LivingEntityRendererMixin",
+        "LevelRendererMixin",
+        "PlayerFoodMixin",
+        "MiniBlockPlaceMixin",
+        "HumanoidModelMixin",
+        "FogRendererMixin",
+        "LiquidOverlayMixin"
+    ],
+    "injectors": {
+        "defaultRequire": 1
+    }
+}

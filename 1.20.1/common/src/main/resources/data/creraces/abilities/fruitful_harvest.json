@@ -11,19 +11,26 @@
     "actions": [
         {
             "type": "creraces:aoe",
-            "damage": {
-                "base": 2.0
-            },
-            "range": 16.0,
-            "set_on_fire": false,
+            "radius": 16.0,
             "target_players": false,
             "required_effect": "creraces:life_drain",
-            "remove_effect": true,
-            "heal_per_hit": {
-                "base": 2.0
-            },
-            "source": "caster",
-            "damage_type": "minecraft:wither"
+            "actions": [
+                {
+                    "type": "creraces:damage",
+                    "amount": {
+                        "base": 2.0
+                    },
+                    "damage_type": "minecraft:wither",
+                    "source": "self",
+                    "heal_amount": {
+                        "base": 2.0
+                    }
+                },
+                {
+                    "type": "creraces:remove_effect",
+                    "effect": "creraces:life_drain"
+                }
+            ]
         },
         {
             "type": "creraces:play_sound",
@@ -35,11 +42,11 @@
     "remote_description": {
         "selector": "",
         "fallback": "ability.creraces.fruitful_harvest.description",
-        "source": "https://creraces.wiki.gg/api.php?action=cargoquery\u0026format=json\u0026tables=Abilities\u0026fields=Description\u0026where=Name=\u0027Fruitful Harvest\u0027"
+        "source": "https://creraces.wiki.gg/api.php?action=cargoquery&format=json&tables=Abilities&fields=Description&where=Name=\u0027Fruitful_Harvest\u0027"
     },
     "remote_full_description": {
         "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
         "fallback": "ability.creraces.fruitful_harvest.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Ability:Fruitful_Harvest\u0026prop=wikitext"
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Fruitful_Harvest&prop=wikitext"
     }
 }

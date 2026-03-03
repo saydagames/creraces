@@ -56,7 +56,16 @@ public class TeamRequestPacket {
             if (!(context.getPlayer() instanceof ServerPlayer player))
                 return;
             switch (action) {
-                case CREATE -> RaceTeamManager.createTeam(player, data);
+                case CREATE -> {
+                    if (data == null || data.isBlank())
+                        return;
+                    if (data.length() > 32) {
+                        CreRaces.LOGGER.warn("Player {} tried to create team with oversized name ({} chars)",
+                                player.getName().getString(), data.length());
+                        return;
+                    }
+                    RaceTeamManager.createTeam(player, data);
+                }
                 case JOIN -> {
                     RaceTeamManager.getPendingInvite(player.getUUID()).ifPresent(teamId -> {
                         RaceTeamManager.joinTeam(player, teamId);
@@ -65,6 +74,8 @@ public class TeamRequestPacket {
                 }
                 case LEAVE -> RaceTeamManager.leaveTeam(player);
                 case INVITE -> {
+                    if (data == null || data.isBlank())
+                        return;
                     ServerPlayer target = player.getServer().getPlayerList().getPlayerByName(data);
                     if (target != null) {
                         RaceTeamManager.getPlayerTeam(player).ifPresent(team -> {

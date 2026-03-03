@@ -7,6 +7,8 @@ import mc.sayda.creraces.util.GsonHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import mc.sayda.creraces.util.ItemUtils;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * Universal condition check for actions and traits.
@@ -16,6 +18,7 @@ public interface Condition {
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos);
 
+    @SuppressWarnings("null")
     static Condition fromJson(JsonObject json) {
         String typeStr = GsonHelper.getAsString(json, "type");
         @SuppressWarnings("null")
@@ -26,7 +29,7 @@ public interface Condition {
             return switch (type) {
                 case "state_equals" -> {
                     String state = GsonHelper.getAsString(json, "state");
-                    double value = GsonHelper.getAsDouble(json, "value", 0.0);
+                    ScalingValue value = ScalingValue.fromJson(json, "value", 0.0);
                     yield new StateEqualsCondition(state, value);
                 }
                 case "morphed" -> {
@@ -39,7 +42,7 @@ public interface Condition {
                 }
                 case "ability_state" -> {
                     String ability = GsonHelper.getAsString(json, "ability");
-                    double value = GsonHelper.getAsDouble(json, "value", 0.0);
+                    ScalingValue value = ScalingValue.fromJson(json, "value", 0.0);
                     yield new StateEqualsCondition(ability, value);
                 }
                 case "sneaking" -> {
@@ -99,8 +102,8 @@ public interface Condition {
                     yield new WeatherCondition(weatherType);
                 }
                 case "time" -> {
-                    long min = json.has("min") ? json.get("min").getAsLong() : 0;
-                    long max = json.has("max") ? json.get("max").getAsLong() : 24000;
+                    ScalingValue min = ScalingValue.fromJson(json, "min", 0.0);
+                    ScalingValue max = ScalingValue.fromJson(json, "max", 24000.0);
                     yield new TimeCondition(min, max);
                 }
                 case "in_water" -> {
@@ -112,8 +115,8 @@ public interface Condition {
                     yield new InSunlightCondition(expected);
                 }
                 case "altitude" -> {
-                    double min = GsonHelper.getAsDouble(json, "min", Double.NEGATIVE_INFINITY);
-                    double max = GsonHelper.getAsDouble(json, "max", Double.POSITIVE_INFINITY);
+                    ScalingValue min = ScalingValue.fromJson(json, "min", Double.NEGATIVE_INFINITY);
+                    ScalingValue max = ScalingValue.fromJson(json, "max", Double.POSITIVE_INFINITY);
                     yield new AltitudeCondition(min, max);
                 }
                 case "is_burning" -> {
@@ -122,20 +125,22 @@ public interface Condition {
                 }
                 case "is_moving" -> {
                     boolean expected = GsonHelper.getAsBoolean(json, "value", true);
-                    double threshold = GsonHelper.getAsDouble(json, "threshold", 0.01);
+                    ScalingValue threshold = ScalingValue.fromJson(json, "threshold", 0.01);
                     yield new IsMovingCondition(expected, threshold);
                 }
                 case "resource_level" -> {
                     String resource = GsonHelper.getAsString(json, "resource");
                     String operator = GsonHelper.getAsString(json, "operator", ">=");
-                    double value = GsonHelper.getAsDouble(json, "value", 0.0);
+                    ScalingValue value = ScalingValue.fromJson(json, "value", 0.0);
                     yield new ResourceLevelCondition(resource, operator, value);
                 }
                 case "has_effect" -> {
                     String id = GsonHelper.getAsString(json, "effect");
-                    int amp = GsonHelper.getAsInt(json, "amplifier", 0);
+                    ScalingValue amp = ScalingValue.fromJson(json, "amplifier", 0.0);
                     boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
-                    yield new HasEffectCondition(new ResourceLocation(id), amp, useTarget);
+                    @SuppressWarnings("null")
+                    Condition c = new HasEffectCondition(new ResourceLocation(id), amp, useTarget);
+                    yield c;
                 }
                 case "is_smeltable" -> {
                     yield new IsSmeltableCondition();
@@ -144,6 +149,10 @@ public interface Condition {
                     boolean expected = GsonHelper.getAsBoolean(json, "value", true);
                     yield new ExposedToRainCondition(expected);
                 }
+                case "spirit" -> {
+                    boolean expected = GsonHelper.getAsBoolean(json, "value", true);
+                    yield new SpiritCondition(expected);
+                }
                 case "entity_data" -> {
                     yield EntityDataCondition.fromJson(json);
                 }
@@ -151,15 +160,15 @@ public interface Condition {
                     yield EntityCondition.fromJson(json);
                 }
                 case "distance" -> {
-                    double max = GsonHelper.getAsDouble(json, "max", 10.0);
+                    ScalingValue max = ScalingValue.fromJson(json, "max", 10.0);
                     ScalingValue x = ScalingValue.fromJson(json, "x", 0.0);
                     ScalingValue y = ScalingValue.fromJson(json, "y", 0.0);
                     ScalingValue z = ScalingValue.fromJson(json, "z", 0.0);
                     yield new DistanceCondition(x, y, z, max);
                 }
                 case "attack_charged" -> {
-                    double threshold = GsonHelper.getAsDouble(json, "threshold", 1.0);
-                    yield (player, target, slot, interactionPos) -> player.getAttackStrengthScale(4.0f) >= threshold;
+                    ScalingValue threshold = ScalingValue.fromJson(json, "threshold", 1.0);
+                    yield new AttackChargedCondition(threshold);
                 }
                 case "is_position" -> {
                     ScalingValue x = ScalingValue.fromJson(json, "x", 0.0);
@@ -285,7 +294,8 @@ record HoldingItemCondition(@javax.annotation.Nullable String definition,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
-        net.minecraft.world.entity.LivingEntity entity = useTarget ? target : player;
+        // Smart Targeting: Prefer target if present, otherwise respect useTarget flag
+        net.minecraft.world.entity.LivingEntity entity = (target != null) ? target : (useTarget ? null : player);
         if (entity == null || definition == null)
             return false;
 
@@ -299,7 +309,7 @@ record HoldingItemCondition(@javax.annotation.Nullable String definition,
     }
 }
 
-record StateEqualsCondition(String state, double value) implements Condition {
+record StateEqualsCondition(String state, ScalingValue value) implements Condition {
     @Override
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
@@ -317,7 +327,8 @@ record StateEqualsCondition(String state, double value) implements Condition {
                 return false;
 
             double current = vars.getAbilityState(targetId);
-            return Math.abs(current - value) < 0.001;
+            double val = value.evaluate(player, target);
+            return Math.abs(current - val) < 0.001;
         }).orElse(false);
     }
 }
@@ -365,17 +376,18 @@ record OnGroundCondition(boolean expected) implements Condition {
     }
 }
 
-record AttackChargedCondition() implements Condition {
+record AttackChargedCondition(ScalingValue threshold) implements Condition {
     @Override
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
-        return player.getAttackStrengthScale(0.5f) >= 0.9f;
+        return player.getAttackStrengthScale(0.5f) >= threshold.evaluate(player, target);
     }
 }
 
-record HasEffectCondition(ResourceLocation effectId, int minAmplifier, boolean useTarget) implements Condition {
+record HasEffectCondition(ResourceLocation effectId, ScalingValue minAmplifier, boolean useTarget)
+        implements Condition {
     @Override
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
@@ -387,9 +399,12 @@ record HasEffectCondition(ResourceLocation effectId, int minAmplifier, boolean u
         if (effect == null)
             return false;
 
-        net.minecraft.world.entity.LivingEntity subject = (useTarget && target != null) ? target : player;
+        // Smart Targeting: Prefer target if present, otherwise respect useTarget flag
+        net.minecraft.world.entity.LivingEntity subject = (target != null) ? target : (useTarget ? null : player);
+        if (subject == null)
+            return false;
         net.minecraft.world.effect.MobEffectInstance instance = subject.getEffect(effect);
-        return instance != null && instance.getAmplifier() >= minAmplifier;
+        return instance != null && instance.getAmplifier() >= (int) minAmplifier.evaluate(player, target);
     }
 }
 
@@ -469,14 +484,14 @@ record WeatherCondition(String type) implements Condition {
     }
 }
 
-record TimeCondition(long min, long max) implements Condition {
+record TimeCondition(ScalingValue min, ScalingValue max) implements Condition {
     @Override
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
         long time = player.level().getDayTime() % 24000;
-        return time >= min && time <= max;
+        return time >= (long) min.evaluate(player, target) && time <= (long) max.evaluate(player, target);
     }
 }
 
@@ -507,14 +522,14 @@ record InSunlightCondition(boolean expected) implements Condition {
     }
 }
 
-record AltitudeCondition(double min, double max) implements Condition {
+record AltitudeCondition(ScalingValue min, ScalingValue max) implements Condition {
     @Override
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
         double y = player.getY();
-        return y >= min && y <= max;
+        return y >= min.evaluate(player, target) && y <= max.evaluate(player, target);
     }
 }
 
@@ -528,19 +543,20 @@ record IsBurningCondition(boolean expected) implements Condition {
     }
 }
 
-record IsMovingCondition(boolean expected, double threshold) implements Condition {
+record IsMovingCondition(boolean expected, ScalingValue threshold) implements Condition {
     @Override
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
         net.minecraft.world.phys.Vec3 vel = player.getDeltaMovement();
-        boolean isMoving = (vel.x * vel.x + vel.z * vel.z) > (threshold * threshold);
+        double t = threshold.evaluate(player, target);
+        boolean isMoving = (vel.x * vel.x + vel.z * vel.z) > (t * t);
         return isMoving == expected;
     }
 }
 
-record ResourceLevelCondition(String resource, String operator, double value) implements Condition {
+record ResourceLevelCondition(String resource, String operator, ScalingValue value) implements Condition {
     @Override
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
@@ -563,13 +579,14 @@ record ResourceLevelCondition(String resource, String operator, double value) im
                 default -> 0.0;
             };
 
+            double val = value.evaluate(player, target);
             return switch (operator) {
-                case ">=" -> current >= value;
-                case "<=" -> current <= value;
-                case ">" -> current > value;
-                case "<" -> current < value;
-                case "==" -> Math.abs(current - value) < 0.001;
-                case "!=" -> Math.abs(current - value) >= 0.001;
+                case ">=" -> current >= val;
+                case "<=" -> current <= val;
+                case ">" -> current > val;
+                case "<" -> current < val;
+                case "==" -> Math.abs(current - val) < 0.001;
+                case "!=" -> Math.abs(current - val) >= 0.001;
                 default -> false;
             };
         }).orElse(false);
@@ -582,7 +599,45 @@ record ExposedToRainCondition(boolean expected) implements Condition {
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
-        return player.level().isRainingAt(player.blockPosition()) == expected;
+        net.minecraft.world.level.Level level = player.level();
+        BlockPos pos = player.blockPosition();
+
+        boolean isVanillaRaining = level.isRainingAt(pos);
+
+        if (isVanillaRaining && expected) {
+            // Check for shelter starting from the player's position
+            for (int dy = 0; dy <= 16; dy++) {
+                BlockPos overheadPos = pos.above(dy);
+                BlockState state = level.getBlockState(overheadPos);
+                if (state.is(mc.sayda.creraces.registry.ModBlocks.MICRO_BLOCK.get())) {
+                    if (level.getBlockEntity(
+                            overheadPos) instanceof mc.sayda.creraces.block.entity.MicroBlockEntity micro) {
+                        int playerSlotY = -1;
+                        if (dy == 0) {
+                            double yOffset = player.getY() - pos.getY();
+                            playerSlotY = (int) (yOffset * 4);
+                        }
+
+                        // Calculate player's sub-grid column once
+                        int sx = (int) (((player.getX() - overheadPos.getX()) % 1.0 + 1.0) % 1.0 * 4);
+                        int sz = (int) (((player.getZ() - overheadPos.getZ()) % 1.0 + 1.0) % 1.0 * 4);
+                        sx = Math.max(0, Math.min(3, sx));
+                        sz = Math.max(0, Math.min(3, sz));
+
+                        for (int sy = playerSlotY + 1; sy < 4; sy++) {
+                            if (!micro.getSlot(sx, sy, sz).isAir()) {
+                                return !expected; // Sheltered by mini-block roof in THIS column!
+                            }
+                        }
+                    }
+                } else if (dy > 0 && state.isSolidRender(level, overheadPos)) {
+                    // Regular solid block shelter
+                    return !expected;
+                }
+            }
+        }
+
+        return isVanillaRaining == expected;
     }
 }
 
@@ -603,7 +658,7 @@ record IsSmeltableCondition() implements Condition {
 }
 
 record DistanceCondition(ScalingValue x, ScalingValue y,
-        ScalingValue z, double maxDistance) implements Condition {
+        ScalingValue z, ScalingValue maxDistance) implements Condition {
     @Override
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
@@ -622,7 +677,8 @@ record DistanceCondition(ScalingValue x, ScalingValue y,
         double dx = player.getX() - tx;
         double dy = player.getY() - ty;
         double dz = player.getZ() - tz;
-        return (dx * dx + dy * dy + dz * dz) <= (maxDistance * maxDistance);
+        double maxD = maxDistance.evaluate(player, target);
+        return (dx * dx + dy * dy + dz * dz) <= (maxD * maxD);
     }
 }
 
@@ -668,5 +724,17 @@ record IsPositionCondition(ScalingValue x, ScalingValue y, ScalingValue z) imple
         double tz = z.evaluate(player, target);
         return interactionPos.getX() == (int) tx && interactionPos.getY() == (int) ty
                 && interactionPos.getZ() == (int) tz;
+    }
+}
+
+record SpiritCondition(boolean expected) implements Condition {
+    @Override
+    public boolean evaluate(Player player,
+            @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+        return DataUtils.getVariables(player)
+                .map(vars -> vars.isInSpiritRealm() == expected)
+                .orElse(false);
     }
 }

@@ -1,9 +1,17 @@
 package mc.sayda.creraces.team;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.capability.IPlayerVariables;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
+import java.io.*;
+import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -218,5 +226,68 @@ public class RaceTeamManager {
                 broadcastUpdate(team, player.getServer());
             }
         });
+    }
+
+    // ─── Persistence ─────────────────────────────────────────────────────────
+
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final String SAVE_FILE_NAME = "creraces_teams.json";
+
+    public static void save(MinecraftServer server) {
+        Path savePath = server.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT)
+                .resolve(SAVE_FILE_NAME);
+        JsonArray teamsArray = new JsonArray();
+        TEAMS.values().forEach(team -> {
+            JsonObject obj = new JsonObject();
+            obj.addProperty("id", team.getId().toString());
+            obj.addProperty("name", team.getName());
+            obj.addProperty("leader", team.getLeader().toString());
+            obj.addProperty("friendlyFire", team.isFriendlyFire());
+            JsonArray members = new JsonArray();
+            team.getMembers().forEach(m -> members.add(m.toString()));
+            obj.add("members", members);
+            teamsArray.add(obj);
+        });
+        try (Writer w = Files.newBufferedWriter(savePath)) {
+            GSON.toJson(teamsArray, w);
+            CreRaces.LOGGER.info("[CreRaces] Saved {} team(s) to {}", TEAMS.size(), savePath);
+        } catch (IOException e) {
+            CreRaces.LOGGER.error("[CreRaces] Failed to save teams: {}", e.getMessage());
+        }
+    }
+
+    public static void load(MinecraftServer server) {
+        Path savePath = server.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT)
+                .resolve(SAVE_FILE_NAME);
+        if (!Files.exists(savePath))
+            return;
+        try (Reader r = Files.newBufferedReader(savePath)) {
+            JsonArray teamsArray = GSON.fromJson(r, JsonArray.class);
+            if (teamsArray == null)
+                return;
+            TEAMS.clear();
+            teamsArray.forEach(elem -> {
+                JsonObject obj = elem.getAsJsonObject();
+                UUID id = UUID.fromString(obj.get("id").getAsString());
+                String name = obj.get("name").getAsString();
+                UUID leader = UUID.fromString(obj.get("leader").getAsString());
+                boolean ff = obj.has("friendlyFire") && obj.get("friendlyFire").getAsBoolean();
+                RaceTeam team = new RaceTeam(id, name, leader);
+                team.setFriendlyFire(ff);
+                team.getMembers().clear(); // constructor adds leader; re-add from saved list
+                obj.getAsJsonArray("members").forEach(m -> team.getMembers().add(UUID.fromString(m.getAsString())));
+                TEAMS.put(id, team);
+
+                // Re-wire teamId/teamName into any already-online players (e.g. after /reload)
+                team.getMembers().forEach(memberId -> {
+                    ServerPlayer online = server.getPlayerList().getPlayer(memberId);
+                    if (online != null)
+                        applyTeamToPlayer(online, team);
+                });
+            });
+            CreRaces.LOGGER.info("[CreRaces] Loaded {} team(s) from {}", TEAMS.size(), savePath);
+        } catch (Exception e) {
+            CreRaces.LOGGER.error("[CreRaces] Failed to load teams: {}", e.getMessage());
+        }
     }
 }

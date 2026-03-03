@@ -16,8 +16,7 @@
                     "type": "creraces:apply_effect",
                     "effect": "minecraft:levitation",
                     "duration": 20,
-                    "amplifier": 14,
-                    "use_target": true
+                    "amplifier": 14
                 },
                 {
                     "type": "creraces:delay",
@@ -25,14 +24,13 @@
                     "actions": [
                         {
                             "type": "creraces:apply_velocity",
-                            "y": -4.0,
-                            "use_target": true
+                            "y": -4.0
                         },
                         {
                             "type": "creraces:damage",
                             "amount": 2.0,
                             "damage_type": "minecraft:fall",
-                            "use_target": true
+                            "multiplier": 0.5
                         }
                     ]
                 }
@@ -48,11 +46,11 @@
     "remote_description": {
         "selector": "",
         "fallback": "ability.creraces.smackdown.description",
-        "source": "https://creraces.wiki.gg/api.php?action=cargoquery\u0026format=json\u0026tables=Abilities\u0026fields=Description\u0026where=Name=\u0027Smackdown\u0027"
+        "source": "https://creraces.wiki.gg/api.php?action=cargoquery&format=json&tables=Abilities&fields=Description&where=Name=\u0027Smackdown\u0027"
     },
     "remote_full_description": {
         "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
         "fallback": "ability.creraces.smackdown.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Ability:Smackdown\u0026prop=wikitext"
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Smackdown&prop=wikitext"
     }
 }

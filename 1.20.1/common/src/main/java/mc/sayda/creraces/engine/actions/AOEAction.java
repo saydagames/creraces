@@ -16,7 +16,7 @@ import java.util.List;
 public class AOEAction implements ActionRegistry.RaceAction {
     public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "aoe");
 
-    private final double radius;
+    private final mc.sayda.creraces.engine.ScalingValue radius;
     private final boolean targetPlayers;
     private final boolean targetEnemies;
     private final boolean excludeCaster;
@@ -24,7 +24,8 @@ public class AOEAction implements ActionRegistry.RaceAction {
     private final String notEffect;
     private final List<ActionRegistry.RaceAction> actions;
 
-    public AOEAction(double radius, boolean targetPlayers, boolean targetEnemies, boolean excludeCaster,
+    public AOEAction(mc.sayda.creraces.engine.ScalingValue radius, boolean targetPlayers, boolean targetEnemies,
+            boolean excludeCaster,
             String requiredEffect,
             String notEffect, List<ActionRegistry.RaceAction> actions) {
         this.radius = radius;
@@ -37,13 +38,18 @@ public class AOEAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public boolean execute(@javax.annotation.Nonnull Player player,
+    public boolean execute(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
         if (player.level() == null)
             return true;
-        AABB area = player.getBoundingBox().inflate(radius);
+
+        double r = radius.evaluate(player, target);
+        int maxRadius = mc.sayda.creraces.config.CreRacesConfig.AOE_MAX_RADIUS.get();
+        if (maxRadius > 0)
+            r = Math.min(r, maxRadius);
+        AABB area = player.getBoundingBox().inflate(r);
         List<LivingEntity> targets = player.level().getEntitiesOfClass(
                 LivingEntity.class,
                 area,
@@ -77,7 +83,7 @@ public class AOEAction implements ActionRegistry.RaceAction {
                 });
 
         if (targets.isEmpty()) {
-            return false;
+            return true;
         }
 
         for (LivingEntity e : targets) {
@@ -90,9 +96,11 @@ public class AOEAction implements ActionRegistry.RaceAction {
         return true;
     }
 
+    @SuppressWarnings("null")
     public static void register() {
         ActionRegistry.register(ID, json -> {
-            double radius = GsonHelper.getAsDouble(json, "radius", GsonHelper.getAsDouble(json, "range", 5.0));
+            mc.sayda.creraces.engine.ScalingValue radius = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
+                    "radius", 5.0);
             boolean targetPlayers = GsonHelper.getAsBoolean(json, "target_players", true);
             boolean targetEnemies = GsonHelper.getAsBoolean(json, "target_enemies", true);
             boolean excludeCaster = GsonHelper.getAsBoolean(json, "exclude_caster", true);

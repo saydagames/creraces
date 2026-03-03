@@ -21,11 +21,12 @@ public class SetCustomizationAction implements ActionRegistry.RaceAction {
     private final String key;
     private final String value;
     private final String mode; // "STATIC", "POS_X", "POS_Y", "POS_Z", "TARGET_X", etc.
-    private final int offsetX;
-    private final int offsetY;
-    private final int offsetZ;
+    private final mc.sayda.creraces.engine.ScalingValue offsetX;
+    private final mc.sayda.creraces.engine.ScalingValue offsetY;
+    private final mc.sayda.creraces.engine.ScalingValue offsetZ;
 
-    public SetCustomizationAction(String key, String value, String mode, int offsetX, int offsetY, int offsetZ) {
+    public SetCustomizationAction(String key, String value, String mode, mc.sayda.creraces.engine.ScalingValue offsetX,
+            mc.sayda.creraces.engine.ScalingValue offsetY, mc.sayda.creraces.engine.ScalingValue offsetZ) {
         this.key = key;
         this.value = value;
         this.mode = mode;
@@ -40,44 +41,48 @@ public class SetCustomizationAction implements ActionRegistry.RaceAction {
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
         DataUtils.getVariables(player).ifPresent(vars -> {
             String valToSet = value;
+            double ox = offsetX.evaluate(player, target);
+            double oy = offsetY.evaluate(player, target);
+            double oz = offsetZ.evaluate(player, target);
+
             switch (mode.toUpperCase()) {
-                case "POS_X" -> valToSet = String.valueOf(player.getX() + offsetX);
-                case "POS_Y" -> valToSet = String.valueOf(player.getY() + offsetY);
-                case "POS_Z" -> valToSet = String.valueOf(player.getZ() + offsetZ);
-                case "BLOCK_X" -> valToSet = String.valueOf(player.blockPosition().getX() + offsetX);
-                case "BLOCK_Y" -> valToSet = String.valueOf(player.blockPosition().getY() + offsetY);
-                case "BLOCK_Z" -> valToSet = String.valueOf(player.blockPosition().getZ() + offsetZ);
+                case "POS_X" -> valToSet = String.valueOf(player.getX() + ox);
+                case "POS_Y" -> valToSet = String.valueOf(player.getY() + oy);
+                case "POS_Z" -> valToSet = String.valueOf(player.getZ() + oz);
+                case "BLOCK_X" -> valToSet = String.valueOf(player.blockPosition().getX() + (int) ox);
+                case "BLOCK_Y" -> valToSet = String.valueOf(player.blockPosition().getY() + (int) oy);
+                case "BLOCK_Z" -> valToSet = String.valueOf(player.blockPosition().getZ() + (int) oz);
                 case "TARGET_X" -> {
                     if (target != null)
-                        valToSet = String.valueOf(target.getX() + offsetX);
+                        valToSet = String.valueOf(target.getX() + ox);
                 }
                 case "TARGET_Y" -> {
                     if (target != null)
-                        valToSet = String.valueOf(target.getY() + offsetY);
+                        valToSet = String.valueOf(target.getY() + oy);
                 }
                 case "TARGET_Z" -> {
                     if (target != null)
-                        valToSet = String.valueOf(target.getZ() + offsetZ);
+                        valToSet = String.valueOf(target.getZ() + oz);
                 }
                 case "TARGET_BLOCK_X" -> {
                     net.minecraft.world.phys.HitResult hit = player.pick(5.0, 0.0F, false);
                     if (hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
                         valToSet = String.valueOf(
-                                ((net.minecraft.world.phys.BlockHitResult) hit).getBlockPos().getX() + offsetX);
+                                ((net.minecraft.world.phys.BlockHitResult) hit).getBlockPos().getX() + (int) ox);
                     }
                 }
                 case "TARGET_BLOCK_Y" -> {
                     net.minecraft.world.phys.HitResult hit = player.pick(5.0, 0.0F, false);
                     if (hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
                         valToSet = String.valueOf(
-                                ((net.minecraft.world.phys.BlockHitResult) hit).getBlockPos().getY() + offsetY);
+                                ((net.minecraft.world.phys.BlockHitResult) hit).getBlockPos().getY() + (int) oy);
                     }
                 }
                 case "TARGET_BLOCK_Z" -> {
                     net.minecraft.world.phys.HitResult hit = player.pick(5.0, 0.0F, false);
                     if (hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
                         valToSet = String.valueOf(
-                                ((net.minecraft.world.phys.BlockHitResult) hit).getBlockPos().getZ() + offsetZ);
+                                ((net.minecraft.world.phys.BlockHitResult) hit).getBlockPos().getZ() + (int) oz);
                     }
                 }
             }
@@ -91,9 +96,12 @@ public class SetCustomizationAction implements ActionRegistry.RaceAction {
             String key = GsonHelper.getAsString(json, "key");
             String value = GsonHelper.getAsString(json, "value", "");
             String mode = GsonHelper.getAsString(json, "mode", "STATIC");
-            int offsetX = GsonHelper.getAsInt(json, "offset_x", 0);
-            int offsetY = GsonHelper.getAsInt(json, "offset_y", 0);
-            int offsetZ = GsonHelper.getAsInt(json, "offset_z", 0);
+            mc.sayda.creraces.engine.ScalingValue offsetX = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
+                    "offset_x", 0.0);
+            mc.sayda.creraces.engine.ScalingValue offsetY = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
+                    "offset_y", 0.0);
+            mc.sayda.creraces.engine.ScalingValue offsetZ = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
+                    "offset_z", 0.0);
             return new SetCustomizationAction(key, value, mode, offsetX, offsetY, offsetZ);
         });
     }

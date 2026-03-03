@@ -13,10 +13,11 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
 
     private final String resource;
     private final String operation; // set, add
-    private final double value;
+    private final mc.sayda.creraces.engine.ScalingValue value;
     private final boolean useTarget;
 
-    public ModifyResourceAction(String resource, String operation, double value, boolean useTarget) {
+    public ModifyResourceAction(String resource, String operation, mc.sayda.creraces.engine.ScalingValue value,
+            boolean useTarget) {
         this.resource = resource;
         this.operation = operation;
         this.value = value;
@@ -27,8 +28,14 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
     public boolean execute(Player player, @javax.annotation.Nullable LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
-        LivingEntity entity = (useTarget && target != null) ? target : player;
+        // Targeting: use the explicit target if provided; otherwise fall back to player
+        // unless use_target forces null
+        LivingEntity entity = (target != null) ? target : (useTarget ? null : player);
+        if (entity == null)
+            return true;
+
         String res = resource.toLowerCase();
+        double evaluatedValue = value.evaluate(player, target);
 
         // Handle Vanilla Resources first (available for all/most LivingEntities)
         if (res.equals("air") || res.equals("health") || res.equals("food")) {
@@ -42,9 +49,9 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
 
             double newValue = current;
             if (operation.equalsIgnoreCase("add"))
-                newValue += value;
+                newValue += evaluatedValue;
             else if (operation.equalsIgnoreCase("set"))
-                newValue = value;
+                newValue = evaluatedValue;
 
             if (res.equals("air"))
                 entity.setAirSupply((int) Math.max(0, Math.min(newValue, entity.getMaxAirSupply())));
@@ -75,9 +82,9 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
 
                 double newValue = current;
                 if (operation.equalsIgnoreCase("add"))
-                    newValue += value;
+                    newValue += evaluatedValue;
                 else if (operation.equalsIgnoreCase("set"))
-                    newValue = value;
+                    newValue = evaluatedValue;
 
                 if (res.equals("energy"))
                     vars.setEnergy(newValue);
@@ -106,7 +113,8 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "modify_resource"), json -> {
             String resource = GsonHelper.getAsString(json, "resource", "energy");
             String op = GsonHelper.getAsString(json, "operation", "add");
-            double val = GsonHelper.getAsDouble(json, "value", 0.0);
+            mc.sayda.creraces.engine.ScalingValue val = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "value",
+                    0.0);
             boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
             return new ModifyResourceAction(resource, op, val, useTarget);
         });

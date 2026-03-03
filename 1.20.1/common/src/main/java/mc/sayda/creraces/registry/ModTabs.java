@@ -1,6 +1,5 @@
 package mc.sayda.creraces.registry;
 
-import dev.architectury.registry.CreativeTabRegistry;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
 import mc.sayda.creraces.CreRaces;
@@ -16,7 +15,7 @@ public class ModTabs {
             Registries.CREATIVE_MODE_TAB);
 
     public static final RegistrySupplier<CreativeModeTab> MAIN_TAB = TABS.register("main",
-            () -> CreativeModeTab.builder(CreativeModeTab.Row.TOP, 0)
+            () -> CreativeModeTab.builder(CreativeModeTab.Row.TOP, 10)
                     .icon(() -> new ItemStack(ModItems.DRYAD_SAPLING_ITEM.get()))
                     .title(Component.translatable("itemGroup.creraces.main"))
                     .displayItems((parameters, output) -> {
@@ -27,10 +26,12 @@ public class ModTabs {
                                 output.accept(itemSupplier.get());
                             }
                         }
+                        // Fallback: add the basic scroll item to the main tab too
+                        output.accept(ModItems.ABILITY_SCROLL.get());
                     }).build());
 
     public static final RegistrySupplier<CreativeModeTab> SCROLLS_TAB = TABS.register("scrolls",
-            () -> CreativeModeTab.builder(CreativeModeTab.Row.TOP, 1)
+            () -> CreativeModeTab.builder(CreativeModeTab.Row.TOP, 11)
                     .icon(() -> new ItemStack(ModItems.ABILITY_SCROLL.get()))
                     .title(Component.translatable("itemGroup.creraces.scrolls"))
                     .displayItems((parameters, output) -> {

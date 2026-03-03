@@ -1,19 +1,16 @@
 {
   "variants": {
-    "facing=north": {
+    "axis=y": {
       "model": "creraces:block/dryad_log_core"
     },
-    "facing=east": {
+    "axis=z": {
       "model": "creraces:block/dryad_log_core",
+      "x": 90
+    },
+    "axis=x": {
+      "model": "creraces:block/dryad_log_core",
+      "x": 90,
       "y": 90
-    },
-    "facing=south": {
-      "model": "creraces:block/dryad_log_core",
-      "y": 180
-    },
-    "facing=west": {
-      "model": "creraces:block/dryad_log_core",
-      "y": 270
     }
   }
 }

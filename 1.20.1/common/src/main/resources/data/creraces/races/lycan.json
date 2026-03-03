@@ -14,6 +14,7 @@
     "max_resource": 100,
     "tier": "creraces:rare",
     "difficulty": 2,
+    "stacks_affect_resource": true,
     "passives": {
         "night_vision": true,
         "regeneration_multiplier": 1.2
@@ -39,9 +40,11 @@
                     "type": "creraces:apply_effect",
                     "effect": "minecraft:strength",
                     "duration": 200,
-                    "amplifier": 0,
-                    "scaling_resource": "stacks",
-                    "scaling_multiplier": 0.5
+                    "amplifier": {
+                        "base": 0,
+                        "scales_with": "var:stacks",
+                        "factor": 0.5
+                    }
                 }
             ]
         },
@@ -49,8 +52,7 @@
             "type": "creraces:on_kill",
             "condition": {
                 "type": "has_effect",
-                "effect": "creraces:bleeding",
-                "use_target": true
+                "effect": "creraces:bleeding"
             },
             "actions": [
                 {
@@ -67,8 +69,7 @@
                 "type": "not",
                 "condition": {
                     "type": "has_effect",
-                    "effect": "creraces:bleeding",
-                    "use_target": true
+                    "effect": "creraces:bleeding"
                 }
             },
             "actions": [
@@ -95,11 +96,11 @@
     "remote_description": {
         "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
         "fallback": "race.creraces.lycan.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Lycan\u0026prop=wikitext"
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Lycanthrope&prop=wikitext"
     },
     "remote_passive": {
         "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
         "fallback": "No passive documentation found on wiki.",
-        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Lycan\u0026prop=wikitext"
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Lycanthrope&prop=wikitext"
     }
 }

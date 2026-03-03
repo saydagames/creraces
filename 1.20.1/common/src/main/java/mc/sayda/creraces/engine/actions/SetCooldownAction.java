@@ -15,9 +15,9 @@ import javax.annotation.Nullable;
  */
 public class SetCooldownAction implements ActionRegistry.RaceAction {
     private final ResourceLocation abilityId;
-    private final int value;
+    private final mc.sayda.creraces.engine.ScalingValue value;
 
-    public SetCooldownAction(ResourceLocation abilityId, int value) {
+    public SetCooldownAction(ResourceLocation abilityId, mc.sayda.creraces.engine.ScalingValue value) {
         this.abilityId = abilityId;
         this.value = value;
     }
@@ -27,16 +27,17 @@ public class SetCooldownAction implements ActionRegistry.RaceAction {
             @Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @Nullable net.minecraft.core.BlockPos interactionPos) {
         DataUtils.getVariables(player).ifPresent(vars -> {
-            vars.setCooldown(abilityId, Math.max(0, value));
+            vars.setCooldown(abilityId, (int) Math.max(0, value.evaluate(player, target)));
             mc.sayda.creraces.network.BoundaryHandler.resyncVariables(player, player);
         });
-        return false;
+        return true;
     }
 
     public static void register() {
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "set_cooldown"), json -> {
             ResourceLocation ability = new ResourceLocation(GsonHelper.getAsString(json, "ability"));
-            int val = GsonHelper.getAsInt(json, "value", 0);
+            mc.sayda.creraces.engine.ScalingValue val = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "value",
+                    0.0);
             return new SetCooldownAction(ability, val);
         });
     }

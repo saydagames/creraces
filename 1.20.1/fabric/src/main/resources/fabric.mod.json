@@ -19,7 +19,7 @@
         ]
     },
     "mixins": [
-        "creraces.mixins.json",
+        "creraces-common.mixins.json",
         "creraces-fabric.mixins.json"
     ],
     "depends": {

@@ -18,11 +18,12 @@ import javax.annotation.Nullable;
  */
 public class LaunchProjectileAction implements ActionRegistry.RaceAction {
     private final String projectileType;
-    private final float damage;
-    private final float speed;
-    private final float inaccuracy;
+    private final mc.sayda.creraces.engine.ScalingValue damage;
+    private final mc.sayda.creraces.engine.ScalingValue speed;
+    private final mc.sayda.creraces.engine.ScalingValue inaccuracy;
 
-    public LaunchProjectileAction(String projectileType, float damage, float speed, float inaccuracy) {
+    public LaunchProjectileAction(String projectileType, mc.sayda.creraces.engine.ScalingValue damage,
+            mc.sayda.creraces.engine.ScalingValue speed, mc.sayda.creraces.engine.ScalingValue inaccuracy) {
         this.projectileType = projectileType;
         this.damage = damage;
         this.speed = speed;
@@ -36,15 +37,19 @@ public class LaunchProjectileAction implements ActionRegistry.RaceAction {
         if (player.level() == null)
             return true;
 
+        float dmg = (float) damage.evaluate(player, target);
+        float spd = (float) speed.evaluate(player, target);
+        float acc = (float) inaccuracy.evaluate(player, target);
+
         if ("arrow".equals(projectileType) || "minecraft:arrow".equals(projectileType)) {
             Arrow arrow = new Arrow(player.level(), player);
-            arrow.setBaseDamage(damage);
-            arrow.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, speed, inaccuracy);
+            arrow.setBaseDamage(dmg);
+            arrow.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, spd, acc);
             player.level().addFreshEntity(arrow);
         } else if ("feather".equals(projectileType) || "minecraft:feather".equals(projectileType)
                 || "harpy_feather".equals(projectileType) || "creraces:harpy_feather".equals(projectileType)) {
             FeatherProjectile feather = new FeatherProjectile(player.level(), player);
-            feather.setDamage(damage);
+            feather.setDamage(dmg);
 
             if ("harpy_feather".equals(projectileType) || "creraces:harpy_feather".equals(projectileType)) {
                 feather.setItem(new ItemStack(mc.sayda.creraces.registry.ModItems.HARPY_FEATHER.get()));
@@ -52,7 +57,7 @@ public class LaunchProjectileAction implements ActionRegistry.RaceAction {
                 feather.setItem(new ItemStack(Items.FEATHER));
             }
 
-            feather.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, speed, inaccuracy);
+            feather.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, spd, acc);
             player.level().addFreshEntity(feather);
         } else if (projectileType.contains(":")) {
             // Generic fallback for other entities if we want to support them later
@@ -64,9 +69,13 @@ public class LaunchProjectileAction implements ActionRegistry.RaceAction {
     public static void register() {
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "launch_projectile"), json -> {
             String type = GsonHelper.getAsString(json, "projectile", "arrow");
-            float damage = GsonHelper.getAsFloat(json, "damage", 2.0f);
-            float speed = GsonHelper.getAsFloat(json, "speed", 2.5f);
-            float inaccuracy = GsonHelper.getAsFloat(json, "inaccuracy", 1.0f);
+            mc.sayda.creraces.engine.ScalingValue damage = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
+                    "damage",
+                    2.0);
+            mc.sayda.creraces.engine.ScalingValue speed = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "speed",
+                    2.5);
+            mc.sayda.creraces.engine.ScalingValue inaccuracy = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
+                    "inaccuracy", 1.0);
             return new LaunchProjectileAction(type, damage, speed, inaccuracy);
         });
     }

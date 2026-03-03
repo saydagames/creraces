@@ -20,28 +20,18 @@
                 {
                     "type": "creraces:apply_effect",
                     "effect": "minecraft:slowness",
-                    "amplifier": {
-                        "base": 2
-                    },
-                    "duration": {
-                        "base": 120
-                    },
+                    "amplifier": 2,
+                    "duration": 120,
                     "radius": 10.0,
-                    "target_enemies": true,
-                    "target_players": true
+                    "target_enemies": true
                 },
                 {
                     "type": "creraces:apply_effect",
                     "effect": "minecraft:weakness",
-                    "amplifier": {
-                        "base": 2
-                    },
-                    "duration": {
-                        "base": 120
-                    },
+                    "amplifier": 2,
+                    "duration": 120,
                     "radius": 10.0,
-                    "target_enemies": true,
-                    "target_players": true
+                    "target_enemies": true
                 },
                 {
                     "type": "creraces:set_state",
@@ -64,35 +54,20 @@
                 {
                     "type": "creraces:apply_effect",
                     "effect": "minecraft:speed",
-                    "amplifier": {
-                        "base": 0
-                    },
-                    "duration": {
-                        "base": 240
-                    },
-                    "target_enemies": false
+                    "amplifier": 0,
+                    "duration": 240
                 },
                 {
                     "type": "creraces:apply_effect",
                     "effect": "minecraft:haste",
-                    "amplifier": {
-                        "base": 1
-                    },
-                    "duration": {
-                        "base": 240
-                    },
-                    "target_enemies": false
+                    "amplifier": 1,
+                    "duration": 240
                 },
                 {
                     "type": "creraces:apply_effect",
                     "effect": "minecraft:weakness",
-                    "amplifier": {
-                        "base": 4
-                    },
-                    "duration": {
-                        "base": 240
-                    },
-                    "target_enemies": false
+                    "amplifier": 4,
+                    "duration": 240
                 },
                 {
                     "type": "creraces:set_state",
@@ -116,11 +91,11 @@
     "remote_description": {
         "selector": "",
         "fallback": "ability.creraces.cowardly_skirmish.description",
-        "source": "https://creraces.wiki.gg/api.php?action=cargoquery\u0026format=json\u0026tables=Abilities\u0026fields=Description\u0026where=Name=\u0027Cowardly Skirmish\u0027"
+        "source": "https://creraces.wiki.gg/api.php?action=cargoquery&format=json&tables=Abilities&fields=Description&where=Name=\u0027Cowardly_Skirmish\u0027"
     },
     "remote_full_description": {
         "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
         "fallback": "ability.creraces.cowardly_skirmish.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Ability:Cowardly_Skirmish\u0026prop=wikitext"
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Cowardly_Skirmish&prop=wikitext"
     }
 }

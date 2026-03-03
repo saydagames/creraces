@@ -1,0 +1,35 @@
+{
+    "name": "ability.creraces.kitsune_sleep.name",
+    "description": "ability.creraces.kitsune_sleep.description",
+    "type": "ACTIVE",
+    "icon": "minecraft:textures/item/white_bed.png",
+    "cooldown": 200,
+    "cost": 10,
+    "persistent": false,
+    "race": [
+        "creraces:kitsune"
+    ],
+    "actions": [
+        {
+            "type": "creraces:conditional",
+            "condition": {
+                "type": "creraces:ability_state",
+                "ability": "creraces:fox_form",
+                "value": 1.0
+            },
+            "if_true": [
+                {
+                    "type": "creraces:sleep",
+                    "set_spawn": true
+                }
+            ],
+            "if_false": [
+                {
+                    "type": "creraces:message",
+                    "text": "§cYou can only curl up while in fox form!",
+                    "actionbar": true
+                }
+            ]
+        }
+    ]
+}

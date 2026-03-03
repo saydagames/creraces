@@ -37,9 +37,16 @@ public record Race(
                 @Nonnull List<RaceCustomization> customization,
                 @Nonnull List<ResourceLocation> startingAbilities,
                 @Nonnull List<ResourceLocation> startingItems,
-                @Nonnull List<Component> descriptionLines,
                 @Nullable Passives passives,
-                @Nonnull List<RaceTrait> traits) {
+                @Nonnull List<RaceTrait> traits,
+                boolean isSpirit,
+                boolean isTiny,
+                /**
+                 * When true, the player's current stacks count is subtracted from maxResource
+                 * before applying the resource attribute modifier. Previously hardcoded for
+                 * 'lycan'.
+                 */
+                boolean stacksAffectResource) {
 
         /**
          * Static passive traits that don't require abilities/effects
@@ -58,25 +65,31 @@ public record Race(
                         boolean lavaVision,
 
                         // Movement & Physics
-                        double fallDamageMultiplier, // 0.0 = immune, 0.5 = 50% reduction, 1.0 = normal, 2.0 = double
+                        mc.sayda.creraces.engine.ScalingValue fallDamageMultiplier, // 0.0 = immune, 0.5 = 50%
+                                                                                    // reduction, 1.0 = normal, 2.0 =
+                                                                                    // double
                         boolean canFly, // Note: Actual flight handled by energy/conditions in code
-                        double liquidSpeedMultiplier, // 0.0 = can't move, 1.0 = normal, 2.0 = double speed
+                        mc.sayda.creraces.engine.ScalingValue liquidSpeedMultiplier, // 0.0 = can't move, 1.0 = normal,
+                                                                                     // 2.0 = double speed
                         boolean unaffectedByWater, // Walk/see normally in water, no slowdown
                         boolean unaffectedByLava, // Walk/see normally in lava, no slowdown
                         boolean cannotSprint,
 
                         // Health & Regeneration
                         boolean noNaturalRegeneration,
-                        double regenerationMultiplier, // 0.0 = none, 1.0 = normal, 2.0 = double, etc.
+                        mc.sayda.creraces.engine.ScalingValue regenerationMultiplier, // 0.0 = none, 1.0 = normal, 2.0 =
+                                                                                      // double, etc.
 
                         // Combat & Damage
                         boolean immuneToKnockback,
-                        double invulnerabilityTicksMultiplier, // 0.0 = none, 1.0 = normal (20 ticks), 2.0 = double
+                        mc.sayda.creraces.engine.ScalingValue invulnerabilityTicksMultiplier, // 0.0 = none, 1.0 =
+                                                                                              // normal (20 ticks), 2.0
+                                                                                              // = double
 
                         // Food & Hunger
                         boolean noHunger,
                         boolean noHungerDrain, // Hunger bar never decreases; eating still requires < 20 hunger
-                        double fixedHunger, // 0 = disabled, 1-20 = locked hunger level
+                        mc.sayda.creraces.engine.ScalingValue fixedHunger, // 0 = disabled, 1-20 = locked hunger level
                         boolean canEatMeat, // false = vegetarian
                         boolean canEatWhenFull, // Can eat even at max hunger
 
@@ -97,11 +110,31 @@ public record Race(
                 public static Passives DEFAULT = new Passives(
                                 false, true, false, List.of(), List.of(), // Breathing (+ effect immunity)
                                 false, false, false, // Vision
-                                1.0, false, 1.0, false, false, false, // Movement (1.0 = normal)
-                                false, 1.0, // Health (1.0 = normal regen)
-                                false, 1.0, // Combat (1.0 = normal invuln)
-                                false, false, 0.0, true, false, // Food (noHunger, noHungerDrain, fixedHunger,
-                                                                // canEatMeat, canEatWhenFull)
+                                new mc.sayda.creraces.engine.ScalingValue(1.0, null, 0, new java.util.ArrayList<>()),
+                                false,
+                                new mc.sayda.creraces.engine.ScalingValue(1.0, null, 0, new java.util.ArrayList<>()),
+                                false, false, false, // Movement
+                                // (1.0 =
+                                // normal)
+                                false,
+                                new mc.sayda.creraces.engine.ScalingValue(1.0, null, 0, new java.util.ArrayList<>()), // Health
+                                                                                                                      // (1.0
+                                                                                                                      // =
+                                                                                                                      // normal
+                                // regen)
+                                false,
+                                new mc.sayda.creraces.engine.ScalingValue(1.0, null, 0, new java.util.ArrayList<>()), // Combat
+                                                                                                                      // (1.0
+                                                                                                                      // =
+                                                                                                                      // normal
+                                // invuln)
+                                false, false,
+                                new mc.sayda.creraces.engine.ScalingValue(0.0, null, 0, new java.util.ArrayList<>()),
+                                true, false, // Food
+                                // (noHunger,
+                                // noHungerDrain,
+                                // fixedHunger,
+                                // canEatMeat, canEatWhenFull)
                                 List.of(), List.of(), List.of(), // Social (empty lists)
                                 false, false, false, false, // Equipment
                                 null // Special

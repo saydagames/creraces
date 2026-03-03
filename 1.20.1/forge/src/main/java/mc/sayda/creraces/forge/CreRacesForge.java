@@ -18,6 +18,8 @@ public class CreRacesForge {
                 mc.sayda.creraces.config.forge.ForgeConfig.COMMON_SPEC);
 
         dev.architectury.platform.forge.EventBuses.registerModEventBus(CreRaces.MODID, modBus);
+        mc.sayda.creraces.util.PlatformServices.burnTimeHandler = stack -> net.minecraftforge.common.ForgeHooks
+                .getBurnTime(stack, null);
         CreRaces.init();
         // Register Forge-specific player data events for authoritative NBT load/save
         // MinecraftForge.EVENT_BUS.register(this);

@@ -14,7 +14,7 @@ public class RaceUtils {
             if (race != null && race.traits() != null) {
                 for (TraitRegistry.RaceTrait trait : race.traits()) {
                     if (trait instanceof FoodMultiplierTrait fmt) {
-                        return fmt.getMultiplier();
+                        return fmt.getMultiplier().evaluate(player);
                     }
                 }
             }

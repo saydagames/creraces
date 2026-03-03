@@ -15,13 +15,14 @@ import net.minecraft.world.entity.player.Player;
 public class PermanentEffectTrait implements TraitRegistry.RaceTrait {
 
     private final MobEffect effect;
-    private final int amplifier;
+    private final mc.sayda.creraces.engine.ScalingValue amplifier;
     private final boolean ambient;
     private final boolean showParticles;
     @javax.annotation.Nullable
     private final Condition condition;
 
-    public PermanentEffectTrait(MobEffect effect, int amplifier, boolean ambient, boolean showParticles,
+    public PermanentEffectTrait(MobEffect effect, mc.sayda.creraces.engine.ScalingValue amplifier, boolean ambient,
+            boolean showParticles,
             @javax.annotation.Nullable Condition condition) {
         this.effect = effect;
         this.amplifier = amplifier;
@@ -35,7 +36,8 @@ public class PermanentEffectTrait implements TraitRegistry.RaceTrait {
         if (effect != null && (condition == null || condition.evaluate(player, null, null, null))) {
             // Apply for moderate duration to avoid flickering, but short enough to clear if
             // race changes
-            player.addEffect(new MobEffectInstance(effect, 220, amplifier, ambient, showParticles));
+            player.addEffect(
+                    new MobEffectInstance(effect, 220, (int) amplifier.evaluate(player), ambient, showParticles));
         }
     }
 
@@ -44,7 +46,8 @@ public class PermanentEffectTrait implements TraitRegistry.RaceTrait {
             String effectId = GsonHelper.getAsString(json, "effect");
             MobEffect effect = BuiltInRegistries.MOB_EFFECT.get(new ResourceLocation(effectId));
 
-            int amplifier = GsonHelper.getAsInt(json, "amplifier", 0);
+            mc.sayda.creraces.engine.ScalingValue amplifier = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
+                    "amplifier", 0.0);
             boolean ambient = GsonHelper.getAsBoolean(json, "ambient", false);
             boolean showParticles = GsonHelper.getAsBoolean(json, "visible", false); // Default invisible for passives
 

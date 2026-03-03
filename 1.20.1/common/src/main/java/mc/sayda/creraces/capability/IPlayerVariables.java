@@ -79,6 +79,23 @@ public interface IPlayerVariables extends ISerializableData {
 
     void setCooldown(ResourceLocation abilityId, int ticks);
 
+    // Channeled Ability State
+    boolean isAbilityActive();
+
+    void setAbilityActive(boolean active);
+
+    ResourceLocation getActiveAbility();
+
+    void setActiveAbility(ResourceLocation abilityId);
+
+    int getActiveAbilityDuration();
+
+    void setActiveAbilityDuration(int ticks);
+
+    double getActiveAbilityDrain();
+
+    void setActiveAbilityDrain(double drain);
+
     int getCooldown(ResourceLocation abilityId);
 
     void sakuyaTimeLeap();
@@ -86,6 +103,8 @@ public interface IPlayerVariables extends ISerializableData {
     Set<ResourceLocation> getUnlockedAbilities();
 
     void unlockAbility(ResourceLocation abilityId);
+
+    void revokeAbility(ResourceLocation abilityId);
 
     boolean isAbilityUnlocked(ResourceLocation abilityId);
 
@@ -156,4 +175,14 @@ public interface IPlayerVariables extends ISerializableData {
     String getReturnDim();
 
     void setReturnDim(String dim);
+
+    boolean isInSpiritRealm();
+
+    void setInSpiritRealm(boolean inSpiritRealm);
+
+    boolean isSmallBuild();
+
+    void setSmallBuild(boolean smallBuild);
+
+    void resetOnDeath();
 }

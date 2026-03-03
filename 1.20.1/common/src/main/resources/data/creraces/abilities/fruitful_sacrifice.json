@@ -15,8 +15,7 @@
             "duration": 200,
             "amplifier": 0,
             "visible": true,
-            "radius": 16,
-            "target_enemies": true
+            "radius": 16.0
         },
         {
             "type": "creraces:apply_effect",
@@ -24,8 +23,7 @@
             "duration": 160,
             "amplifier": 0,
             "visible": true,
-            "radius": 16,
-            "target_enemies": true
+            "radius": 16.0
         },
         {
             "type": "creraces:apply_effect",
@@ -36,13 +34,14 @@
         },
         {
             "type": "creraces:damage",
-            "damage": {
-                "base": 0.25,
-                "hp": 0.25
+            "amount": {
+                "base": 0.0,
+                "scales_with": "hp",
+                "factor": 0.25
             },
             "damage_type": "minecraft:wither",
             "knockback": 0.0,
-            "source": "caster"
+            "source": "self"
         },
         {
             "type": "creraces:play_sound",
@@ -54,11 +53,11 @@
     "remote_description": {
         "selector": "",
         "fallback": "ability.creraces.fruitful_sacrifice.description",
-        "source": "https://creraces.wiki.gg/api.php?action=cargoquery\u0026format=json\u0026tables=Abilities\u0026fields=Description\u0026where=Name=\u0027Fruitful Sacrifice\u0027"
+        "source": "https://creraces.wiki.gg/api.php?action=cargoquery&format=json&tables=Abilities&fields=Description&where=Name=\u0027Fruitful_Sacrifice\u0027"
     },
     "remote_full_description": {
         "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
         "fallback": "ability.creraces.fruitful_sacrifice.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Ability:Fruitful_Sacrifice\u0026prop=wikitext"
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Fruitful_Sacrifice&prop=wikitext"
     }
 }

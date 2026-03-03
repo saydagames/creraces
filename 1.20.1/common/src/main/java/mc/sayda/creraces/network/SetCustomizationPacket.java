@@ -43,25 +43,47 @@ public class SetCustomizationPacket {
         context.queue(() -> {
             if (context.getPlayer() instanceof ServerPlayer player) {
                 DataUtils.getVariables(player).ifPresent(vars -> {
-                    customizations.forEach(vars::setCustomization);
-                    // Apply to cosmetic system
-                    ResourceLocation raceId = vars.getRace();
-                    if (raceId.getNamespace().equals("minecraft")) {
-                        raceId = new ResourceLocation(CreRaces.MODID, raceId.getPath());
-                    }
-                    mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(raceId);
-                    if (race != null) {
-                        mc.sayda.creraces.race.CosmeticIncidents.applyCustomizations(player, vars.getCustomizations(),
-                                race);
+                    // Size guard: a player can't have more customization keys than their race
+                    // defines
+                    mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
+                    if (race == null)
+                        return;
 
-                        // Explicitly sync to Twilight Lib trackers
-                        var addons = mc.sayda.twilight_lib.capabilities.DataUtils.getAddonsData(player);
-                        if (addons != null) {
-                            mc.sayda.twilight_lib.network.NetworkHandler.sendAddonsToAll(
-                                    new mc.sayda.twilight_lib.network.SyncAddonsPacket(
-                                            player.getUUID(), addons.getActiveAddons(), addons.getAllAddonTints()));
-                        }
+                    // Build the set of valid customization keys for this race
+                    java.util.Set<String> validKeys = new java.util.HashSet<>();
+                    for (mc.sayda.creraces.race.RaceCustomization cust : race.customization()) {
+                        validKeys.add(cust.id());
                     }
+
+                    // Reject oversized packets outright
+                    if (customizations.size() > validKeys.size()) {
+                        CreRaces.LOGGER.warn("Player {} sent oversized customization packet ({} entries, max {})",
+                                player.getName().getString(), customizations.size(), validKeys.size());
+                        return;
+                    }
+
+                    customizations.forEach((key, value) -> {
+                        // Only accept keys that are defined in this race's customizations
+                        if (!validKeys.contains(key)) {
+                            CreRaces.LOGGER.warn("Player {} sent invalid customization key: '{}'",
+                                    player.getName().getString(), key);
+                            return;
+                        }
+                        vars.setCustomization(key, value);
+                    });
+
+                    // Apply to cosmetic system
+                    mc.sayda.creraces.race.CosmeticIncidents.applyCustomizations(player, vars.getCustomizations(),
+                            race);
+
+                    // Explicitly sync to Twilight Lib trackers
+                    var addons = mc.sayda.twilight_lib.capabilities.DataUtils.getAddonsData(player);
+                    if (addons != null) {
+                        mc.sayda.twilight_lib.network.NetworkHandler.sendAddonsToAll(
+                                new mc.sayda.twilight_lib.network.SyncAddonsPacket(
+                                        player.getUUID(), addons.getActiveAddons(), addons.getAllAddonTints()));
+                    }
+
                     // Sync back to tracking players
                     BoundaryHandler.resyncForAllTrackers(player);
                     mc.sayda.creraces.race.AttributeIncidents.eikiJudgment(player);

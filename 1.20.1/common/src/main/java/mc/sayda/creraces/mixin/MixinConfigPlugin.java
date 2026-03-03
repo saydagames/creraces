@@ -1,6 +1,5 @@
 package mc.sayda.creraces.mixin;
 
-import com.llamalad7.mixinextras.MixinExtrasBootstrap;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
@@ -11,7 +10,14 @@ import java.util.Set;
 public class MixinConfigPlugin implements IMixinConfigPlugin {
     @Override
     public void onLoad(String mixinPackage) {
-        MixinExtrasBootstrap.init();
+        try {
+            Class.forName("com.llamalad7.mixinextras.MixinExtrasBootstrap")
+                    .getMethod("init")
+                    .invoke(null);
+        } catch (Throwable e) {
+            // MixinExtras not found or already initialized, hopefully someone else handles
+            // it
+        }
     }
 
     @Override

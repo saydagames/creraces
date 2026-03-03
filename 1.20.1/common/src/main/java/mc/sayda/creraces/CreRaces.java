@@ -35,6 +35,24 @@ public class CreRaces {
 
         // Events
         IncidentResolver.init();
+        mc.sayda.creraces.engine.SpiritSpawningHandler.init();
+
+        dev.architectury.event.events.common.BlockEvent.BREAK.register((level, pos, state, player, xp) -> {
+            if (state.is(mc.sayda.creraces.registry.ModBlocks.MICRO_BLOCK.get())) {
+                boolean isSmallBuild = mc.sayda.creraces.capability.DataUtils.getVariables(player)
+                        .map(mc.sayda.creraces.capability.IPlayerVariables::isSmallBuild)
+                        .orElse(false);
+
+                if (isSmallBuild) {
+                    // Minibuild users are strictly forbidden from breaking the host block
+                    return dev.architectury.event.EventResult.interruptFalse();
+                } else if (!player.isShiftKeyDown()) {
+                    // Global rule: Non-minibuild users must sneak to break it
+                    return dev.architectury.event.EventResult.interruptFalse();
+                }
+            }
+            return dev.architectury.event.EventResult.pass();
+        });
 
         // Register Commands
         dev.architectury.event.events.common.CommandRegistrationEvent.EVENT
@@ -56,6 +74,8 @@ public class CreRaces {
 
         // Blocks
         mc.sayda.creraces.registry.ModBlocks.register();
+        // Sounds
+        mc.sayda.creraces.registry.ModSounds.register();
         // Items
         mc.sayda.creraces.registry.ModItems.register();
         // Tabs

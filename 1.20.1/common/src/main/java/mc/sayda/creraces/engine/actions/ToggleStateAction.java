@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.engine.ActionRegistry;
+import mc.sayda.creraces.engine.ScalingValue;
 import mc.sayda.creraces.util.GsonHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
@@ -15,13 +16,13 @@ public class ToggleStateAction implements ActionRegistry.RaceAction {
 
     private final String stateVariable;
     private final @javax.annotation.Nullable ResourceLocation abilityId;
-    private final double onValue;
-    private final double offValue;
+    private final ScalingValue onValue;
+    private final ScalingValue offValue;
     private final List<ActionRegistry.RaceAction> onEnable;
     private final List<ActionRegistry.RaceAction> onDisable;
 
     public ToggleStateAction(String stateVariable, @javax.annotation.Nullable ResourceLocation abilityId,
-            double onValue, double offValue,
+            ScalingValue onValue, ScalingValue offValue,
             List<ActionRegistry.RaceAction> onEnable,
             List<ActionRegistry.RaceAction> onDisable) {
         this.stateVariable = stateVariable;
@@ -48,9 +49,11 @@ public class ToggleStateAction implements ActionRegistry.RaceAction {
                 return;
 
             double current = vars.getAbilityState(targetAbilityId);
+            double on = onValue.evaluate(player, target);
+            double off = offValue.evaluate(player, target);
 
-            if (Math.abs(current - offValue) < 0.001) {
-                vars.setAbilityState(targetAbilityId, onValue);
+            if (Math.abs(current - off) < 0.001) {
+                vars.setAbilityState(targetAbilityId, on);
                 for (ActionRegistry.RaceAction a : onEnable) {
                     if (!a.execute(player, target, slot, interactionPos)) {
                         success[0] = false;
@@ -58,7 +61,7 @@ public class ToggleStateAction implements ActionRegistry.RaceAction {
                     }
                 }
             } else {
-                vars.setAbilityState(targetAbilityId, offValue);
+                vars.setAbilityState(targetAbilityId, off);
                 for (ActionRegistry.RaceAction a : onDisable) {
                     if (!a.execute(player, target, slot, interactionPos)) {
                         success[0] = false;
@@ -75,8 +78,8 @@ public class ToggleStateAction implements ActionRegistry.RaceAction {
     public static void register() {
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "toggle_state"), json -> {
             String state = GsonHelper.getAsString(json, "state", "slot");
-            double on = GsonHelper.getAsDouble(json, "on_value", 1.0);
-            double off = GsonHelper.getAsDouble(json, "off_value", 0.0);
+            ScalingValue on = ScalingValue.fromJson(json, "on_value", 1.0);
+            ScalingValue off = ScalingValue.fromJson(json, "off_value", 0.0);
 
             List<ActionRegistry.RaceAction> onEnable = new ArrayList<>();
             if (json.has("on_enable")) {

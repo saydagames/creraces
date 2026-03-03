@@ -20,7 +20,9 @@
         {
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.attack_damage",
-            "value": 5.0,
+            "value": {
+                "base": 5.0
+            },
             "operation": "addition"
         }
     ],
@@ -29,11 +31,11 @@
     "remote_description": {
         "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
         "fallback": "race.creraces.giant.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Giant\u0026prop=wikitext"
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Giant&prop=wikitext"
     },
     "remote_passive": {
         "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
         "fallback": "No passive documentation found on wiki.",
-        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Giant\u0026prop=wikitext"
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Giant&prop=wikitext"
     }
 }

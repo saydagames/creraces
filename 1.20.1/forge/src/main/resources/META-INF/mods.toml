@@ -8,9 +8,10 @@ version="${mod_version}"
 displayName="${mod_name}"
 authors="${mod_authors}"
 description='''${mod_description}'''
-mixinConfigs="creraces.mixins.json,creraces-forge.mixins.json"
+mixinConfigs="creraces-common.mixins.json,creraces-forge.mixins.json"
 
-[[dependencies."${mod_id}"]]
+
+[[dependencies.${mod_id}]]
 modId="forge"
 mandatory=true
 versionRange="${forge_version_range}"

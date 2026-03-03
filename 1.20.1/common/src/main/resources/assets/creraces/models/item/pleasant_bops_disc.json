@@ -1,0 +1,6 @@
+{
+    "parent": "minecraft:item/generated",
+    "textures": {
+        "layer0": "creraces:item/pleasant_bops_disc"
+    }
+}

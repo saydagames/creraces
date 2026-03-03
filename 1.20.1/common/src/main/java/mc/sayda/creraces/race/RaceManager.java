@@ -64,9 +64,15 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
         Map<ResourceLocation, JsonObject> resolvedData = new java.util.HashMap<>();
         data.forEach((id, element) -> {
             if (element.isJsonObject()) {
-                // We need an instance to call resolveInheritance (or make it static)
-                RaceManager manager = new RaceManager();
-                resolvedData.put(id, manager.resolveInheritance(id, data, new java.util.HashSet<>()));
+                try {
+                    // We need an instance to call resolveInheritance (or make it static)
+                    RaceManager manager = new RaceManager();
+                    resolvedData.put(id, manager.resolveInheritance(id, data, new java.util.HashSet<>()));
+                } catch (Exception e) {
+                    CreRaces.LOGGER.error("Failed to resolve inheritance for race {}: {}", id, e.getMessage());
+                    // Fallback to raw data if inheritance fails
+                    resolvedData.put(id, element.getAsJsonObject());
+                }
             }
         });
 
@@ -144,14 +150,6 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                     }
                 }
 
-                // Description Lines
-                List<Component> descriptionLines = new ArrayList<>();
-                if (jsonObject.has("description_lines")) {
-                    for (JsonElement e : jsonObject.getAsJsonArray("description_lines")) {
-                        descriptionLines.add(Component.translatable(e.getAsString()));
-                    }
-                }
-
                 // Traits
                 List<mc.sayda.creraces.engine.TraitRegistry.RaceTrait> traits = new ArrayList<>();
                 if (jsonObject.has("traits")) {
@@ -202,9 +200,11 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                         customizations,
                         startingAbilities,
                         startingItems,
-                        descriptionLines,
                         parsePassives(jsonObject),
-                        traits);
+                        traits,
+                        GsonHelper.getAsBoolean(jsonObject, "is_spirit", false),
+                        GsonHelper.getAsBoolean(jsonObject, "is_tiny", false),
+                        GsonHelper.getAsBoolean(jsonObject, "stacks_affect_resource", false));
 
                 RaceRegistry.register(race);
                 count[0]++;
@@ -224,10 +224,15 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
 
         JsonObject current = data.get(id).getAsJsonObject().deepCopy();
         if (current.has("parent_race")) {
-            ResourceLocation parentId = new ResourceLocation(current.get("parent_race").getAsString());
-            if (data.containsKey(parentId)) {
+            String parentStr = current.get("parent_race").getAsString();
+            ResourceLocation parentId = ResourceLocation.tryParse(parentStr);
+            if (parentId != null && data.containsKey(parentId)) {
                 JsonObject parentResolved = resolveInheritance(parentId, data, visited);
                 return mergeRaces(parentResolved, current);
+            } else if (parentId != null) {
+                CreRaces.LOGGER.warn("Race {} references missing parent race: {}", id, parentId);
+            } else {
+                CreRaces.LOGGER.warn("Race {} has malformed parent_race: {}", id, parentStr);
             }
         }
         return current;
@@ -250,8 +255,7 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                     }
                 } else if (childVal.isJsonArray() && parentVal.isJsonArray()) {
                     // Append for specific lists
-                    if (key.equals("traits") || key.equals("starting_abilities") || key.equals("starting_items")
-                            || key.equals("description_lines")) {
+                    if (key.equals("traits") || key.equals("starting_abilities") || key.equals("starting_items")) {
                         parentVal.getAsJsonArray().addAll(childVal.getAsJsonArray());
                     } else {
                         merged.add(key, childVal);
@@ -334,26 +338,25 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                 GsonHelper.getAsBoolean(p, "lava_vision", false),
 
                 // Movement & Physics
-                p.has("fall_damage_multiplier") ? p.get("fall_damage_multiplier").getAsDouble() : 1.0,
+                mc.sayda.creraces.engine.ScalingValue.fromJson(p, "fall_damage_multiplier", 1.0),
                 GsonHelper.getAsBoolean(p, "can_fly", false),
-                p.has("liquid_speed_multiplier") ? p.get("liquid_speed_multiplier").getAsDouble() : 1.0,
+                mc.sayda.creraces.engine.ScalingValue.fromJson(p, "liquid_speed_multiplier", 1.0),
                 GsonHelper.getAsBoolean(p, "unaffected_by_water", false),
                 GsonHelper.getAsBoolean(p, "unaffected_by_lava", false),
                 GsonHelper.getAsBoolean(p, "cannot_sprint", false),
 
                 // Health & Regeneration
                 GsonHelper.getAsBoolean(p, "no_natural_regeneration", false),
-                p.has("regeneration_multiplier") ? p.get("regeneration_multiplier").getAsDouble() : 1.0,
+                mc.sayda.creraces.engine.ScalingValue.fromJson(p, "regeneration_multiplier", 1.0),
 
                 // Combat & Damage
                 GsonHelper.getAsBoolean(p, "immune_to_knockback", false),
-                p.has("invulnerability_ticks_multiplier") ? p.get("invulnerability_ticks_multiplier").getAsDouble()
-                        : 1.0,
+                mc.sayda.creraces.engine.ScalingValue.fromJson(p, "invulnerability_ticks_multiplier", 1.0),
 
                 // Food & Hunger
                 GsonHelper.getAsBoolean(p, "no_hunger", false),
                 GsonHelper.getAsBoolean(p, "no_hunger_drain", false),
-                p.has("fixed_hunger") ? p.get("fixed_hunger").getAsDouble() : 0.0,
+                mc.sayda.creraces.engine.ScalingValue.fromJson(p, "fixed_hunger", 0.0),
                 GsonHelper.getAsBoolean(p, "can_eat_meat", true),
                 GsonHelper.getAsBoolean(p, "can_eat_when_full", false),
 

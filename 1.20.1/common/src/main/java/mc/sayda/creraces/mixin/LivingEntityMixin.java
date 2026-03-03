@@ -1,5 +1,7 @@
 package mc.sayda.creraces.mixin;
 
+import mc.sayda.creraces.util.ISleepSlotTracker;
+
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.capability.IPlayerVariables;
 import mc.sayda.creraces.race.Race;
@@ -7,8 +9,11 @@ import mc.sayda.creraces.race.RaceRegistry;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.core.BlockPos;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -17,7 +22,20 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.Optional;
 
 @Mixin(LivingEntity.class)
-public abstract class LivingEntityMixin {
+public abstract class LivingEntityMixin implements ISleepSlotTracker {
+
+    @Unique
+    private int creraces$sleepSlot = -1;
+
+    @Override
+    public int creraces$getSleepSlot() {
+        return creraces$sleepSlot;
+    }
+
+    @Override
+    public void creraces$setSleepSlot(int slot) {
+        this.creraces$sleepSlot = slot;
+    }
 
     @Shadow
     protected abstract int decreaseAirSupply(int air);
@@ -33,6 +51,8 @@ public abstract class LivingEntityMixin {
 
     @Inject(method = "baseTick", at = @At("TAIL"))
     private void creraces$landSuffocation(CallbackInfo ci) {
+        mc.sayda.creraces.engine.SpiritMobilityHandler.tick((LivingEntity) (Object) this);
+        mc.sayda.creraces.engine.AquaticMovementHandler.tick((LivingEntity) (Object) this);
         if ((Object) this instanceof Player player && player.isAlive() && !player.level().isClientSide()) {
             DataUtils.getVariables(player).ifPresent(vars -> {
                 Race race = RaceRegistry.get(vars.getRace());
@@ -104,18 +124,24 @@ public abstract class LivingEntityMixin {
 
     @Inject(method = "causeFallDamage", at = @At("HEAD"), cancellable = true)
     private void creraces$fallDamagePassive(float distance, float multiplier, DamageSource source,
-            CallbackInfoReturnable<Integer> cir) {
+            CallbackInfoReturnable<Boolean> cir) {
         if ((Object) this instanceof Player player) {
             Optional<IPlayerVariables> varsOpt = DataUtils.getVariables(player);
             if (varsOpt.isPresent()) {
                 Race race = RaceRegistry.get(varsOpt.get().getRace());
                 if (race != null && race.passives() != null) {
-                    double fallMult = race.passives().fallDamageMultiplier();
+                    double fallMult = race.passives().fallDamageMultiplier().evaluate(player);
                     if (fallMult == 0.0) {
-                        cir.setReturnValue(0);
+                        cir.setReturnValue(false);
+                        return;
                     }
                 }
             }
+        }
+
+        // Global Spirit Realm fall damage immunity
+        if (mc.sayda.creraces.engine.SpiritMobilityHandler.isSpirit((LivingEntity) (Object) this)) {
+            cir.setReturnValue(false);
         }
     }
 
@@ -233,4 +259,50 @@ public abstract class LivingEntityMixin {
             });
         }
     }
+
+    @Inject(method = "onClimbable", at = @At("HEAD"), cancellable = true)
+    private void creraces$microClimbable(CallbackInfoReturnable<Boolean> cir) {
+        LivingEntity entity = (LivingEntity) (Object) this;
+        BlockPos pos = entity.blockPosition();
+        if (entity.level().getBlockEntity(pos) instanceof mc.sayda.creraces.block.entity.MicroBlockEntity micro) {
+            // Check a 0.1m radius around the entity's position to pick up thin
+            // ladders/vines
+            double r = 0.1;
+            if (checkGridClimbable(entity, pos, micro, 0, 0) ||
+                    checkGridClimbable(entity, pos, micro, r, 0) ||
+                    checkGridClimbable(entity, pos, micro, -r, 0) ||
+                    checkGridClimbable(entity, pos, micro, 0, r) ||
+                    checkGridClimbable(entity, pos, micro, 0, -r)) {
+                cir.setReturnValue(true);
+            }
+        }
+    }
+
+    private boolean checkGridClimbable(LivingEntity entity, BlockPos hostPos,
+            mc.sayda.creraces.block.entity.MicroBlockEntity micro, double ox, double oz) {
+        // Use consistent scale and slot math
+        double x = entity.getX() + ox;
+        double y = entity.getY();
+        double z = entity.getZ() + oz;
+
+        // Check multiple Y points
+        return isClimbableAt(hostPos, micro, x, y, z) ||
+                isClimbableAt(hostPos, micro, x, y + 0.5, z) ||
+                isClimbableAt(hostPos, micro, x, y + 1.0, z);
+    }
+
+    private boolean isClimbableAt(BlockPos hostPos, mc.sayda.creraces.block.entity.MicroBlockEntity micro, double x,
+            double y, double z) {
+        int sx = mc.sayda.creraces.block.entity.MicroBlockEntity.clampSlot(x - hostPos.getX());
+        int sy = mc.sayda.creraces.block.entity.MicroBlockEntity.clampSlot(y - hostPos.getY());
+        int sz = mc.sayda.creraces.block.entity.MicroBlockEntity.clampSlot(z - hostPos.getZ());
+
+        if (sx < 0 || sx > 3 || sy < 0 || sy > 3 || sz < 0 || sz > 3)
+            return false;
+
+        BlockState slotState = micro.getSlot(sx, sy, sz);
+        return slotState.is(net.minecraft.tags.BlockTags.CLIMBABLE)
+                || slotState.getBlock() instanceof net.minecraft.world.level.block.VineBlock;
+    }
+
 }

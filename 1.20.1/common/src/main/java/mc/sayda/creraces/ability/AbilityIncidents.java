@@ -56,7 +56,14 @@ public class AbilityIncidents {
                 if (executor.execute(player, ability, slot)) {
                     // 5. Post-Cast (Consume cost and set cooldown)
                     consumeResource(vars, race, ability.cost());
-                    vars.setCooldown(abilityId, ability.cooldown());
+
+                    double haste = player
+                            .getAttributeValue(mc.sayda.creraces.registry.ModAttributes.ABILITY_HASTE.get());
+                    double cap = mc.sayda.creraces.config.CreRacesConfig.ABILITY_HASTE_CAP.get();
+                    double effectiveHaste = Math.min(haste, cap);
+                    double multiplier = 1.0 - (effectiveHaste / 100.0);
+                    int cooledTicks = (int) (ability.cooldown() * multiplier);
+                    vars.setCooldown(abilityId, Math.max(0, cooledTicks));
 
                     // Sync to client
                     BoundaryHandler.resyncVariables(player, player);

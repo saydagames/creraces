@@ -2,6 +2,7 @@ package mc.sayda.creraces.race;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import mc.sayda.creraces.engine.ScalingValue;
 import mc.sayda.creraces.util.GsonHelper;
 
 /**
@@ -9,48 +10,63 @@ import mc.sayda.creraces.util.GsonHelper;
  * Maps to various Pehkui ScaleTypes.
  */
 public record RaceScale(
-        float base,
-        float width,
-        float height,
-        float hitboxWidth,
-        float hitboxHeight,
-        float eyeHeight,
-        float reach,
-        float miningSpeed,
-        float motion,
-        float stepHeight,
-        float jumpHeight,
-        float knockback,
-        float fallSpeed) {
-    public static final RaceScale DEFAULT = new RaceScale(1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-            1.0f, 1.0f, 1.0f);
+        ScalingValue base,
+        ScalingValue width,
+        ScalingValue height,
+        ScalingValue hitboxWidth,
+        ScalingValue hitboxHeight,
+        ScalingValue eyeHeight,
+        ScalingValue reach,
+        ScalingValue miningSpeed,
+        ScalingValue motion,
+        ScalingValue stepHeight,
+        ScalingValue jumpHeight,
+        ScalingValue knockback,
+        ScalingValue fallSpeed) {
+    public static final RaceScale DEFAULT = new RaceScale(
+            new ScalingValue(1.0, null, 0, new java.util.ArrayList<>()),
+            new ScalingValue(1.0, null, 0, new java.util.ArrayList<>()),
+            new ScalingValue(1.0, null, 0, new java.util.ArrayList<>()),
+            new ScalingValue(1.0, null, 0, new java.util.ArrayList<>()),
+            new ScalingValue(1.0, null, 0, new java.util.ArrayList<>()),
+            new ScalingValue(1.0, null, 0, new java.util.ArrayList<>()),
+            new ScalingValue(1.0, null, 0, new java.util.ArrayList<>()),
+            new ScalingValue(1.0, null, 0, new java.util.ArrayList<>()),
+            new ScalingValue(1.0, null, 0, new java.util.ArrayList<>()),
+            new ScalingValue(1.0, null, 0, new java.util.ArrayList<>()),
+            new ScalingValue(1.0, null, 0, new java.util.ArrayList<>()),
+            new ScalingValue(1.0, null, 0, new java.util.ArrayList<>()),
+            new ScalingValue(1.0, null, 0, new java.util.ArrayList<>()));
 
     public static RaceScale fromJson(JsonElement json) {
         if (json == null || json.isJsonNull()) {
             return DEFAULT;
         }
         if (json.isJsonPrimitive()) {
-            float s = json.getAsFloat();
+            JsonObject wrapper = new JsonObject();
+            wrapper.add("val", json);
+            ScalingValue s = ScalingValue.fromJson(wrapper, "val", 1.0);
             return new RaceScale(s, s, s, s, s, s, s, s, s, s, s, s, s);
         }
         if (json.isJsonObject()) {
             JsonObject obj = json.getAsJsonObject();
-            float base = GsonHelper.getAsFloat(obj, "base", 1.0f);
-            // Default sub-scales to base if not specified
+            ScalingValue base = ScalingValue.fromJson(obj, "base", 1.0);
+            // Pehkui's BASE scale is a master multiplier.
+            // Default sub-scales to 1.0 to avoid double-scaling.
             return new RaceScale(
                     base,
-                    GsonHelper.getAsFloat(obj, "width", base),
-                    GsonHelper.getAsFloat(obj, "height", base),
-                    GsonHelper.getAsFloat(obj, "hitbox_width", base),
-                    GsonHelper.getAsFloat(obj, "hitbox_height", base),
-                    GsonHelper.getAsFloat(obj, "eye_height", base),
-                    GsonHelper.getAsFloat(obj, "reach", base),
-                    GsonHelper.getAsFloat(obj, "mining_speed", base),
-                    GsonHelper.getAsFloat(obj, "motion", base),
-                    GsonHelper.getAsFloat(obj, "step_height", base),
-                    GsonHelper.getAsFloat(obj, "jump_height", base),
-                    GsonHelper.getAsFloat(obj, "knockback", base),
-                    GsonHelper.getAsFloat(obj, "fall_speed", base));
+                    ScalingValue.fromJson(obj, "width", 1.0),
+                    ScalingValue.fromJson(obj, "height", 1.0),
+                    ScalingValue.fromJson(obj, "hitbox_width", 1.0),
+                    ScalingValue.fromJson(obj, "hitbox_height", 1.0),
+                    ScalingValue.fromJson(obj, "eye_height", 1.0),
+                    ScalingValue.fromJson(obj, "reach", 1.0),
+                    ScalingValue.fromJson(obj, "mining_speed", 1.0),
+                    ScalingValue.fromJson(obj, "motion", 1.0),
+                    ScalingValue.fromJson(obj, "step_height", 1.0),
+                    ScalingValue.fromJson(obj, "jump_height", 1.0),
+                    ScalingValue.fromJson(obj, "knockback", 1.0),
+                    ScalingValue.fromJson(obj, "fall_speed", 1.0));
         }
         return DEFAULT;
     }

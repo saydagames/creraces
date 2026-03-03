@@ -10,6 +10,8 @@ import net.minecraft.world.level.block.state.properties.BlockSetType;
 import net.minecraft.world.level.block.state.properties.WoodType;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 
 public class ModBlocks {
         public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(CreRaces.MODID, Registries.BLOCK);
@@ -121,7 +123,56 @@ public class ModBlocks {
                                         BlockBehaviour.Properties.of().strength(-1.0f, 3600000.0f)
                                                         .lightLevel(state -> 10).noOcclusion()));
 
+        public static final RegistrySupplier<Block> TORI_BELL = BLOCKS.register("tori_bell",
+                        () -> new mc.sayda.creraces.block.ToriBellBlock(
+                                        BlockBehaviour.Properties.copy(Blocks.BELL).mapColor(MapColor.COLOR_RED),
+                                        false));
+
+        public static final RegistrySupplier<Block> WEATHERED_TORI_BELL = BLOCKS.register("weathered_tori_bell",
+                        () -> new mc.sayda.creraces.block.ToriBellBlock(
+                                        BlockBehaviour.Properties.copy(Blocks.BELL).mapColor(MapColor.COLOR_RED),
+                                        true));
+
+        public static final RegistrySupplier<Block> RED_STRIPPED_OAK_LOG = BLOCKS.register("red_stripped_oak_log",
+                        () -> new RotatedPillarBlock(BlockBehaviour.Properties.copy(Blocks.STRIPPED_OAK_LOG)
+                                        .mapColor(MapColor.COLOR_RED)));
+
+        public static final RegistrySupplier<Block> WEATHERED_RED_STRIPPED_OAK_LOG = BLOCKS.register(
+                        "weathered_red_stripped_oak_log",
+                        () -> new RotatedPillarBlock(BlockBehaviour.Properties.copy(Blocks.STRIPPED_OAK_LOG)
+                                        .mapColor(MapColor.COLOR_RED)));
+
+        // ─── Mini Build System ─────────────────────────────────────────────────────
+        // Always registered so MICRO_BLOCK is never null.
+        // The runtime Mixin behavior is gated by CreRacesConfig.MINI_BUILD_ENABLED at
+        // the call site.
+        public static RegistrySupplier<Block> MICRO_BLOCK;
+
+        public static final DeferredRegister<net.minecraft.world.level.block.entity.BlockEntityType<?>> BLOCK_ENTITIES = DeferredRegister
+                        .create(CreRaces.MODID, net.minecraft.core.registries.Registries.BLOCK_ENTITY_TYPE);
+
+        public static dev.architectury.registry.registries.RegistrySupplier<net.minecraft.world.level.block.entity.BlockEntityType<mc.sayda.creraces.block.entity.MicroBlockEntity>> MICRO_BLOCK_ENTITY;
+        public static dev.architectury.registry.registries.RegistrySupplier<net.minecraft.world.level.block.entity.BlockEntityType<net.minecraft.world.level.block.entity.BellBlockEntity>> TORI_BELL_ENTITY;
+
         public static void register() {
                 BLOCKS.register();
+
+                MICRO_BLOCK = BLOCKS.register("mini_block",
+                                () -> new mc.sayda.creraces.block.MicroBlock(
+                                                mc.sayda.creraces.block.MicroBlock.PROPERTIES));
+
+                MICRO_BLOCK_ENTITY = BLOCK_ENTITIES.register("mini_block",
+                                () -> BlockEntityType.Builder
+                                                .of(mc.sayda.creraces.block.entity.MicroBlockEntity::new,
+                                                                MICRO_BLOCK.get())
+                                                .build(null));
+
+                TORI_BELL_ENTITY = BLOCK_ENTITIES.register("tori_bell",
+                                () -> BlockEntityType.Builder
+                                                .of(net.minecraft.world.level.block.entity.BellBlockEntity::new,
+                                                                TORI_BELL.get(), WEATHERED_TORI_BELL.get())
+                                                .build(null));
+
+                BLOCK_ENTITIES.register();
         }
 }

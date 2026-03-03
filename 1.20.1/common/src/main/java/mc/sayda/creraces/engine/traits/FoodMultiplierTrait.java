@@ -6,19 +6,20 @@ import net.minecraft.resources.ResourceLocation;
 
 public class FoodMultiplierTrait implements TraitRegistry.RaceTrait {
 
-    private final double multiplier;
+    private final mc.sayda.creraces.engine.ScalingValue multiplier;
 
-    public FoodMultiplierTrait(double multiplier) {
+    public FoodMultiplierTrait(mc.sayda.creraces.engine.ScalingValue multiplier) {
         this.multiplier = multiplier;
     }
 
-    public double getMultiplier() {
+    public mc.sayda.creraces.engine.ScalingValue getMultiplier() {
         return multiplier;
     }
 
     public static void register() {
         TraitRegistry.register(new ResourceLocation(CreRaces.MODID, "food_multiplier"), json -> {
-            double multiplier = json.has("multiplier") ? json.get("multiplier").getAsDouble() : 1.0;
+            mc.sayda.creraces.engine.ScalingValue multiplier = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
+                    "multiplier", 1.0);
             return new FoodMultiplierTrait(multiplier);
         });
     }

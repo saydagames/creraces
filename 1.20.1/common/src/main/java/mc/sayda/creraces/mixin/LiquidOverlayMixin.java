@@ -1,0 +1,51 @@
+package mc.sayda.creraces.mixin;
+
+import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.race.Race;
+import mc.sayda.creraces.race.RaceRegistry;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.ScreenEffectRenderer;
+import net.minecraft.world.entity.player.Player;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import com.mojang.blaze3d.vertex.PoseStack;
+
+/**
+ * Suppresses the underwater and lava screen overlay (the blue/orange
+ * translucent
+ * layer drawn over the viewport) for races with waterVision or lavaVision
+ * passives.
+ *
+ * {@link ScreenEffectRenderer#renderScreenEffect} draws both the water overlay
+ * (when submerged) and the fire overlay (when on fire). We only cancel the
+ * liquid ones — fire from combat remains visible.
+ */
+@Mixin(ScreenEffectRenderer.class)
+public class LiquidOverlayMixin {
+
+    @Inject(method = "renderScreenEffect", at = @At("HEAD"), cancellable = true)
+    private static void creraces$suppressLiquidOverlay(Minecraft minecraft, PoseStack poseStack, CallbackInfo ci) {
+        Player player = minecraft.player;
+        if (player == null)
+            return;
+
+        DataUtils.getVariables(player).ifPresent(vars -> {
+            Race race = RaceRegistry.get(vars.getRace());
+            if (race == null)
+                return;
+            Race.Passives passives = race.passives() != null ? race.passives() : Race.Passives.DEFAULT;
+
+            boolean inWater = player.isEyeInFluid(net.minecraft.tags.FluidTags.WATER);
+            boolean inLava = player.isEyeInFluid(net.minecraft.tags.FluidTags.LAVA);
+
+            if ((inWater && passives.waterVision()) || (inLava && passives.lavaVision())) {
+                // Cancel the whole overlay pass — only for liquid.
+                // Fire overlay (isOnFire) is handled in the same method; we only intercept
+                // here if the player is actually submerged, so fire still shows for combat.
+                ci.cancel();
+            }
+        });
+    }
+}

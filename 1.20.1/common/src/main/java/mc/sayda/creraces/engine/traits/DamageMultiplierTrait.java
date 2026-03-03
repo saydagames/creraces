@@ -16,11 +16,11 @@ import javax.annotation.Nullable;
  * Useful for immunities (multiplier = 0) or weaknesses.
  */
 public class DamageMultiplierTrait implements TraitRegistry.RaceTrait {
-    private final float multiplier;
+    private final mc.sayda.creraces.engine.ScalingValue multiplier;
     @Nullable
     private final Condition condition;
 
-    public DamageMultiplierTrait(float multiplier, @Nullable Condition condition) {
+    public DamageMultiplierTrait(mc.sayda.creraces.engine.ScalingValue multiplier, @Nullable Condition condition) {
         this.multiplier = multiplier;
         this.condition = condition;
     }
@@ -29,14 +29,15 @@ public class DamageMultiplierTrait implements TraitRegistry.RaceTrait {
     public float modifyDamageTaken(Player player, DamageSource source, float amount) {
         if (condition == null || condition.evaluate(player,
                 source.getEntity() instanceof net.minecraft.world.entity.LivingEntity le ? le : null, null, null)) {
-            return amount * multiplier;
+            return amount * (float) multiplier.evaluate(player);
         }
         return amount;
     }
 
     public static void register() {
         TraitRegistry.register(new ResourceLocation(CreRaces.MODID, "damage_multiplier"), json -> {
-            float multiplier = GsonHelper.getAsFloat(json, "multiplier", 1.0f);
+            mc.sayda.creraces.engine.ScalingValue multiplier = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
+                    "multiplier", 1.0);
             Condition condition = null;
             if (json.has("condition")) {
                 condition = Condition.fromJson(json.getAsJsonObject("condition"));

@@ -71,6 +71,12 @@ public class AttributeModifierTrait implements TraitRegistry.RaceTrait {
             else
                 attribute = BuiltInRegistries.ATTRIBUTE.get(new ResourceLocation(attrId));
 
+            if (attribute == null) {
+                CreRaces.LOGGER.error(
+                        "[CreRaces] AttributeModifierTrait: unknown attribute '{}', trait will be skipped", attrId);
+                return null;
+            }
+
             ScalingValue value = ScalingValue.fromJson(json, "value", 0.0);
             String opStr = GsonHelper.getAsString(json, "operation", "addition").toUpperCase();
             AttributeModifier.Operation op = AttributeModifier.Operation.valueOf(opStr);

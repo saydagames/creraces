@@ -17,25 +17,31 @@ import net.minecraft.world.entity.player.Player;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Applies a mob effect while a condition is met, draining a resource.
  */
 public class ContinuousEffectTrait implements TraitRegistry.RaceTrait {
     private final ResourceLocation effectId;
-    private final int amplifier;
+    private final mc.sayda.creraces.engine.ScalingValue amplifier;
     private final boolean visible;
     private final ResourceType resource;
     private final ScalingValue drainRate;
-    private final int duration;
+    private final mc.sayda.creraces.engine.ScalingValue duration;
     @Nullable
     private final Condition condition;
     private final List<ActionRegistry.RaceAction> onFail;
-    private boolean failed = false;
+    // Per-player failure state: traits are race-level singletons so instance fields
+    // would be shared across all players of the same race.
+    private final Map<UUID, Boolean> failedMap = new HashMap<>();
 
-    public ContinuousEffectTrait(ResourceLocation effectId, int amplifier, boolean visible, ResourceType resource,
-            ScalingValue drainRate, int duration, @Nullable Condition condition,
+    public ContinuousEffectTrait(ResourceLocation effectId, mc.sayda.creraces.engine.ScalingValue amplifier,
+            boolean visible, ResourceType resource,
+            ScalingValue drainRate, mc.sayda.creraces.engine.ScalingValue duration, @Nullable Condition condition,
             List<ActionRegistry.RaceAction> onFail) {
         this.effectId = effectId;
         this.amplifier = amplifier;
@@ -68,7 +74,8 @@ public class ContinuousEffectTrait implements TraitRegistry.RaceTrait {
             if (canApply) {
                 MobEffect effect = BuiltInRegistries.MOB_EFFECT.get(effectId);
                 if (effect != null) {
-                    player.addEffect(new MobEffectInstance(effect, duration, amplifier, false, visible, true));
+                    player.addEffect(new MobEffectInstance(effect, (int) duration.evaluate(player),
+                            (int) amplifier.evaluate(player), false, visible, true));
 
                     // Drain resource
                     if (resource != ResourceType.NONE) {
@@ -85,8 +92,10 @@ public class ContinuousEffectTrait implements TraitRegistry.RaceTrait {
                 }
             } else {
                 // Handle failure
-                if (conditionMet && resource != ResourceType.NONE && currentResource < evaluatedDrain && !failed) {
-                    failed = true;
+                boolean alreadyFailed = failedMap.getOrDefault(player.getUUID(), false);
+                if (conditionMet && resource != ResourceType.NONE && currentResource < evaluatedDrain
+                        && !alreadyFailed) {
+                    failedMap.put(player.getUUID(), true);
                     for (ActionRegistry.RaceAction action : onFail) {
                         action.execute(player, null, null, null);
                     }
@@ -94,7 +103,7 @@ public class ContinuousEffectTrait implements TraitRegistry.RaceTrait {
             }
 
             if (conditionMet && (resource == ResourceType.NONE || currentResource >= evaluatedDrain)) {
-                failed = false;
+                failedMap.put(player.getUUID(), false);
             }
         });
     }
@@ -102,12 +111,14 @@ public class ContinuousEffectTrait implements TraitRegistry.RaceTrait {
     public static void register() {
         TraitRegistry.register(new ResourceLocation(CreRaces.MODID, "continuous_effect"), json -> {
             ResourceLocation effectId = new ResourceLocation(GsonHelper.getAsString(json, "effect"));
-            int amplifier = GsonHelper.getAsInt(json, "amplifier", 0);
+            mc.sayda.creraces.engine.ScalingValue amplifier = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
+                    "amplifier", 0.0);
             boolean visible = GsonHelper.getAsBoolean(json, "visible", true);
             String resStr = GsonHelper.getAsString(json, "resource", "NONE").toUpperCase();
             ResourceType resource = ResourceType.valueOf(resStr);
             ScalingValue drainRate = ScalingValue.fromJson(json, "drain_rate", 0.0);
-            int duration = GsonHelper.getAsInt(json, "duration", 40); // 2 second default
+            mc.sayda.creraces.engine.ScalingValue duration = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
+                    "duration", 40.0); // 2 second default
 
             Condition condition = null;
             if (json.has("condition")) {

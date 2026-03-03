@@ -46,7 +46,7 @@ public class GsonHelper {
                 String raceId = path.substring(folder.length() + 1, path.length() - 5);
                 map.put(new ResourceLocation(id.getNamespace(), raceId), json);
             } catch (Exception e) {
-                // Log error
+                mc.sayda.creraces.CreRaces.LOGGER.error("Failed to parse JSON file {}: {}", id, e.getMessage());
             }
         });
         return map;

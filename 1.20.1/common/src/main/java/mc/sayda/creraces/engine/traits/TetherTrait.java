@@ -14,12 +14,13 @@ import java.util.List;
 public class TetherTrait implements TraitRegistry.RaceTrait {
 
     private final String targetTag; // e.g., "minecraft:skeletons"
-    private final double radius;
+    private final mc.sayda.creraces.engine.ScalingValue radius;
     private final List<ActionRegistry.RaceAction> actions;
     private final int interval;
     private int timer = 0;
 
-    public TetherTrait(String targetTag, double radius, List<ActionRegistry.RaceAction> actions, int interval) {
+    public TetherTrait(String targetTag, mc.sayda.creraces.engine.ScalingValue radius,
+            List<ActionRegistry.RaceAction> actions, int interval) {
         this.targetTag = targetTag;
         this.radius = radius;
         this.actions = actions;
@@ -37,7 +38,7 @@ public class TetherTrait implements TraitRegistry.RaceTrait {
         timer = 0;
 
         List<LivingEntity> targets = player.level().getEntitiesOfClass(LivingEntity.class,
-                player.getBoundingBox().inflate(radius), e -> {
+                player.getBoundingBox().inflate(radius.evaluate(player)), e -> {
                     if (e == player)
                         return false;
                     if (targetTag.startsWith("#")) {
@@ -62,7 +63,8 @@ public class TetherTrait implements TraitRegistry.RaceTrait {
     public static void register() {
         TraitRegistry.register(new ResourceLocation(CreRaces.MODID, "tether"), json -> {
             String target = json.has("target") ? json.get("target").getAsString() : "minecraft:player";
-            double radius = json.has("radius") ? json.get("radius").getAsDouble() : 10.0;
+            mc.sayda.creraces.engine.ScalingValue radius = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
+                    "radius", 10.0);
             int interval = json.has("interval") ? json.get("interval").getAsInt() : 20;
             List<ActionRegistry.RaceAction> actions = new ArrayList<>();
             if (json.has("actions")) {

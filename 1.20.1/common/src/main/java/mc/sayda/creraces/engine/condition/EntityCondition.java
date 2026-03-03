@@ -16,7 +16,8 @@ public record EntityCondition(
     public boolean evaluate(Player player, @javax.annotation.Nullable LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
-        LivingEntity entity = (useTarget && target != null) ? target : player;
+        // Smart Targeting: Prefer target if present, otherwise respect useTarget flag
+        LivingEntity entity = (target != null) ? target : (useTarget ? target : player);
         if (entity == null)
             return false;
 

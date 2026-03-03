@@ -12,7 +12,10 @@ import mc.sayda.creraces.engine.ScalingValue;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import mc.sayda.creraces.engine.ActionRegistry;
 
 /**
@@ -26,7 +29,8 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
     @Nullable
     private final Condition condition;
     private final List<ActionRegistry.RaceAction> onFail;
-    private boolean failed = false;
+    // Per-player failure state (trait is a race-level singleton)
+    private final Map<UUID, Boolean> failedMap = new HashMap<>();
 
     public FlightTrait(ResourceType resource, ScalingValue drainRate, boolean forceFly, @Nullable Condition condition,
             List<ActionRegistry.RaceAction> onFail) {
@@ -87,8 +91,9 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
                     }
 
                     // On Fail Logic
-                    if (conditionMet && currentResource < evaluatedDrain && !failed) {
-                        failed = true;
+                    boolean alreadyFailed = failedMap.getOrDefault(player.getUUID(), false);
+                    if (conditionMet && currentResource < evaluatedDrain && !alreadyFailed) {
+                        failedMap.put(player.getUUID(), true);
                         for (ActionRegistry.RaceAction action : onFail) {
                             action.execute(player, null, null, null);
                         }
@@ -97,7 +102,7 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
             }
 
             if (conditionMet && currentResource >= evaluatedDrain) {
-                failed = false;
+                failedMap.put(player.getUUID(), false);
             }
 
             // Sync if changed

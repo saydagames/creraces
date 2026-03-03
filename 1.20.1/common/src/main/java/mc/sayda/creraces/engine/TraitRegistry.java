@@ -100,6 +100,7 @@ public class TraitRegistry {
         mc.sayda.creraces.engine.traits.DamageMultiplierTrait.register();
         mc.sayda.creraces.engine.traits.BlockInteractionTrait.register();
         mc.sayda.creraces.engine.traits.BlockPlaceTrait.register();
+        mc.sayda.creraces.engine.traits.AquaticMovementTrait.register();
         mc.sayda.creraces.engine.traits.OnTickTrait.register();
         mc.sayda.creraces.engine.traits.OnKillTrait.register();
         mc.sayda.creraces.engine.traits.OnHitTrait.register();
@@ -112,5 +113,7 @@ public class TraitRegistry {
         mc.sayda.creraces.engine.traits.FoodMultiplierTrait.register();
         mc.sayda.creraces.engine.traits.TetherTrait.register();
         mc.sayda.creraces.engine.traits.DomainTrait.register();
+        mc.sayda.creraces.engine.traits.OnAbilityUseTrait.register();
+        mc.sayda.creraces.engine.traits.DoubleJumpTrait.register();
     }
 }

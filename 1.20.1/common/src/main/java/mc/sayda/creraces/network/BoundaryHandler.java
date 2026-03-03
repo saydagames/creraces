@@ -7,12 +7,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import org.slf4j.Logger;
-import net.minecraft.world.inventory.AbstractContainerMenu;
-import mc.sayda.creraces.world.inventory.MenuGUIMenu;
-import dev.architectury.registry.menu.MenuRegistry;
-import net.minecraft.world.MenuProvider;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.player.Inventory;
 import io.netty.buffer.Unpooled;
 import net.minecraft.network.FriendlyByteBuf;
 
@@ -59,6 +53,24 @@ public class BoundaryHandler {
             var pkt = new RequestSyncPacket(buf);
             pkt.handle(() -> context);
         });
+
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, mc.sayda.creraces.network.MiniPlacePacket.ID,
+                (buf, context) -> {
+                    var pkt = new mc.sayda.creraces.network.MiniPlacePacket(buf);
+                    pkt.handle(() -> context);
+                });
+
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, mc.sayda.creraces.network.MiniRemovePacket.ID,
+                (buf, context) -> {
+                    var pkt = new mc.sayda.creraces.network.MiniRemovePacket(buf);
+                    pkt.handle(() -> context);
+                });
+
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, mc.sayda.creraces.network.MiniUsePacket.ID,
+                (buf, context) -> {
+                    var pkt = new mc.sayda.creraces.network.MiniUsePacket(buf);
+                    pkt.handle(() -> context);
+                });
 
         LOGGER.info("Yukari has established the server network boundaries.");
     }
@@ -117,6 +129,16 @@ public class BoundaryHandler {
 
         NetworkManager.registerReceiver(NetworkManager.Side.S2C, ClearRemoteCachePacket.ID, (buf, context) -> {
             var pkt = new ClearRemoteCachePacket(buf);
+            pkt.handle(() -> context);
+        });
+
+        NetworkManager.registerReceiver(NetworkManager.Side.S2C, SyncBeamPacket.ID, (buf, context) -> {
+            var pkt = new SyncBeamPacket(buf);
+            pkt.handle(() -> context);
+        });
+
+        NetworkManager.registerReceiver(NetworkManager.Side.S2C, SyncAnimationPacket.ID, (buf, context) -> {
+            var pkt = new SyncAnimationPacket(buf);
             pkt.handle(() -> context);
         });
 
@@ -219,6 +241,14 @@ public class BoundaryHandler {
         NetworkManager.sendToServer(CastAbilityPacket.ID, buf);
     }
 
+    public static void sendSyncBeam(ServerPlayer player, SyncBeamPacket pkt) {
+        send(player, SyncBeamPacket.ID, pkt::encode);
+    }
+
+    public static void sendSyncAnimation(ServerPlayer player, SyncAnimationPacket pkt) {
+        send(player, SyncAnimationPacket.ID, pkt::encode);
+    }
+
     public static void sendSetCustomization(SetCustomizationPacket pkt) {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         pkt.encode(buf);
@@ -231,18 +261,22 @@ public class BoundaryHandler {
         NetworkManager.sendToServer(OpenMenuPacket.ID, buf);
     }
 
-    public static void openMenu(ServerPlayer player) {
-        MenuRegistry.openExtendedMenu(player, new MenuProvider() {
-            @Override
-            public Component getDisplayName() {
-                return Component.translatable("gui.creraces.menu_gui");
-            }
+    public static void sendMiniPlace(mc.sayda.creraces.network.MiniPlacePacket pkt) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        pkt.encode(buf);
+        NetworkManager.sendToServer(MiniPlacePacket.ID, buf);
+    }
 
-            @Override
-            public AbstractContainerMenu createMenu(int syncId, Inventory inventory, Player player) {
-                return new MenuGUIMenu(syncId, inventory, null);
-            }
-        }, buf -> buf.writeBlockPos(player.blockPosition()));
+    public static void sendMiniRemove(mc.sayda.creraces.network.MiniRemovePacket pkt) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        pkt.encode(buf);
+        NetworkManager.sendToServer(MiniRemovePacket.ID, buf);
+    }
+
+    public static void sendMiniUse(mc.sayda.creraces.network.MiniUsePacket pkt) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        pkt.encode(buf);
+        NetworkManager.sendToServer(mc.sayda.creraces.network.MiniUsePacket.ID, buf);
     }
 
     /**

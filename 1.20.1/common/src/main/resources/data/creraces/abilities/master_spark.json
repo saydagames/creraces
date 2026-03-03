@@ -6,20 +6,41 @@
     "cost": 20,
     "actions": [
         {
+            "type": "creraces:beam",
+            "length": 30.0,
+            "radius": 15.0,
+            "color": [
+                1.0,
+                1.0,
+                1.0,
+                0.8
+            ],
+            "duration": 100,
+            "drain_rate": 0.5,
+            "actions": [
+                {
+                    "type": "creraces:damage",
+                    "amount": 2.0,
+                    "damage_type": "minecraft:player_attack",
+                    "knockback": 0.2
+                }
+            ]
+        },
+        {
             "type": "creraces:play_sound",
-            "sound": "minecraft:entity.ender_dragon.growl",
-            "volume": 1.0,
-            "pitch": 0.5
+            "sound": "creraces:master_spark",
+            "volume": 2.0,
+            "pitch": 1.0
         }
     ],
     "remote_description": {
         "selector": "",
         "fallback": "ability.creraces.master_spark.description",
-        "source": "https://creraces.wiki.gg/api.php?action=cargoquery\u0026format=json\u0026tables=Abilities\u0026fields=Description\u0026where=Name=\u0027Master Spark\u0027"
+        "source": "https://creraces.wiki.gg/api.php?action=cargoquery&format=json&tables=Abilities&fields=Description&where=Name=\u0027Master_Spark\u0027"
     },
     "remote_full_description": {
         "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
         "fallback": "ability.creraces.master_spark.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Ability:Master_Spark\u0026prop=wikitext"
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Master_Spark&prop=wikitext"
     }
 }

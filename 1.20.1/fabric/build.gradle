@@ -7,6 +7,12 @@ architectury {
     fabric()
 }
 
+loom {
+    mixin {
+        defaultRefmapName = "creraces-fabric.refmap.json"
+    }
+}
+
 
 
 configurations {
@@ -34,7 +40,7 @@ dependencies {
     modImplementation "dev.onyxstudios.cardinal-components-api:cardinal-components-entity:5.2.3"
     modImplementation "curse.maven:pehkui-319596:4684391"
     modImplementation "com.github.Virtuoel:KanosConfig:0.4.1"
-    include(implementation("io.github.llamalad7:mixinextras-fabric:0.5.3"))
+    modRuntimeOnly "io.github.llamalad7:mixinextras-fabric:0.5.3"
 }
 
 processResources {

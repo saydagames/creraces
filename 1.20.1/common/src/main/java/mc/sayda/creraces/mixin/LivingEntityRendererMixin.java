@@ -1,5 +1,6 @@
 package mc.sayda.creraces.mixin;
 
+import mc.sayda.creraces.capability.IPlayerVariables;
 import mc.sayda.creraces.registry.ModMobEffects;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.world.entity.LivingEntity;
@@ -17,6 +18,28 @@ public abstract class LivingEntityRendererMixin {
     private void creraces$rendering(LivingEntity entity, float entityYaw, float partialTicks, PoseStack matrixStack,
             MultiBufferSource buffer, int packedLight, CallbackInfo ci) {
         if (entity.hasEffect(ModMobEffects.TRUE_INVISIBILITY.get())) {
+            ci.cancel();
+            return;
+        }
+
+        // Spirit Realm Visibility
+        net.minecraft.client.player.LocalPlayer localPlayer = net.minecraft.client.Minecraft.getInstance().player;
+        if (localPlayer == null)
+            return;
+
+        boolean viewerInSpirit = ((IPlayerVariables) localPlayer).isInSpiritRealm();
+        if (viewerInSpirit)
+            return; // Spirits see everyone (Overworld + Spirits)
+
+        boolean targetInSpirit = false;
+        if (entity instanceof IPlayerVariables vars) {
+            targetInSpirit = vars.isInSpiritRealm();
+        } else {
+            // Check for spirit tag on mobs
+            targetInSpirit = entity.getTags().contains("creraces:spirit");
+        }
+
+        if (targetInSpirit) {
             ci.cancel();
         }
     }

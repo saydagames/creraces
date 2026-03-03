@@ -59,14 +59,21 @@ public class FabricConfig {
 
         // Gameplay & UI
         CreRacesConfig.FORCED_SELECTION = () -> data.gameplay.forced_selection;
+        CreRacesConfig.MINI_BUILD_ENABLED = () -> data.gameplay.mini_build_enabled;
+        CreRacesConfig.MINI_FURNACE_ENABLED = () -> data.gameplay.mini_furnace_enabled;
+        CreRacesConfig.ABILITY_HASTE_CAP = () -> data.gameplay.ability_haste_cap;
 
-        // Gameplay & UI
-        CreRacesConfig.FORCED_SELECTION = () -> data.gameplay.forced_selection;
+        // Safety Caps
+        CreRacesConfig.BREAK_BLOCKS_MAX_RADIUS = () -> data.safety_caps.break_blocks_max_radius;
+        CreRacesConfig.AOE_MAX_RADIUS = () -> data.safety_caps.aoe_max_radius;
+        CreRacesConfig.BEAM_MAX_LENGTH = () -> data.safety_caps.beam_max_length;
+        CreRacesConfig.ENTITY_DATA_KEY_MAX_LENGTH = () -> data.safety_caps.entity_data_key_max_length;
     }
 
     public static class ConfigData {
         public Documentation documentation = new Documentation();
         public Gameplay gameplay = new Gameplay();
+        public SafetyCaps safety_caps = new SafetyCaps();
 
         public static class Documentation {
             public String wiki_base_url = "https://creraces.wiki.gg/";
@@ -80,6 +87,20 @@ public class FabricConfig {
 
         public static class Gameplay {
             public boolean forced_selection = true;
+            public boolean mini_build_enabled = true;
+            public boolean mini_furnace_enabled = true;
+            public double ability_haste_cap = 40.0;
+        }
+
+        public static class SafetyCaps {
+            /** Max radius for break_blocks. 0 = disabled. */
+            public int break_blocks_max_radius = 16;
+            /** Max radius for aoe/beam. 0 = disabled. */
+            public int aoe_max_radius = 64;
+            /** Max length for beam action. 0 = disabled. */
+            public int beam_max_length = 64;
+            /** Max character length for modify_entity_data keys. 0 = disabled. */
+            public int entity_data_key_max_length = 64;
         }
     }
 }

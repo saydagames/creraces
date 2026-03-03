@@ -12,13 +12,12 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 
@@ -60,12 +59,9 @@ public class CreracesCommand {
                                                         return 1;
                                                 }))
 
-                                // select <target> (Available to everyone - Fallback for Race Selection)
                                 .then(Commands.literal("select")
                                                 .then(Commands.argument("target", EntityArgument.player())
-                                                                .requires(src -> src.hasPermission(2)) // Only admins
-                                                                                                       // can select for
-                                                                                                       // others
+                                                                .requires(src -> src.hasPermission(2))
                                                                 .executes(ctx -> executeOpenSelection(ctx.getSource(),
                                                                                 EntityArgument.getPlayer(ctx,
                                                                                                 "target"))))
@@ -76,12 +72,9 @@ public class CreracesCommand {
                                                         return executeOpenSelection(ctx.getSource(), player);
                                                 }))
 
-                                // mirror <target> (Available to everyone - Fallback for Mirror)
                                 .then(Commands.literal("mirror")
                                                 .then(Commands.argument("target", EntityArgument.player())
-                                                                .requires(src -> src.hasPermission(2)) // Only admins
-                                                                                                       // can mirror
-                                                                                                       // others
+                                                                .requires(src -> src.hasPermission(2))
                                                                 .executes(ctx -> executeOpenMirror(ctx.getSource(),
                                                                                 EntityArgument.getPlayer(ctx,
                                                                                                 "target"))))
@@ -124,20 +117,50 @@ public class CreracesCommand {
                                                         return executeReset(ctx.getSource(), player);
                                                 }))
 
-                                // setrace <target> <race_id/legacy_id> (Admin Only)
+                                // setrace <target> <race_id> (Admin Only)
                                 .then(Commands.literal("setrace")
                                                 .requires(src -> src.hasPermission(2))
                                                 .then(Commands.argument("target", EntityArgument.player())
                                                                 .then(Commands.argument("race",
-                                                                                StringArgumentType.word())
+                                                                                ResourceLocationArgument.id())
                                                                                 .suggests(CreracesCommand::suggestRaces)
                                                                                 .executes(ctx -> executeSet(
                                                                                                 ctx.getSource(),
                                                                                                 EntityArgument.getPlayer(
                                                                                                                 ctx,
                                                                                                                 "target"),
-                                                                                                StringArgumentType
-                                                                                                                .getString(ctx, "race"))))))
+                                                                                                ResourceLocationArgument
+                                                                                                                .getId(ctx, "race"))))))
+
+                                // grant <target> <ability_id> (Admin Only)
+                                .then(Commands.literal("grant")
+                                                .requires(src -> src.hasPermission(2))
+                                                .then(Commands.argument("target", EntityArgument.player())
+                                                                .then(Commands.argument("ability",
+                                                                                ResourceLocationArgument.id())
+                                                                                .suggests(CreracesCommand::suggestAbilities)
+                                                                                .executes(ctx -> executeGrant(
+                                                                                                ctx.getSource(),
+                                                                                                EntityArgument.getPlayer(
+                                                                                                                ctx,
+                                                                                                                "target"),
+                                                                                                ResourceLocationArgument
+                                                                                                                .getId(ctx, "ability"))))))
+
+                                // revoke <target> <ability_id> (Admin Only)
+                                .then(Commands.literal("revoke")
+                                                .requires(src -> src.hasPermission(2))
+                                                .then(Commands.argument("target", EntityArgument.player())
+                                                                .then(Commands.argument("ability",
+                                                                                ResourceLocationArgument.id())
+                                                                                .suggests(CreracesCommand::suggestUnlockedAbilities)
+                                                                                .executes(ctx -> executeRevoke(
+                                                                                                ctx.getSource(),
+                                                                                                EntityArgument.getPlayer(
+                                                                                                                ctx,
+                                                                                                                "target"),
+                                                                                                ResourceLocationArgument
+                                                                                                                .getId(ctx, "ability"))))))
 
                                 // setrandom <target> (Admin Only)
                                 .then(Commands.literal("setrandom")
@@ -229,19 +252,31 @@ public class CreracesCommand {
                                                                         .withStyle(ChatFormatting.DARK_GRAY)),
                                         false);
                         source.sendSuccess(
-                                        () -> (Component) Component.literal("/creraces setrace <player> <id>")
+                                        () -> Component.literal("/creraces setrace <player> <id>")
                                                         .withStyle(ChatFormatting.GRAY)
                                                         .append(Component.translatable("creraces.help.setrace")
                                                                         .withStyle(ChatFormatting.DARK_GRAY)),
                                         false);
                         source.sendSuccess(
-                                        () -> (Component) Component.literal("/creraces setrandom <player>")
+                                        () -> Component.literal("/creraces grant <player> <ability>")
+                                                        .withStyle(ChatFormatting.GRAY)
+                                                        .append(Component.literal(" - Grants an ability to a player")
+                                                                        .withStyle(ChatFormatting.DARK_GRAY)),
+                                        false);
+                        source.sendSuccess(
+                                        () -> Component.literal("/creraces revoke <player> <ability>")
+                                                        .withStyle(ChatFormatting.GRAY)
+                                                        .append(Component.literal(" - Revokes an ability from a player")
+                                                                        .withStyle(ChatFormatting.DARK_GRAY)),
+                                        false);
+                        source.sendSuccess(
+                                        () -> Component.literal("/creraces setrandom <player>")
                                                         .withStyle(ChatFormatting.GRAY)
                                                         .append(Component.translatable("creraces.help.setrandom")
                                                                         .withStyle(ChatFormatting.DARK_GRAY)),
                                         false);
                         source.sendSuccess(
-                                        () -> (Component) Component.literal("/creraces reload")
+                                        () -> Component.literal("/creraces reload")
                                                         .withStyle(ChatFormatting.GRAY)
                                                         .append(Component
                                                                         .literal(" - Reloads all race and ability data")
@@ -250,7 +285,7 @@ public class CreracesCommand {
                 }
 
                 source.sendSuccess(
-                                () -> (Component) Component.literal("/creraces refresh")
+                                () -> Component.literal("/creraces refresh")
                                                 .withStyle(ChatFormatting.GRAY)
                                                 .append(Component.literal(" - Refreshes your attributes and cosmetics")
                                                                 .withStyle(ChatFormatting.DARK_GRAY)),
@@ -260,7 +295,7 @@ public class CreracesCommand {
         }
 
         private static int executeOpenSelection(CommandSourceStack source, ServerPlayer target) {
-                mc.sayda.creraces.network.BoundaryHandler.openMenu(target);
+                mc.sayda.creraces.network.BoundaryHandler.sendOpenSelection(target);
                 return 1;
         }
 
@@ -281,35 +316,52 @@ public class CreracesCommand {
                 return 1;
         }
 
-        private static int executeSet(CommandSourceStack source, ServerPlayer target, String input) {
-                Optional<Race> targetRace = Optional.empty();
+        private static int executeSet(CommandSourceStack source, ServerPlayer target, ResourceLocation raceId) {
+                Race race = RaceRegistry.get(raceId);
 
-                // 1. Try numeric legacy ID
-                try {
-                        double legacyId = Double.parseDouble(input);
-                        targetRace = RaceRegistry.getRaceByLegacyId(legacyId);
-                } catch (NumberFormatException ignored) {
-                }
-
-                // 2. Try ResourceLocation
-                if (targetRace.isEmpty()) {
-                        if (!input.contains(":")) {
-                                input = "creraces:" + input;
-                        }
-                        targetRace = Optional.ofNullable(
-                                        RaceRegistry.get(new net.minecraft.resources.ResourceLocation(input)));
-                }
-
-                if (targetRace.isEmpty()) {
-                        source.sendFailure(Component.literal("Unknown race: " + input).withStyle(ChatFormatting.RED));
+                if (race == null) {
+                        source.sendFailure(Component.literal("Unknown race: " + raceId).withStyle(ChatFormatting.RED));
                         return 0;
                 }
 
-                Race race = targetRace.get();
                 RaceIncidents.transformPlayer(target, race.id());
                 source.sendSuccess(() -> Component.translatable("creraces.command.set_success",
                                 race.name(), target.getGameProfile().getName()), true);
                 return 1;
+        }
+
+        private static int executeGrant(CommandSourceStack source, ServerPlayer target, ResourceLocation abilityId) {
+                return mc.sayda.creraces.capability.DataUtils.getVariables(target).map(vars -> {
+                        mc.sayda.creraces.ability.Ability ability = mc.sayda.creraces.ability.AbilityRegistry
+                                        .get(abilityId);
+                        if (ability == null) {
+                                source.sendFailure(Component.literal("Unknown ability: " + abilityId)
+                                                .withStyle(ChatFormatting.RED));
+                                return 0;
+                        }
+
+                        vars.unlockAbility(abilityId);
+                        mc.sayda.creraces.network.BoundaryHandler.resyncVariables(target, target);
+
+                        source.sendSuccess(() -> Component
+                                        .literal("Granted " + abilityId + " to " + target.getGameProfile().getName())
+                                        .withStyle(ChatFormatting.GREEN), true);
+                        return 1;
+                }).orElse(0);
+        }
+
+        private static int executeRevoke(CommandSourceStack source, ServerPlayer target, ResourceLocation abilityId) {
+                return mc.sayda.creraces.capability.DataUtils.getVariables(target).map(vars -> {
+                        vars.revokeAbility(abilityId);
+
+                        // Force refresh to update menus and UI
+                        RaceIncidents.refreshPlayer(target);
+
+                        source.sendSuccess(() -> Component
+                                        .literal("Revoked " + abilityId + " from " + target.getGameProfile().getName())
+                                        .withStyle(ChatFormatting.YELLOW), true);
+                        return 1;
+                }).orElse(0);
         }
 
         private static int executeSetRandom(CommandSourceStack source, ServerPlayer target) {
@@ -318,7 +370,7 @@ public class CreracesCommand {
                         return 0;
 
                 Race randomRace = races.get(RANDOM.nextInt(races.size()));
-                return executeSet(source, target, randomRace.id().toString());
+                return executeSet(source, target, randomRace.id());
         }
 
         private static int executeReload(CommandSourceStack source) {
@@ -366,7 +418,7 @@ public class CreracesCommand {
 
                         boolean core = switch (varLower) {
                                 case "mana", "energy", "grit", "rage", "karma", "ap", "ad", "ah", "cr", "coins",
-                                                "souls", "stacks",
+                                                "souls", "stacks", "spirit", "minibuild",
                                                 "a1", "a2", "a3", "a4", "a5",
                                                 "c1", "c2", "c3", "c4", "c5" ->
                                         true;
@@ -388,6 +440,13 @@ public class CreracesCommand {
                                         case "souls" -> vars.setSouls(Double.parseDouble(finalValue));
                                         case "stacks" -> vars.setStacks(Double.parseDouble(finalValue));
                                         case "morphed" -> vars.setMorphed(finalValue.equals("1.0"));
+                                        case "spirit" -> {
+                                                vars.setInSpiritRealm(finalValue.equals("1.0"));
+                                                mc.sayda.creraces.network.BoundaryHandler.resyncForAllTrackers(target);
+                                                mc.sayda.creraces.network.BoundaryHandler.resyncVariables(target,
+                                                                target);
+                                        }
+                                        case "minibuild" -> vars.setSmallBuild(finalValue.equals("1.0"));
                                         case "gstate" -> vars.setGState(Integer.parseInt(finalValue));
                                         case "a1" -> {
                                                 ResourceLocation id = vars.getAbilityInSlot(
@@ -483,8 +542,28 @@ public class CreracesCommand {
                         SuggestionsBuilder builder) {
                 RaceRegistry.getAll().forEach(race -> {
                         builder.suggest(race.id().toString());
-                        // Hide legacyId from suggestions
                 });
+                return builder.buildFuture();
+        }
+
+        private static CompletableFuture<Suggestions> suggestAbilities(CommandContext<CommandSourceStack> context,
+                        SuggestionsBuilder builder) {
+                mc.sayda.creraces.ability.AbilityRegistry.getAll().forEach(ability -> {
+                        builder.suggest(ability.id().toString());
+                });
+                return builder.buildFuture();
+        }
+
+        private static CompletableFuture<Suggestions> suggestUnlockedAbilities(
+                        CommandContext<CommandSourceStack> context,
+                        SuggestionsBuilder builder) {
+                try {
+                        ServerPlayer target = EntityArgument.getPlayer(context, "target");
+                        mc.sayda.creraces.capability.DataUtils.getVariables(target).ifPresent(vars -> {
+                                vars.getUnlockedAbilities().forEach(id -> builder.suggest(id.toString()));
+                        });
+                } catch (Exception ignored) {
+                }
                 return builder.buildFuture();
         }
 
@@ -492,7 +571,7 @@ public class CreracesCommand {
                         SuggestionsBuilder builder) {
                 // Core Stats
                 List.of("mana", "energy", "grit", "rage", "karma", "ap", "ad", "ah", "cr", "coins", "souls", "stacks",
-                                "gstate", "morphed")
+                                "gstate", "morphed", "spirit", "minibuild")
                                 .forEach(builder::suggest);
 
                 // Ability Slots (State and Cooldown)
@@ -520,7 +599,7 @@ public class CreracesCommand {
                         return builder.buildFuture();
                 }
 
-                if (variable.equals("morphed")) {
+                if (variable.equals("morphed") || variable.equals("spirit") || variable.equals("minibuild")) {
                         builder.suggest("true");
                         builder.suggest("false");
                         return builder.buildFuture();

@@ -23,11 +23,31 @@ public class PlayerMixin implements IPlayerVariables {
     @Unique
     private final PlayerVariables creraces$variables = new PlayerVariables();
 
+    @Inject(method = "tick", at = @At("TAIL"))
+    private void creraces$tick(CallbackInfo ci) {
+        Player player = (Player) (Object) this;
+        // ResourceTicker is called server-side exclusively by
+        // IncidentResolver.onGensokyoTick.
+        // Calling it here caused double-ticking of cooldowns/resources every server
+        // tick.
+        // On the client, ticking is handled by CreRacesClient via ClientTickEvent.
+        if (!player.level().isClientSide())
+            return;
+        mc.sayda.creraces.race.ResourceTicker.tick(player);
+    }
+
+    @Inject(method = "die", at = @At("HEAD"))
+    private void creraces$onDeath(net.minecraft.world.damagesource.DamageSource source, CallbackInfo ci) {
+        this.resetOnDeath();
+    }
+
     @Inject(method = "attack", at = @At("HEAD"), cancellable = true)
     private void creraces$cancelAttack(net.minecraft.world.entity.Entity target, CallbackInfo ci) {
         Player player = (Player) (Object) this;
-        if (player.hasEffect(mc.sayda.creraces.registry.ModMobEffects.STUNNED.get()) ||
-                player.hasEffect(mc.sayda.creraces.registry.ModMobEffects.DISARMED.get())) {
+        var stunned = mc.sayda.creraces.registry.ModMobEffects.STUNNED.get();
+        var disarmed = mc.sayda.creraces.registry.ModMobEffects.DISARMED.get();
+        if ((stunned != null && player.hasEffect(stunned)) ||
+                (disarmed != null && player.hasEffect(disarmed))) {
             ci.cancel();
         }
     }
@@ -50,8 +70,10 @@ public class PlayerMixin implements IPlayerVariables {
             net.minecraft.world.InteractionHand hand,
             CallbackInfoReturnable<net.minecraft.world.InteractionResult> cir) {
         Player player = (Player) (Object) this;
-        if (player.hasEffect(mc.sayda.creraces.registry.ModMobEffects.STUNNED.get()) ||
-                player.hasEffect(mc.sayda.creraces.registry.ModMobEffects.DISARMED.get())) {
+        var stunned = mc.sayda.creraces.registry.ModMobEffects.STUNNED.get();
+        var disarmed = mc.sayda.creraces.registry.ModMobEffects.DISARMED.get();
+        if ((stunned != null && player.hasEffect(stunned)) ||
+                (disarmed != null && player.hasEffect(disarmed))) {
             cir.setReturnValue(net.minecraft.world.InteractionResult.FAIL);
         }
     }
@@ -63,21 +85,51 @@ public class PlayerMixin implements IPlayerVariables {
         // On Fabric, we must ensure ModAttributes are registered BEFORE the Player
         // class loads to avoid a race condition.
         try {
-            cir.getReturnValue().add(ModAttributes.MAX_MANA.get())
-                    .add(ModAttributes.MAX_RAGE.get())
-                    .add(ModAttributes.MAX_ENERGY.get())
-                    .add(ModAttributes.MAX_GRIT.get())
-                    .add(ModAttributes.ABILITY_POWER.get())
-                    .add(ModAttributes.ATTACK_DAMAGE.get())
-                    .add(ModAttributes.CRIT_RATE.get())
-                    .add(ModAttributes.ARMOR_PENETRATION.get())
-                    .add(ModAttributes.MANA_REGEN.get())
-                    .add(ModAttributes.ENERGY_REGEN.get())
-                    .add(ModAttributes.GRIT_DECAY.get())
-                    .add(ModAttributes.RAGE_DECAY.get());
+            var maxMana = ModAttributes.MAX_MANA.get();
+            if (maxMana != null)
+                cir.getReturnValue().add(maxMana);
+            var maxRage = ModAttributes.MAX_RAGE.get();
+            if (maxRage != null)
+                cir.getReturnValue().add(maxRage);
+            var maxEnergy = ModAttributes.MAX_ENERGY.get();
+            if (maxEnergy != null)
+                cir.getReturnValue().add(maxEnergy);
+            var maxGrit = ModAttributes.MAX_GRIT.get();
+            if (maxGrit != null)
+                cir.getReturnValue().add(maxGrit);
+            var abilityPower = ModAttributes.ABILITY_POWER.get();
+            if (abilityPower != null)
+                cir.getReturnValue().add(abilityPower);
+            var attackDamage = ModAttributes.ATTACK_DAMAGE.get();
+            if (attackDamage != null)
+                cir.getReturnValue().add(attackDamage);
+            var critRate = ModAttributes.CRIT_RATE.get();
+            if (critRate != null)
+                cir.getReturnValue().add(critRate);
+            var armorPen = ModAttributes.ARMOR_PENETRATION.get();
+            if (armorPen != null)
+                cir.getReturnValue().add(armorPen);
+            var abilityHaste = ModAttributes.ABILITY_HASTE.get();
+            if (abilityHaste != null)
+                cir.getReturnValue().add(abilityHaste);
+            var manaRegen = ModAttributes.MANA_REGEN.get();
+            if (manaRegen != null)
+                cir.getReturnValue().add(manaRegen);
+            var energyRegen = ModAttributes.ENERGY_REGEN.get();
+            if (energyRegen != null)
+                cir.getReturnValue().add(energyRegen);
+            var gritDecay = ModAttributes.GRIT_DECAY.get();
+            if (gritDecay != null)
+                cir.getReturnValue().add(gritDecay);
+            var rageDecay = ModAttributes.RAGE_DECAY.get();
+            if (rageDecay != null)
+                cir.getReturnValue().add(rageDecay);
         } catch (Exception e) {
-            // If attributes aren't registered yet, this will fail.
-            // We are fixing the initialization order on Fabric to prevent this.
+            // Attribute registration failed — this usually means ModAttributes.init()
+            // hasn't run yet (a Fabric bootstrap ordering issue). BootstrapMixin should
+            // prevent this, but log it so it's visible if it ever happens.
+            com.mojang.logging.LogUtils.getLogger().error(
+                    "[CreRaces] Failed to add custom attributes to Player.createAttributes: {}", e.getMessage());
         }
     }
 
@@ -126,42 +178,66 @@ public class PlayerMixin implements IPlayerVariables {
 
     @Override
     public double getAp() {
-        return creraces$variables.getAp();
+        var attr = ModAttributes.ABILITY_POWER.get();
+        return attr != null ? ((Player) (Object) this).getAttributeValue(attr) : 0.0;
     }
 
     @Override
     public void setAp(double ap) {
-        creraces$variables.setAp(ap);
+        var attr = ModAttributes.ABILITY_POWER.get();
+        if (attr != null) {
+            var inst = ((Player) (Object) this).getAttribute(attr);
+            if (inst != null)
+                inst.setBaseValue(ap);
+        }
     }
 
     @Override
     public double getAd() {
-        return creraces$variables.getAd();
-    }
-
-    @Override
-    public double getAh() {
-        return creraces$variables.getAh();
-    }
-
-    @Override
-    public double getCr() {
-        return creraces$variables.getCr();
+        var attr = ModAttributes.ATTACK_DAMAGE.get();
+        return attr != null ? ((Player) (Object) this).getAttributeValue(attr) : 0.0;
     }
 
     @Override
     public void setAd(double ad) {
-        creraces$variables.setAd(ad);
+        var attr = ModAttributes.ATTACK_DAMAGE.get();
+        if (attr != null) {
+            var inst = ((Player) (Object) this).getAttribute(attr);
+            if (inst != null)
+                inst.setBaseValue(ad);
+        }
+    }
+
+    @Override
+    public double getAh() {
+        var attr = ModAttributes.ABILITY_HASTE.get();
+        return attr != null ? ((Player) (Object) this).getAttributeValue(attr) : 0.0;
     }
 
     @Override
     public void setAh(double ah) {
-        creraces$variables.setAh(ah);
+        var attr = ModAttributes.ABILITY_HASTE.get();
+        if (attr != null) {
+            var inst = ((Player) (Object) this).getAttribute(attr);
+            if (inst != null)
+                inst.setBaseValue(ah);
+        }
+    }
+
+    @Override
+    public double getCr() {
+        var attr = ModAttributes.CRIT_RATE.get();
+        return attr != null ? ((Player) (Object) this).getAttributeValue(attr) : 0.0;
     }
 
     @Override
     public void setCr(double cr) {
-        creraces$variables.setCr(cr);
+        var attr = ModAttributes.CRIT_RATE.get();
+        if (attr != null) {
+            var inst = ((Player) (Object) this).getAttribute(attr);
+            if (inst != null)
+                inst.setBaseValue(cr);
+        }
     }
 
     @Override
@@ -282,6 +358,11 @@ public class PlayerMixin implements IPlayerVariables {
     @Override
     public void unlockAbility(ResourceLocation abilityId) {
         creraces$variables.unlockAbility(abilityId);
+    }
+
+    @Override
+    public void revokeAbility(ResourceLocation abilityId) {
+        creraces$variables.revokeAbility(abilityId);
     }
 
     @Override
@@ -460,6 +541,66 @@ public class PlayerMixin implements IPlayerVariables {
     }
 
     @Override
+    public boolean isInSpiritRealm() {
+        return creraces$variables.isInSpiritRealm();
+    }
+
+    @Override
+    public void setInSpiritRealm(boolean inSpiritRealm) {
+        creraces$variables.setInSpiritRealm(inSpiritRealm);
+    }
+
+    @Override
+    public boolean isSmallBuild() {
+        return creraces$variables.isSmallBuild();
+    }
+
+    @Override
+    public void setSmallBuild(boolean smallBuild) {
+        creraces$variables.setSmallBuild(smallBuild);
+    }
+
+    @Override
+    public boolean isAbilityActive() {
+        return creraces$variables.isAbilityActive();
+    }
+
+    @Override
+    public void setAbilityActive(boolean active) {
+        creraces$variables.setAbilityActive(active);
+    }
+
+    @Override
+    public ResourceLocation getActiveAbility() {
+        return creraces$variables.getActiveAbility();
+    }
+
+    @Override
+    public void setActiveAbility(ResourceLocation abilityId) {
+        creraces$variables.setActiveAbility(abilityId);
+    }
+
+    @Override
+    public int getActiveAbilityDuration() {
+        return creraces$variables.getActiveAbilityDuration();
+    }
+
+    @Override
+    public void setActiveAbilityDuration(int ticks) {
+        creraces$variables.setActiveAbilityDuration(ticks);
+    }
+
+    @Override
+    public double getActiveAbilityDrain() {
+        return creraces$variables.getActiveAbilityDrain();
+    }
+
+    @Override
+    public void setActiveAbilityDrain(double drain) {
+        creraces$variables.setActiveAbilityDrain(drain);
+    }
+
+    @Override
     public CompoundTag serialize() {
         return creraces$variables.serialize();
     }
@@ -467,5 +608,10 @@ public class PlayerMixin implements IPlayerVariables {
     @Override
     public void deserialize(CompoundTag tag) {
         creraces$variables.deserialize(tag);
+    }
+
+    @Override
+    public void resetOnDeath() {
+        creraces$variables.resetOnDeath();
     }
 }

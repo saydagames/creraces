@@ -12,13 +12,13 @@ public class DamageAction implements ActionRegistry.RaceAction {
     private final String damageTypeId;
     private final ScalingValue knockback;
     private final String sourceEntity;
-    private final int fireDuration;
+    private final ScalingValue fireDuration;
     private final ScalingValue healAmount;
     private final ScalingValue damagePerStack;
     private final String stackEffect;
 
     public DamageAction(ScalingValue amount, String damageTypeId, ScalingValue knockback, String sourceEntity,
-            int fireDuration, ScalingValue healAmount, ScalingValue damagePerStack, String stackEffect) {
+            ScalingValue fireDuration, ScalingValue healAmount, ScalingValue damagePerStack, String stackEffect) {
         this.amount = amount;
         this.damageTypeId = damageTypeId;
         this.knockback = knockback;
@@ -47,7 +47,9 @@ public class DamageAction implements ActionRegistry.RaceAction {
             }
         }
 
-        if (dmg > 0 || fireDuration > 0) {
+        double fireSecs = fireDuration.evaluate(player, actualTarget);
+
+        if (dmg > 0 || fireSecs > 0) {
             net.minecraft.world.damagesource.DamageSource source;
             net.minecraft.world.entity.Entity damageSourceEntity = "self".equalsIgnoreCase(sourceEntity) ? player
                     : ("target".equalsIgnoreCase(sourceEntity) ? target : null);
@@ -71,8 +73,8 @@ public class DamageAction implements ActionRegistry.RaceAction {
                 source = player.damageSources().playerAttack(player);
             }
 
-            if (fireDuration > 0) {
-                actualTarget.setSecondsOnFire(fireDuration);
+            if (fireSecs > 0) {
+                actualTarget.setSecondsOnFire((int) fireSecs);
             }
 
             if (dmg > 0) {
@@ -88,7 +90,7 @@ public class DamageAction implements ActionRegistry.RaceAction {
             }
 
             if (healAmount != null) {
-                float heal = (float) healAmount.evaluate(player);
+                float heal = (float) healAmount.evaluate(player, actualTarget);
                 if (heal > 0) {
                     player.heal(heal);
                 }
@@ -104,7 +106,7 @@ public class DamageAction implements ActionRegistry.RaceAction {
                     "minecraft:player_attack");
             ScalingValue knockback = json.has("knockback") ? ScalingValue.fromJson(json, "knockback", 0.0) : null;
             String source = net.minecraft.util.GsonHelper.getAsString(json, "source", "self");
-            int fire = net.minecraft.util.GsonHelper.getAsInt(json, "fire_duration", 0);
+            ScalingValue fire = ScalingValue.fromJson(json, "fire_duration", 0.0);
             ScalingValue heal = json.has("heal_amount") ? ScalingValue.fromJson(json, "heal_amount", 0.0) : null;
             ScalingValue dmgPerStack = json.has("damage_per_stack")
                     ? ScalingValue.fromJson(json, "damage_per_stack", 0.0)

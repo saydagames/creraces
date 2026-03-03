@@ -41,14 +41,19 @@ public class CommandAction implements ActionRegistry.RaceAction {
         if (player.level().isClientSide() || commandTemplate.isEmpty())
             return true;
 
-        String command = commandTemplate.replace("@s", player.getGameProfile().getName());
+        // Use UUID strings instead of player name to prevent selector injection
+        // (a player named "@a" or "@e[...]" could manipulate the command otherwise)
+        String command = commandTemplate.replace("@s", player.getUUID().toString());
         if (target != null) {
             command = command.replace("@t", target.getUUID().toString());
         }
 
         CommandSourceStack source = player.createCommandSourceStack();
         if (runAsOp) {
-            source = source.withPermission(4); // Run with high permission
+            // Only escalate to level 4 if the player is already an operator.
+            // Non-OP players get no permission escalation from run_as_op.
+            int grantedLevel = source.hasPermission(4) ? 4 : 0;
+            source = source.withPermission(grantedLevel);
         }
 
         if (runAtEntity) {

@@ -58,11 +58,33 @@ public record ScalingValue(double base, @javax.annotation.Nullable String scalin
         }
 
         if (statKey.equals("ap") || statKey.equals("creraces:ability_power")) {
-            return evalEntity.getAttributeValue(ModAttributes.ABILITY_POWER.get());
+            @SuppressWarnings("null")
+            var attr = ModAttributes.ABILITY_POWER.get();
+            return attr != null ? evalEntity.getAttributeValue(attr) : 0.0;
         }
-        if (statKey.equals("ad") || statKey.equals("attack_damage")
-                || statKey.equals("minecraft:generic.attack_damage")) {
-            return evalEntity.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE);
+        if (statKey.equals("ad") || statKey.equals("creraces:attack_damage")) {
+            @SuppressWarnings("null")
+            var attr = ModAttributes.ATTACK_DAMAGE.get();
+            return attr != null ? evalEntity.getAttributeValue(attr) : 0.0;
+        }
+        if (statKey.equals("ah") || statKey.equals("haste") || statKey.equals("creraces:ability_haste")) {
+            @SuppressWarnings("null")
+            var attr = ModAttributes.ABILITY_HASTE.get();
+            if (attr == null)
+                return 0.0;
+            double val = evalEntity.getAttributeValue(attr);
+            double cap = mc.sayda.creraces.config.CreRacesConfig.ABILITY_HASTE_CAP.get();
+            return Math.min(val, cap);
+        }
+        if (statKey.equals("crit") || statKey.equals("cr") || statKey.equals("creraces:crit_rate")) {
+            @SuppressWarnings("null")
+            var attr = ModAttributes.CRIT_RATE.get();
+            return attr != null ? evalEntity.getAttributeValue(attr) : 0.0;
+        }
+        if (statKey.equals("pen") || statKey.equals("creraces:armor_penetration")) {
+            @SuppressWarnings("null")
+            var attr = ModAttributes.ARMOR_PENETRATION.get();
+            return attr != null ? evalEntity.getAttributeValue(attr) : 0.0;
         }
         if (statKey.equals("hp") || statKey.equals("health")) {
             return evalEntity.getHealth();
@@ -74,10 +96,8 @@ public record ScalingValue(double base, @javax.annotation.Nullable String scalin
         if (statKey.equals("armor") || statKey.equals("minecraft:generic.armor")) {
             return evalEntity.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR);
         }
-        if (statKey.equals("ah") || statKey.equals("haste") || statKey.equals("minecraft:generic.attack_speed")) {
-            return evalEntity.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_SPEED);
-        }
-        if (statKey.equals("mr") || statKey.equals("movement") || statKey.equals("minecraft:generic.movement_speed")) {
+        if (statKey.equals("mr") || statKey.equals("movement") || statKey.equals("speed")
+                || statKey.equals("minecraft:generic.movement_speed")) {
             return evalEntity.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);
         }
 
@@ -134,22 +154,6 @@ public record ScalingValue(double base, @javax.annotation.Nullable String scalin
             double base = GsonHelper.getAsDouble(obj, "base", defaultBase);
             String stat = GsonHelper.getAsString(obj, "scales_with", null);
             double factor = GsonHelper.getAsDouble(obj, "factor", 0.0);
-
-            // Handle nested scaling object
-            if (obj.has("scaling") && obj.get("scaling").isJsonObject()) {
-                obj = obj.getAsJsonObject("scaling");
-            }
-
-            // If no explicit scaling found, look for aliases (ad, ap, etc.)
-            if (stat == null) {
-                for (String alias : new String[] { "ad", "ap", "hp", "ah", "mr", "luck", "armor" }) {
-                    if (obj.has(alias)) {
-                        stat = alias;
-                        factor = obj.get(alias).getAsDouble();
-                        break;
-                    }
-                }
-            }
 
             List<Component> additional = new ArrayList<>();
             if (obj.has("scales") && obj.get("scales").isJsonArray()) {

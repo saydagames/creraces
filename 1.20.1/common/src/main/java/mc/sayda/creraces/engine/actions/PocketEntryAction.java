@@ -63,11 +63,15 @@ public class PocketEntryAction implements ActionRegistry.RaceAction {
             double ty = vars.getPocketY();
             double tz = vars.getPocketZ();
 
-            // Default fallback if not set
+            // Default fallback if not set — assign a unique grid slot based on player
+            // entity ID.
+            // Grid: 10,000-unit spacing in both X and Z to avoid structure collisions.
+            // Using a 1000×1000 grid (up to 1,000,000 unique slots).
             if (tx == 0 && ty == 0 && tz == 0) {
-                tx = 1000.0 * (serverPlayer.getId() % 100); // Larger offset to avoid collisions
+                int id = serverPlayer.getId();
+                tx = 10000.0 * (id % 1000);
                 ty = 100.0;
-                tz = 1000.0 * (serverPlayer.getId() / 100);
+                tz = 10000.0 * (id / 1000);
                 vars.setPocketX(tx);
                 vars.setPocketY(ty);
                 vars.setPocketZ(tz);

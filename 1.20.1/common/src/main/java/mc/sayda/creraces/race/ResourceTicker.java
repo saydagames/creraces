@@ -59,7 +59,67 @@ public class ResourceTicker {
             }
         }
 
-        if (!player.level().isClientSide() && player.tickCount % 40 == 0) {
+        // Channeled Ability Logic
+        if (vars.isAbilityActive()) {
+            ResourceLocation abilityId = vars.getActiveAbility();
+            if (abilityId != null) {
+                // 1. Drain Resource (use race's actual resource type, not always mana)
+                double drain = vars.getActiveAbilityDrain();
+                if (drain > 0) {
+                    mc.sayda.creraces.ability.Ability ability = mc.sayda.creraces.ability.AbilityRegistry
+                            .get(abilityId);
+                    if (ability != null) {
+                        boolean outOfResource = switch (race.resourceType()) {
+                            case MANA -> {
+                                vars.setMana(Math.max(0, vars.getMana() - drain));
+                                yield vars.getMana() <= 0;
+                            }
+                            case RAGE -> {
+                                vars.setRage(Math.max(0, vars.getRage() - drain));
+                                yield vars.getRage() <= 0;
+                            }
+                            case ENERGY -> {
+                                vars.setEnergy(Math.max(0, vars.getEnergy() - drain));
+                                yield vars.getEnergy() <= 0;
+                            }
+                            case GRIT -> {
+                                vars.setGrit(Math.max(0, vars.getGrit() - drain));
+                                yield vars.getGrit() <= 0;
+                            }
+                            case SOULS -> {
+                                vars.setSouls(Math.max(0, vars.getSouls() - drain));
+                                yield vars.getSouls() <= 0;
+                            }
+                            default -> false;
+                        };
+                        if (outOfResource) {
+                            vars.setAbilityActive(false);
+                            vars.setCooldown(abilityId, ability.cooldown());
+                        }
+                    }
+                }
+
+                // 2. Tick Duration
+                int remaining = vars.getActiveAbilityDuration();
+                if (remaining > 0) {
+                    vars.setActiveAbilityDuration(remaining - 1);
+                    if (remaining - 1 <= 0) {
+                        vars.setAbilityActive(false);
+                        mc.sayda.creraces.ability.Ability ability = mc.sayda.creraces.ability.AbilityRegistry
+                                .get(abilityId);
+                        if (ability != null)
+                            vars.setCooldown(abilityId, ability.cooldown());
+                    }
+                }
+
+                // 3. Periodic Execution (Beam)
+                mc.sayda.creraces.engine.actions.BeamAction.tickExecution(player, abilityId);
+            }
+        }
+
+        if (!player.level().isClientSide() && player.tickCount % 20 == 0
+                && player instanceof net.minecraft.server.level.ServerPlayer sp) {
+            AttributeIncidents.eikiJudgment(sp);
             BoundaryHandler.resyncVariables(player, player);
         }
 
@@ -73,7 +133,8 @@ public class ResourceTicker {
 
         // 5. Sunlight Burning Logic
         if (race.passives() != null && race.passives().burnsInSunlight() && player.level().isDay()
-                && !player.level().isThundering()
+                && !player.level().isRaining() // isRaining covers both rain and thunder; isThundering() missed light
+                                               // rain
                 && player.level().canSeeSky(player.blockPosition())) {
 
             boolean immune = race.passives().immuneToDamageTypes().contains("fire") || player.isInvulnerable();
@@ -121,15 +182,19 @@ public class ResourceTicker {
             if (race.passives().noHunger()) {
                 player.getFoodData().setFoodLevel(20);
                 player.getFoodData().setSaturation(20);
-            } else if (race.passives().fixedHunger() > 0) {
-                player.getFoodData().setFoodLevel((int) race.passives().fixedHunger());
+            } else {
+                double fixedH = race.passives().fixedHunger().evaluate(player);
+                if (fixedH > 0) {
+                    player.getFoodData().setFoodLevel((int) fixedH);
+                }
             }
 
             if (race.passives().cannotSprint() && player.isSprinting()) {
                 player.setSprinting(false);
             }
 
-            if (race.passives().liquidSpeedMultiplier() > 1.0 && (player.isInWater() || player.isInLava())) {
+            if (race.passives().liquidSpeedMultiplier().evaluate(player) > 1.0
+                    && (player.isInWater() || player.isInLava())) {
                 player.addEffect(new net.minecraft.world.effect.MobEffectInstance(
                         net.minecraft.world.effect.MobEffects.DOLPHINS_GRACE, 20, 0, false, false));
             }

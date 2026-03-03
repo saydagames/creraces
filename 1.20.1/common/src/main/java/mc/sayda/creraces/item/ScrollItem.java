@@ -42,12 +42,45 @@ public class ScrollItem extends Item {
                     DataUtils.getVariables(serverPlayer).ifPresent(vars -> {
                         // Check race restriction
                         List<ResourceLocation> allowed = ability.allowedRaces();
-                        if (!allowed.isEmpty() && !allowed.contains(vars.getRace())) {
+                        boolean isAllowed = false;
+                        if (allowed.isEmpty()) {
+                            isAllowed = true;
+                        } else {
+                            ResourceLocation playerRaceId = vars.getRace();
+                            Race playerRace = RaceRegistry.get(playerRaceId);
+
+                            for (ResourceLocation rId : allowed) {
+                                if (rId.equals(playerRaceId)) {
+                                    isAllowed = true;
+                                    break;
+                                }
+                                if (playerRace != null) {
+                                    if (rId.toString().equals("creraces:spirit") && playerRace.isSpirit()) {
+                                        isAllowed = true;
+                                        break;
+                                    }
+                                    if (rId.toString().equals("creraces:tiny") && playerRace.isTiny()) {
+                                        isAllowed = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!isAllowed) {
                             StringBuilder racesStr = new StringBuilder();
                             for (int i = 0; i < allowed.size(); i++) {
                                 ResourceLocation rId = allowed.get(i);
-                                Race r = RaceRegistry.get(rId);
-                                racesStr.append(r != null ? r.name().getString() : rId.getPath());
+                                String name;
+                                if (rId.toString().equals("creraces:spirit")) {
+                                    name = "Spirit";
+                                } else if (rId.toString().equals("creraces:tiny")) {
+                                    name = "Tiny";
+                                } else {
+                                    Race r = RaceRegistry.get(rId);
+                                    name = (r != null) ? r.name().getString() : rId.getPath();
+                                }
+                                racesStr.append(name);
                                 if (i < allowed.size() - 1)
                                     racesStr.append(", ");
                             }
@@ -112,21 +145,36 @@ public class ScrollItem extends Item {
                 // Race Restriction Tooltip (3rd line)
                 List<ResourceLocation> allowed = ability.allowedRaces();
                 if (!allowed.isEmpty()) {
-                    ResourceLocation playerRace = null;
-                    if (level != null && level.isClientSide) {
-                        playerRace = DataUtils.getVariables(mc.sayda.creraces.client.ClientAccess.getPlayer())
-                                .map(mc.sayda.creraces.capability.IPlayerVariables::getRace)
-                                .orElse(null);
-                    }
-
                     MutableComponent raceList = Component.literal("(").withStyle(ChatFormatting.DARK_GRAY);
                     for (int i = 0; i < allowed.size(); i++) {
                         ResourceLocation rId = allowed.get(i);
-                        Race r = RaceRegistry.get(rId);
-                        String name = (r != null) ? r.name().getString() : rId.getPath();
+                        String name;
+                        boolean matches = false;
 
-                        ChatFormatting color = (playerRace != null && playerRace.equals(rId)) ? ChatFormatting.GREEN
-                                : ChatFormatting.RED;
+                        ResourceLocation playerRaceId = null;
+                        Race playerRace = null;
+                        if (level != null && level.isClientSide) {
+                            playerRaceId = DataUtils.getVariables(mc.sayda.creraces.client.ClientAccess.getPlayer())
+                                    .map(mc.sayda.creraces.capability.IPlayerVariables::getRace)
+                                    .orElse(null);
+                            if (playerRaceId != null) {
+                                playerRace = RaceRegistry.get(playerRaceId);
+                            }
+                        }
+
+                        if (rId.toString().equals("creraces:spirit")) {
+                            name = "Spirit";
+                            matches = (playerRace != null && playerRace.isSpirit());
+                        } else if (rId.toString().equals("creraces:tiny")) {
+                            name = "Tiny";
+                            matches = (playerRace != null && playerRace.isTiny());
+                        } else {
+                            Race r = RaceRegistry.get(rId);
+                            name = (r != null) ? r.name().getString() : rId.getPath();
+                            matches = (playerRaceId != null && playerRaceId.equals(rId));
+                        }
+
+                        ChatFormatting color = matches ? ChatFormatting.GREEN : ChatFormatting.RED;
 
                         raceList.append(Component.literal(name).withStyle(color));
 

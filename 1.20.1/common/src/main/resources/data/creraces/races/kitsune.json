@@ -9,6 +9,7 @@
     "base_cr": 12,
     "max_resource": 100,
     "difficulty": 4,
+    "is_spirit": true,
     "traits": [
         {
             "type": "creraces:attribute_modifier",
@@ -23,25 +24,33 @@
         {
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.luck",
-            "value": 10.0,
+            "value": {
+                "base": 10.0
+            },
             "operation": "addition"
         },
         {
             "type": "creraces:attribute_modifier",
             "attribute": "creraces:ability_power",
-            "value": 20.0,
+            "value": {
+                "base": 20.0
+            },
             "operation": "addition"
         },
         {
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.attack_damage",
-            "value": 8.0,
+            "value": {
+                "base": 8.0
+            },
             "operation": "addition"
         },
         {
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.movement_speed",
-            "value": 0.1,
+            "value": {
+                "base": 0.1
+            },
             "operation": "addition",
             "condition": {
                 "type": "creraces:ability_state",
@@ -52,7 +61,9 @@
         {
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.attack_damage",
-            "value": -100.0,
+            "value": {
+                "base": -100.0
+            },
             "operation": "addition",
             "condition": {
                 "type": "creraces:ability_state",
@@ -78,18 +89,24 @@
                 {
                     "type": "creraces:set_state",
                     "ability": "creraces:foxfire",
-                    "value": 0.0
+                    "value": {
+                        "base": 0.0
+                    }
                 },
                 {
                     "type": "creraces:set_cooldown",
                     "ability": "creraces:foxfire",
-                    "value": 100
+                    "value": {
+                        "base": 100.0
+                    }
                 }
             ]
         },
         {
             "type": "creraces:on_tick",
-            "interval": 2,
+            "interval": {
+                "base": 2.0
+            },
             "condition": {
                 "type": "creraces:ability_state",
                 "ability": "creraces:foxfire",
@@ -104,11 +121,17 @@
                         "scales_with": "custom:tail_count",
                         "factor": 1.0
                     },
-                    "speed": 0.0,
-                    "spin": 0.1,
+                    "speed": {
+                        "base": 0.0
+                    },
+                    "spin": {
+                        "base": 0.1
+                    },
                     "pattern": {
                         "type": "circle",
-                        "radius": 1.2,
+                        "radius": {
+                            "base": 1.2
+                        },
                         "count": {
                             "base": 0.0,
                             "scales_with": "custom:tail_count",
@@ -122,7 +145,8 @@
     ],
     "starting_abilities": [
         "creraces:foxfire",
-        "creraces:fox_form"
+        "creraces:fox_form",
+        "creraces:kitsune_sleep"
     ],
     "starting_items": [
         "creraces:mirror"
@@ -154,8 +178,8 @@
             ],
             "defaultValue": "standard",
             "addons": {
-                "standard": "twilight_lib:kitsune_ears_{color}",
-                "alt": "twilight_lib:kitsune_ears_{color}_alt"
+                "standard": "kitsune_ears_{color}",
+                "alt": "kitsune_ears_{color}_alt"
             }
         },
         {
@@ -165,9 +189,8 @@
                 "true",
                 "false"
             ],
-            "defaultValue": "true",
             "addons": {
-                "true": "twilight_lib:kitsune_snout_{color}"
+                "true": "kitsune_snout_{color}"
             }
         },
         {
@@ -179,10 +202,10 @@
             ],
             "defaultValue": "standard",
             "addons": {
-                "standard": "twilight_lib:kitsune_tails_{tail_count}_{color}",
+                "standard": "kitsune_tails_{tail_count}_{color}",
                 "alt": [
                     {
-                        "id": "twilight_lib:kitsune_tails_{tail_count}_{color}_alt",
+                        "id": "kitsune_tails_{tail_count}_{color}_alt",
                         "condition": {
                             "type": "creraces:customization_equals",
                             "id": "tail_count",
@@ -193,7 +216,7 @@
                             ]
                         }
                     },
-                    "twilight_lib:kitsune_tails_{tail_count}_{color}"
+                    "kitsune_tails_{tail_count}_{color}"
                 ]
             }
         },
@@ -217,11 +240,11 @@
     "remote_description": {
         "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
         "fallback": "race.creraces.kitsune.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Kitsune\u0026prop=wikitext"
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Kitsune&prop=wikitext"
     },
     "remote_passive": {
         "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
         "fallback": "No passive documentation found on wiki.",
-        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Kitsune\u0026prop=wikitext"
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Kitsune&prop=wikitext"
     }
 }

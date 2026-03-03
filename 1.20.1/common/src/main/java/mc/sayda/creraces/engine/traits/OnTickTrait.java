@@ -10,7 +10,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Trait for passive abilities that execute actions periodically.
@@ -20,12 +23,15 @@ public class OnTickTrait implements TraitRegistry.RaceTrait {
 
     private final List<ActionRegistry.RaceAction> actions;
     private final List<ActionRegistry.RaceAction> onFail;
-    private final int interval;
+    private final mc.sayda.creraces.engine.ScalingValue interval;
     private final Condition condition;
-    private int tickCounter = 0;
-    private boolean failed = false;
+    // Per-player state (trait is a race-level singleton — instance fields would be
+    // shared)
+    private final Map<UUID, Integer> tickCounters = new HashMap<>();
+    private final Map<UUID, Boolean> failedMap = new HashMap<>();
 
-    public OnTickTrait(List<ActionRegistry.RaceAction> actions, List<ActionRegistry.RaceAction> onFail, int interval,
+    public OnTickTrait(List<ActionRegistry.RaceAction> actions, List<ActionRegistry.RaceAction> onFail,
+            mc.sayda.creraces.engine.ScalingValue interval,
             Condition condition) {
         this.actions = actions;
         this.onFail = onFail;
@@ -35,13 +41,14 @@ public class OnTickTrait implements TraitRegistry.RaceTrait {
 
     @Override
     public void tick(Player player) {
-        tickCounter++;
-        if (tickCounter >= interval) {
-            tickCounter = 0;
+        int count = tickCounters.getOrDefault(player.getUUID(), 0) + 1;
+        tickCounters.put(player.getUUID(), count);
+        if (count >= interval.evaluate(player)) {
+            tickCounters.put(player.getUUID(), 0);
 
             if (condition != null && !condition.evaluate(player, null, null, null)) {
-                if (!failed) {
-                    failed = true;
+                if (!failedMap.getOrDefault(player.getUUID(), false)) {
+                    failedMap.put(player.getUUID(), true);
                     for (ActionRegistry.RaceAction action : onFail) {
                         action.execute(player, null, null, null);
                     }
@@ -49,7 +56,7 @@ public class OnTickTrait implements TraitRegistry.RaceTrait {
                 return;
             }
 
-            failed = false;
+            failedMap.put(player.getUUID(), false);
             for (ActionRegistry.RaceAction action : actions) {
                 action.execute(player, null, null, null);
             }
@@ -58,7 +65,8 @@ public class OnTickTrait implements TraitRegistry.RaceTrait {
 
     public static void register() {
         TraitRegistry.register(new ResourceLocation(CreRaces.MODID, "on_tick"), json -> {
-            int interval = GsonHelper.getAsInt(json, "interval", 20); // Default: 1 second
+            mc.sayda.creraces.engine.ScalingValue interval = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
+                    "interval", 20.0); // Default: 1 second
             Condition condition = json.has("condition") ? Condition.fromJson(json.getAsJsonObject("condition")) : null;
 
             List<ActionRegistry.RaceAction> actions = new ArrayList<>();

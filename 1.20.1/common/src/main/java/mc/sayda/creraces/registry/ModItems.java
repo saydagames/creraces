@@ -56,6 +56,35 @@ public class ModItems {
                         ModBlocks.WINTER_FAIRY_ORB);
         public static final RegistrySupplier<Item> DAY_FAIRY_ORB_ITEM = registerBlockItem(ModBlocks.DAY_FAIRY_ORB);
         public static final RegistrySupplier<Item> NIGHT_FAIRY_ORB_ITEM = registerBlockItem(ModBlocks.NIGHT_FAIRY_ORB);
+        public static final RegistrySupplier<Item> TORI_BELL_ITEM = registerBlockItem(ModBlocks.TORI_BELL);
+        public static final RegistrySupplier<Item> WEATHERED_TORI_BELL_ITEM = registerBlockItem(
+                        ModBlocks.WEATHERED_TORI_BELL);
+        public static final RegistrySupplier<Item> RED_STRIPPED_OAK_LOG_ITEM = registerBlockItem(
+                        ModBlocks.RED_STRIPPED_OAK_LOG);
+        public static final RegistrySupplier<Item> WEATHERED_RED_STRIPPED_OAK_LOG_ITEM = registerBlockItem(
+                        ModBlocks.WEATHERED_RED_STRIPPED_OAK_LOG);
+
+        // Music Discs
+        public static final RegistrySupplier<Item> LOFI_WARCRIMES_DISC = ITEMS.register("lofi_warcrimes_disc",
+                        () -> new net.minecraft.world.item.RecordItem(15, ModSounds.LOFI_WARCRIMES.get(),
+                                        new net.minecraft.world.item.Item.Properties().stacksTo(1)
+                                                        .rarity(net.minecraft.world.item.Rarity.RARE),
+                                        4200));
+        public static final RegistrySupplier<Item> VERMINWAVE_DISC = ITEMS.register("verminwave_disc",
+                        () -> new net.minecraft.world.item.RecordItem(15, ModSounds.VERMINWAVE.get(),
+                                        new net.minecraft.world.item.Item.Properties().stacksTo(1)
+                                                        .rarity(net.minecraft.world.item.Rarity.RARE),
+                                        2800));
+        public static final RegistrySupplier<Item> UNDERGROUND_CLUB_DISC = ITEMS.register("underground_club_disc",
+                        () -> new net.minecraft.world.item.RecordItem(15, ModSounds.UNDERGROUND_CLUB.get(),
+                                        new net.minecraft.world.item.Item.Properties().stacksTo(1)
+                                                        .rarity(net.minecraft.world.item.Rarity.RARE),
+                                        2000));
+        public static final RegistrySupplier<Item> PLEASANT_BOPS_DISC = ITEMS.register("pleasant_bops_disc",
+                        () -> new net.minecraft.world.item.RecordItem(15, ModSounds.PLEASANT_BOPS.get(),
+                                        new net.minecraft.world.item.Item.Properties().stacksTo(1)
+                                                        .rarity(net.minecraft.world.item.Rarity.RARE),
+                                        2200));
 
         private static RegistrySupplier<Item> registerBlockItem(
                         RegistrySupplier<? extends net.minecraft.world.level.block.Block> blockSupplier) {

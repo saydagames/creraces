@@ -60,7 +60,7 @@ public class ClientAccess {
             }
             if (finalTarget == minecraft.player) {
                 hasReceivedInitialSync = true;
-                if (data.contains("RaceChosen")) {
+                if (data.contains("hasChosenRace") && data.getBoolean("hasChosenRace")) {
                     isWaitingForRaceSelection = false;
                 }
             }

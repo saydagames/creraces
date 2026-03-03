@@ -5,28 +5,74 @@ import dev.architectury.event.events.client.ClientTickEvent;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.client.screen.SkillWheelScreen;
 import mc.sayda.creraces.client.screen.MenuGUIScreen;
-import mc.sayda.creraces.world.inventory.MenuGUIMenu;
 import dev.architectury.registry.menu.MenuRegistry;
 import mc.sayda.creraces.registry.ModMenuTypes;
+import mc.sayda.creraces.registry.ModBlocks;
 import mc.sayda.creraces.capability.DataUtils;
-import net.minecraft.client.Minecraft;
 
 public class CreRacesClient {
+    private static long lastSelectionScreenTime = 0;
+
     public static void init() {
         ModKeyMappings.register();
         mc.sayda.creraces.network.BoundaryHandler.registerS2C();
+        mc.sayda.creraces.client.SpiritMobilityClient.init();
+
+        // Register screen factory eagerly (not deferred) so
+        // fabric-screen-handler-api-v1
+        // has the registration before the first server-side openMenu packet arrives.
+        MenuRegistry.registerScreenFactory(mc.sayda.creraces.registry.ModMenuTypes.MENU_GUI.get(),
+                mc.sayda.creraces.client.screen.MenuGUIScreen::new);
 
         // Register renderers early so Architectury can hook into Forge events
         dev.architectury.registry.client.level.entity.EntityRendererRegistry.register(
                 mc.sayda.creraces.registry.ModEntities.FEATHER_PROJECTILE,
                 net.minecraft.client.renderer.entity.ThrownItemRenderer::new);
 
+        // Screen factories and BlockEntityRenderers are deferred to CLIENT_SETUP below
+        // to avoid early .get() calls on Forge registry objects.
+
         dev.architectury.event.events.client.ClientLifecycleEvent.CLIENT_SETUP.register(instance -> {
-            MenuRegistry.registerScreenFactory(ModMenuTypes.MENU_GUI.get(), MenuGUIScreen::new);
+            // RenderType Registration
+            dev.architectury.registry.client.rendering.RenderTypeRegistry.register(
+                    net.minecraft.client.renderer.RenderType.cutout(),
+                    mc.sayda.creraces.registry.ModBlocks.TORI_BELL.get(),
+                    mc.sayda.creraces.registry.ModBlocks.WEATHERED_TORI_BELL.get(),
+                    mc.sayda.creraces.registry.ModBlocks.DRYAD_LEAVES.get(),
+                    mc.sayda.creraces.registry.ModBlocks.DRYAD_LEAVES_FLOWERING.get(),
+                    mc.sayda.creraces.registry.ModBlocks.DRYAD_LEAVES_FRUIT.get(),
+                    mc.sayda.creraces.registry.ModBlocks.DRYAD_SAPLING.get(),
+                    mc.sayda.creraces.registry.ModBlocks.DRYAD_LANTERN.get());
+            dev.architectury.registry.client.rendering.RenderTypeRegistry.register(
+                    net.minecraft.client.renderer.RenderType.translucent(),
+                    mc.sayda.creraces.registry.ModBlocks.MICRO_BLOCK.get());
+
+            // MenuGUIScreen is registered eagerly above — not here — to ensure
+            // Fabric's fabric-screen-handler-api-v1 has it before any world join.
+            dev.architectury.registry.client.rendering.BlockEntityRendererRegistry.register(
+                    mc.sayda.creraces.registry.ModBlocks.MICRO_BLOCK_ENTITY.get(),
+                    mc.sayda.creraces.client.render.MiniBlockEntityRenderer::new);
+
+            // Foliage Tints (Dryad leaves are natively green, so they don't need biome
+            // tints)
+            /*
+             * net.minecraft.client.color.block.BlockColors blockColors =
+             * net.minecraft.client.Minecraft.getInstance()
+             * .getBlockColors();
+             * blockColors.register((state, world, pos, tintIndex) -> {
+             * if (world == null || pos == null) {
+             * return net.minecraft.world.level.FoliageColor.getDefaultColor();
+             * }
+             * return
+             * net.minecraft.client.renderer.BiomeColors.getAverageFoliageColor(world, pos);
+             * }, ModBlocks.DRYAD_LEAVES.get(), ModBlocks.DRYAD_LEAVES_FLOWERING.get(),
+             * ModBlocks.DRYAD_LEAVES_FRUIT.get());
+             */
         });
 
         ClientGuiEvent.RENDER_HUD.register((graphics, tickDelta) -> {
             RaceOverlay.render(graphics, tickDelta);
+            mc.sayda.creraces.client.render.SpiritRealmRenderer.renderScreenTint(graphics);
         });
 
         dev.architectury.event.events.client.ClientPlayerEvent.CLIENT_PLAYER_JOIN.register(player -> {
@@ -47,10 +93,23 @@ public class CreRacesClient {
 
                     // Forced selection logic
                     if (mc.sayda.creraces.config.CreRacesConfig.FORCED_SELECTION.get() && !vars.hasChosenRace()
-                            && mc.sayda.creraces.client.ClientAccess.hasReceivedInitialSync
-                            && !mc.sayda.creraces.client.ClientAccess.isWaitingForRaceSelection
-                            && minecraft.screen == null) {
-                        mc.sayda.creraces.network.BoundaryHandler.sendOpenMenu();
+                            && mc.sayda.creraces.client.ClientAccess.hasReceivedInitialSync) {
+
+                        // If already waiting or screen is open, update timer
+                        if (minecraft.screen != null
+                                || mc.sayda.creraces.client.ClientAccess.isWaitingForRaceSelection) {
+                            lastSelectionScreenTime = System.currentTimeMillis();
+                            mc.sayda.creraces.client.ClientAccess.isWaitingForRaceSelection = false;
+                        } else {
+                            // Enforce menu after a short delay (2 seconds) to avoid flicker if they just
+                            // closed it
+                            long now = System.currentTimeMillis();
+                            if (now - lastSelectionScreenTime > 2000) {
+                                mc.sayda.creraces.client.ClientAccess.isWaitingForRaceSelection = true;
+                                mc.sayda.creraces.network.BoundaryHandler.sendOpenMenu();
+                                lastSelectionScreenTime = now;
+                            }
+                        }
                     }
                 });
             }

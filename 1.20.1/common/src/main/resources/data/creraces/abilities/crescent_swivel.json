@@ -14,33 +14,44 @@
                 "type": "creraces:entity_data",
                 "key": "creraces:foul_play_stacks",
                 "operator": "\u003e=",
-                "value": 2,
-                "use_target": true
+                "value": 2
             },
             "if_true": [
                 {
                     "type": "creraces:aoe",
-                    "range": 2.5,
-                    "damage": {
-                        "base": 4.0,
-                        "scales_with": "ad",
-                        "factor": 0.04
-                    },
+                    "radius": 2.5,
                     "target_players": true,
-                    "source": "caster"
+                    "source": "caster",
+                    "actions": [
+                        {
+                            "type": "creraces:damage",
+                            "amount": {
+                                "base": 4.0,
+                                "scales_with": "ad",
+                                "factor": 0.04
+                            },
+                            "damage_type": "minecraft:player_attack"
+                        }
+                    ]
                 }
             ],
             "if_false": [
                 {
                     "type": "creraces:aoe",
-                    "range": 2.5,
-                    "damage": {
-                        "base": 2.0,
-                        "scales_with": "ad",
-                        "factor": 0.02
-                    },
+                    "radius": 2.5,
                     "target_players": true,
-                    "source": "caster"
+                    "source": "caster",
+                    "actions": [
+                        {
+                            "type": "creraces:damage",
+                            "amount": {
+                                "base": 2.0,
+                                "scales_with": "ad",
+                                "factor": 0.02
+                            },
+                            "damage_type": "minecraft:player_attack"
+                        }
+                    ]
                 }
             ]
         },
@@ -64,11 +75,11 @@
     "remote_description": {
         "selector": "",
         "fallback": "ability.creraces.crescent_swivel.description",
-        "source": "https://creraces.wiki.gg/api.php?action=cargoquery\u0026format=json\u0026tables=Abilities\u0026fields=Description\u0026where=Name=\u0027Crescent Swivel\u0027"
+        "source": "https://creraces.wiki.gg/api.php?action=cargoquery&format=json&tables=Abilities&fields=Description&where=Name=\u0027Crescent_Swivel\u0027"
     },
     "remote_full_description": {
         "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
         "fallback": "ability.creraces.crescent_swivel.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Ability:Crescent_Swivel\u0026prop=wikitext"
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Crescent_Swivel&prop=wikitext"
     }
 }

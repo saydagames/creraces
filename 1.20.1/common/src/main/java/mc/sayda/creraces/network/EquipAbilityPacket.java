@@ -43,6 +43,12 @@ public class EquipAbilityPacket {
         NetworkManager.PacketContext context = contextSupplier.get();
         context.queue(() -> {
             DataUtils.getVariables(context.getPlayer()).ifPresent(vars -> {
+                // Ownership check: null = unequip (always allowed); non-null must be unlocked
+                if (abilityId != null && !vars.isAbilityUnlocked(abilityId)) {
+                    CreRaces.LOGGER.warn("Player {} tried to equip unowned ability: {}",
+                            context.getPlayer().getName().getString(), abilityId);
+                    return;
+                }
                 vars.equipAbility(slot, abilityId);
                 // Sync back to client (and others)
                 BoundaryHandler.resyncVariables(context.getPlayer(), context.getPlayer());

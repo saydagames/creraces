@@ -1,7 +1,11 @@
 {
     "name": "race.creraces.ratkin.name",
     "legacy_id": 13.0,
-    "scale": 0.65,
+    "scale": {
+        "base": 1.0,
+        "height": 0.65,
+        "width": 0.65
+    },
     "description": "race.creraces.ratkin.description",
     "icon": "creraces:textures/screens/ratkin_icon.png",
     "splash": "creraces:textures/screens/ratkin_splash.png",
@@ -35,8 +39,6 @@
                     "amplifier": {
                         "base": 0
                     },
-                    "target_enemies": true,
-                    "target_players": true,
                     "increment_amplifier": true,
                     "visible": true
                 }
@@ -46,11 +48,11 @@
     "remote_description": {
         "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
         "fallback": "race.creraces.ratkin.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Ratkin\u0026prop=wikitext"
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ratkin&prop=wikitext"
     },
     "remote_passive": {
         "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
         "fallback": "No passive documentation found on wiki.",
-        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Ratkin\u0026prop=wikitext"
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ratkin&prop=wikitext"
     }
 }

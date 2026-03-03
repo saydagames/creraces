@@ -2,6 +2,13 @@ architectury {
     common(rootProject.property('1_20_1_enabled_platforms').split(","))
 }
 
+group = rootProject.mod_group_id
+archivesBaseName = "creraces-1.20.1-common"
+
+loom {
+    mixin.defaultRefmapName = "creraces-common.refmap.json"
+}
+
 
 
 dependencies {

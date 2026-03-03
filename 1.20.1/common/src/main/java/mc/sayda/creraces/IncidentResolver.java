@@ -40,6 +40,19 @@ public class IncidentResolver {
         // Tick Events
         TickEvent.SERVER_POST.register(IncidentResolver::onGensokyoTick);
 
+        // Disconnect: clear beam cache and save teams
+        PlayerEvent.PLAYER_QUIT.register(player -> {
+            mc.sayda.creraces.engine.actions.BeamAction.clearForPlayer(player);
+        });
+
+        // Team persistence
+        dev.architectury.event.events.common.LifecycleEvent.SERVER_STARTED.register(server -> {
+            mc.sayda.creraces.team.RaceTeamManager.load(server);
+        });
+        dev.architectury.event.events.common.LifecycleEvent.SERVER_STOPPING.register(server -> {
+            mc.sayda.creraces.team.RaceTeamManager.save(server);
+        });
+
         // Social Passives (defendedByEntities)
         mc.sayda.creraces.race.SocialPassivesEvent.register();
 
@@ -126,7 +139,8 @@ public class IncidentResolver {
             if (race != null && race.traits() != null) {
                 for (mc.sayda.creraces.engine.TraitRegistry.RaceTrait trait : race.traits()) {
                     if (trait.onBlockPlace(player, pos, state)) {
-                        return dev.architectury.event.EventResult.pass();
+                        return dev.architectury.event.EventResult.interruptTrue(); // Was always pass() — bug: trait
+                                                                                   // result was ignored
                     }
                 }
             }
@@ -179,17 +193,20 @@ public class IncidentResolver {
     }
 
     private static void onIncidentBegin(ServerPlayer player) {
-        // We no longer sync data immediately upon login because the client is often
-        // not ready to receive custom payloads, causing the packet to drop silently.
-        // The client will explicitly send a RequestSyncPacket when it enters the world.
+        // Attributes need setup before client sync
         mc.sayda.creraces.race.AttributeIncidents.eikiJudgment(player);
 
-        // Also sync everyone else to this player
+        // Sync the joining player's data to all currently online players,
+        // and sync all online players' data to the joining player.
+        // NOTE: We iterate level().players() but avoid an O(n²) full cross-sync:
+        // each existing player only needs to receive the new player's data once.
         if (player.level() != null) {
             player.level().players().forEach(other -> {
-                BoundaryHandler.resyncVariables(other, player);
-                if (other instanceof ServerPlayer sp) {
-                    BoundaryHandler.resyncVariables(player, sp);
+                if (other != player) {
+                    // Send this player's vars to the existing player
+                    BoundaryHandler.resyncVariables(player, (ServerPlayer) other);
+                    // Send the existing player's vars to this player
+                    BoundaryHandler.resyncVariables(other, player);
                 }
             });
         }
@@ -219,25 +236,17 @@ public class IncidentResolver {
                 LOGGER.info("IncidentResolver: Copied oldVars to newVars. New Race: {}", newVars.getRace());
 
                 if (wasDeath) {
-                    // Reset non-persistent states on death
-                    for (mc.sayda.creraces.ability.AbilitySlot slot : mc.sayda.creraces.ability.AbilitySlot.values()) {
-                        ResourceLocation abilityId = newVars.getAbilityInSlot(slot);
-                        if (abilityId != null) {
-                            mc.sayda.creraces.ability.Ability ability = mc.sayda.creraces.ability.AbilityRegistry
-                                    .get(abilityId);
-                            if (ability != null && !ability.persistent()) {
-                                LOGGER.debug("IncidentResolver: Resetting non-persistent state for {}", abilityId);
-                                newVars.setAbilityState(abilityId, 0);
-                            }
-                        }
-                    }
+                    // resetOnDeath clears resources, cooldowns, channeled state, AND all
+                    // non-persistent ability states (not just equipped ones — fixes the
+                    // previous incomplete manual loop over slots).
+                    newVars.resetOnDeath();
 
-                    // Restore Tweilight Lib addons
+                    // Re-apply Scale and Cosmetics after death/respawn
                     mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(newVars.getRace());
                     if (race != null) {
+                        mc.sayda.creraces.race.RaceIncidents.applyScale(newPlayer, race.scale());
                         mc.sayda.creraces.race.CosmeticIncidents.applyCustomizations(newPlayer,
-                                newVars.getCustomizations(),
-                                race);
+                                newVars.getCustomizations(), race);
                     }
                 }
 
@@ -279,6 +288,15 @@ public class IncidentResolver {
 
     public static void onRespawn(ServerPlayer player) {
         LOGGER.info("IncidentResolver: onRespawn triggered for {}", player.getName().getString());
+
+        // Re-apply race elements that Pehkui/Vanilla might have cleared
+        DataUtils.getVariables(player).ifPresent(vars -> {
+            mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
+            if (race != null) {
+                mc.sayda.creraces.race.RaceIncidents.applyScale(player, race.scale());
+            }
+        });
+
         BoundaryHandler.resyncVariables(player, player);
         mc.sayda.creraces.race.AttributeIncidents.eikiJudgment(player);
 

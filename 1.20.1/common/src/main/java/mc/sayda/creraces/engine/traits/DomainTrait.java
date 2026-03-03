@@ -10,17 +10,22 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public class DomainTrait implements TraitRegistry.RaceTrait {
 
-    private final double radius;
+    private final mc.sayda.creraces.engine.ScalingValue radius;
     private final List<ActionRegistry.RaceAction> actions;
     private final Condition condition;
     private final int interval;
-    private int timer = 0;
+    // Per-player timer (trait is a race-level singleton)
+    private final Map<UUID, Integer> timers = new HashMap<>();
 
-    public DomainTrait(double radius, List<ActionRegistry.RaceAction> actions, Condition condition, int interval) {
+    public DomainTrait(mc.sayda.creraces.engine.ScalingValue radius, List<ActionRegistry.RaceAction> actions,
+            Condition condition, int interval) {
         this.radius = radius;
         this.actions = actions;
         this.condition = condition;
@@ -32,10 +37,11 @@ public class DomainTrait implements TraitRegistry.RaceTrait {
         if (player.level().isClientSide())
             return;
 
-        timer++;
-        if (timer < interval)
+        int t = timers.getOrDefault(player.getUUID(), 0) + 1;
+        timers.put(player.getUUID(), t);
+        if (t < interval)
             return;
-        timer = 0;
+        timers.put(player.getUUID(), 0);
 
         if (condition == null || condition.evaluate(player, null, null, null)) {
             // Apply actions to the player while in their own domain
@@ -45,7 +51,7 @@ public class DomainTrait implements TraitRegistry.RaceTrait {
 
             // Regional effects to OTHERS in the domain
             List<Player> others = player.level().getEntitiesOfClass(Player.class,
-                    player.getBoundingBox().inflate(radius), p -> p != player);
+                    player.getBoundingBox().inflate(radius.evaluate(player)), p -> p != player);
             for (Player other : others) {
                 for (ActionRegistry.RaceAction action : actions) {
                     action.execute(player, other, null, null);
@@ -56,7 +62,8 @@ public class DomainTrait implements TraitRegistry.RaceTrait {
 
     public static void register() {
         TraitRegistry.register(new ResourceLocation(CreRaces.MODID, "domain"), json -> {
-            double radius = json.has("radius") ? json.get("radius").getAsDouble() : 15.0;
+            mc.sayda.creraces.engine.ScalingValue radius = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
+                    "radius", 15.0);
             int interval = json.has("interval") ? json.get("interval").getAsInt() : 20;
             List<ActionRegistry.RaceAction> actions = new ArrayList<>();
             if (json.has("actions")) {

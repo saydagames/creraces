@@ -16,13 +16,16 @@ import javax.annotation.Nullable;
  */
 public class PlaySoundAction implements ActionRegistry.RaceAction {
     private final ResourceLocation soundId;
-    private final float volume;
-    private final float pitch;
+    private final mc.sayda.creraces.engine.ScalingValue volume;
+    private final mc.sayda.creraces.engine.ScalingValue pitch;
+    private final boolean useTarget;
 
-    public PlaySoundAction(ResourceLocation soundId, float volume, float pitch) {
+    public PlaySoundAction(ResourceLocation soundId, mc.sayda.creraces.engine.ScalingValue volume,
+            mc.sayda.creraces.engine.ScalingValue pitch, boolean useTarget) {
         this.soundId = soundId;
         this.volume = volume;
         this.pitch = pitch;
+        this.useTarget = useTarget;
     }
 
     @Override
@@ -31,8 +34,13 @@ public class PlaySoundAction implements ActionRegistry.RaceAction {
             @Nullable net.minecraft.core.BlockPos interactionPos) {
         SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(soundId);
         if (sound != null && player.level() != null) {
-            player.level().playSound(null, player.getX(), player.getY(), player.getZ(), sound, SoundSource.PLAYERS,
-                    volume, pitch);
+            // Smart Targeting: Prefer target if present, otherwise respect useTarget flag
+            net.minecraft.world.entity.LivingEntity subject = (target != null) ? target : (useTarget ? target : player);
+            if (subject != null) {
+                player.level().playSound(null, subject.getX(), subject.getY(), subject.getZ(), sound,
+                        SoundSource.PLAYERS, (float) volume.evaluate(player, target),
+                        (float) pitch.evaluate(player, target));
+            }
         }
         return true;
     }
@@ -41,9 +49,12 @@ public class PlaySoundAction implements ActionRegistry.RaceAction {
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "play_sound"), json -> {
             String soundStr = GsonHelper.getAsString(json, "sound", "minecraft:entity.experience_orb.pickup");
             ResourceLocation id = new ResourceLocation(soundStr);
-            float vol = GsonHelper.getAsFloat(json, "volume", 1.0f);
-            float pit = GsonHelper.getAsFloat(json, "pitch", 1.0f);
-            return new PlaySoundAction(id, vol, pit);
+            mc.sayda.creraces.engine.ScalingValue vol = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "volume",
+                    1.0);
+            mc.sayda.creraces.engine.ScalingValue pit = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "pitch",
+                    1.0);
+            boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
+            return new PlaySoundAction(id, vol, pit, useTarget);
         });
     }
 }

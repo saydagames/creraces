@@ -41,9 +41,9 @@ public class ActionRegistry {
             RaceAction action = factory.create(json);
 
             if (json.has("chance")) {
-                double chance = json.get("chance").getAsDouble();
+                ScalingValue chance = ScalingValue.fromJson(json, "chance", 1.0);
                 return (player, target, slot, interactionPos) -> {
-                    if (player.getRandom().nextDouble() < chance) {
+                    if (player.getRandom().nextDouble() < chance.evaluate(player, target)) {
                         return action.execute(player, target, slot, interactionPos);
                     }
                     return true;
@@ -96,5 +96,10 @@ public class ActionRegistry {
         mc.sayda.creraces.engine.actions.SmeltItemAction.register();
         mc.sayda.creraces.engine.actions.TeleportAction.register();
         mc.sayda.creraces.engine.actions.SetCustomizationAction.register();
+        mc.sayda.creraces.engine.actions.EnterSpiritRealmAction.register();
+        mc.sayda.creraces.engine.actions.ToggleMinibuildAction.register();
+        mc.sayda.creraces.engine.actions.BeamAction.register();
+        mc.sayda.creraces.engine.actions.SleepAction.register();
+        mc.sayda.creraces.engine.actions.MessageAction.register();
     }
 }

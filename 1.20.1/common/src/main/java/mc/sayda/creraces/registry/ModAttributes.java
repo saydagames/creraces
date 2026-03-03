@@ -41,6 +41,10 @@ public class ModAttributes {
                         () -> new RangedAttribute("attribute.creraces.armor_penetration", 0.0, 0.0, 100.0)
                                         .setSyncable(true)); // Percentage
 
+        public static final RegistrySupplier<Attribute> ABILITY_HASTE = ATTRIBUTES.register("ability_haste",
+                        () -> new RangedAttribute("attribute.creraces.ability_haste", 0.0, 0.0, 100.0)
+                                        .setSyncable(true));
+
         // Regeneration & Decay
         public static final RegistrySupplier<Attribute> MANA_REGEN = ATTRIBUTES.register("mana_regeneration",
                         () -> new RangedAttribute("attribute.creraces.mana_regen", 0.1, 0.0, 1000.0).setSyncable(true));

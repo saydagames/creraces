@@ -11,24 +11,31 @@
     "actions": [
         {
             "type": "creraces:aoe",
-            "damage": {
-                "base": 1.0,
-                "scaling": {
-                    "ad": 1.0
-                }
-            },
-            "damage_per_stack": {
-                "base": 1.0,
-                "scaling": {
-                    "ad": 0.1
-                }
-            },
-            "range": 16.0,
+            "radius": 16.0,
             "target_players": true,
             "required_effect": "creraces:rat_venom",
-            "remove_effect": true,
-            "source": "caster",
-            "damage_type": "minecraft:magic"
+            "actions": [
+                {
+                    "type": "creraces:damage",
+                    "amount": {
+                        "base": 1.0,
+                        "scales_with": "ad",
+                        "factor": 1.0
+                    },
+                    "damage_per_stack": {
+                        "base": 1.0,
+                        "scales_with": "ad",
+                        "factor": 0.1
+                    },
+                    "stack_effect": "creraces:rat_venom",
+                    "damage_type": "minecraft:magic",
+                    "source": "self"
+                },
+                {
+                    "type": "creraces:remove_effect",
+                    "effect": "creraces:rat_venom"
+                }
+            ]
         },
         {
             "type": "creraces:play_sound",
@@ -40,11 +47,11 @@
     "remote_description": {
         "selector": "",
         "fallback": "ability.creraces.deadly_venom.description",
-        "source": "https://creraces.wiki.gg/api.php?action=cargoquery\u0026format=json\u0026tables=Abilities\u0026fields=Description\u0026where=Name=\u0027Deadly Venom\u0027"
+        "source": "https://creraces.wiki.gg/api.php?action=cargoquery&format=json&tables=Abilities&fields=Description&where=Name=\u0027Deadly_Venom\u0027"
     },
     "remote_full_description": {
         "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
         "fallback": "ability.creraces.deadly_venom.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Ability:Deadly_Venom\u0026prop=wikitext"
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Deadly_Venom&prop=wikitext"
     }
 }

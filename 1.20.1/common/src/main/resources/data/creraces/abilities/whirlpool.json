@@ -13,7 +13,7 @@
             "condition": {
                 "type": "creraces:in_water"
             },
-            "actions": [
+            "if_true": [
                 {
                     "type": "creraces:aoe",
                     "radius": 5.0,
@@ -21,15 +21,13 @@
                         {
                             "type": "creraces:apply_velocity",
                             "mode": "pull",
-                            "strength": 0.5,
-                            "use_target": true
+                            "strength": 0.5
                         },
                         {
                             "type": "creraces:modify_resource",
                             "resource": "air",
                             "operation": "add",
-                            "value": -20.0,
-                            "use_target": true
+                            "value": -20.0
                         }
                     ]
                 },
@@ -45,11 +43,11 @@
     "remote_description": {
         "selector": "",
         "fallback": "ability.creraces.whirlpool.description",
-        "source": "https://creraces.wiki.gg/api.php?action=cargoquery\u0026format=json\u0026tables=Abilities\u0026fields=Description\u0026where=Name=\u0027Whirlpool\u0027"
+        "source": "https://creraces.wiki.gg/api.php?action=cargoquery&format=json&tables=Abilities&fields=Description&where=Name=\u0027Whirlpool\u0027"
     },
     "remote_full_description": {
         "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
         "fallback": "ability.creraces.whirlpool.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse\u0026format=json\u0026page=Ability:Whirlpool\u0026prop=wikitext"
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Whirlpool&prop=wikitext"
     }
 }

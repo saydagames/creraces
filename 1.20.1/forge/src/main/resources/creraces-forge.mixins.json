@@ -1,9 +1,11 @@
 {
     "required": true,
-    "package": "mc.sayda.creraces.mixin",
+    "refMap": "creraces-forge.refmap.json",
+    "package": "mc.sayda.creraces.forge.mixin",
     "compatibilityLevel": "JAVA_17",
     "minVersion": "0.8",
     "mixins": [],
+    "client": [],
     "injectors": {
         "defaultRequire": 1
     }
