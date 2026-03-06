@@ -64,6 +64,7 @@ public class DocFetcher {
                 }
 
                 String content = response.body();
+                CreRaces.LOGGER.debug("DocFetcher: Received content length {} for {}", content.length(), url);
 
                 // MediaWiki API Handling
                 if (url.contains("action=parse")) {
@@ -71,6 +72,7 @@ public class DocFetcher {
                     if (json.has("parse") && json.getAsJsonObject("parse").has("wikitext")) {
                         content = json.getAsJsonObject("parse").getAsJsonObject("wikitext").get("*").getAsString();
                     } else {
+                        CreRaces.LOGGER.warn("DocFetcher: parse action returned no wikitext for {}", url);
                         return null; // No wikitext found, allow fallback
                     }
                 } else if (url.contains("action=cargoquery")) {
@@ -84,12 +86,15 @@ public class DocFetcher {
                             if (!entries.isEmpty()) {
                                 content = entries.iterator().next().getValue().getAsString();
                             } else {
+                                CreRaces.LOGGER.warn("DocFetcher: cargoquery returned empty title object for {}", url);
                                 return null; // Field not found
                             }
                         } else {
+                            CreRaces.LOGGER.debug("DocFetcher: cargoquery returned 0 results for {}", url);
                             return null; // Empty array
                         }
                     } else {
+                        CreRaces.LOGGER.warn("DocFetcher: cargoquery action returned no cargoquery block for {}", url);
                         return null; // No cargoquery block
                     }
                 }
@@ -101,8 +106,12 @@ public class DocFetcher {
                     if (matcher.find()) {
                         // Return first group if exists, otherwise the whole match
                         String result = matcher.groupCount() > 0 ? matcher.group(1).trim() : matcher.group().trim();
+                        CreRaces.LOGGER.debug("DocFetcher: Regex matched group for {}", url);
                         return WikitextUtil.clean(result);
                     } else {
+                        CreRaces.LOGGER.warn("DocFetcher: Regex selector '{}' found no match in content for {}",
+                                selector,
+                                url);
                         // If selector was provided but not found, return null to allow fallback
                         return null;
                     }

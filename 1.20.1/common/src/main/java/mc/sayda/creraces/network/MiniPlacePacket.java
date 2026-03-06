@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 /**
  * C2S: Client requests to place a mini-block in a specific slot.
  */
+@SuppressWarnings("null")
 public class MiniPlacePacket {
 
     public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "mini_place");
@@ -132,7 +133,6 @@ public class MiniPlacePacket {
         // 7. Generic Horizontal Facing blocks
         if (def.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING)) {
             if (clickedFace.getAxis().isHorizontal()) {
-                @SuppressWarnings("unchecked")
                 net.minecraft.world.level.block.state.properties.Property<Direction> prop = (net.minecraft.world.level.block.state.properties.Property<Direction>) net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING;
                 return def.setValue(prop, clickedFace);
             }
@@ -218,11 +218,13 @@ public class MiniPlacePacket {
                 }
             }
 
-            // Multi-slot placement for Doors and Beds — guard against OOB slot writes
+            // Multi-slot occupancy check
             if (block instanceof net.minecraft.world.level.block.DoorBlock) {
-                // Door needs slotY and slotY+1 — reject if top slot would overflow
                 if (slotY + 1 >= 4)
                     return;
+                if (!MicroBlockEntity.getSlotGlobal(level, hostPos, slotX, slotY + 1, slotZ).isAir())
+                    return;
+
                 MicroBlockEntity.setSlotGlobal(level, hostPos, slotX, slotY, slotZ,
                         placementState.setValue(net.minecraft.world.level.block.DoorBlock.HALF,
                                 net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER));
@@ -233,9 +235,11 @@ public class MiniPlacePacket {
                 Direction facing = placementState.getValue(net.minecraft.world.level.block.BedBlock.FACING);
                 int headSlotX = slotX + facing.getStepX();
                 int headSlotZ = slotZ + facing.getStepZ();
-                // Bed head slot must stay within the 4x4x4 grid
-                if (headSlotX < 0 || headSlotX >= 4 || headSlotZ < 0 || headSlotZ >= 4)
+
+                // Check occupancy of the head slot (can be in a different host block)
+                if (!MicroBlockEntity.getSlotGlobal(level, hostPos, headSlotX, slotY, headSlotZ).isAir())
                     return;
+
                 MicroBlockEntity.setSlotGlobal(level, hostPos, slotX, slotY, slotZ,
                         placementState.setValue(net.minecraft.world.level.block.BedBlock.PART,
                                 net.minecraft.world.level.block.state.properties.BedPart.FOOT));

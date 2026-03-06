@@ -3,8 +3,10 @@ package mc.sayda.creraces.registry;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.effect.FrozenEffect;
 import mc.sayda.creraces.effect.LifeDrainEffect;
 import mc.sayda.creraces.effect.TalonStrikeEffect;
+import mc.sayda.creraces.effect.TrollCurseEffect;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
@@ -44,6 +46,24 @@ public class ModMobEffects {
                                                         net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED,
                                                         "4cb5918e-e21c-480d-a10d-b1f3712f1e06", -1.0D,
                                                         net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.MULTIPLY_TOTAL));
+
+        /**
+         * Frozen — Troll sunlight effect. Roots (speed ×-1) and disarms the entity.
+         * PlayerMixin checks FROZEN alongside DISARMED to block attacking and
+         * interactions.
+         */
+        public static final RegistrySupplier<MobEffect> FROZEN = MOB_EFFECTS.register("frozen",
+                        () -> new FrozenEffect(MobEffectCategory.HARMFUL, 0xADD8E6));
+
+        /**
+         * Troll's Curse — applied by the Troll Pillar to nearby entities.
+         * Buffs Troll-race allies (Speed I), debuffs others (Slowness I + Weakness I).
+         */
+        public static final RegistrySupplier<MobEffect> TROLL_CURSE = MOB_EFFECTS.register("troll_curse",
+                        () -> new TrollCurseEffect());
+
+        public static final RegistrySupplier<MobEffect> DIZZINESS = MOB_EFFECTS.register("dizziness",
+                        () -> new mc.sayda.creraces.effect.DizzinessEffect(MobEffectCategory.HARMFUL, 0x87CEEB));
 
         public static void register() {
                 MOB_EFFECTS.register();

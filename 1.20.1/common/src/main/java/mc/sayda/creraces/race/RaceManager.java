@@ -284,8 +284,14 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
             }
         }
 
-        // Parse potion effect immunity list
+        // Parse potion effect immunity list — supports both "negate_effects" and
+        // "immune_to_potion_effects"
         List<String> immuneToPotionEffects = new ArrayList<>();
+        if (p.has("negate_effects")) {
+            for (JsonElement e : p.getAsJsonArray("negate_effects")) {
+                immuneToPotionEffects.add(e.getAsString());
+            }
+        }
         if (p.has("immune_to_potion_effects")) {
             for (JsonElement e : p.getAsJsonArray("immune_to_potion_effects")) {
                 immuneToPotionEffects.add(e.getAsString());

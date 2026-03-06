@@ -33,6 +33,7 @@ import java.util.Map;
  * Stores a 4x4x4 grid of mini BlockStates inside a single Minecraft block.
  * Index formula: x + 4*y + 16*z (x,y,z in 0..3)
  */
+@SuppressWarnings("null")
 public class MicroBlockEntity extends BlockEntity {
 
     public static final int SIZE = 4;
@@ -168,6 +169,11 @@ public class MicroBlockEntity extends BlockEntity {
                             hostState.setValue(mc.sayda.creraces.block.MicroBlock.LIGHT, newLight),
                             3);
                 }
+
+                // AUTO-CLEANUP: If the host is now empty, remove it from the world
+                if (newAir && isEmpty()) {
+                    level.removeBlock(worldPosition, false);
+                }
             }
         }
     }
@@ -206,7 +212,8 @@ public class MicroBlockEntity extends BlockEntity {
         if (level.getBlockEntity(targetHost) instanceof MicroBlockEntity micro) {
             return micro.getSlot(mx & 3, my & 3, mz & 3);
         }
-        return Blocks.AIR.defaultBlockState();
+        BlockState hostState = level.getBlockState(targetHost);
+        return hostState.isAir() || hostState.canBeReplaced() ? Blocks.AIR.defaultBlockState() : hostState;
     }
 
     public static void setSlotGlobal(net.minecraft.world.level.Level level, BlockPos host, int sx, int sy, int sz,
@@ -621,17 +628,32 @@ public class MicroBlockEntity extends BlockEntity {
 
         // 1. Custom Interactive Types (Crafting Table, Barrel, Furnace, Jukebox)
         if (slotState.getBlock() instanceof net.minecraft.world.level.block.CraftingTableBlock) {
-            player.openMenu(
-                    new mc.sayda.creraces.world.inventory.micro.MicroCraftingMenuProvider(level, worldPosition));
+            if (!level.isClientSide() && player instanceof net.minecraft.server.level.ServerPlayer sp) {
+                dev.architectury.registry.menu.MenuRegistry.openMenu(sp,
+                        new mc.sayda.creraces.world.inventory.micro.MicroCraftingMenuProvider(level, worldPosition));
+            }
             return net.minecraft.world.InteractionResult.CONSUME;
 
         } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.BarrelBlock ||
                 slotState.getBlock() instanceof net.minecraft.world.level.block.ChestBlock) {
             int slotIdx = toIndex(sx, sy, sz);
-            player.openMenu(new net.minecraft.world.SimpleMenuProvider(
-                    (containerId, playerInventory, p) -> net.minecraft.world.inventory.ChestMenu.threeRows(containerId,
-                            playerInventory, new MicroInventory(this, slotIdx, 27)),
-                    slotState.getBlock().getName()));
+            if (!level.isClientSide() && player instanceof net.minecraft.server.level.ServerPlayer sp) {
+                dev.architectury.registry.menu.MenuRegistry.openMenu(sp, new net.minecraft.world.SimpleMenuProvider(
+                        (containerId, playerInventory, p) -> net.minecraft.world.inventory.ChestMenu.threeRows(
+                                containerId,
+                                playerInventory, new MicroInventory(this, slotIdx, 27)),
+                        slotState.getBlock().getName()));
+            }
+            return net.minecraft.world.InteractionResult.CONSUME;
+
+        } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.EnderChestBlock) {
+            if (!level.isClientSide() && player instanceof net.minecraft.server.level.ServerPlayer sp) {
+                dev.architectury.registry.menu.MenuRegistry.openMenu(sp, new net.minecraft.world.SimpleMenuProvider(
+                        (containerId, playerInventory, p) -> net.minecraft.world.inventory.ChestMenu.threeRows(
+                                containerId,
+                                playerInventory, player.getEnderChestInventory()),
+                        net.minecraft.network.chat.Component.translatable("container.enderchest")));
+            }
             return net.minecraft.world.InteractionResult.CONSUME;
 
         } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.BedBlock) {
@@ -645,8 +667,10 @@ public class MicroBlockEntity extends BlockEntity {
 
         } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.AbstractFurnaceBlock) {
             int slotIdx = toIndex(sx, sy, sz);
-            player.openMenu(
-                    new mc.sayda.creraces.world.inventory.micro.MicroFurnaceMenuProvider(this, slotIdx, slotState));
+            if (!level.isClientSide() && player instanceof net.minecraft.server.level.ServerPlayer sp) {
+                dev.architectury.registry.menu.MenuRegistry.openMenu(sp,
+                        new mc.sayda.creraces.world.inventory.micro.MicroFurnaceMenuProvider(this, slotIdx, slotState));
+            }
             return net.minecraft.world.InteractionResult.CONSUME;
 
         } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.JukeboxBlock) {

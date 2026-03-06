@@ -1,48 +1,48 @@
 {
-    "name": "ability.creraces.rageful_bloodlust.name",
-    "description": "ability.creraces.rageful_bloodlust.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:textures/item/ghast_tear.png",
-    "cooldown": 400,
-    "cost": 0,
-    "race": [
-        "creraces:orc"
-    ],
-    "actions": [
-        {
-            "type": "creraces:heal",
-            "amount": {
-                "base": 1.0,
-                "scales_with": "var:rage",
-                "factor": 0.1
-            }
-        },
-        {
-            "type": "creraces:modify_resource",
-            "resource": "rage",
-            "operation": "set",
-            "value": 0
-        },
-        {
-            "type": "creraces:play_sound",
-            "sound": "minecraft:entity.player.burp",
-            "volume": 1.0,
-            "pitch": 0.5
-        },
-        {
-            "type": "creraces:spawn_particles",
-            "particle": "minecraft:heart",
-            "count": 5
-        }
-    ],
+    "name":  "ability.creraces.rageful_bloodlust.name",
+    "description":  "ability.creraces.rageful_bloodlust.description",
+    "type":  "ACTIVE",
+    "icon":  "minecraft:textures/item/ghast_tear.png",
+    "cooldown":  400,
+    "cost":  0,
+    "race":  [
+                 "creraces:orc"
+             ],
+    "actions":  [
+                    {
+                        "type":  "creraces:heal",
+                        "amount":  {
+                                       "base":  1.0,
+                                       "scales_with":  "var:rage",
+                                       "factor":  0.1
+                                   }
+                    },
+                    {
+                        "type":  "creraces:modify_resource",
+                        "resource":  "rage",
+                        "operation":  "set",
+                        "value":  0
+                    },
+                    {
+                        "type":  "creraces:play_sound",
+                        "sound":  "minecraft:entity.player.burp",
+                        "volume":  1.0,
+                        "pitch":  0.5
+                    },
+                    {
+                        "type":  "creraces:spawn_particles",
+                        "particle":  "minecraft:heart",
+                        "count":  5
+                    }
+                ],
     "remote_description": {
-        "selector": "",
-        "fallback": "ability.creraces.rageful_bloodlust.description",
-        "source": "https://creraces.wiki.gg/api.php?action=cargoquery&format=json&tables=Abilities&fields=Description&where=Name=\u0027Rageful_Bloodlust\u0027"
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Rageful_Bloodlust&prop=wikitext",
+        "fallback": "ability.creraces.rageful_bloodlust.description"
     },
     "remote_full_description": {
-        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
-        "fallback": "ability.creraces.rageful_bloodlust.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Rageful_Bloodlust&prop=wikitext"
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Rageful_Bloodlust&prop=wikitext",
+        "fallback": "ability.creraces.rageful_bloodlust.description"
     }
 }

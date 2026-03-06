@@ -1,0 +1,95 @@
+{
+    "name": "ability.creraces.thorn_shackles.name",
+    "description": "ability.creraces.thorn_shackles.description",
+    "type": "ACTIVE",
+    "icon": "minecraft:textures/block/vine.png",
+    "cooldown": 400,
+    "cost": 20,
+    "race": [
+        "creraces:dryad"
+    ],
+    "actions": [
+        {
+            "type": "creraces:conditional",
+            "condition": {
+                "type": "creraces:has_entities",
+                "radius": 10.0,
+                "targets": [
+                    "enemies"
+                ]
+            },
+            "if_true": [
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:entity.evoker.cast_spell",
+                    "volume": 1.0,
+                    "pitch": 0.8
+                },
+                {
+                    "type": "creraces:aoe",
+                    "radius": 10.0,
+                    "targets": [
+                        "enemies"
+                    ],
+                    "actions": [
+                        {
+                            "type": "creraces:tether",
+                            "duration": 60,
+                            "max_distance": 15.0,
+                            "interval": 20,
+                            "texture": "minecraft:textures/entity/guardian_beam.png",
+                            "width": 1.0,
+                            "actions": [
+                                {
+                                    "type": "creraces:apply_effect",
+                                    "effect": "minecraft:slowness",
+                                    "duration": 30,
+                                    "amplifier": 1
+                                }
+                            ],
+                            "on_complete": [
+                                {
+                                    "type": "creraces:play_sound",
+                                    "sound": "minecraft:entity.generic.explode",
+                                    "volume": 0.8,
+                                    "pitch": 1.2
+                                },
+                                {
+                                    "type": "creraces:apply_effect",
+                                    "effect": "minecraft:slowness",
+                                    "duration": 80,
+                                    "amplifier": 6,
+                                    "visible": false
+                                },
+                                {
+                                    "type": "creraces:damage",
+                                    "amount": 8.0,
+                                    "damage_type": "minecraft:magic"
+                                }
+                            ],
+                            "on_break": [
+                                {
+                                    "type": "creraces:play_sound",
+                                    "sound": "minecraft:entity.item.break",
+                                    "volume": 0.5,
+                                    "pitch": 1.0
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "if_false": []
+        }
+    ],
+    "remote_description": {
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Thorn_Shackles&prop=wikitext",
+        "fallback": "ability.creraces.thorn_shackles.description"
+    },
+    "remote_full_description": {
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Thorn_Shackles&prop=wikitext",
+        "fallback": "ability.creraces.thorn_shackles.description"
+    }
+}

@@ -1,0 +1,50 @@
+{
+    "name": "ability.creraces.hot_headed.name",
+    "description": "ability.creraces.hot_headed.description",
+    "type": "ACTIVE",
+    "icon": "minecraft:textures/item/fire_charge.png",
+    "cooldown": 0,
+    "cost": 0,
+    "race": [
+        "creraces:oread"
+    ],
+    "actions": [
+        {
+            "type": "creraces:toggle_state",
+            "state": "slot",
+            "on_value": 1,
+            "off_value": 0,
+            "on_enable": [
+                {
+                    "type": "creraces:apply_particles",
+                    "particle": "minecraft:flame",
+                    "count": 20
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:entity.blaze.ambient",
+                    "volume": 0.8,
+                    "pitch": 1.2
+                }
+            ],
+            "on_disable": [
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:block.fire.extinguish",
+                    "volume": 0.8,
+                    "pitch": 1.0
+                }
+            ]
+        }
+    ],
+    "remote_description": {
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Hot_Headed&prop=wikitext",
+        "fallback": "ability.creraces.hot_headed.description"
+    },
+    "remote_full_description": {
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Hot_Headed&prop=wikitext",
+        "fallback": "ability.creraces.hot_headed.description"
+    }
+}

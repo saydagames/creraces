@@ -20,8 +20,18 @@ public class AbilityExecutionRegistry {
             // Fallback to JSON actions
             return (player, ability, slot) -> {
                 if (ability.onActivate() != null && !ability.onActivate().isEmpty()) {
+                    // Raytrace the block the player is looking at so actions using
+                    // use_target_block (e.g. rat_tunnels place_block) get a meaningful pos.
+                    net.minecraft.core.BlockPos lookTarget = null;
+                    net.minecraft.world.phys.HitResult hit = player.pick(5.0, 0f, false);
+                    if (hit instanceof net.minecraft.world.phys.BlockHitResult bhr &&
+                            bhr.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
+                        // Use the face-adjacent block position so the rat hole goes
+                        // ON TOP of the surface the player is looking at.
+                        lookTarget = bhr.getBlockPos().relative(bhr.getDirection());
+                    }
                     for (mc.sayda.creraces.engine.ActionRegistry.RaceAction action : ability.onActivate()) {
-                        if (!action.execute(player, null, slot, null)) {
+                        if (!action.execute(player, null, slot, lookTarget)) {
                             return false;
                         }
                     }

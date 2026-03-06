@@ -4,10 +4,7 @@ import dev.architectury.event.events.client.ClientGuiEvent;
 import dev.architectury.event.events.client.ClientTickEvent;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.client.screen.SkillWheelScreen;
-import mc.sayda.creraces.client.screen.MenuGUIScreen;
 import dev.architectury.registry.menu.MenuRegistry;
-import mc.sayda.creraces.registry.ModMenuTypes;
-import mc.sayda.creraces.registry.ModBlocks;
 import mc.sayda.creraces.capability.DataUtils;
 
 public class CreRacesClient {
@@ -18,21 +15,43 @@ public class CreRacesClient {
         mc.sayda.creraces.network.BoundaryHandler.registerS2C();
         mc.sayda.creraces.client.SpiritMobilityClient.init();
 
-        // Register screen factory eagerly (not deferred) so
-        // fabric-screen-handler-api-v1
-        // has the registration before the first server-side openMenu packet arrives.
-        MenuRegistry.registerScreenFactory(mc.sayda.creraces.registry.ModMenuTypes.MENU_GUI.get(),
-                mc.sayda.creraces.client.screen.MenuGUIScreen::new);
-
         // Register renderers early so Architectury can hook into Forge events
         dev.architectury.registry.client.level.entity.EntityRendererRegistry.register(
                 mc.sayda.creraces.registry.ModEntities.FEATHER_PROJECTILE,
                 net.minecraft.client.renderer.entity.ThrownItemRenderer::new);
 
-        // Screen factories and BlockEntityRenderers are deferred to CLIENT_SETUP below
-        // to avoid early .get() calls on Forge registry objects.
+        // TrollPillarEntity — stone pillar with custom Blockbench model
+        dev.architectury.registry.client.level.entity.EntityModelLayerRegistry.register(
+                mc.sayda.creraces.client.model.TrollPillarModel.LAYER_LOCATION,
+                mc.sayda.creraces.client.model.TrollPillarModel::createBodyLayer);
+        dev.architectury.registry.client.level.entity.EntityRendererRegistry.register(
+                mc.sayda.creraces.registry.ModEntities.TROLL_PILLAR,
+                mc.sayda.creraces.client.render.TrollPillarRenderer::new);
+
+        // PoisonEmitter — custom ratkin totem model
+        dev.architectury.registry.client.level.entity.EntityModelLayerRegistry.register(
+                mc.sayda.creraces.client.model.PoisonEmitterModel.LAYER_LOCATION,
+                mc.sayda.creraces.client.model.PoisonEmitterModel::createBodyLayer);
+        dev.architectury.registry.client.level.entity.EntityRendererRegistry.register(
+                mc.sayda.creraces.registry.ModEntities.POISON_EMITTER,
+                mc.sayda.creraces.client.render.PoisonEmitterRenderer::new);
+        dev.architectury.registry.client.level.entity.EntityRendererRegistry.register(
+                mc.sayda.creraces.registry.ModEntities.POISON_EMITTER_MOBILE,
+                mc.sayda.creraces.client.render.PoisonEmitterRenderer::new);
 
         dev.architectury.event.events.client.ClientLifecycleEvent.CLIENT_SETUP.register(instance -> {
+            // Register screen factory here instead of main init because
+            // ModMenuTypes.MENU_GUI.get()
+            // throws NullPointerException on Forge if called before registry
+            // initialization.
+            MenuRegistry.registerScreenFactory(mc.sayda.creraces.registry.ModMenuTypes.MENU_GUI.get(),
+                    mc.sayda.creraces.client.screen.MenuGUIScreen::new);
+
+            // Register microblock renderer
+            dev.architectury.registry.client.rendering.BlockEntityRendererRegistry.register(
+                    mc.sayda.creraces.registry.ModBlocks.MICRO_BLOCK_ENTITY.get(),
+                    context -> new mc.sayda.creraces.client.render.MiniBlockEntityRenderer(context));
+
             // RenderType Registration
             dev.architectury.registry.client.rendering.RenderTypeRegistry.register(
                     net.minecraft.client.renderer.RenderType.cutout(),
@@ -42,16 +61,11 @@ public class CreRacesClient {
                     mc.sayda.creraces.registry.ModBlocks.DRYAD_LEAVES_FLOWERING.get(),
                     mc.sayda.creraces.registry.ModBlocks.DRYAD_LEAVES_FRUIT.get(),
                     mc.sayda.creraces.registry.ModBlocks.DRYAD_SAPLING.get(),
-                    mc.sayda.creraces.registry.ModBlocks.DRYAD_LANTERN.get());
+                    mc.sayda.creraces.registry.ModBlocks.DRYAD_LANTERN.get(),
+                    mc.sayda.creraces.registry.ModBlocks.RAT_HOLE.get());
             dev.architectury.registry.client.rendering.RenderTypeRegistry.register(
                     net.minecraft.client.renderer.RenderType.translucent(),
                     mc.sayda.creraces.registry.ModBlocks.MICRO_BLOCK.get());
-
-            // MenuGUIScreen is registered eagerly above — not here — to ensure
-            // Fabric's fabric-screen-handler-api-v1 has it before any world join.
-            dev.architectury.registry.client.rendering.BlockEntityRendererRegistry.register(
-                    mc.sayda.creraces.registry.ModBlocks.MICRO_BLOCK_ENTITY.get(),
-                    mc.sayda.creraces.client.render.MiniBlockEntityRenderer::new);
 
             // Foliage Tints (Dryad leaves are natively green, so they don't need biome
             // tints)
@@ -87,10 +101,6 @@ public class CreRacesClient {
         ClientTickEvent.CLIENT_POST.register(minecraft -> {
             if (minecraft.player != null && !minecraft.player.isRemoved()) {
                 DataUtils.getVariables(minecraft.player).ifPresent(vars -> {
-                    // Client-side resource ticking for smooth UI updates
-                    // PREDICTION: We run the ticker locally to predict resource regen/decay
-                    mc.sayda.creraces.race.ResourceTicker.tick(minecraft.player);
-
                     // Forced selection logic
                     if (mc.sayda.creraces.config.CreRacesConfig.FORCED_SELECTION.get() && !vars.hasChosenRace()
                             && mc.sayda.creraces.client.ClientAccess.hasReceivedInitialSync) {

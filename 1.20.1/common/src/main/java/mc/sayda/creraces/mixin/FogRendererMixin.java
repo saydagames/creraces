@@ -44,11 +44,9 @@ public class FogRendererMixin {
             Race.Passives passives = race.passives() != null ? race.passives() : Race.Passives.DEFAULT;
 
             FogType fogType = camera.getFluidInCamera();
-            if (fogType == FogType.WATER && passives.waterVision()) {
-                // Clear the entire fog call — vanilla will fall through to the normal sky/
-                // terrain fog after the HEAD injection returns, giving a clear view.
+            if ((fogType == FogType.WATER && (passives.waterVision() || passives.unaffectedByWater()))) {
                 ci.cancel();
-            } else if (fogType == FogType.LAVA && passives.lavaVision()) {
+            } else if (fogType == FogType.LAVA && (passives.lavaVision() || passives.unaffectedByLava())) {
                 ci.cancel();
             }
         });

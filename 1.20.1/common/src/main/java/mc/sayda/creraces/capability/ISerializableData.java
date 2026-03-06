@@ -8,5 +8,10 @@ import net.minecraft.nbt.CompoundTag;
 public interface ISerializableData {
     CompoundTag serialize();
 
+    /** Serialize with an option to include resource values (mana, rage, etc.). */
+    default CompoundTag serialize(boolean fullSync) {
+        return serialize();
+    }
+
     void deserialize(CompoundTag tag);
 }

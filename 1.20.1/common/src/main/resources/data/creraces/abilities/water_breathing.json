@@ -5,14 +5,23 @@
     "icon": "minecraft:textures/item/pufferfish.png",
     "cooldown": 0,
     "cost": 0,
+    "actions": [
+        {
+            "type": "creraces:apply_effect",
+            "effect": "minecraft:water_breathing",
+            "amplifier": 0,
+            "duration": -1,
+            "visible": false
+        }
+    ],
     "remote_description": {
-        "selector": "",
-        "fallback": "ability.creraces.water_breathing.description",
-        "source": "https://creraces.wiki.gg/api.php?action=cargoquery&format=json&tables=Abilities&fields=Description&where=Name=\u0027Water_Breathing\u0027"
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Water_Breathing&prop=wikitext",
+        "fallback": "ability.creraces.water_breathing.description"
     },
     "remote_full_description": {
-        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
-        "fallback": "ability.creraces.water_breathing.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Water_Breathing&prop=wikitext"
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Water_Breathing&prop=wikitext",
+        "fallback": "ability.creraces.water_breathing.description"
     }
 }

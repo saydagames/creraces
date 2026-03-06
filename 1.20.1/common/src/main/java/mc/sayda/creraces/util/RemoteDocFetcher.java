@@ -70,7 +70,7 @@ public class RemoteDocFetcher {
                 : new ResourceLocation(id.getNamespace(), id.getPath() + cacheSuffix);
         String diskCached = DocCache.get(cacheId);
         if (diskCached != null) {
-            Component comp = Component.literal(diskCached);
+            Component comp = WikitextUtil.toComponent(diskCached);
             cache.put(id, comp);
             return comp;
         }
@@ -82,9 +82,9 @@ public class RemoteDocFetcher {
                     .handle((result, ex) -> {
                         try {
                             if (result != null && !result.isEmpty()) {
-                                // Store in disk cache and memory cache as literal
+                                // Store in disk cache and memory cache as formatted component
                                 DocCache.store(cacheId, result);
-                                cache.put(id, Component.literal(result));
+                                cache.put(id, WikitextUtil.toComponent(result));
                             } else {
                                 // Use fallback translation key from config if available, else original
                                 // component

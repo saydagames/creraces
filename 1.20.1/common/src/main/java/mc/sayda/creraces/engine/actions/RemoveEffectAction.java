@@ -13,14 +13,15 @@ public class RemoveEffectAction implements ActionRegistry.RaceAction {
 
     private final MobEffect effect;
     private final ScalingValue radius;
-    private final boolean targetEnemies;
-    private final boolean targetPlayers;
+    private final mc.sayda.creraces.engine.TargetFilter targets;
+    private final boolean useTarget;
 
-    public RemoveEffectAction(MobEffect effect, ScalingValue radius, boolean targetEnemies, boolean targetPlayers) {
+    public RemoveEffectAction(MobEffect effect, ScalingValue radius, mc.sayda.creraces.engine.TargetFilter targets,
+            boolean useTarget) {
         this.effect = effect;
         this.radius = radius;
-        this.targetEnemies = targetEnemies;
-        this.targetPlayers = targetPlayers;
+        this.targets = targets;
+        this.useTarget = useTarget;
     }
 
     @Override
@@ -36,27 +37,17 @@ public class RemoveEffectAction implements ActionRegistry.RaceAction {
 
         double r = radius.evaluate(player, target);
         if (r > 0) {
+            // AoE Mode
             net.minecraft.world.phys.AABB area = player.getBoundingBox().inflate(r);
-            java.util.List<net.minecraft.world.entity.LivingEntity> targets = player.level().getEntitiesOfClass(
-                    net.minecraft.world.entity.LivingEntity.class,
-                    area,
-                    entity -> {
-                        if (entity == player)
-                            return !targetEnemies; // Caster is not an enemy
-                        if (!targetPlayers && entity instanceof Player)
-                            return false;
-                        if (targetEnemies && entity instanceof net.minecraft.world.entity.Mob)
-                            return true;
-                        return targetPlayers && entity instanceof Player;
-                    });
-
-            for (net.minecraft.world.entity.LivingEntity e : targets) {
-                remove.accept(e);
-            }
-        } else if (target != null && targetEnemies) {
-            remove.accept(target);
+            player.level().getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class, area, e -> {
+                return targets.isValid(e, player);
+            }).forEach(e -> remove.accept(e));
         } else {
-            remove.accept(player);
+            // Single Target Mode
+            net.minecraft.world.entity.LivingEntity entity = (target != null) ? target : (useTarget ? null : player);
+            if (entity != null && targets.isValid(entity, player)) {
+                remove.accept(entity);
+            }
         }
         return true;
     }
@@ -66,10 +57,11 @@ public class RemoveEffectAction implements ActionRegistry.RaceAction {
             String effectId = GsonHelper.getAsString(json, "effect");
             MobEffect effect = BuiltInRegistries.MOB_EFFECT.get(new ResourceLocation(effectId));
             ScalingValue radius = ScalingValue.fromJson(json, "radius", 0.0);
-            boolean targetEnemies = GsonHelper.getAsBoolean(json, "target_enemies", false);
-            boolean targetPlayers = GsonHelper.getAsBoolean(json, "target_players", false);
+            mc.sayda.creraces.engine.TargetFilter targets = mc.sayda.creraces.engine.TargetFilter.fromJson(json,
+                    "targets");
+            boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
 
-            return new RemoveEffectAction(effect, radius, targetEnemies, targetPlayers);
+            return new RemoveEffectAction(effect, radius, targets, useTarget);
         });
     }
 }

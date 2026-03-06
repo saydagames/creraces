@@ -142,6 +142,14 @@ public class ModBlocks {
                         () -> new RotatedPillarBlock(BlockBehaviour.Properties.copy(Blocks.STRIPPED_OAK_LOG)
                                         .mapColor(MapColor.COLOR_RED)));
 
+        // ─── Ratkin ────────────────────────────────────────────────────────────────
+        /**
+         * Placed by Ratkin's Rat Tunnels ability. Indestructible flat marker, no
+         * collision.
+         */
+        public static final RegistrySupplier<Block> RAT_HOLE = BLOCKS.register("rat_hole",
+                        () -> new mc.sayda.creraces.block.RatHoleBlock());
+
         // ─── Mini Build System ─────────────────────────────────────────────────────
         // Always registered so MICRO_BLOCK is never null.
         // The runtime Mixin behavior is gated by CreRacesConfig.MINI_BUILD_ENABLED at

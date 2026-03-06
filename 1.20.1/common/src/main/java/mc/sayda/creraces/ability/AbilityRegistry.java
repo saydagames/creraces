@@ -30,6 +30,7 @@ public class AbilityRegistry {
     public static void clear() {
         ABILITIES.clear();
         REMOTE_DOCS.clear();
+        REMOTE_FULL_DOCS.clear();
     }
 
     public static void registerRemoteDoc(ResourceLocation id, mc.sayda.creraces.util.RemoteDocConfig config) {

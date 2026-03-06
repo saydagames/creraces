@@ -13,11 +13,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nonnull;
 
@@ -144,18 +141,30 @@ public class RaceOverlay {
         if (abilityId != null && !abilityId.toString().equals("creraces:none")) {
             Ability ability = AbilityRegistry.get(abilityId);
             if (ability != null) {
-                // Draw Ability Icon using item render (icon stores an item ID like
-                // minecraft:feather)
-                Item iconItem = BuiltInRegistries.ITEM.get(ability.icon());
-                graphics.renderItem(new ItemStack(iconItem), x + 1, y + 1);
+                // Unified icon rendering: handles both item IDs and texture paths
+                mc.sayda.creraces.client.AbilityIconRenderer.render(graphics, ability.icon(), x + 1, y + 1, 16);
 
                 // Draw Cooldown
                 int cooldown = vars.getCooldown(abilityId);
                 if (cooldown > 0) {
-                    float cooldownPercent = (float) cooldown / (float) ability.cooldown();
+                    // Clamp percent between 0 and 1 regardless of cooldown definition
+                    float cooldownPercent = ability.cooldown() > 0
+                            ? Math.min(1f, (float) cooldown / (float) ability.cooldown())
+                            : 1f;
                     graphics.fill(x + 1, y + 1 + (int) (16 * (1 - cooldownPercent)), x + 17, y + 17, 0x80000000);
-                    String k = String.valueOf(cooldown / 20);
+                    String k = String.valueOf(Math.max(1, cooldown / 20));
                     graphics.drawCenteredString(Minecraft.getInstance().font, k, x + 9, y + 5, 0xFFFFFF);
+                }
+
+                // Draw "Unusable" or "Off" indication (Borders)
+                boolean usable = isUsable(Minecraft.getInstance().player, vars, ability);
+                boolean active = vars.getAbilityState(abilityId) > 0;
+
+                if (!usable) {
+                    drawBorder(graphics, x - 1, y - 1, 20, 20, 0x88FF0000); // Translucent Red
+                } else if (!active && (ability.type() == mc.sayda.creraces.ability.AbilityType.INNATE
+                        || ability.type() == mc.sayda.creraces.ability.AbilityType.PASSIVE)) {
+                    drawBorder(graphics, x - 1, y - 1, 20, 20, 0x88AAAAAA); // Translucent Gray
                 }
             }
         }
@@ -163,5 +172,47 @@ public class RaceOverlay {
         // Draw Keybind Label
         graphics.drawCenteredString(Minecraft.getInstance().font,
                 Component.translatable("gui.creraces.hud.slot." + slot.name().toLowerCase()), x + 9, y + 20, 0xAAAAAA);
+    }
+
+    private static void drawBorder(GuiGraphics graphics, int x, int y, int width, int height, int color) {
+        // Top
+        graphics.fill(x, y, x + width, y + 1, color);
+        // Bottom
+        graphics.fill(x, y + height - 1, x + width, y + height, color);
+        // Left
+        graphics.fill(x, y + 1, x + 1, y + height - 1, color);
+        // Right
+        graphics.fill(x + width - 1, y + 1, x + width, y + height - 1, color);
+    }
+
+    private static boolean isUsable(net.minecraft.client.player.LocalPlayer player,
+            mc.sayda.creraces.capability.IPlayerVariables vars, Ability ability) {
+        if (ability.cost() <= 0)
+            return true;
+
+        ResourceLocation raceId = vars.getRace();
+        Race race = RaceRegistry.get(raceId);
+        if (race == null)
+            return true;
+
+        double currentRes = 0;
+        switch (race.resourceType()) {
+            case MANA:
+                currentRes = vars.getMana();
+                break;
+            case RAGE:
+                currentRes = vars.getRage();
+                break;
+            case ENERGY:
+                currentRes = vars.getEnergy();
+                break;
+            case GRIT:
+                currentRes = vars.getGrit();
+                break;
+            default:
+                return true;
+        }
+
+        return currentRes >= ability.cost();
     }
 }

@@ -1,7 +1,7 @@
 package mc.sayda.creraces.engine.actions;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
+
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.util.GsonHelper;
@@ -17,21 +17,16 @@ public class AOEAction implements ActionRegistry.RaceAction {
     public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "aoe");
 
     private final mc.sayda.creraces.engine.ScalingValue radius;
-    private final boolean targetPlayers;
-    private final boolean targetEnemies;
-    private final boolean excludeCaster;
+    private final mc.sayda.creraces.engine.TargetFilter targets;
     private final String requiredEffect;
     private final String notEffect;
     private final List<ActionRegistry.RaceAction> actions;
 
-    public AOEAction(mc.sayda.creraces.engine.ScalingValue radius, boolean targetPlayers, boolean targetEnemies,
-            boolean excludeCaster,
+    public AOEAction(mc.sayda.creraces.engine.ScalingValue radius, mc.sayda.creraces.engine.TargetFilter targets,
             String requiredEffect,
             String notEffect, List<ActionRegistry.RaceAction> actions) {
         this.radius = radius;
-        this.targetPlayers = targetPlayers;
-        this.targetEnemies = targetEnemies;
-        this.excludeCaster = excludeCaster;
+        this.targets = targets;
         this.requiredEffect = requiredEffect;
         this.notEffect = notEffect;
         this.actions = actions;
@@ -50,15 +45,11 @@ public class AOEAction implements ActionRegistry.RaceAction {
         if (maxRadius > 0)
             r = Math.min(r, maxRadius);
         AABB area = player.getBoundingBox().inflate(r);
-        List<LivingEntity> targets = player.level().getEntitiesOfClass(
+        List<LivingEntity> hitTargets = player.level().getEntitiesOfClass(
                 LivingEntity.class,
                 area,
                 e -> {
-                    if (excludeCaster && e == player)
-                        return false;
-                    if (!targetPlayers && e instanceof Player)
-                        return false;
-                    if (!targetEnemies && !(e instanceof Player))
+                    if (!this.targets.isValid(e, player))
                         return false;
 
                     if (requiredEffect != null && !requiredEffect.isEmpty()) {
@@ -79,14 +70,14 @@ public class AOEAction implements ActionRegistry.RaceAction {
                             return false;
                     }
 
-                    return mc.sayda.creraces.team.RaceTeamManager.canHurt(e, player);
+                    return true;
                 });
 
-        if (targets.isEmpty()) {
+        if (hitTargets.isEmpty()) {
             return true;
         }
 
-        for (LivingEntity e : targets) {
+        for (LivingEntity e : hitTargets) {
             for (ActionRegistry.RaceAction action : actions) {
                 if (!action.execute(player, e, slot, interactionPos)) {
                     return false;
@@ -101,9 +92,8 @@ public class AOEAction implements ActionRegistry.RaceAction {
         ActionRegistry.register(ID, json -> {
             mc.sayda.creraces.engine.ScalingValue radius = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
                     "radius", 5.0);
-            boolean targetPlayers = GsonHelper.getAsBoolean(json, "target_players", true);
-            boolean targetEnemies = GsonHelper.getAsBoolean(json, "target_enemies", true);
-            boolean excludeCaster = GsonHelper.getAsBoolean(json, "exclude_caster", true);
+            mc.sayda.creraces.engine.TargetFilter targets = mc.sayda.creraces.engine.TargetFilter.fromJson(json,
+                    "targets");
             String requiredEffect = GsonHelper.getAsString(json, "required_effect", "");
             String notEffect = GsonHelper.getAsString(json, "not_effect", "");
             List<ActionRegistry.RaceAction> actions = new ArrayList<>();
@@ -113,8 +103,7 @@ public class AOEAction implements ActionRegistry.RaceAction {
                     actions.add(ActionRegistry.fromJson(array.get(i).getAsJsonObject()));
                 }
             }
-            return new AOEAction(radius, targetPlayers, targetEnemies, excludeCaster, requiredEffect, notEffect,
-                    actions);
+            return new AOEAction(radius, targets, requiredEffect, notEffect, actions);
         });
     }
 }

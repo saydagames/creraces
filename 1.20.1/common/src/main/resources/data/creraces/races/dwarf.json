@@ -1,0 +1,70 @@
+{
+    "name": "race.creraces.dwarf.name",
+    "legacy_id": 2.0,
+    "scale": {
+        "base": 1.0,
+        "height": 0.86,
+        "width": 0.86
+    },
+    "description": "race.creraces.dwarf.description",
+    "icon": "creraces:textures/screens/dwarf_icon.png",
+    "splash": "creraces:textures/screens/dwarf_splash.png",
+    "portrait": "creraces:textures/screens/dwarf_portrait.png",
+    "name_texture": "creraces:textures/screens/dwarf_text.png",
+    "resource_type": "ENERGY",
+    "max_resource": 100,
+    "tier": "creraces:common",
+    "difficulty": 1,
+    "passives": {
+        "negate_effects": [
+            "minecraft:mining_fatigue",
+            "minecraft:levitation"
+        ]
+    },
+    "starting_abilities": [
+        "creraces:unstoppable_charge",
+        "creraces:mini_build"
+    ],
+    "traits": [
+        {
+            "type": "creraces:attribute_modifier",
+            "attribute": "minecraft:generic.armor",
+            "value": {
+                "base": 2.0,
+                "scales_with": "ad",
+                "factor": 0.01
+            },
+            "operation": "addition"
+        },
+        {
+            "type": "creraces:attribute_modifier",
+            "attribute": "minecraft:generic.attack_knockback",
+            "value": {
+                "base": 2.0
+            },
+            "operation": "addition"
+        },
+        {
+            "type": "creraces:on_item_pickup",
+            "condition": {
+                "type": "creraces:sneaking",
+                "value": true
+            },
+            "actions": [
+                {
+                    "type": "creraces:smelt_item"
+                }
+            ]
+        }
+    ],
+    "remote_description": {
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "fallback": "race.creraces.dwarf.description",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Dwarf&prop=wikitext"
+    },
+    "remote_passive": {
+        "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "fallback": "No passive documentation found on wiki.",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Dwarf&prop=wikitext"
+    }
+}

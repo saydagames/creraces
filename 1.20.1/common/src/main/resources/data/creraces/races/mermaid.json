@@ -15,8 +15,41 @@
     "passives": {
         "can_breathe_underwater": true,
         "can_breathe_on_land": false,
-        "liquid_speed_multiplier": 1.5
+        "water_vision": true,
+        "liquid_speed_multiplier": 1.5,
+        "negate_effects": [
+            "minecraft:poison"
+        ]
     },
+    "starting_abilities": [
+        "creraces:tidal_wave",
+        "creraces:spicy_whirlpool"
+    ],
+    "traits": [
+        {
+            "type": "creraces:aquatic_movement",
+            "neutral_buoyancy": true
+        },
+        {
+            "type": "creraces:on_tick",
+            "interval": 100,
+            "condition": {
+                "type": "creraces:not",
+                "condition": {
+                    "type": "creraces:in_water"
+                }
+            },
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:weakness",
+                    "duration": 200,
+                    "amplifier": 0,
+                    "visible": true
+                }
+            ]
+        }
+    ],
     "portrait": "creraces:textures/screens/mermaid_portrait.png",
     "name_texture": "creraces:textures/screens/mermaid_text.png",
     "remote_description": {

@@ -1,0 +1,48 @@
+{
+    "name":  "ability.creraces.wild_hunt.name",
+    "description":  "ability.creraces.wild_hunt.description",
+    "type":  "ACTIVE",
+    "icon":  "minecraft:textures/item/bone.png",
+    "cooldown":  0,
+    "cost":  0,
+    "race":  [
+                 "creraces:lycan"
+             ],
+    "actions":  [
+                    {
+                        "type":  "creraces:apply_effect",
+                        "effect":  "creraces:true_invisibility",
+                        "duration":  300,
+                        "amplifier":  0,
+                        "visible":  false
+                    },
+                    {
+                        "type":  "creraces:apply_effect",
+                        "effect":  "minecraft:speed",
+                        "duration":  300,
+                        "amplifier":  1,
+                        "visible":  true
+                    },
+                    {
+                        "type":  "creraces:set_state",
+                        "ability":  "creraces:wild_hunt",
+                        "value":  1
+                    },
+                    {
+                        "type":  "creraces:play_sound",
+                        "sound":  "minecraft:entity.wolf.howl",
+                        "volume":  1.0,
+                        "pitch":  0.8
+                    }
+                ],
+    "remote_description": {
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Wild_Hunt&prop=wikitext",
+        "fallback": "ability.creraces.wild_hunt.description"
+    },
+    "remote_full_description": {
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Wild_Hunt&prop=wikitext",
+        "fallback": "ability.creraces.wild_hunt.description"
+    }
+}

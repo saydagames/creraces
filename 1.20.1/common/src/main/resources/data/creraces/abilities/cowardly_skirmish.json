@@ -23,7 +23,9 @@
                     "amplifier": 2,
                     "duration": 120,
                     "radius": 10.0,
-                    "target_enemies": true
+                    "targets": [
+                        "enemies"
+                    ]
                 },
                 {
                     "type": "creraces:apply_effect",
@@ -31,7 +33,9 @@
                     "amplifier": 2,
                     "duration": 120,
                     "radius": 10.0,
-                    "target_enemies": true
+                    "targets": [
+                        "enemies"
+                    ]
                 },
                 {
                     "type": "creraces:set_state",
@@ -89,13 +93,13 @@
         }
     ],
     "remote_description": {
-        "selector": "",
-        "fallback": "ability.creraces.cowardly_skirmish.description",
-        "source": "https://creraces.wiki.gg/api.php?action=cargoquery&format=json&tables=Abilities&fields=Description&where=Name=\u0027Cowardly_Skirmish\u0027"
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Cowardly_Skirmish&prop=wikitext",
+        "fallback": "ability.creraces.cowardly_skirmish.description"
     },
     "remote_full_description": {
-        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
-        "fallback": "ability.creraces.cowardly_skirmish.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Cowardly_Skirmish&prop=wikitext"
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Cowardly_Skirmish&prop=wikitext",
+        "fallback": "ability.creraces.cowardly_skirmish.description"
     }
 }

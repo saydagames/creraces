@@ -1,0 +1,56 @@
+{
+    "name": "ability.creraces.searing_charge.name",
+    "description": "ability.creraces.searing_charge.description",
+    "type": "ACTIVE",
+    "icon": "minecraft:textures/item/blaze_rod.png",
+    "cooldown": 40,
+    "cost": 0,
+    "race": [
+        "creraces:oread"
+    ],
+    "actions": [
+        {
+            "type": "creraces:dash",
+            "power": 1.5,
+            "direction": "forward"
+        },
+        {
+            "type": "creraces:aoe",
+            "radius": 2.5,
+            "source": "caster",
+            "actions": [
+                {
+                    "type": "creraces:damage",
+                    "amount": {
+                        "base": 4.0,
+                        "scales_with": "ad",
+                        "factor": 0.2
+                    },
+                    "knockback": 1.2,
+                    "damage_type": "minecraft:player_attack"
+                }
+            ]
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:entity.blaze.shoot",
+            "volume": 0.8,
+            "pitch": 1.2
+        },
+        {
+            "type": "creraces:spawn_particles",
+            "particle": "minecraft:flame",
+            "count": 10
+        }
+    ],
+    "remote_description": {
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Searing_Charge&prop=wikitext",
+        "fallback": "ability.creraces.searing_charge.description"
+    },
+    "remote_full_description": {
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Searing_Charge&prop=wikitext",
+        "fallback": "ability.creraces.searing_charge.description"
+    }
+}

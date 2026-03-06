@@ -1,0 +1,120 @@
+{
+    "name": "ability.creraces.tectonic_smash.name",
+    "description": "ability.creraces.tectonic_smash.description",
+    "type": "ACTIVE",
+    "icon": "minecraft:textures/item/iron_boots.png",
+    "cooldown": 0,
+    "cost": 0,
+    "race": [
+        "creraces:giant"
+    ],
+    "actions": [
+        {
+            "type": "creraces:conditional",
+            "condition": {
+                "type": "creraces:state_equals",
+                "state": "creraces:tectonic_smash",
+                "value": 4
+            },
+            "if_true": [
+                {
+                    "type": "creraces:aoe",
+                    "radius": 4.0,
+                    "targets": [
+                        "enemies"
+                    ],
+                    "actions": [
+                        {
+                            "type": "creraces:damage",
+                            "amount": {
+                                "base": 4.0,
+                                "scales_with": "var:grit",
+                                "factor": 0.08
+                            },
+                            "damage_type": "minecraft:player_attack"
+                        },
+                        {
+                            "type": "creraces:apply_velocity",
+                            "y": 1.2,
+                            "relative": false
+                        }
+                    ]
+                },
+                {
+                    "type": "creraces:modify_resource",
+                    "resource": "grit",
+                    "operation": "set",
+                    "value": 0
+                },
+                {
+                    "type": "creraces:set_state",
+                    "ability": "creraces:tectonic_smash",
+                    "value": 0
+                },
+                {
+                    "type": "creraces:set_cooldown",
+                    "ability": "creraces:tectonic_smash",
+                    "value": 200
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:entity.generic.explode",
+                    "volume": 1.5,
+                    "pitch": 0.5
+                },
+                {
+                    "type": "creraces:spawn_particles",
+                    "particle": "minecraft:explosion",
+                    "count": 10
+                }
+            ],
+            "if_false": [
+                {
+                    "type": "creraces:aoe",
+                    "radius": 4.0,
+                    "targets": [
+                        "enemies"
+                    ],
+                    "actions": [
+                        {
+                            "type": "creraces:damage",
+                            "amount": {
+                                "base": 2.0,
+                                "scales_with": "var:grit",
+                                "factor": 0.06
+                            },
+                            "damage_type": "minecraft:player_attack"
+                        },
+                        {
+                            "type": "creraces:apply_velocity",
+                            "y": 0.8,
+                            "relative": false
+                        }
+                    ]
+                },
+                {
+                    "type": "creraces:modify_state",
+                    "ability": "creraces:tectonic_smash",
+                    "operation": "add",
+                    "value": 1
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:entity.iron_golem.attack",
+                    "volume": 1.0,
+                    "pitch": 0.7
+                }
+            ]
+        }
+    ],
+    "remote_description": {
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Tectonic_Smash&prop=wikitext",
+        "fallback": "ability.creraces.tectonic_smash.description"
+    },
+    "remote_full_description": {
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Tectonic_Smash&prop=wikitext",
+        "fallback": "ability.creraces.tectonic_smash.description"
+    }
+}

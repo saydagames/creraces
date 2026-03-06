@@ -18,7 +18,8 @@ public record Ability(
         int cost,
         boolean persistent,
         List<ResourceLocation> allowedRaces,
-        List<mc.sayda.creraces.engine.ActionRegistry.RaceAction> onActivate) {
+        List<mc.sayda.creraces.engine.ActionRegistry.RaceAction> onActivate,
+        List<mc.sayda.creraces.engine.ActionRegistry.RaceAction> onDeactivate) {
     public String getTranslationKey() {
         return "ability." + id.getNamespace() + "." + id.getPath();
     }

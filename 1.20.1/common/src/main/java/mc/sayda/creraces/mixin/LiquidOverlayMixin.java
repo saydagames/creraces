@@ -40,7 +40,8 @@ public class LiquidOverlayMixin {
             boolean inWater = player.isEyeInFluid(net.minecraft.tags.FluidTags.WATER);
             boolean inLava = player.isEyeInFluid(net.minecraft.tags.FluidTags.LAVA);
 
-            if ((inWater && passives.waterVision()) || (inLava && passives.lavaVision())) {
+            if ((inWater && (passives.waterVision() || passives.unaffectedByWater())) ||
+                    (inLava && (passives.lavaVision() || passives.unaffectedByLava()))) {
                 // Cancel the whole overlay pass — only for liquid.
                 // Fire overlay (isOnFire) is handled in the same method; we only intercept
                 // here if the player is actually submerged, so fire still shows for combat.

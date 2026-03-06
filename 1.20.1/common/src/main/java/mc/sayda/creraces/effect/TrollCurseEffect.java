@@ -1,0 +1,51 @@
+package mc.sayda.creraces.effect;
+
+import mc.sayda.creraces.capability.DataUtils;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectCategory;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.resources.ResourceLocation;
+
+import javax.annotation.Nonnull;
+
+/**
+ * Troll's Curse — applied by the Troll Pillar entity to nearby entities.
+ * <ul>
+ * <li>Troll-race players receive Speed I (friendly pulse).</li>
+ * <li>All other entities receive Slowness I + Weakness I.</li>
+ * </ul>
+ */
+public class TrollCurseEffect extends MobEffect {
+
+    public TrollCurseEffect() {
+        super(MobEffectCategory.HARMFUL, 0xFF5500); // dark orange
+    }
+
+    @Override
+    public void applyEffectTick(@Nonnull LivingEntity entity, int amplifier) {
+        if (entity.level().isClientSide())
+            return;
+
+        boolean isTroll = false;
+        if (entity instanceof Player player) {
+            isTroll = DataUtils.getVariables(player)
+                    .map(vars -> new ResourceLocation("creraces", "troll").equals(vars.getRace()))
+                    .orElse(false);
+        }
+
+        if (isTroll) {
+            entity.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 2, 0, false, false));
+        } else {
+            entity.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 2, 0, false, true));
+            entity.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 2, 0, false, false));
+        }
+    }
+
+    @Override
+    public boolean isDurationEffectTick(int duration, int amplifier) {
+        return true;
+    }
+}

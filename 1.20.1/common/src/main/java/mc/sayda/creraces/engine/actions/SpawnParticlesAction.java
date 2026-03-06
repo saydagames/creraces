@@ -12,6 +12,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 
+@SuppressWarnings("null")
 public class SpawnParticlesAction implements ActionRegistry.RaceAction {
 
     public interface ParticlePattern {
@@ -175,8 +176,27 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
 
             ResourceLocation loc = new ResourceLocation(particleId);
             ParticleType<?> type = BuiltInRegistries.PARTICLE_TYPE.get(loc);
-            if (!(type instanceof ParticleOptions options)) {
-                CreRaces.LOGGER.error("Invalid particle type for id {}: {}", particleId, type);
+
+            ParticleOptions options;
+            if (type instanceof ParticleOptions po) {
+                options = po;
+            } else if (type == net.minecraft.core.particles.ParticleTypes.BLOCK
+                    || type == net.minecraft.core.particles.ParticleTypes.FALLING_DUST) {
+                String blockId = GsonHelper.getAsString(json, "block", "minecraft:stone");
+                net.minecraft.world.level.block.Block block = BuiltInRegistries.BLOCK
+                        .get(new ResourceLocation(blockId));
+                @SuppressWarnings("unchecked")
+                net.minecraft.core.particles.ParticleType<net.minecraft.core.particles.BlockParticleOption> blockType = (net.minecraft.core.particles.ParticleType<net.minecraft.core.particles.BlockParticleOption>) type;
+                options = new net.minecraft.core.particles.BlockParticleOption(blockType, block.defaultBlockState());
+            } else if (type == net.minecraft.core.particles.ParticleTypes.ITEM) {
+                String itemId = GsonHelper.getAsString(json, "item", "minecraft:stone");
+                net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(new ResourceLocation(itemId));
+                @SuppressWarnings("unchecked")
+                net.minecraft.core.particles.ParticleType<net.minecraft.core.particles.ItemParticleOption> itemType = (net.minecraft.core.particles.ParticleType<net.minecraft.core.particles.ItemParticleOption>) type;
+                options = new net.minecraft.core.particles.ItemParticleOption(itemType,
+                        new net.minecraft.world.item.ItemStack(item));
+            } else {
+                CreRaces.LOGGER.error("Invalid or unsupported complex particle type for id {}: {}", particleId, type);
                 return null;
             }
 

@@ -16,11 +16,11 @@ public class TetherTrait implements TraitRegistry.RaceTrait {
     private final String targetTag; // e.g., "minecraft:skeletons"
     private final mc.sayda.creraces.engine.ScalingValue radius;
     private final List<ActionRegistry.RaceAction> actions;
-    private final int interval;
+    private final mc.sayda.creraces.engine.ScalingValue interval;
     private int timer = 0;
 
     public TetherTrait(String targetTag, mc.sayda.creraces.engine.ScalingValue radius,
-            List<ActionRegistry.RaceAction> actions, int interval) {
+            List<ActionRegistry.RaceAction> actions, mc.sayda.creraces.engine.ScalingValue interval) {
         this.targetTag = targetTag;
         this.radius = radius;
         this.actions = actions;
@@ -33,7 +33,7 @@ public class TetherTrait implements TraitRegistry.RaceTrait {
             return;
 
         timer++;
-        if (timer < interval)
+        if (timer < interval.evaluate(player))
             return;
         timer = 0;
 
@@ -65,7 +65,8 @@ public class TetherTrait implements TraitRegistry.RaceTrait {
             String target = json.has("target") ? json.get("target").getAsString() : "minecraft:player";
             mc.sayda.creraces.engine.ScalingValue radius = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
                     "radius", 10.0);
-            int interval = json.has("interval") ? json.get("interval").getAsInt() : 20;
+            mc.sayda.creraces.engine.ScalingValue interval = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
+                    "interval", 20.0);
             List<ActionRegistry.RaceAction> actions = new ArrayList<>();
             if (json.has("actions")) {
                 JsonArray array = json.getAsJsonArray("actions");

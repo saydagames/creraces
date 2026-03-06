@@ -25,6 +25,7 @@ public class MicroBlockWhitelist {
                 || block instanceof TrapDoorBlock
                 || block instanceof FenceGateBlock
                 || block instanceof ChestBlock
+                || block instanceof EnderChestBlock
                 || block instanceof JukeboxBlock;
     }
 

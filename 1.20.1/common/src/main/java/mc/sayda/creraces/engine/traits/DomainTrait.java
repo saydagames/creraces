@@ -8,6 +8,7 @@ import mc.sayda.creraces.engine.TraitRegistry;
 import mc.sayda.creraces.engine.condition.Condition;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
+import javax.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,13 +20,14 @@ public class DomainTrait implements TraitRegistry.RaceTrait {
 
     private final mc.sayda.creraces.engine.ScalingValue radius;
     private final List<ActionRegistry.RaceAction> actions;
+    @Nullable
     private final Condition condition;
-    private final int interval;
+    private final mc.sayda.creraces.engine.ScalingValue interval;
     // Per-player timer (trait is a race-level singleton)
     private final Map<UUID, Integer> timers = new HashMap<>();
 
     public DomainTrait(mc.sayda.creraces.engine.ScalingValue radius, List<ActionRegistry.RaceAction> actions,
-            Condition condition, int interval) {
+            Condition condition, mc.sayda.creraces.engine.ScalingValue interval) {
         this.radius = radius;
         this.actions = actions;
         this.condition = condition;
@@ -39,7 +41,7 @@ public class DomainTrait implements TraitRegistry.RaceTrait {
 
         int t = timers.getOrDefault(player.getUUID(), 0) + 1;
         timers.put(player.getUUID(), t);
-        if (t < interval)
+        if (t < interval.evaluate(player))
             return;
         timers.put(player.getUUID(), 0);
 
@@ -63,8 +65,9 @@ public class DomainTrait implements TraitRegistry.RaceTrait {
     public static void register() {
         TraitRegistry.register(new ResourceLocation(CreRaces.MODID, "domain"), json -> {
             mc.sayda.creraces.engine.ScalingValue radius = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
-                    "radius", 15.0);
-            int interval = json.has("interval") ? json.get("interval").getAsInt() : 20;
+                    "radius", 10.0);
+            mc.sayda.creraces.engine.ScalingValue interval = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
+                    "interval", 20.0);
             List<ActionRegistry.RaceAction> actions = new ArrayList<>();
             if (json.has("actions")) {
                 JsonArray array = json.getAsJsonArray("actions");

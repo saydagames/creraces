@@ -25,6 +25,16 @@ public class CreRacesConfig {
     // Mini Build System — disabled by default for compatibility
     public static Supplier<Boolean> MINI_BUILD_ENABLED = () -> false;
     public static Supplier<Boolean> MINI_FURNACE_ENABLED = () -> true;
+    public static Supplier<Integer> MINI_MODEL_CACHE_SIZE = () -> 256;
+    public static Supplier<Integer> MINI_DUMMY_CACHE_SIZE = () -> 64;
+    public static Supplier<Double> MINI_CRAFTING_DISTANCE_SQR = () -> 64.0;
+    public static Supplier<Long> MINI_PLACEMENT_SPAM_THRESHOLD_MS = () -> 50L;
+    public static Supplier<Float> POISON_EMITTER_RADIUS = () -> 5.5f;
+    public static Supplier<Integer> POISON_EMITTER_PULSE_INTERVAL = () -> 120;
+    public static Supplier<Integer> POISON_EMITTER_LIFETIME_TICKS = () -> 600;
+    public static Supplier<Integer> TROLL_PILLAR_LIFETIME_TICKS = () -> 1200;
+    public static Supplier<Float> TROLL_PILLAR_CURSE_RADIUS = () -> 5.0f;
+    public static Supplier<Integer> TROLL_PILLAR_CURSE_DURATION = () -> 120;
 
     // Engine Safety Caps
     // 0 = disabled (no cap applied). These protect against extremely large

@@ -44,6 +44,26 @@ public class AquaticMovementHandler {
         }
     }
 
+    public static void buoyancyTick(LivingEntity entity) {
+        if (entity instanceof Player player) {
+            DataUtils.getVariables(player).ifPresent(vars -> {
+                Race race = RaceRegistry.get(vars.getRace());
+                if (race != null) {
+                    mc.sayda.creraces.engine.traits.AquaticMovementTrait aquaticTrait = null;
+                    if (race.traits() != null) {
+                        for (mc.sayda.creraces.engine.TraitRegistry.RaceTrait trait : race.traits()) {
+                            if (trait instanceof mc.sayda.creraces.engine.traits.AquaticMovementTrait at) {
+                                aquaticTrait = at;
+                                break;
+                            }
+                        }
+                    }
+                    handleBuoyancy(player, aquaticTrait);
+                }
+            });
+        }
+    }
+
     private static void handleSpeed(Player player, Race race,
             @javax.annotation.Nullable mc.sayda.creraces.engine.traits.AquaticMovementTrait trait) {
         @SuppressWarnings("null") // Attributes.MOVEMENT_SPEED is a DeferredHolder — non-null at runtime
@@ -58,7 +78,16 @@ public class AquaticMovementHandler {
             multiplier *= trait.getSpeed().evaluate(player);
         }
 
-        boolean inLiquid = player.isInWater() || player.isInLava();
+        boolean inWater = player.isInWater();
+        boolean inLava = player.isInLava();
+
+        // unaffectedByWater / unaffectedByLava: treat liquid as air for movement
+        if (inWater && passives.unaffectedByWater())
+            multiplier = 1.0;
+        if (inLava && passives.unaffectedByLava())
+            multiplier = 1.0;
+
+        boolean inLiquid = inWater || inLava;
         @SuppressWarnings("null")
         boolean hasMod = speedAttr.getModifier(SWIM_SPEED_MODIFIER_UUID) != null;
 
@@ -86,20 +115,24 @@ public class AquaticMovementHandler {
         if (trait == null || !trait.isNeutralBuoyancy() || !player.isInWater())
             return;
 
-        // Note: This logic needs to run on both sides for smooth movement
         net.minecraft.world.phys.Vec3 vel = player.getDeltaMovement();
 
-        // If not rising or falling via input
         boolean rising = ((mc.sayda.creraces.mixin.LivingEntityAccessor) player).isJumping();
-        boolean falling = player.isShiftKeyDown();
+        boolean sinking = player.isShiftKeyDown();
 
-        if (!rising && !falling) {
-            // Zero out downward velocity to counteract water gravity
+        if (!rising && !sinking) {
+            // Clamp Y to 0: prevents both sinking (negative Y from gravity)
+            // and unwanted upward drift. The player floats in place.
+            player.setDeltaMovement(vel.x, 0.0, vel.z);
+            player.resetFallDistance();
+        } else if (rising) {
+            // Rising: allow positive Y velocity up to a gentle max
             if (vel.y < 0) {
-                player.setDeltaMovement(vel.x, 0, vel.z);
-                player.resetFallDistance();
+                player.setDeltaMovement(vel.x, 0.0, vel.z);
             }
+            player.resetFallDistance();
         }
+        // sinking: leave velocity unchanged so Sneak naturally pulls them down
     }
 
     private static void handleVision(Player player, Race race) {
@@ -128,6 +161,16 @@ public class AquaticMovementHandler {
             if (fireResistance != null) {
                 player.addEffect(new MobEffectInstance(fireResistance, 205, 0, false, false, false));
             }
+        }
+
+        // unaffectedByLava: also grant Night Vision + Fire Resistance while in lava
+        if (passives.unaffectedByLava() && player.isInLava()) {
+            MobEffect nightVision = MobEffects.NIGHT_VISION;
+            MobEffect fireResistance = MobEffects.FIRE_RESISTANCE;
+            if (nightVision != null)
+                player.addEffect(new MobEffectInstance(nightVision, 205, 0, false, false, false));
+            if (fireResistance != null)
+                player.addEffect(new MobEffectInstance(fireResistance, 205, 0, false, false, false));
         }
     }
 }

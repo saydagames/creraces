@@ -41,7 +41,6 @@ public class PlayerVariables implements IPlayerVariables {
     private boolean morphed = false;
     private UUID teamId = null;
     private String teamName = "";
-    private double resourceTimer = 0.0;
     private boolean abilityActive = false;
     private ResourceLocation activeAbility = null;
     private int activeAbilityDuration = 0;
@@ -198,15 +197,9 @@ public class PlayerVariables implements IPlayerVariables {
         this.passiveCooldown = ticks;
     }
 
-    @Override
-    public double getResourceTimer() {
-        return resourceTimer;
-    }
-
-    @Override
-    public void setResourceTimer(double ticks) {
-        this.resourceTimer = ticks;
-    }
+    // getResourceTimer / setResourceTimer removed from interface.
+    // Field retained only for save-file backward-compat (loaded from disk, never
+    // sent over network).
 
     @Override
     public double getStacks() {
@@ -240,12 +233,6 @@ public class PlayerVariables implements IPlayerVariables {
     public void sakuyaTimeLeap() {
         if (passiveCooldown > 0)
             passiveCooldown--;
-        if (resourceTimer > 0)
-            resourceTimer--;
-
-        // slotStates (Ability States) are now exclusively managed by
-        // ResourceTicker/Executors
-        // to avoid conflicts with toggle values (1, 2) vs timers.
 
         for (ResourceLocation id : new HashSet<>(cooldowns.keySet())) {
             cooldowns.computeIfPresent(id, (k, v) -> {
@@ -311,7 +298,6 @@ public class PlayerVariables implements IPlayerVariables {
         this.grit = 0;
         this.souls = 0;
         this.passiveCooldown = 0;
-        this.resourceTimer = 0;
         this.stacks = 0;
         this.cooldowns.clear();
         this.unlockedAbilities.clear();
@@ -346,9 +332,13 @@ public class PlayerVariables implements IPlayerVariables {
         this.grit = 0;
         this.souls = 0;
         this.stacks = 0;
-        this.resourceTimer = 0;
         this.passiveCooldown = 0;
-        this.cooldowns.clear();
+
+        // Clear non-persistent cooldowns
+        this.cooldowns.entrySet().removeIf(entry -> {
+            mc.sayda.creraces.ability.Ability ability = mc.sayda.creraces.ability.AbilityRegistry.get(entry.getKey());
+            return ability == null || !ability.persistent();
+        });
 
         // Clear non-persistent ability states
         abilityStates.entrySet().removeIf(entry -> {
@@ -604,18 +594,12 @@ public class PlayerVariables implements IPlayerVariables {
         tag.putDouble("energy", energy);
         tag.putDouble("grit", grit);
         tag.putDouble("souls", souls);
-        tag.putDouble("passiveCooldown", passiveCooldown);
-        tag.putDouble("resourceTimer", resourceTimer);
-        tag.putDouble("stacks", stacks);
 
-        ListTag cooldownList = new ListTag();
-        cooldowns.forEach((id, ticks) -> {
-            CompoundTag c = new CompoundTag();
-            c.putString("id", Objects.requireNonNull(id.toString()));
-            c.putInt("ticks", ticks);
-            cooldownList.add(c);
-        });
-        tag.put("cooldowns", cooldownList);
+        // Cooldowns ARE included in every sync so the HUD overlay counts down
+        // correctly.
+        CompoundTag cooldownsTag = new CompoundTag();
+        cooldowns.forEach((id, val) -> cooldownsTag.putInt(Objects.requireNonNull(id.toString()), val));
+        tag.put("cooldowns", cooldownsTag);
 
         ListTag unlockedList = new ListTag();
         unlockedAbilities.forEach(
@@ -651,8 +635,19 @@ public class PlayerVariables implements IPlayerVariables {
         tag.putString("returnDim", Objects.requireNonNull(returnDim));
         tag.putBoolean("isInSpiritRealm", isInSpiritRealm);
         tag.putBoolean("smallBuild", smallBuild);
+        tag.putBoolean("abilityActive", abilityActive);
+        if (activeAbility != null) {
+            tag.putString("activeAbility", activeAbility.toString());
+        }
+        tag.putInt("activeAbilityDuration", activeAbilityDuration);
+        tag.putDouble("activeAbilityDrain", activeAbilityDrain);
 
         return tag;
+    }
+
+    @Override
+    public CompoundTag serialize(boolean fullSync) {
+        return serialize();
     }
 
     @Override
@@ -674,6 +669,8 @@ public class PlayerVariables implements IPlayerVariables {
             this.cr = tag.getDouble("cr");
         if (tag.contains("coins"))
             this.coins = tag.getDouble("coins");
+        // Resources — directly assign server-authoritative values.
+        // They are only sent on full syncs (join, respawn, cast).
         if (tag.contains("mana"))
             this.mana = tag.getDouble("mana");
         if (tag.contains("rage"))
@@ -684,21 +681,12 @@ public class PlayerVariables implements IPlayerVariables {
             this.grit = tag.getDouble("grit");
         if (tag.contains("souls"))
             this.souls = tag.getDouble("souls");
-        if (tag.contains("passiveCooldown"))
-            this.passiveCooldown = tag.getDouble("passiveCooldown");
-        if (tag.contains("resourceTimer"))
-            this.resourceTimer = tag.getDouble("resourceTimer");
-        if (tag.contains("stacks"))
-            this.stacks = tag.getDouble("stacks");
-        else if (tag.contains("powerStacks")) // Backwards compatibility
-            this.stacks = tag.getDouble("powerStacks");
 
-        this.cooldowns.clear();
-        if (tag.contains("cooldowns", Tag.TAG_LIST)) {
-            ListTag list = tag.getList("cooldowns", Tag.TAG_COMPOUND);
-            for (int i = 0; i < list.size(); i++) {
-                CompoundTag c = list.getCompound(i);
-                this.cooldowns.put(new ResourceLocation(Objects.requireNonNull(c.getString("id"))), c.getInt("ticks"));
+        if (tag.contains("cooldowns", Tag.TAG_COMPOUND)) {
+            this.cooldowns.clear();
+            CompoundTag cooldownsTag = tag.getCompound("cooldowns");
+            for (String key : cooldownsTag.getAllKeys()) {
+                this.cooldowns.put(new ResourceLocation(key), cooldownsTag.getInt(key));
             }
         }
 
@@ -764,5 +752,13 @@ public class PlayerVariables implements IPlayerVariables {
             this.isInSpiritRealm = tag.getBoolean("isInSpiritRealm");
         if (tag.contains("smallBuild"))
             this.smallBuild = tag.getBoolean("smallBuild");
+        if (tag.contains("abilityActive"))
+            this.abilityActive = tag.getBoolean("abilityActive");
+        if (tag.contains("activeAbility"))
+            this.activeAbility = new ResourceLocation(tag.getString("activeAbility"));
+        if (tag.contains("activeAbilityDuration"))
+            this.activeAbilityDuration = tag.getInt("activeAbilityDuration");
+        if (tag.contains("activeAbilityDrain"))
+            this.activeAbilityDrain = tag.getDouble("activeAbilityDrain");
     }
 }

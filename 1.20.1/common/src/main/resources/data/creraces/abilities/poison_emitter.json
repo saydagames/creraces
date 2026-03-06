@@ -1,0 +1,64 @@
+{
+    "name": "ability.creraces.poison_emitter.name",
+    "description": "ability.creraces.poison_emitter.description",
+    "icon": "minecraft:textures/item/poisonous_potato.png",
+    "category": "UTILITY",
+    "cooldown": 600,
+    "actions": [
+        {
+            "type": "creraces:conditional",
+            "condition": {
+                "type": "creraces:sneaking"
+            },
+            "if_true": [
+                {
+                    "type": "creraces:summon_entity",
+                    "entity": "creraces:poison_emitter_mobile",
+                    "count": 1,
+                    "tame": true
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:entity.evoker.prepare_summon",
+                    "volume": 1.0,
+                    "pitch": 0.8
+                }
+            ],
+            "if_false": [
+                {
+                    "type": "creraces:summon_entity",
+                    "entity": "creraces:poison_emitter",
+                    "count": 1,
+                    "tame": true
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:entity.evoker.prepare_summon",
+                    "volume": 1.0,
+                    "pitch": 1.2
+                }
+            ]
+        },
+        {
+            "type": "creraces:spawn_particles",
+            "particle": "minecraft:entity_effect",
+            "count": 20,
+            "speed": 0.1,
+            "color": {
+                "r": 0.2,
+                "g": 0.8,
+                "b": 0.2
+            }
+        }
+    ],
+    "remote_description": {
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Poison_Emitter&prop=wikitext",
+        "fallback": "ability.creraces.poison_emitter.description"
+    },
+    "remote_full_description": {
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Poison_Emitter&prop=wikitext",
+        "fallback": "ability.creraces.poison_emitter.description"
+    }
+}

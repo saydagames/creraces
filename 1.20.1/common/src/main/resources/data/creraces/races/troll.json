@@ -26,10 +26,188 @@
             "type": "creraces:permanent_effect",
             "effect": "minecraft:regeneration",
             "amplifier": 0,
-            "visible": false
+            "visible": false,
+            "condition": {
+                "type": "creraces:not",
+                "condition": {
+                    "type": "creraces:is_burning"
+                }
+            }
+        },
+        {
+            "type": "creraces:on_tick",
+            "interval": 20,
+            "condition": {
+                "type": "creraces:and",
+                "conditions": [
+                    {
+                        "type": "creraces:in_sunlight"
+                    },
+                    {
+                        "type": "creraces:not",
+                        "condition": {
+                            "type": "creraces:wearing_armor",
+                            "slot": "head"
+                        }
+                    }
+                ]
+            },
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "creraces:frozen",
+                    "duration": 40,
+                    "amplifier": 0,
+                    "visible": true
+                }
+            ]
+        },
+        {
+            "type": "creraces:on_tick",
+            "interval": 40,
+            "condition": {
+                "type": "creraces:is_burning"
+            },
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:slowness",
+                    "duration": 80,
+                    "amplifier": 0,
+                    "visible": true
+                },
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:weakness",
+                    "duration": 80,
+                    "amplifier": 1,
+                    "visible": true
+                }
+            ]
+        },
+        {
+            "type": "creraces:on_hit",
+            "condition": {
+                "type": "creraces:and",
+                "conditions": [
+                    {
+                        "type": "creraces:attack_charged"
+                    },
+                    {
+                        "type": "creraces:ability_state",
+                        "ability": "creraces:maul_mark",
+                        "value": 1.0
+                    }
+                ]
+            },
+            "actions": [
+                {
+                    "type": "creraces:heal",
+                    "amount": {
+                        "base": 0,
+                        "scales_with": "target_max_hp",
+                        "factor": 0.1
+                    }
+                },
+                {
+                    "type": "creraces:damage",
+                    "amount": {
+                        "base": 2.0,
+                        "scales_with": "target_max_hp",
+                        "factor": 0.02
+                    },
+                    "damage_type": "minecraft:player_attack"
+                },
+                {
+                    "type": "creraces:set_state",
+                    "ability": "creraces:maul_mark",
+                    "value": 0
+                },
+                {
+                    "type": "creraces:set_cooldown",
+                    "ability": "creraces:maul_mark",
+                    "value": 240
+                },
+                {
+                    "type": "creraces:spawn_particles",
+                    "particle": "minecraft:damage_indicator",
+                    "count": 5
+                }
+            ]
+        },
+        {
+            "type": "creraces:on_hit",
+            "condition": {
+                "type": "creraces:and",
+                "conditions": [
+                    {
+                        "type": "creraces:attack_charged"
+                    },
+                    {
+                        "type": "creraces:ability_state",
+                        "ability": "creraces:maul_mark",
+                        "value": 0.0
+                    },
+                    {
+                        "type": "creraces:resource_level",
+                        "resource": "stacks",
+                        "operator": "==",
+                        "value": 0
+                    }
+                ]
+            },
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "creraces:maul",
+                    "duration": 240,
+                    "amplifier": 0,
+                    "visible": true,
+                    "target": "hit_entity"
+                },
+                {
+                    "type": "creraces:set_state",
+                    "ability": "creraces:maul_mark",
+                    "value": 1
+                }
+            ]
+        },
+        {
+            "type": "creraces:on_hit",
+            "condition": {
+                "type": "creraces:and",
+                "conditions": [
+                    {
+                        "type": "creraces:attack_charged"
+                    },
+                    {
+                        "type": "creraces:ability_state",
+                        "ability": "creraces:adrenaline_rush",
+                        "value": 1.0
+                    }
+                ]
+            },
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "creraces:stun",
+                    "duration": 60,
+                    "amplifier": 0,
+                    "visible": true,
+                    "target": "hit_entity"
+                },
+                {
+                    "type": "creraces:set_state",
+                    "ability": "creraces:adrenaline_rush",
+                    "value": 0
+                }
+            ]
         }
     ],
-    "starting_abilities": [],
+    "starting_abilities": [
+        "creraces:adrenaline_rush",
+        "creraces:troll_pillar"
+    ],
     "portrait": "creraces:textures/screens/troll_portrait.png",
     "name_texture": "creraces:textures/screens/troll_text.png",
     "remote_description": {

@@ -49,6 +49,21 @@ public class EquipAbilityPacket {
                             context.getPlayer().getName().getString(), abilityId);
                     return;
                 }
+
+                // Execute onDeactivate actions for the currently equipped ability before
+                // removing it
+                ResourceLocation currentAbilityId = vars.getAbilityInSlot(slot);
+                if (currentAbilityId != null) {
+                    mc.sayda.creraces.ability.Ability currentAbility = mc.sayda.creraces.ability.AbilityRegistry
+                            .get(currentAbilityId);
+                    if (currentAbility != null && currentAbility.onDeactivate() != null) {
+                        for (mc.sayda.creraces.engine.ActionRegistry.RaceAction action : currentAbility
+                                .onDeactivate()) {
+                            action.execute(context.getPlayer(), null, slot, null);
+                        }
+                    }
+                }
+
                 vars.equipAbility(slot, abilityId);
                 // Sync back to client (and others)
                 BoundaryHandler.resyncVariables(context.getPlayer(), context.getPlayer());

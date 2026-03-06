@@ -83,6 +83,25 @@
                     "pitch": 1.5
                 }
             ]
+        },
+        {
+            "type": "creraces:item_interaction",
+            "item": "minecraft:sugar",
+            "consume": true,
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:jump_boost",
+                    "duration": 600,
+                    "amplifier": 1
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:entity.generic.eat",
+                    "volume": 1.0,
+                    "pitch": 1.0
+                }
+            ]
         }
     ],
     "starting_abilities": [

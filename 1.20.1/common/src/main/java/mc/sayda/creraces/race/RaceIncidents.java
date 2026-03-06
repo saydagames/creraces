@@ -14,6 +14,10 @@ public class RaceIncidents {
                 CosmeticIncidents.clearAllRacialAddons(player);
                 AttributeIncidents.eikiJudgment(player);
 
+                // Scrub any lingering potion effects that might have been applied by passives
+                // or traits, ensuring the player is completely clean when unequipped.
+                player.removeAllEffects();
+
                 // Reset Scale
                 applyScale(player, RaceScale.DEFAULT);
 

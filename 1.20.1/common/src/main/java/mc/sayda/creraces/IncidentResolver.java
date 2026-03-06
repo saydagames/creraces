@@ -300,6 +300,16 @@ public class IncidentResolver {
         BoundaryHandler.resyncVariables(player, player);
         mc.sayda.creraces.race.AttributeIncidents.eikiJudgment(player);
 
+        // Set default respawn states for resources
+        DataUtils.getVariables(player).ifPresent(vars -> {
+            vars.setMana(player.getAttributeValue(
+                    java.util.Objects.requireNonNull(mc.sayda.creraces.registry.ModAttributes.MAX_MANA.get())));
+            vars.setEnergy(player.getAttributeValue(
+                    java.util.Objects.requireNonNull(mc.sayda.creraces.registry.ModAttributes.MAX_ENERGY.get())));
+            vars.setRage(0);
+            vars.setGrit(0);
+        });
+
         // Trigger on_respawn traits
         DataUtils.getVariables(player).ifPresent(vars -> {
             mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());

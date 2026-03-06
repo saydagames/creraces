@@ -15,12 +15,14 @@ public class SetStateAction implements ActionRegistry.RaceAction {
     private final String stateVariable;
     private final mc.sayda.creraces.engine.ScalingValue value;
     private final @javax.annotation.Nullable ResourceLocation abilityId;
+    private final String operation;
 
     public SetStateAction(String stateVariable, mc.sayda.creraces.engine.ScalingValue value,
-            @javax.annotation.Nullable ResourceLocation abilityId) {
+            @javax.annotation.Nullable ResourceLocation abilityId, String operation) {
         this.stateVariable = stateVariable;
         this.value = value;
         this.abilityId = abilityId;
+        this.operation = operation;
     }
 
     @Override
@@ -35,7 +37,14 @@ public class SetStateAction implements ActionRegistry.RaceAction {
             }
 
             if (targetAbilityId != null) {
-                vars.setAbilityState(targetAbilityId, value.evaluate(player, target));
+                double current = vars.getAbilityState(targetAbilityId);
+                double val = value.evaluate(player, target);
+                double next = switch (operation.toLowerCase()) {
+                    case "add" -> current + val;
+                    case "multiply" -> current * val;
+                    default -> val;
+                };
+                vars.setAbilityState(targetAbilityId, next);
             }
             mc.sayda.creraces.network.BoundaryHandler.resyncVariables(player, player);
         });
@@ -48,8 +57,19 @@ public class SetStateAction implements ActionRegistry.RaceAction {
             mc.sayda.creraces.engine.ScalingValue value = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "value",
                     0.0);
             String ability = GsonHelper.getAsString(json, "ability", null);
+            String operation = GsonHelper.getAsString(json, "operation", "set");
             ResourceLocation abilityLoc = ability != null ? new ResourceLocation(ability) : null;
-            return new SetStateAction(state, value, abilityLoc);
+            return new SetStateAction(state, value, abilityLoc, operation);
+        });
+        // Alias for legacy modify_state
+        ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "modify_state"), json -> {
+            String state = GsonHelper.getAsString(json, "state", "slot");
+            mc.sayda.creraces.engine.ScalingValue value = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "value",
+                    0.0);
+            String ability = GsonHelper.getAsString(json, "ability", null);
+            String operation = GsonHelper.getAsString(json, "operation", "add");
+            ResourceLocation abilityLoc = ability != null ? new ResourceLocation(ability) : null;
+            return new SetStateAction(state, value, abilityLoc, operation);
         });
     }
 }

@@ -1,54 +1,55 @@
 {
-    "name": "ability.creraces.quick_escape.name",
-    "description": "ability.creraces.quick_escape.description",
-    "icon": "minecraft:textures/item/ender_pearl.png",
-    "cost": 40.0,
-    "cooldown": 600,
-    "race": [
-        "creraces:dryad"
-    ],
-    "actions": [
-        {
-            "type": "creraces:conditional",
-            "condition": {
-                "type": "creraces:and",
-                "conditions": [
+    "name":  "ability.creraces.quick_escape.name",
+    "description":  "ability.creraces.quick_escape.description",
+    "type":  "ACTIVE",
+    "icon":  "minecraft:textures/item/ender_pearl.png",
+    "cost":  40,
+    "cooldown":  600,
+    "race":  [
+                 "creraces:dryad"
+             ],
+    "actions":  [
                     {
-                        "type": "creraces:has_customization",
-                        "id": "tx"
-                    },
-                    {
-                        "type": "creraces:has_customization",
-                        "id": "ty"
-                    },
-                    {
-                        "type": "creraces:has_customization",
-                        "id": "tz"
+                        "type":  "creraces:conditional",
+                        "condition":  {
+                                          "type":  "creraces:and",
+                                          "conditions":  [
+                                                             {
+                                                                 "type":  "creraces:has_customization",
+                                                                 "id":  "tx"
+                                                             },
+                                                             {
+                                                                 "type":  "creraces:has_customization",
+                                                                 "id":  "ty"
+                                                             },
+                                                             {
+                                                                 "type":  "creraces:has_customization",
+                                                                 "id":  "tz"
+                                                             }
+                                                         ]
+                                      },
+                        "if_true":  [
+                                        {
+                                            "type":  "creraces:teleport",
+                                            "x":  "custom:tx",
+                                            "y":  "custom:ty",
+                                            "z":  "custom:tz"
+                                        },
+                                        {
+                                            "type":  "creraces:play_sound",
+                                            "sound":  "minecraft:entity.enderman.teleport"
+                                        }
+                                    ]
                     }
-                ]
-            },
-            "if_true": [
-                {
-                    "type": "creraces:teleport",
-                    "x": "custom:tx",
-                    "y": "custom:ty",
-                    "z": "custom:tz"
-                },
-                {
-                    "type": "creraces:play_sound",
-                    "sound": "minecraft:entity.enderman.teleport"
-                }
-            ]
-        }
-    ],
+                ],
     "remote_description": {
-        "selector": "",
-        "fallback": "ability.creraces.quick_escape.description",
-        "source": "https://creraces.wiki.gg/api.php?action=cargoquery&format=json&tables=Abilities&fields=Description&where=Name=\u0027Quick_Escape\u0027"
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Quick_Escape&prop=wikitext",
+        "fallback": "ability.creraces.quick_escape.description"
     },
     "remote_full_description": {
-        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
-        "fallback": "ability.creraces.quick_escape.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Quick_Escape&prop=wikitext"
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Quick_Escape&prop=wikitext",
+        "fallback": "ability.creraces.quick_escape.description"
     }
 }

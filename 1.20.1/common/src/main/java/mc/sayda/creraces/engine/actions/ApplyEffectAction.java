@@ -23,14 +23,12 @@ public class ApplyEffectAction implements ActionRegistry.RaceAction {
     private final boolean visible;
     private final boolean useTarget;
     private final ScalingValue radius;
-    private final boolean targetPlayers;
-    private final boolean targetEnemies;
-    private final boolean excludeCaster;
+    private final mc.sayda.creraces.engine.TargetFilter targets;
     private final boolean incrementAmplifier;
 
     public ApplyEffectAction(ResourceLocation effectId, ScalingValue duration,
             ScalingValue amplifier, boolean ambient, boolean visible,
-            boolean useTarget, ScalingValue radius, boolean targetPlayers, boolean targetEnemies, boolean excludeCaster,
+            boolean useTarget, ScalingValue radius, mc.sayda.creraces.engine.TargetFilter targets,
             boolean incrementAmplifier) {
         this.effectId = effectId;
         this.duration = duration;
@@ -39,9 +37,7 @@ public class ApplyEffectAction implements ActionRegistry.RaceAction {
         this.visible = visible;
         this.useTarget = useTarget;
         this.radius = radius;
-        this.targetPlayers = targetPlayers;
-        this.targetEnemies = targetEnemies;
-        this.excludeCaster = excludeCaster;
+        this.targets = targets;
         this.incrementAmplifier = incrementAmplifier;
     }
 
@@ -55,13 +51,12 @@ public class ApplyEffectAction implements ActionRegistry.RaceAction {
             boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
 
             ScalingValue radius = ScalingValue.fromJson(json, "radius", 0.0);
-            boolean targetPlayers = GsonHelper.getAsBoolean(json, "target_players", true);
-            boolean targetEnemies = GsonHelper.getAsBoolean(json, "target_enemies", true);
-            boolean excludeCaster = GsonHelper.getAsBoolean(json, "exclude_caster", true);
+            mc.sayda.creraces.engine.TargetFilter targets = mc.sayda.creraces.engine.TargetFilter.fromJson(json,
+                    "targets");
             boolean incrementAmplifier = GsonHelper.getAsBoolean(json, "increment_amplifier", false);
 
             return new ApplyEffectAction(effectId, duration, amplifier, ambient, visible, useTarget,
-                    radius, targetPlayers, targetEnemies, excludeCaster, incrementAmplifier);
+                    radius, targets, incrementAmplifier);
         });
     }
 
@@ -81,19 +76,12 @@ public class ApplyEffectAction implements ActionRegistry.RaceAction {
         if (r > 0) {
             // AoE Mode
             net.minecraft.world.phys.AABB area = player.getBoundingBox().inflate(r);
-            player.level().getEntitiesOfClass(LivingEntity.class, area, e -> {
-                if (excludeCaster && e == player)
-                    return false;
-                if (!targetPlayers && e instanceof Player)
-                    return false;
-                if (!targetEnemies && !(e instanceof Player))
-                    return false;
-                return mc.sayda.creraces.team.RaceTeamManager.canHurt(e, player);
-            }).forEach(e -> applyToEntity(player, e, effect));
+            player.level().getEntitiesOfClass(LivingEntity.class, area, e -> targets.isValid(e, player))
+                    .forEach(e -> applyToEntity(player, e, effect));
         } else {
             // Single Target Mode
             LivingEntity entity = (target != null) ? target : (useTarget ? null : player);
-            if (entity != null) {
+            if (entity != null && targets.isValid(entity, player)) {
                 applyToEntity(player, entity, effect);
             }
         }
@@ -108,6 +96,8 @@ public class ApplyEffectAction implements ActionRegistry.RaceAction {
             finalAmplifier += entity.getEffect(effect).getAmplifier() + 1;
         }
 
-        entity.addEffect(new MobEffectInstance(effect, finalDuration, finalAmplifier, ambient, visible));
+        // Vanilla MobEffectInstance treats -1 as infinite duration
+        entity.addEffect(new MobEffectInstance(effect, finalDuration == -1 ? -1 : finalDuration, finalAmplifier,
+                ambient, visible));
     }
 }

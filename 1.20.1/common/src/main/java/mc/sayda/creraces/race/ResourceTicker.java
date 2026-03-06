@@ -35,7 +35,7 @@ public class ResourceTicker {
         double maxMana = player.getAttributeValue(mc.sayda.creraces.registry.ModAttributes.MAX_MANA.get());
         double maxEnergy = player.getAttributeValue(mc.sayda.creraces.registry.ModAttributes.MAX_ENERGY.get());
 
-        // Regeneration (scaled: original/20 per tick)
+        // Regeneration (absolute per tick)
         double manaRegen = player.getAttributeValue(mc.sayda.creraces.registry.ModAttributes.MANA_REGEN.get());
         double energyRegen = player.getAttributeValue(mc.sayda.creraces.registry.ModAttributes.ENERGY_REGEN.get());
 
@@ -46,17 +46,15 @@ public class ResourceTicker {
             vars.setEnergy(Math.min(maxEnergy, vars.getEnergy() + energyRegen));
         }
 
-        // Decay (scaled: original/20 per tick)
-        if (vars.getResourceTimer() <= 0) {
-            double gritDecay = player.getAttributeValue(mc.sayda.creraces.registry.ModAttributes.GRIT_DECAY.get());
-            double rageDecay = player.getAttributeValue(mc.sayda.creraces.registry.ModAttributes.RAGE_DECAY.get());
+        // Decay (absolute per tick)
+        double gritDecay = player.getAttributeValue(mc.sayda.creraces.registry.ModAttributes.GRIT_DECAY.get());
+        double rageDecay = player.getAttributeValue(mc.sayda.creraces.registry.ModAttributes.RAGE_DECAY.get());
 
-            if (vars.getGrit() > 0) {
-                vars.setGrit(Math.max(0, vars.getGrit() - gritDecay));
-            }
-            if (vars.getRage() > 0) {
-                vars.setRage(Math.max(0, vars.getRage() - rageDecay));
-            }
+        if (vars.getGrit() > 0) {
+            vars.setGrit(Math.max(0, vars.getGrit() - gritDecay));
+        }
+        if (vars.getRage() > 0) {
+            vars.setRage(Math.max(0, vars.getRage() - rageDecay));
         }
 
         // Channeled Ability Logic
@@ -117,10 +115,15 @@ public class ResourceTicker {
             }
         }
 
+        // 3.5. Tick Active Tethers
+        mc.sayda.creraces.engine.actions.TetherAction.tickTethers(player);
+
         if (!player.level().isClientSide() && player.tickCount % 20 == 0
                 && player instanceof net.minecraft.server.level.ServerPlayer sp) {
             AttributeIncidents.eikiJudgment(sp);
-            BoundaryHandler.resyncVariables(player, player);
+            // Delta sync only — resources excluded. Client predicts resources.
+            // Full sync only happens on join, respawn, cast, and combat resource events.
+            BoundaryHandler.resyncVariables(player, player, false);
         }
 
         // 4. Tick Race Traits (Moved up for client-side prediction)
@@ -128,16 +131,39 @@ public class ResourceTicker {
             race.traits().forEach(trait -> trait.tick(player));
         }
 
+        // 5. Auto-apply Innate/Passive Abilities (Server only, every 10 ticks)
+        if (!player.level().isClientSide() && player.tickCount % 10 == 0) {
+            // Only tick A1 and A2
+            for (mc.sayda.creraces.ability.AbilitySlot slot : new mc.sayda.creraces.ability.AbilitySlot[] {
+                    mc.sayda.creraces.ability.AbilitySlot.A1, mc.sayda.creraces.ability.AbilitySlot.A2 }) {
+                ResourceLocation abilityId = vars.getAbilityInSlot(slot);
+                if (abilityId != null) {
+                    mc.sayda.creraces.ability.Ability ability = mc.sayda.creraces.ability.AbilityRegistry
+                            .get(abilityId);
+                    if (ability != null && (ability.type() == mc.sayda.creraces.ability.AbilityType.INNATE
+                            || ability.type() == mc.sayda.creraces.ability.AbilityType.PASSIVE)) {
+                        // Innates/Passives auto-execute on_activate actions periodically
+                        if (ability.onActivate() != null) {
+                            for (mc.sayda.creraces.engine.ActionRegistry.RaceAction action : ability.onActivate()) {
+                                action.execute(player, null, null, null);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         if (player.level().isClientSide())
             return;
 
-        // 5. Sunlight Burning Logic
-        if (race.passives() != null && race.passives().burnsInSunlight() && player.level().isDay()
+        // 6. Sunlight Burning Logic
+        Race.Passives passives = race.passives();
+        if (passives != null && passives.burnsInSunlight() && player.level().isDay()
                 && !player.level().isRaining() // isRaining covers both rain and thunder; isThundering() missed light
                                                // rain
                 && player.level().canSeeSky(player.blockPosition())) {
 
-            boolean immune = race.passives().immuneToDamageTypes().contains("fire") || player.isInvulnerable();
+            boolean immune = passives.immuneToDamageTypes().contains("fire") || player.isInvulnerable();
 
             if (!immune) {
                 net.minecraft.world.item.ItemStack headItem = player
@@ -165,35 +191,35 @@ public class ResourceTicker {
         }
 
         // 6. Passive Effects
-        if (race.passives() != null) {
-            if (race.passives().nightVision()) {
+        if (passives != null) {
+            if (passives.nightVision()) {
                 player.addEffect(new net.minecraft.world.effect.MobEffectInstance(
                         net.minecraft.world.effect.MobEffects.NIGHT_VISION, 220, 0, false, false));
             }
-            if (race.passives().waterVision()) {
+            if (passives.waterVision()) {
                 player.addEffect(new net.minecraft.world.effect.MobEffectInstance(
                         net.minecraft.world.effect.MobEffects.CONDUIT_POWER, 220, 0, false, false));
             }
-            if (race.passives().lavaVision()) {
+            if (passives.lavaVision()) {
                 player.addEffect(new net.minecraft.world.effect.MobEffectInstance(
                         net.minecraft.world.effect.MobEffects.FIRE_RESISTANCE, 220, 0, false, false));
             }
 
-            if (race.passives().noHunger()) {
+            if (passives.noHunger()) {
                 player.getFoodData().setFoodLevel(20);
                 player.getFoodData().setSaturation(20);
             } else {
-                double fixedH = race.passives().fixedHunger().evaluate(player);
+                double fixedH = passives.fixedHunger().evaluate(player);
                 if (fixedH > 0) {
                     player.getFoodData().setFoodLevel((int) fixedH);
                 }
             }
 
-            if (race.passives().cannotSprint() && player.isSprinting()) {
+            if (passives.cannotSprint() && player.isSprinting()) {
                 player.setSprinting(false);
             }
 
-            if (race.passives().liquidSpeedMultiplier().evaluate(player) > 1.0
+            if (passives.liquidSpeedMultiplier().evaluate(player) > 1.0
                     && (player.isInWater() || player.isInLava())) {
                 player.addEffect(new net.minecraft.world.effect.MobEffectInstance(
                         net.minecraft.world.effect.MobEffects.DOLPHINS_GRACE, 20, 0, false, false));

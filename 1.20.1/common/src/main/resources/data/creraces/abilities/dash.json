@@ -1,43 +1,43 @@
 {
-    "name": "ability.creraces.dash.name",
-    "description": "ability.creraces.dash.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:textures/item/feather.png",
-    "cooldown": 40,
-    "cost": 3,
-    "actions": [
-        {
-            "type": "creraces:dash",
-            "direction": "forward",
-            "power": {
-                "base": 1.2
-            },
-            "y_multiplier": {
-                "base": 0.8
-            },
-            "y_boost": {
-                "base": 0.4
-            }
-        },
-        {
-            "type": "creraces:play_sound",
-            "sound": "minecraft:entity.breeze.wind_burst",
-            "volume": {
-                "base": 1.0
-            },
-            "pitch": {
-                "base": 1.2
-            }
-        }
-    ],
+    "name":  "ability.creraces.dash.name",
+    "description":  "ability.creraces.dash.description",
+    "type":  "ACTIVE",
+    "icon":  "minecraft:textures/item/feather.png",
+    "cooldown":  40,
+    "cost":  3,
+    "actions":  [
+                    {
+                        "type":  "creraces:dash",
+                        "direction":  "forward",
+                        "power":  {
+                                      "base":  1.2
+                                  },
+                        "y_multiplier":  {
+                                             "base":  0.8
+                                         },
+                        "y_boost":  {
+                                        "base":  0.4
+                                    }
+                    },
+                    {
+                        "type":  "creraces:play_sound",
+                        "sound":  "minecraft:entity.breeze.wind_burst",
+                        "volume":  {
+                                       "base":  1.0
+                                   },
+                        "pitch":  {
+                                      "base":  1.2
+                                  }
+                    }
+                ],
     "remote_description": {
-        "selector": "",
-        "fallback": "ability.creraces.dash.description",
-        "source": "https://creraces.wiki.gg/api.php?action=cargoquery&format=json&tables=Abilities&fields=Description&where=Name=\u0027Dash\u0027"
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Dash&prop=wikitext",
+        "fallback": "ability.creraces.dash.description"
     },
     "remote_full_description": {
-        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
-        "fallback": "ability.creraces.dash.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Dash&prop=wikitext"
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Dash&prop=wikitext",
+        "fallback": "ability.creraces.dash.description"
     }
 }

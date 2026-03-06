@@ -1,9 +1,10 @@
 {
     "name": "ability.creraces.crescent_swivel.name",
     "description": "ability.creraces.crescent_swivel.description",
+    "type": "ACTIVE",
     "icon": "minecraft:netherite_sword",
     "cooldown": 160,
-    "cost": 25.0,
+    "cost": 25,
     "race": [
         "creraces:velox"
     ],
@@ -13,20 +14,22 @@
             "condition": {
                 "type": "creraces:entity_data",
                 "key": "creraces:foul_play_stacks",
-                "operator": "\u003e=",
+                "operator": ">=",
                 "value": 2
             },
             "if_true": [
                 {
                     "type": "creraces:aoe",
                     "radius": 2.5,
-                    "target_players": true,
+                    "targets": [
+                        "enemies"
+                    ],
                     "source": "caster",
                     "actions": [
                         {
                             "type": "creraces:damage",
                             "amount": {
-                                "base": 4.0,
+                                "base": 4,
                                 "scales_with": "ad",
                                 "factor": 0.04
                             },
@@ -39,13 +42,15 @@
                 {
                     "type": "creraces:aoe",
                     "radius": 2.5,
-                    "target_players": true,
+                    "targets": [
+                        "enemies"
+                    ],
                     "source": "caster",
                     "actions": [
                         {
                             "type": "creraces:damage",
                             "amount": {
-                                "base": 2.0,
+                                "base": 2,
                                 "scales_with": "ad",
                                 "factor": 0.02
                             },
@@ -59,7 +64,7 @@
             "type": "creraces:play_sound",
             "sound": "creraces:slash",
             "volume": 0.5,
-            "pitch": 1.0
+            "pitch": 1
         },
         {
             "type": "creraces:spawn_particles",
@@ -73,13 +78,13 @@
         }
     ],
     "remote_description": {
-        "selector": "",
-        "fallback": "ability.creraces.crescent_swivel.description",
-        "source": "https://creraces.wiki.gg/api.php?action=cargoquery&format=json&tables=Abilities&fields=Description&where=Name=\u0027Crescent_Swivel\u0027"
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Crescent_Swivel&prop=wikitext",
+        "fallback": "ability.creraces.crescent_swivel.description"
     },
     "remote_full_description": {
-        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
-        "fallback": "ability.creraces.crescent_swivel.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Crescent_Swivel&prop=wikitext"
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Crescent_Swivel&prop=wikitext",
+        "fallback": "ability.creraces.crescent_swivel.description"
     }
 }

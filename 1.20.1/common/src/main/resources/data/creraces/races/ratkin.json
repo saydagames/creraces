@@ -21,7 +21,9 @@
     "name_texture": "creraces:textures/screens/ratkin_text.png",
     "starting_abilities": [
         "creraces:cowardly_skirmish",
-        "creraces:deadly_venom"
+        "creraces:deadly_venom",
+        "creraces:poison_emitter",
+        "creraces:rat_tunnels"
     ],
     "traits": [
         {
@@ -40,6 +42,24 @@
                         "base": 0
                     },
                     "increment_amplifier": true,
+                    "visible": true
+                }
+            ]
+        },
+        {
+            "type": "creraces:on_tick",
+            "interval": 5,
+            "condition": {
+                "type": "creraces:has_effect",
+                "effect": "creraces:rat_venom",
+                "amplifier": 5
+            },
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "creraces:rat_venom",
+                    "duration": 100,
+                    "amplifier": 4,
                     "visible": true
                 }
             ]

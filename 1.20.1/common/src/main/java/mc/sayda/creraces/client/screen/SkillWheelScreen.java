@@ -109,7 +109,7 @@ public class SkillWheelScreen extends Screen {
                     }
                 }
 
-                graphics.blit(ability.icon(), x, y, 0, 0, ITEM_SIZE, ITEM_SIZE, ITEM_SIZE, ITEM_SIZE);
+                mc.sayda.creraces.client.AbilityIconRenderer.render(graphics, ability.icon(), x, y, ITEM_SIZE);
             }
         });
 

@@ -1,27 +1,30 @@
 {
     "name": "ability.creraces.slash_n_dash.name",
     "description": "ability.creraces.slash_n_dash.description",
+    "type": "ACTIVE",
     "icon": "minecraft:iron_sword",
     "cooldown": 100,
-    "cost": 15.0,
+    "cost": 15,
     "race": [
         "creraces:velox"
     ],
     "actions": [
         {
             "type": "creraces:dash",
-            "power": 2.0
+            "power": 2
         },
         {
             "type": "creraces:aoe",
-            "radius": 2.0,
-            "target_players": true,
+            "radius": 2,
+            "targets": [
+                "enemies"
+            ],
             "source": "caster",
             "actions": [
                 {
                     "type": "creraces:damage",
                     "amount": {
-                        "base": 4.0,
+                        "base": 4,
                         "scales_with": "ad",
                         "factor": 0.04
                     },
@@ -32,8 +35,8 @@
         {
             "type": "creraces:play_sound",
             "sound": "minecraft:block.anvil.hit",
-            "volume": 1.0,
-            "pitch": 1.0
+            "volume": 1,
+            "pitch": 1
         },
         {
             "type": "creraces:spawn_particles",
@@ -42,13 +45,13 @@
         }
     ],
     "remote_description": {
-        "selector": "",
-        "fallback": "ability.creraces.slash_n_dash.description",
-        "source": "https://creraces.wiki.gg/api.php?action=cargoquery&format=json&tables=Abilities&fields=Description&where=Name=\u0027Slash_N_Dash\u0027"
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Slash_N_Dash&prop=wikitext",
+        "fallback": "ability.creraces.slash_n_dash.description"
     },
     "remote_full_description": {
-        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
-        "fallback": "ability.creraces.slash_n_dash.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Slash_N_Dash&prop=wikitext"
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Slash_N_Dash&prop=wikitext",
+        "fallback": "ability.creraces.slash_n_dash.description"
     }
 }

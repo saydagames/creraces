@@ -28,24 +28,16 @@
             "sound": "minecraft:entity.ender_dragon.growl",
             "volume": 1.0,
             "pitch": 0.8
-        },
-        {
-            "type": "creraces:dash",
-            "power": {
-                "base": 0.5,
-                "ad": 0.1
-            },
-            "direction": "forward"
         }
     ],
     "remote_description": {
-        "selector": "",
-        "fallback": "ability.creraces.bloodrage.description",
-        "source": "https://creraces.wiki.gg/api.php?action=cargoquery&format=json&tables=Abilities&fields=Description&where=Name=\u0027Bloodrage\u0027"
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Bloodrage&prop=wikitext",
+        "fallback": "ability.creraces.bloodrage.description"
     },
     "remote_full_description": {
-        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
-        "fallback": "ability.creraces.bloodrage.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Bloodrage&prop=wikitext"
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Bloodrage&prop=wikitext",
+        "fallback": "ability.creraces.bloodrage.description"
     }
 }

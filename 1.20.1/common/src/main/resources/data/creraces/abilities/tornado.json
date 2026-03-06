@@ -1,6 +1,7 @@
 {
     "name": "ability.creraces.tornado.name",
     "description": "ability.creraces.tornado.description",
+    "type": "ACTIVE",
     "icon": "minecraft:cobweb",
     "cooldown": 400,
     "cost": 35,
@@ -10,7 +11,7 @@
     "actions": [
         {
             "type": "creraces:aoe",
-            "radius": 6.0,
+            "radius": 6,
             "actions": [
                 {
                     "type": "creraces:apply_velocity",
@@ -21,7 +22,7 @@
                 },
                 {
                     "type": "creraces:apply_effect",
-                    "effect": "minecraft:nausea",
+                    "effect": "creraces:dizziness",
                     "duration": 100,
                     "amplifier": 0
                 }
@@ -30,18 +31,18 @@
         {
             "type": "creraces:play_sound",
             "sound": "minecraft:entity.phantom.flap",
-            "volume": 1.0,
+            "volume": 1,
             "pitch": 0.5
         }
     ],
     "remote_description": {
-        "selector": "",
-        "fallback": "ability.creraces.tornado.description",
-        "source": "https://creraces.wiki.gg/api.php?action=cargoquery&format=json&tables=Abilities&fields=Description&where=Name=\u0027Tornado\u0027"
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Tornado&prop=wikitext",
+        "fallback": "ability.creraces.tornado.description"
     },
     "remote_full_description": {
-        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
-        "fallback": "ability.creraces.tornado.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Tornado&prop=wikitext"
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Tornado&prop=wikitext",
+        "fallback": "ability.creraces.tornado.description"
     }
 }

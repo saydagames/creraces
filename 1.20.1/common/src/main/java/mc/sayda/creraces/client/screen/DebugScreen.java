@@ -200,9 +200,6 @@ public class DebugScreen extends Screen {
                         addHeader("INTERNAL");
                         debugLines.add(Component.literal("  Passive CD: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component.literal(String.format("%.0f", vars.getPassiveCooldown()))
-                                                        .withStyle(ChatFormatting.WHITE))
-                                        .append(Component.literal(" | Res Timer: ").withStyle(ChatFormatting.GRAY))
-                                        .append(Component.literal(String.format("%.0f", vars.getResourceTimer()))
                                                         .withStyle(ChatFormatting.WHITE)));
 
                         // --- CUSTOMIZATIONS ---

@@ -1,0 +1,89 @@
+{
+    "name": "ability.creraces.magmamancy.name",
+    "description": "ability.creraces.magmamancy.description",
+    "type": "ACTIVE",
+    "icon": "minecraft:textures/item/lava_bucket.png",
+    "cooldown": 20,
+    "cost": 50,
+    "race": [
+        "creraces:oread"
+    ],
+    "actions": [
+        {
+            "type": "creraces:conditional",
+            "condition": {
+                "type": "creraces:sneaking"
+            },
+            "if_true": [
+                {
+                    "type": "creraces:toggle_state",
+                    "state": "slot",
+                    "on_value": 1,
+                    "off_value": 0,
+                    "on_enable": [
+                        {
+                            "type": "creraces:message",
+                            "text": "§6Molten Being: ON"
+                        }
+                    ],
+                    "on_disable": [
+                        {
+                            "type": "creraces:message",
+                            "text": "§7Molten Being: OFF"
+                        }
+                    ]
+                }
+            ],
+            "if_false": [
+                {
+                    "type": "creraces:conditional",
+                    "condition": {
+                        "type": "creraces:and",
+                        "conditions": [
+                            {
+                                "type": "creraces:resource_level",
+                                "resource": "grit",
+                                "operator": ">=",
+                                "value": 1
+                            },
+                            {
+                                "type": "creraces:not",
+                                "condition": {
+                                    "type": "creraces:on_ground"
+                                }
+                            }
+                        ]
+                    },
+                    "if_true": [
+                        {
+                            "type": "creraces:modify_resource",
+                            "resource": "grit",
+                            "operation": "add",
+                            "value": -1
+                        },
+                        {
+                            "type": "creraces:place_block",
+                            "block": "minecraft:magma_block"
+                        },
+                        {
+                            "type": "creraces:play_sound",
+                            "sound": "minecraft:block.lava.ambient",
+                            "volume": 1.0,
+                            "pitch": 0.5
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "remote_description": {
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Magmamancy&prop=wikitext",
+        "fallback": "ability.creraces.magmamancy.description"
+    },
+    "remote_full_description": {
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Magmamancy&prop=wikitext",
+        "fallback": "ability.creraces.magmamancy.description"
+    }
+}

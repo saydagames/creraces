@@ -12,7 +12,10 @@
         {
             "type": "creraces:aoe",
             "radius": 16.0,
-            "target_players": false,
+            "targets": [
+                "enemies",
+                "!players"
+            ],
             "required_effect": "creraces:life_drain",
             "actions": [
                 {
@@ -40,13 +43,13 @@
         }
     ],
     "remote_description": {
-        "selector": "",
-        "fallback": "ability.creraces.fruitful_harvest.description",
-        "source": "https://creraces.wiki.gg/api.php?action=cargoquery&format=json&tables=Abilities&fields=Description&where=Name=\u0027Fruitful_Harvest\u0027"
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Fruitful_Harvest&prop=wikitext",
+        "fallback": "ability.creraces.fruitful_harvest.description"
     },
     "remote_full_description": {
-        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
-        "fallback": "ability.creraces.fruitful_harvest.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Fruitful_Harvest&prop=wikitext"
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Fruitful_Harvest&prop=wikitext",
+        "fallback": "ability.creraces.fruitful_harvest.description"
     }
 }

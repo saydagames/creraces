@@ -1,0 +1,34 @@
+{
+    "name":  "ability.creraces.trophy_hunter.name",
+    "description":  "ability.creraces.trophy_hunter.description",
+    "type":  "ACTIVE",
+    "icon":  "minecraft:textures/item/rabbit_foot.png",
+    "cooldown":  0,
+    "cost":  0,
+    "race":  [
+                 "creraces:lycan"
+             ],
+    "actions":  [
+                    {
+                        "type":  "creraces:display_resource",
+                        "resource":  "stacks",
+                        "message":  "ability.creraces.trophy_hunter.stacks"
+                    },
+                    {
+                        "type":  "creraces:play_sound",
+                        "sound":  "minecraft:entity.experience_orb.pickup",
+                        "volume":  0.5,
+                        "pitch":  1.2
+                    }
+                ],
+    "remote_description": {
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Trophy_Hunter&prop=wikitext",
+        "fallback": "ability.creraces.trophy_hunter.description"
+    },
+    "remote_full_description": {
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Trophy_Hunter&prop=wikitext",
+        "fallback": "ability.creraces.trophy_hunter.description"
+    }
+}

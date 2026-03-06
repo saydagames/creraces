@@ -40,6 +40,9 @@
         },
         {
             "type": "creraces:on_hit",
+            "condition": {
+                "type": "creraces:attack_charged"
+            },
             "actions": [
                 {
                     "type": "creraces:modify_entity_data",

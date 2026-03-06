@@ -142,6 +142,11 @@ public class BoundaryHandler {
             pkt.handle(() -> context);
         });
 
+        NetworkManager.registerReceiver(NetworkManager.Side.S2C, SyncTetherPacket.ID, (buf, context) -> {
+            var pkt = new SyncTetherPacket(buf);
+            pkt.handle(() -> context);
+        });
+
         LOGGER.info("Yukari has established the client network boundaries.");
     }
 
@@ -281,22 +286,34 @@ public class BoundaryHandler {
 
     /**
      * Resyncs all variables for a target player to a specific recipient.
+     * fullSync = true includes resources (use for joins, respawn, casts).
+     * fullSync = false excludes resources (use for periodic ticks — client
+     * predicts).
      */
-    public static void resyncVariables(Player target, Player recipient) {
+    public static void resyncVariables(Player target, Player recipient, boolean fullSync) {
         DataUtils.getVariables(target).ifPresent(vars -> {
-            var pkt = new SyncIncidentPacket(target.getUUID(), vars.serialize());
+            var pkt = new SyncIncidentPacket(target.getUUID(), vars.serialize(fullSync));
             sendIncidentToPlayer(recipient, pkt);
         });
+    }
+
+    /**
+     * Convenience overload — defaults to full sync (safe for all explicit events).
+     */
+    public static void resyncVariables(Player target, Player recipient) {
+        resyncVariables(target, recipient, true);
     }
 
     /**
      * Resyncs a player's variables to everyone tracking them.
      */
     public static void resyncForAllTrackers(Player player) {
+        resyncForAllTrackers(player, true);
+    }
+
+    public static void resyncForAllTrackers(Player player, boolean fullSync) {
         DataUtils.getVariables(player).ifPresent(vars -> {
-            var pkt = new SyncIncidentPacket(player.getUUID(), vars.serialize());
-            // In Forge this would be called by tracking events, in Architectury we can send
-            // to all as a fallback
+            var pkt = new SyncIncidentPacket(player.getUUID(), vars.serialize(fullSync));
             sendIncidentToAll(pkt);
         });
     }

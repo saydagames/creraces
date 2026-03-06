@@ -101,5 +101,10 @@ public class ActionRegistry {
         mc.sayda.creraces.engine.actions.BeamAction.register();
         mc.sayda.creraces.engine.actions.SleepAction.register();
         mc.sayda.creraces.engine.actions.MessageAction.register();
+        mc.sayda.creraces.engine.actions.SummonEntityAction.register();
+        mc.sayda.creraces.engine.actions.SetOnFireAction.register();
+        mc.sayda.creraces.engine.actions.DisplayResourceAction.register();
+        mc.sayda.creraces.engine.actions.TetherAction.register();
+        mc.sayda.creraces.engine.actions.CancelAction.register();
     }
 }

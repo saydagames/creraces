@@ -18,8 +18,8 @@
     "passives": {
         "regeneration_multiplier": 1.1
     },
-    "abilities": [
-        "creraces:blissful_currents",
+    "starting_abilities": [
+        "creraces:dash",
         "creraces:tornado",
         "creraces:smackdown",
         "creraces:low_pressure_area"
@@ -32,7 +32,7 @@
             "type": "creraces:on_tick",
             "interval": 200,
             "condition": {
-                "type": "altitude",
+                "type": "creraces:altitude",
                 "max": 120.0
             },
             "actions": [
@@ -48,7 +48,7 @@
             "type": "creraces:on_tick",
             "interval": 200,
             "condition": {
-                "type": "altitude",
+                "type": "creraces:altitude",
                 "max": 62.0
             },
             "actions": [
@@ -70,7 +70,7 @@
             "type": "creraces:on_tick",
             "interval": 200,
             "condition": {
-                "type": "altitude",
+                "type": "creraces:altitude",
                 "max": 0.0
             },
             "actions": [

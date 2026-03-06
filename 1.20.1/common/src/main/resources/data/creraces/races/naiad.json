@@ -18,18 +18,18 @@
     "passives": {
         "regeneration_multiplier": 1.1
     },
-    "abilities": [
-        "creraces:flowing_tides",
+    "starting_abilities": [
+        "creraces:tidal_wave",
         "creraces:whirlpool",
         "creraces:quick_current",
-        "creraces:aqua_pura"
+        "creraces:camouflage"
     ],
     "traits": [
         {
             "type": "creraces:on_tick",
             "interval": 100,
             "condition": {
-                "type": "in_water"
+                "type": "creraces:in_water"
             },
             "actions": [
                 {

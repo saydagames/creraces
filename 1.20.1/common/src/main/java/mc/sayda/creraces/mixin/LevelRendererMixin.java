@@ -30,5 +30,7 @@ public class LevelRendererMixin {
             CallbackInfo ci) {
         mc.sayda.creraces.client.render.BeamRenderer.render(poseStack, projectionMatrix, partialTick, gameTime,
                 this.minecraft);
+        mc.sayda.creraces.client.render.TetherRenderer.render(poseStack, projectionMatrix, partialTick, gameTime,
+                this.minecraft);
     }
 }

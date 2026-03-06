@@ -9,6 +9,9 @@ import net.minecraft.world.entity.player.Player;
 import mc.sayda.creraces.util.ItemUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
+import mc.sayda.creraces.engine.TargetFilter;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.AABB;
 
 /**
  * Universal condition check for actions and traits.
@@ -56,9 +59,10 @@ public interface Condition {
                 case "wearing_armor" -> {
                     String item = GsonHelper.getAsString(json, "item", null);
                     String tag = GsonHelper.getAsString(json, "tag", null);
+                    String slot = GsonHelper.getAsString(json, "slot", "any");
                     if (tag != null && !tag.startsWith("#"))
                         tag = "#" + tag;
-                    yield new WearingArmorCondition(item != null ? item : tag);
+                    yield new WearingArmorCondition(item != null ? item : tag, slot);
                 }
                 case "holding_item" -> {
                     String item = GsonHelper.getAsString(json, "item", null);
@@ -247,6 +251,12 @@ public interface Condition {
                         }).orElse(false);
                     };
                 }
+                case "has_entities" -> {
+                    mc.sayda.creraces.engine.ScalingValue radius = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
+                            "radius", 5.0);
+                    TargetFilter targets = TargetFilter.fromJson(json, "targets");
+                    yield new HasEntitiesCondition(radius, targets);
+                }
                 default ->
                     throw new IllegalArgumentException("Unknown condition type '" + typeStr + "' — check your JSON");
             };
@@ -259,18 +269,35 @@ public interface Condition {
     }
 }
 
-record WearingArmorCondition(@javax.annotation.Nullable String definition)
+record WearingArmorCondition(@javax.annotation.Nullable String definition, String slot)
         implements Condition {
     @Override
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
-            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot abilitySlot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
-        if (definition == null)
-            return false;
-        for (net.minecraft.world.item.ItemStack stack : player.getArmorSlots()) {
-            if (ItemUtils.matches(stack, definition))
-                return true;
+
+        Iterable<net.minecraft.world.item.ItemStack> items;
+        if (slot.equalsIgnoreCase("head")) {
+            items = java.util.List.of(player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD));
+        } else if (slot.equalsIgnoreCase("chest")) {
+            items = java.util.List.of(player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.CHEST));
+        } else if (slot.equalsIgnoreCase("legs")) {
+            items = java.util.List.of(player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.LEGS));
+        } else if (slot.equalsIgnoreCase("feet")) {
+            items = java.util.List.of(player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.FEET));
+        } else {
+            items = player.getArmorSlots();
+        }
+
+        for (net.minecraft.world.item.ItemStack stack : items) {
+            if (definition == null) {
+                if (!stack.isEmpty())
+                    return true;
+            } else {
+                if (ItemUtils.matches(stack, definition))
+                    return true;
+            }
         }
         return false;
     }
@@ -736,5 +763,18 @@ record SpiritCondition(boolean expected) implements Condition {
         return DataUtils.getVariables(player)
                 .map(vars -> vars.isInSpiritRealm() == expected)
                 .orElse(false);
+    }
+}
+
+record HasEntitiesCondition(mc.sayda.creraces.engine.ScalingValue radius, TargetFilter targets) implements Condition {
+    @Override
+    public boolean evaluate(Player player, @javax.annotation.Nullable LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+        double r = radius.evaluate(player, target);
+        AABB area = player.getBoundingBox().inflate(r);
+        return !player.level().getEntitiesOfClass(LivingEntity.class, area, e -> {
+            return e != player && targets.isValid(e, player);
+        }).isEmpty();
     }
 }

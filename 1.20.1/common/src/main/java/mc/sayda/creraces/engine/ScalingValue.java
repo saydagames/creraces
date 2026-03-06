@@ -156,6 +156,8 @@ public record ScalingValue(double base, @javax.annotation.Nullable String scalin
             double factor = GsonHelper.getAsDouble(obj, "factor", 0.0);
 
             List<Component> additional = new ArrayList<>();
+
+            // 1. Array-based scaling (documented as most robust)
             if (obj.has("scales") && obj.get("scales").isJsonArray()) {
                 com.google.gson.JsonArray array = obj.getAsJsonArray("scales");
                 for (int i = 0; i < array.size(); i++) {
@@ -165,6 +167,26 @@ public record ScalingValue(double base, @javax.annotation.Nullable String scalin
                     if (s != null) {
                         additional.add(new Component(s, f));
                     }
+                }
+            }
+
+            // 2. Nested "scaling" object (documented format)
+            if (obj.has("scaling") && obj.get("scaling").isJsonObject()) {
+                JsonObject scalingObj = obj.getAsJsonObject("scaling");
+                for (String sKey : scalingObj.keySet()) {
+                    additional.add(new Component(sKey, scalingObj.get(sKey).getAsDouble()));
+                }
+            }
+
+            // 3. Flat stat shorthand (documented shorthand: "ap": 0.5)
+            // We iterate over keys and exclude known metadata keys
+            for (String sKey : obj.keySet()) {
+                if (sKey.equals("base") || sKey.equals("scales_with") || sKey.equals("factor")
+                        || sKey.equals("scales") || sKey.equals("scaling")) {
+                    continue;
+                }
+                if (obj.get(sKey).isJsonPrimitive() && obj.get(sKey).getAsJsonPrimitive().isNumber()) {
+                    additional.add(new Component(sKey, obj.get(sKey).getAsDouble()));
                 }
             }
 

@@ -53,9 +53,11 @@ public abstract class PlayerRespawnMixin {
                                 // Find a safe place to stand up, similar to standard BedBlock respawn.
                                 // But since a miniature bed doesn't have native standup, simply return the
                                 // microbed pos adjusted.
+                                // Return the exact internal bed coordinates (centered on X/Z, base of Y)
                                 Optional<Vec3> optional = Optional.of(new Vec3(
                                         blockPos.getX() + subBlockX,
                                         blockPos.getY() + subBlockY + (0.6875 * scale),
+                                        // blockPos.getY() + subBlockY + 0.1, // slightly above the sub-block base
                                         blockPos.getZ() + subBlockZ));
                                 cir.setReturnValue(optional);
                                 return;

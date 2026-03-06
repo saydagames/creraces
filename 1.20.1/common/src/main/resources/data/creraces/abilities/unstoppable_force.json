@@ -1,0 +1,49 @@
+{
+    "name":  "ability.creraces.unstoppable_force.name",
+    "description":  "ability.creraces.unstoppable_force.description",
+    "type":  "ACTIVE",
+    "icon":  "minecraft:textures/item/iron_chestplate.png",
+    "cooldown":  0,
+    "cost":  0,
+    "race":  [
+                 "creraces:giant"
+             ],
+    "actions":  [
+                    {
+                        "type":  "creraces:apply_effect",
+                        "effect":  "minecraft:speed",
+                        "duration":  400,
+                        "amplifier":  1,
+                        "visible":  true
+                    },
+                    {
+                        "type":  "creraces:apply_effect",
+                        "effect":  "minecraft:absorption",
+                        "duration":  400,
+                        "amplifier":  1,
+                        "visible":  true
+                    },
+                    {
+                        "type":  "creraces:play_sound",
+                        "sound":  "minecraft:entity.iron_golem.repair",
+                        "volume":  1.0,
+                        "pitch":  0.7
+                    },
+                    {
+                        "type":  "creraces:spawn_particles",
+                        "particle":  "minecraft:block",
+                        "block_state":  "minecraft:stone",
+                        "count":  15
+                    }
+                ],
+    "remote_description": {
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Unstoppable_Force&prop=wikitext",
+        "fallback": "ability.creraces.unstoppable_force.description"
+    },
+    "remote_full_description": {
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Unstoppable_Force&prop=wikitext",
+        "fallback": "ability.creraces.unstoppable_force.description"
+    }
+}

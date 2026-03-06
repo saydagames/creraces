@@ -22,10 +22,24 @@
             "operation": "addition"
         },
         {
-            "type": "creraces:permanent_effect",
-            "effect": "minecraft:resistance",
-            "amplifier": 0,
-            "visible": false
+            "type": "creraces:attribute_modifier",
+            "attribute": "minecraft:generic.attack_damage",
+            "value": {
+                "base": 1.0,
+                "scales_with": "var:rage",
+                "factor": 0.05
+            },
+            "operation": "addition"
+        },
+        {
+            "type": "creraces:attribute_modifier",
+            "attribute": "minecraft:generic.armor",
+            "value": {
+                "base": -1.0,
+                "scales_with": "var:rage",
+                "factor": -0.002
+            },
+            "operation": "addition"
         }
     ],
     "starting_abilities": [

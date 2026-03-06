@@ -46,8 +46,10 @@ public class PlayerMixin implements IPlayerVariables {
         Player player = (Player) (Object) this;
         var stunned = mc.sayda.creraces.registry.ModMobEffects.STUNNED.get();
         var disarmed = mc.sayda.creraces.registry.ModMobEffects.DISARMED.get();
+        var frozen = mc.sayda.creraces.registry.ModMobEffects.FROZEN.get();
         if ((stunned != null && player.hasEffect(stunned)) ||
-                (disarmed != null && player.hasEffect(disarmed))) {
+                (disarmed != null && player.hasEffect(disarmed)) ||
+                (frozen != null && player.hasEffect(frozen))) {
             ci.cancel();
         }
     }
@@ -72,8 +74,10 @@ public class PlayerMixin implements IPlayerVariables {
         Player player = (Player) (Object) this;
         var stunned = mc.sayda.creraces.registry.ModMobEffects.STUNNED.get();
         var disarmed = mc.sayda.creraces.registry.ModMobEffects.DISARMED.get();
+        var frozen = mc.sayda.creraces.registry.ModMobEffects.FROZEN.get();
         if ((stunned != null && player.hasEffect(stunned)) ||
-                (disarmed != null && player.hasEffect(disarmed))) {
+                (disarmed != null && player.hasEffect(disarmed)) ||
+                (frozen != null && player.hasEffect(frozen))) {
             cir.setReturnValue(net.minecraft.world.InteractionResult.FAIL);
         }
     }
@@ -318,16 +322,6 @@ public class PlayerMixin implements IPlayerVariables {
     @Override
     public void setPassiveCooldown(double ticks) {
         creraces$variables.setPassiveCooldown(ticks);
-    }
-
-    @Override
-    public double getResourceTimer() {
-        return creraces$variables.getResourceTimer();
-    }
-
-    @Override
-    public void setResourceTimer(double ticks) {
-        creraces$variables.setResourceTimer(ticks);
     }
 
     @Override

@@ -1,6 +1,7 @@
 {
     "name": "ability.creraces.camouflage.name",
     "description": "ability.creraces.camouflage.description",
+    "type": "ACTIVE",
     "icon": "minecraft:fern",
     "cost": 1,
     "race": [
@@ -15,17 +16,17 @@
             "type": "creraces:play_sound",
             "sound": "minecraft:block.chorus_flower.death",
             "volume": 0.5,
-            "pitch": 2.0
+            "pitch": 2
         }
     ],
     "remote_description": {
-        "selector": "",
-        "fallback": "ability.creraces.camouflage.description",
-        "source": "https://creraces.wiki.gg/api.php?action=cargoquery&format=json&tables=Abilities&fields=Description&where=Name=\u0027Camouflage\u0027"
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Camouflage&prop=wikitext",
+        "fallback": "ability.creraces.camouflage.description"
     },
     "remote_full_description": {
-        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
-        "fallback": "ability.creraces.camouflage.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Camouflage&prop=wikitext"
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Camouflage&prop=wikitext",
+        "fallback": "ability.creraces.camouflage.description"
     }
 }

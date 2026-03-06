@@ -19,6 +19,9 @@ public class ModItems {
         public static final RegistrySupplier<Item> HARPY_FEATHER = ITEMS.register("harpy_feather",
                         () -> new Item(new Item.Properties()));
 
+        public static final RegistrySupplier<Item> TOWEL = ITEMS.register("towel",
+                        () -> new mc.sayda.creraces.item.TowelItem(new Item.Properties()));
+
         // Block Items
         public static final RegistrySupplier<Item> DRYAD_LOG_ITEM = registerBlockItem(ModBlocks.DRYAD_LOG);
         public static final RegistrySupplier<Item> DRYAD_LOG_CORE_ITEM = registerBlockItem(ModBlocks.DRYAD_LOG_CORE);
@@ -66,22 +69,22 @@ public class ModItems {
 
         // Music Discs
         public static final RegistrySupplier<Item> LOFI_WARCRIMES_DISC = ITEMS.register("lofi_warcrimes_disc",
-                        () -> new net.minecraft.world.item.RecordItem(15, ModSounds.LOFI_WARCRIMES.get(),
+                        () -> new mc.sayda.creraces.item.LazyRecordItem(15, ModSounds.LOFI_WARCRIMES::get,
                                         new net.minecraft.world.item.Item.Properties().stacksTo(1)
                                                         .rarity(net.minecraft.world.item.Rarity.RARE),
                                         4200));
         public static final RegistrySupplier<Item> VERMINWAVE_DISC = ITEMS.register("verminwave_disc",
-                        () -> new net.minecraft.world.item.RecordItem(15, ModSounds.VERMINWAVE.get(),
+                        () -> new mc.sayda.creraces.item.LazyRecordItem(15, ModSounds.VERMINWAVE::get,
                                         new net.minecraft.world.item.Item.Properties().stacksTo(1)
                                                         .rarity(net.minecraft.world.item.Rarity.RARE),
                                         2800));
         public static final RegistrySupplier<Item> UNDERGROUND_CLUB_DISC = ITEMS.register("underground_club_disc",
-                        () -> new net.minecraft.world.item.RecordItem(15, ModSounds.UNDERGROUND_CLUB.get(),
+                        () -> new mc.sayda.creraces.item.LazyRecordItem(15, ModSounds.UNDERGROUND_CLUB::get,
                                         new net.minecraft.world.item.Item.Properties().stacksTo(1)
                                                         .rarity(net.minecraft.world.item.Rarity.RARE),
                                         2000));
         public static final RegistrySupplier<Item> PLEASANT_BOPS_DISC = ITEMS.register("pleasant_bops_disc",
-                        () -> new net.minecraft.world.item.RecordItem(15, ModSounds.PLEASANT_BOPS.get(),
+                        () -> new mc.sayda.creraces.item.LazyRecordItem(15, ModSounds.PLEASANT_BOPS::get,
                                         new net.minecraft.world.item.Item.Properties().stacksTo(1)
                                                         .rarity(net.minecraft.world.item.Rarity.RARE),
                                         2200));

@@ -19,12 +19,21 @@
         "night_vision": true,
         "regeneration_multiplier": 1.2
     },
+    "starting_abilities": [
+        "creraces:wild_hunt",
+        "creraces:trophy_hunter"
+    ],
     "traits": [
         {
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.movement_speed",
             "value": 0.02,
-            "operation": "addition"
+            "operation": "addition",
+            "condition": {
+                "type": "creraces:time",
+                "min": 13000,
+                "max": 23000
+            }
         },
         {
             "type": "creraces:on_tick",
@@ -32,7 +41,7 @@
             "condition": {
                 "type": "not",
                 "condition": {
-                    "type": "in_sunlight"
+                    "type": "creraces:in_sunlight"
                 }
             },
             "actions": [
@@ -49,9 +58,44 @@
             ]
         },
         {
+            "type": "creraces:on_hit",
+            "condition": {
+                "type": "creraces:and",
+                "conditions": [
+                    {
+                        "type": "creraces:attack_charged"
+                    },
+                    {
+                        "type": "creraces:ability_state",
+                        "ability": "creraces:wild_hunt",
+                        "value": 1.0
+                    }
+                ]
+            },
+            "actions": [
+                {
+                    "type": "creraces:damage",
+                    "amount": {
+                        "base": 2.0,
+                        "scales_with": "var:stacks",
+                        "factor": 0.5
+                    },
+                    "damage_type": "minecraft:player_attack"
+                },
+                {
+                    "type": "creraces:heal",
+                    "amount": {
+                        "base": 0.5,
+                        "scales_with": "var:stacks",
+                        "factor": 0.1
+                    }
+                }
+            ]
+        },
+        {
             "type": "creraces:on_kill",
             "condition": {
-                "type": "has_effect",
+                "type": "creraces:has_effect",
                 "effect": "creraces:bleeding"
             },
             "actions": [
@@ -68,7 +112,7 @@
             "condition": {
                 "type": "not",
                 "condition": {
-                    "type": "has_effect",
+                    "type": "creraces:has_effect",
                     "effect": "creraces:bleeding"
                 }
             },
@@ -87,8 +131,8 @@
                 {
                     "type": "creraces:modify_resource",
                     "resource": "stacks",
-                    "operation": "set",
-                    "value": 0.0
+                    "operation": "multiply",
+                    "value": 0.5
                 }
             ]
         }

@@ -1,0 +1,42 @@
+{
+    "name": "ability.creraces.troll_pillar.name",
+    "description": "ability.creraces.troll_pillar.description",
+    "type": "ACTIVE",
+    "icon": "minecraft:textures/item/stone.png",
+    "cooldown": 1200,
+    "cost": 30,
+    "race": [
+        "creraces:troll"
+    ],
+    "actions": [
+        {
+            "type": "creraces:summon_entity",
+            "entity": "creraces:troll_pillar",
+            "use_raycast": true,
+            "ray_range": 10.0,
+            "tame": true
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:block.stone.place",
+            "volume": 1.0,
+            "pitch": 1.2
+        },
+        {
+            "type": "creraces:spawn_particles",
+            "particle": "minecraft:block",
+            "block": "minecraft:stone",
+            "count": 8
+        }
+    ],
+    "remote_description": {
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Troll_Pillar&prop=wikitext",
+        "fallback": "ability.creraces.troll_pillar.description"
+    },
+    "remote_full_description": {
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Troll_Pillar&prop=wikitext",
+        "fallback": "ability.creraces.troll_pillar.description"
+    }
+}

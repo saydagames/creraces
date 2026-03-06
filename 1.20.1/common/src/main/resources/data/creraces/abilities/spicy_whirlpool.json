@@ -1,0 +1,53 @@
+{
+    "name": "ability.creraces.spicy_whirlpool.name",
+    "description": "ability.creraces.spicy_whirlpool.description",
+    "type": "ACTIVE",
+    "icon": "minecraft:textures/item/magma_cream.png",
+    "cooldown": 0,
+    "cost": 0,
+    "race": [
+        "creraces:mermaid"
+    ],
+    "condition": {
+        "type": "creraces:in_water"
+    },
+    "actions": [
+        {
+            "type": "creraces:aoe",
+            "radius": 5.0,
+            "targets": [
+                "enemies"
+            ],
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "creraces:boiling",
+                    "duration": 60,
+                    "amplifier": 0,
+                    "visible": true
+                }
+            ]
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:block.lava.pop",
+            "volume": 1.0,
+            "pitch": 0.8
+        },
+        {
+            "type": "creraces:spawn_particles",
+            "particle": "minecraft:bubble",
+            "count": 30
+        }
+    ],
+    "remote_description": {
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Spicy_Whirlpool&prop=wikitext",
+        "fallback": "ability.creraces.spicy_whirlpool.description"
+    },
+    "remote_full_description": {
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Spicy_Whirlpool&prop=wikitext",
+        "fallback": "ability.creraces.spicy_whirlpool.description"
+    }
+}

@@ -1,63 +1,63 @@
 {
-    "name": "ability.creraces.fruitful_sacrifice.name",
-    "description": "ability.creraces.fruitful_sacrifice.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:textures/item/ghast_tear.png",
-    "cooldown": 200,
-    "cost": 15,
-    "race": [
-        "creraces:undead"
-    ],
-    "actions": [
-        {
-            "type": "creraces:apply_effect",
-            "effect": "creraces:life_drain",
-            "duration": 200,
-            "amplifier": 0,
-            "visible": true,
-            "radius": 16.0
-        },
-        {
-            "type": "creraces:apply_effect",
-            "effect": "minecraft:slowness",
-            "duration": 160,
-            "amplifier": 0,
-            "visible": true,
-            "radius": 16.0
-        },
-        {
-            "type": "creraces:apply_effect",
-            "effect": "minecraft:speed",
-            "duration": 160,
-            "amplifier": 0,
-            "visible": true
-        },
-        {
-            "type": "creraces:damage",
-            "amount": {
-                "base": 0.0,
-                "scales_with": "hp",
-                "factor": 0.25
-            },
-            "damage_type": "minecraft:wither",
-            "knockback": 0.0,
-            "source": "self"
-        },
-        {
-            "type": "creraces:play_sound",
-            "sound": "minecraft:entity.wither.ambient",
-            "volume": 1.0,
-            "pitch": 1.2
-        }
-    ],
+    "name":  "ability.creraces.fruitful_sacrifice.name",
+    "description":  "ability.creraces.fruitful_sacrifice.description",
+    "type":  "ACTIVE",
+    "icon":  "minecraft:textures/item/ghast_tear.png",
+    "cooldown":  200,
+    "cost":  15,
+    "race":  [
+                 "creraces:undead"
+             ],
+    "actions":  [
+                    {
+                        "type":  "creraces:apply_effect",
+                        "effect":  "creraces:life_drain",
+                        "duration":  200,
+                        "amplifier":  0,
+                        "visible":  true,
+                        "radius":  16.0
+                    },
+                    {
+                        "type":  "creraces:apply_effect",
+                        "effect":  "minecraft:slowness",
+                        "duration":  160,
+                        "amplifier":  0,
+                        "visible":  true,
+                        "radius":  16.0
+                    },
+                    {
+                        "type":  "creraces:apply_effect",
+                        "effect":  "minecraft:speed",
+                        "duration":  160,
+                        "amplifier":  0,
+                        "visible":  true
+                    },
+                    {
+                        "type":  "creraces:damage",
+                        "amount":  {
+                                       "base":  0.0,
+                                       "scales_with":  "hp",
+                                       "factor":  0.25
+                                   },
+                        "damage_type":  "minecraft:wither",
+                        "knockback":  0.0,
+                        "source":  "self"
+                    },
+                    {
+                        "type":  "creraces:play_sound",
+                        "sound":  "minecraft:entity.wither.ambient",
+                        "volume":  1.0,
+                        "pitch":  1.2
+                    }
+                ],
     "remote_description": {
-        "selector": "",
-        "fallback": "ability.creraces.fruitful_sacrifice.description",
-        "source": "https://creraces.wiki.gg/api.php?action=cargoquery&format=json&tables=Abilities&fields=Description&where=Name=\u0027Fruitful_Sacrifice\u0027"
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Fruitful_Sacrifice&prop=wikitext",
+        "fallback": "ability.creraces.fruitful_sacrifice.description"
     },
     "remote_full_description": {
-        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
-        "fallback": "ability.creraces.fruitful_sacrifice.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Fruitful_Sacrifice&prop=wikitext"
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Fruitful_Sacrifice&prop=wikitext",
+        "fallback": "ability.creraces.fruitful_sacrifice.description"
     }
 }

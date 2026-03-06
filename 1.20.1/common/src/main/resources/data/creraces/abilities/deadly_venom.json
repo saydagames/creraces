@@ -12,19 +12,21 @@
         {
             "type": "creraces:aoe",
             "radius": 16.0,
-            "target_players": true,
+            "targets": [
+                "enemies"
+            ],
             "required_effect": "creraces:rat_venom",
             "actions": [
                 {
                     "type": "creraces:damage",
                     "amount": {
                         "base": 1.0,
-                        "scales_with": "ad",
+                        "scales_with": "ap",
                         "factor": 1.0
                     },
                     "damage_per_stack": {
                         "base": 1.0,
-                        "scales_with": "ad",
+                        "scales_with": "ap",
                         "factor": 0.1
                     },
                     "stack_effect": "creraces:rat_venom",
@@ -45,13 +47,13 @@
         }
     ],
     "remote_description": {
-        "selector": "",
-        "fallback": "ability.creraces.deadly_venom.description",
-        "source": "https://creraces.wiki.gg/api.php?action=cargoquery&format=json&tables=Abilities&fields=Description&where=Name=\u0027Deadly_Venom\u0027"
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Deadly_Venom&prop=wikitext",
+        "fallback": "ability.creraces.deadly_venom.description"
     },
     "remote_full_description": {
-        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
-        "fallback": "ability.creraces.deadly_venom.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Deadly_Venom&prop=wikitext"
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Deadly_Venom&prop=wikitext",
+        "fallback": "ability.creraces.deadly_venom.description"
     }
 }

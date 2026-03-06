@@ -4,7 +4,7 @@ import com.google.gson.JsonArray;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.engine.ScalingValue;
-import mc.sayda.creraces.util.GsonHelper;
+
 import mc.sayda.creraces.capability.DataUtils;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
@@ -24,22 +24,17 @@ public class BeamAction implements ActionRegistry.RaceAction {
 
     private final ScalingValue length;
     private final ScalingValue radius;
-    private final boolean targetPlayers;
-    private final boolean targetEnemies;
-    private final boolean excludeCaster;
+    private final mc.sayda.creraces.engine.TargetFilter targets;
     private final ScalingValue duration;
     private final ScalingValue drainRate;
     private final List<ActionRegistry.RaceAction> actions;
     private final float[] color;
 
-    public BeamAction(ScalingValue length, ScalingValue radius, boolean targetPlayers, boolean targetEnemies,
-            boolean excludeCaster,
+    public BeamAction(ScalingValue length, ScalingValue radius, mc.sayda.creraces.engine.TargetFilter targets,
             ScalingValue duration, ScalingValue drainRate, List<ActionRegistry.RaceAction> actions, float[] color) {
         this.length = length;
         this.radius = radius;
-        this.targetPlayers = targetPlayers;
-        this.targetEnemies = targetEnemies;
-        this.excludeCaster = excludeCaster;
+        this.targets = targets;
         this.duration = duration;
         this.drainRate = drainRate;
         this.actions = actions;
@@ -99,13 +94,7 @@ public class BeamAction implements ActionRegistry.RaceAction {
         List<Entity> possibleTargets = player.level().getEntities(player, searchArea, e -> {
             if (!(e instanceof LivingEntity))
                 return false;
-            if (excludeCaster && e == player)
-                return false;
-            if (!targetPlayers && e instanceof Player)
-                return false;
-            if (!targetEnemies && !(e instanceof Player))
-                return false;
-            return mc.sayda.creraces.team.RaceTeamManager.canHurt((LivingEntity) e, player);
+            return targets.isValid((LivingEntity) e, player);
         });
 
         for (Entity e : possibleTargets) {
@@ -189,9 +178,8 @@ public class BeamAction implements ActionRegistry.RaceAction {
         ActionRegistry.register(ID, json -> {
             ScalingValue length = ScalingValue.fromJson(json, "length", 20.0);
             ScalingValue radius = ScalingValue.fromJson(json, "radius", 2.0);
-            boolean targetPlayers = GsonHelper.getAsBoolean(json, "target_players", true);
-            boolean targetEnemies = GsonHelper.getAsBoolean(json, "target_enemies", true);
-            boolean excludeCaster = GsonHelper.getAsBoolean(json, "exclude_caster", true);
+            mc.sayda.creraces.engine.TargetFilter targets = mc.sayda.creraces.engine.TargetFilter.fromJson(json,
+                    "targets");
             ScalingValue duration = ScalingValue.fromJson(json, "duration", 0.0);
             ScalingValue drainRate = ScalingValue.fromJson(json, "drain_rate", 0.0);
 
@@ -210,7 +198,7 @@ public class BeamAction implements ActionRegistry.RaceAction {
                     actions.add(ActionRegistry.fromJson(array.get(i).getAsJsonObject()));
                 }
             }
-            return new BeamAction(length, radius, targetPlayers, targetEnemies, excludeCaster, duration,
+            return new BeamAction(length, radius, targets, duration,
                     drainRate, actions, color);
         });
     }

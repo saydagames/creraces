@@ -1,6 +1,7 @@
 {
     "name": "ability.creraces.mini_build.name",
     "description": "ability.creraces.mini_build.description",
+    "type": "ACTIVE",
     "icon": "minecraft:grass_block",
     "cooldown": 20,
     "cost": 0,
@@ -16,7 +17,7 @@
             "condition": {
                 "type": "creraces:entity_data",
                 "key": "minibuild",
-                "value": 1.0,
+                "value": 1,
                 "operator": "=="
             },
             "if_true": [
@@ -37,18 +38,18 @@
         {
             "type": "creraces:play_sound",
             "sound": "creraces:coin_pickup_1",
-            "volume": 1.0,
-            "pitch": 2.0
+            "volume": 1,
+            "pitch": 2
         }
     ],
     "remote_description": {
-        "selector": "",
-        "fallback": "ability.creraces.mini_build.description",
-        "source": "https://creraces.wiki.gg/api.php?action=cargoquery&format=json&tables=Abilities&fields=Description&where=Name=\u0027Mini_Build\u0027"
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Mini_Build&prop=wikitext",
+        "fallback": "ability.creraces.mini_build.description"
     },
     "remote_full_description": {
-        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
-        "fallback": "ability.creraces.mini_build.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Mini_Build&prop=wikitext"
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Mini_Build&prop=wikitext",
+        "fallback": "ability.creraces.mini_build.description"
     }
 }

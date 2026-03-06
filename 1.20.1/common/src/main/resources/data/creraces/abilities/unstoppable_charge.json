@@ -1,44 +1,44 @@
 {
-    "name": "ability.creraces.unstoppable_charge.name",
-    "description": "ability.creraces.unstoppable_charge.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:textures/item/iron_chestplate.png",
-    "cooldown": 120,
-    "cost": 20,
-    "race": [
-        "creraces:dwarf"
-    ],
-    "actions": [
-        {
-            "type": "creraces:dash",
-            "power": {
-                "base": 2.0,
-                "ad": 0.3
-            },
-            "direction": "forward"
-        },
-        {
-            "type": "creraces:apply_effect",
-            "effect": "minecraft:absorption",
-            "duration": 600,
-            "amplifier": 0,
-            "visible": true
-        },
-        {
-            "type": "creraces:play_sound",
-            "sound": "minecraft:entity.iron_golem.hurt",
-            "volume": 1.0,
-            "pitch": 0.7
-        }
-    ],
+    "name":  "ability.creraces.unstoppable_charge.name",
+    "description":  "ability.creraces.unstoppable_charge.description",
+    "type":  "ACTIVE",
+    "icon":  "minecraft:textures/item/iron_chestplate.png",
+    "cooldown":  120,
+    "cost":  20,
+    "race":  [
+                 "creraces:dwarf"
+             ],
+    "actions":  [
+                    {
+                        "type":  "creraces:dash",
+                        "power":  {
+                                      "base":  2.0,
+                                      "ad":  0.3
+                                  },
+                        "direction":  "forward"
+                    },
+                    {
+                        "type":  "creraces:apply_effect",
+                        "effect":  "minecraft:absorption",
+                        "duration":  600,
+                        "amplifier":  0,
+                        "visible":  true
+                    },
+                    {
+                        "type":  "creraces:play_sound",
+                        "sound":  "minecraft:entity.iron_golem.hurt",
+                        "volume":  1.0,
+                        "pitch":  0.7
+                    }
+                ],
     "remote_description": {
-        "selector": "",
-        "fallback": "ability.creraces.unstoppable_charge.description",
-        "source": "https://creraces.wiki.gg/api.php?action=cargoquery&format=json&tables=Abilities&fields=Description&where=Name=\u0027Unstoppable_Charge\u0027"
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Unstoppable_Charge&prop=wikitext",
+        "fallback": "ability.creraces.unstoppable_charge.description"
     },
     "remote_full_description": {
-        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
-        "fallback": "ability.creraces.unstoppable_charge.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Unstoppable_Charge&prop=wikitext"
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Unstoppable_Charge&prop=wikitext",
+        "fallback": "ability.creraces.unstoppable_charge.description"
     }
 }

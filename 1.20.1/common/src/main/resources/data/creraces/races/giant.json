@@ -14,7 +14,11 @@
     "tier": "creraces:uncommon",
     "difficulty": 3,
     "passives": {
-        "immune_to_knockback": true
+        "immune_to_knockback": true,
+        "negate_effects": [
+            "minecraft:levitation"
+        ],
+        "step_height": 1.0
     },
     "traits": [
         {
@@ -24,7 +28,43 @@
                 "base": 5.0
             },
             "operation": "addition"
+        },
+        {
+            "type": "creraces:on_hurt",
+            "condition": {
+                "type": "creraces:attack_charged"
+            },
+            "actions": [
+                {
+                    "type": "creraces:modify_resource",
+                    "resource": "grit",
+                    "operation": "add",
+                    "value": 5.0
+                }
+            ]
+        },
+        {
+            "type": "creraces:on_death",
+            "condition": {
+                "type": "creraces:resource_level",
+                "resource": "grit",
+                "operator": ">",
+                "value": 0
+            },
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:absorption",
+                    "duration": 100,
+                    "amplifier": 0,
+                    "visible": true
+                }
+            ]
         }
+    ],
+    "starting_abilities": [
+        "creraces:unstoppable_force",
+        "creraces:tectonic_smash"
     ],
     "portrait": "creraces:textures/screens/giant_portrait.png",
     "name_texture": "creraces:textures/screens/giant_text.png",

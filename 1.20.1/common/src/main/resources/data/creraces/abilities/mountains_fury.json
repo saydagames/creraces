@@ -1,0 +1,102 @@
+{
+    "name": "ability.creraces.mountains_fury.name",
+    "description": "ability.creraces.mountains_fury.description",
+    "type": "ACTIVE",
+    "icon": "minecraft:textures/item/magma_cream.png",
+    "cooldown": 0,
+    "cost": 0,
+    "race": [
+        "creraces:oread"
+    ],
+    "actions": [
+        {
+            "type": "creraces:conditional",
+            "condition": {
+                "type": "creraces:state_equals",
+                "state": "slot",
+                "value": 1
+            },
+            "if_true": [
+                {
+                    "type": "creraces:aoe",
+                    "radius": 5.0,
+                    "targets": [
+                        "enemies"
+                    ],
+                    "source": "caster",
+                    "actions": [
+                        {
+                            "type": "creraces:damage",
+                            "amount": {
+                                "base": 2.0,
+                                "scales_with": "ap",
+                                "factor": 0.02,
+                                "scales": [
+                                    {
+                                        "stat": "var:stacks",
+                                        "factor": 0.01
+                                    }
+                                ]
+                            },
+                            "damage_type": "minecraft:in_fire"
+                        },
+                        {
+                            "type": "creraces:set_on_fire",
+                            "duration": 5
+                        },
+                        {
+                            "type": "creraces:apply_velocity",
+                            "y": 0.5,
+                            "relative": false
+                        }
+                    ]
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:entity.generic.explode",
+                    "volume": 1.0,
+                    "pitch": 0.5
+                },
+                {
+                    "type": "creraces:spawn_particles",
+                    "particle": "minecraft:lava",
+                    "count": 30
+                },
+                {
+                    "type": "creraces:modify_resource",
+                    "resource": "stacks",
+                    "operation": "set",
+                    "value": 0
+                },
+                {
+                    "type": "creraces:set_state",
+                    "state": "slot",
+                    "value": 0
+                }
+            ],
+            "if_false": [
+                {
+                    "type": "creraces:set_state",
+                    "state": "slot",
+                    "value": 1
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:block.fire.ambient",
+                    "volume": 1.0,
+                    "pitch": 1.5
+                }
+            ]
+        }
+    ],
+    "remote_description": {
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Mountains_Fury&prop=wikitext",
+        "fallback": "ability.creraces.mountains_fury.description"
+    },
+    "remote_full_description": {
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Mountains_Fury&prop=wikitext",
+        "fallback": "ability.creraces.mountains_fury.description"
+    }
+}

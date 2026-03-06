@@ -1,6 +1,7 @@
 {
     "name": "ability.creraces.whirlpool.name",
     "description": "ability.creraces.whirlpool.description",
+    "type": "ACTIVE",
     "icon": "minecraft:nautilus_shell",
     "cooldown": 200,
     "cost": 20,
@@ -16,7 +17,7 @@
             "if_true": [
                 {
                     "type": "creraces:aoe",
-                    "radius": 5.0,
+                    "radius": 5,
                     "actions": [
                         {
                             "type": "creraces:apply_velocity",
@@ -27,27 +28,27 @@
                             "type": "creraces:modify_resource",
                             "resource": "air",
                             "operation": "add",
-                            "value": -20.0
+                            "value": -20
                         }
                     ]
                 },
                 {
                     "type": "creraces:play_sound",
                     "sound": "minecraft:block.bubble_column.whirlpool_inside",
-                    "volume": 1.0,
-                    "pitch": 1.0
+                    "volume": 1,
+                    "pitch": 1
                 }
             ]
         }
     ],
     "remote_description": {
-        "selector": "",
-        "fallback": "ability.creraces.whirlpool.description",
-        "source": "https://creraces.wiki.gg/api.php?action=cargoquery&format=json&tables=Abilities&fields=Description&where=Name=\u0027Whirlpool\u0027"
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Whirlpool&prop=wikitext",
+        "fallback": "ability.creraces.whirlpool.description"
     },
     "remote_full_description": {
-        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
-        "fallback": "ability.creraces.whirlpool.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Whirlpool&prop=wikitext"
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Whirlpool&prop=wikitext",
+        "fallback": "ability.creraces.whirlpool.description"
     }
 }

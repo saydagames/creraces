@@ -19,7 +19,10 @@
                 "base": 200
             },
             "radius": 10.0,
-            "target_enemies": false
+            "targets": [
+                "allies",
+                "!self"
+            ]
         },
         {
             "type": "creraces:apply_effect",
@@ -31,7 +34,10 @@
                 "base": 200
             },
             "radius": 10.0,
-            "target_enemies": false
+            "targets": [
+                "allies",
+                "!self"
+            ]
         },
         {
             "type": "creraces:play_sound",
@@ -41,13 +47,13 @@
         }
     ],
     "remote_description": {
-        "selector": "",
-        "fallback": "ability.creraces.boost_morale.description",
-        "source": "https://creraces.wiki.gg/api.php?action=cargoquery&format=json&tables=Abilities&fields=Description&where=Name=\u0027Boost_Morale\u0027"
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Boost_Morale&prop=wikitext",
+        "fallback": "ability.creraces.boost_morale.description"
     },
     "remote_full_description": {
-        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
-        "fallback": "ability.creraces.boost_morale.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Boost_Morale&prop=wikitext"
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Boost_Morale&prop=wikitext",
+        "fallback": "ability.creraces.boost_morale.description"
     }
 }

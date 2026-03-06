@@ -7,12 +7,12 @@
     "plugin": "mc.sayda.creraces.mixin.MixinConfigPlugin",
     "mixins": [
         "PlayerMixin",
+        "ServerPlayerMixin",
         "EntityMixin",
         "MobMixin",
         "FoodDataMixin",
         "LivingEntityMixin",
         "BlockStateSolidityMixin",
-        "PlayerSleepMixin",
         "LivingEntitySleepMixin",
         "PlayerRespawnMixin",
         "BlockEntityAccessor"

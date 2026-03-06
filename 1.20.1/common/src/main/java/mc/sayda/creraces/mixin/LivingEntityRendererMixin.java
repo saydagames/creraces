@@ -18,8 +18,13 @@ public abstract class LivingEntityRendererMixin {
     private void creraces$rendering(LivingEntity entity, float entityYaw, float partialTicks, PoseStack matrixStack,
             MultiBufferSource buffer, int packedLight, CallbackInfo ci) {
         if (entity.hasEffect(ModMobEffects.TRUE_INVISIBILITY.get())) {
-            ci.cancel();
-            return;
+            // Don't cancel the render for the local player themselves (they'd vanish in F5
+            // mode etc.)
+            net.minecraft.client.player.LocalPlayer localPlayer = net.minecraft.client.Minecraft.getInstance().player;
+            if (entity != localPlayer) {
+                ci.cancel();
+                return;
+            }
         }
 
         // Spirit Realm Visibility

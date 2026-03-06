@@ -105,6 +105,13 @@ public class AbilityManager extends SimplePreparableReloadListener<Map<ResourceL
                     }
                 }
 
+                java.util.List<mc.sayda.creraces.engine.ActionRegistry.RaceAction> onDeactivate = new java.util.ArrayList<>();
+                if (jsonObject.has("on_deactivate")) {
+                    for (JsonElement e : jsonObject.getAsJsonArray("on_deactivate")) {
+                        onDeactivate.add(mc.sayda.creraces.engine.ActionRegistry.fromJson(e.getAsJsonObject()));
+                    }
+                }
+
                 // Remote Documentation
                 if (jsonObject.has("remote_description")) {
                     mc.sayda.creraces.util.RemoteDocConfig remoteConfig = mc.sayda.creraces.util.RemoteDocConfig
@@ -139,7 +146,8 @@ public class AbilityManager extends SimplePreparableReloadListener<Map<ResourceL
                         cost,
                         persistent,
                         allowedRaces,
-                        onActivate);
+                        onActivate,
+                        onDeactivate);
 
                 AbilityRegistry.register(ability);
                 count[0]++;

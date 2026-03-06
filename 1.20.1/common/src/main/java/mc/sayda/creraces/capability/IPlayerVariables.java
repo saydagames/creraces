@@ -71,10 +71,6 @@ public interface IPlayerVariables extends ISerializableData {
 
     void setPassiveCooldown(double ticks);
 
-    double getResourceTimer();
-
-    void setResourceTimer(double ticks);
-
     Map<ResourceLocation, Integer> getCooldowns();
 
     void setCooldown(ResourceLocation abilityId, int ticks);

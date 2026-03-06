@@ -192,7 +192,7 @@ public class MiniBlockPlaceMixin {
         if (isSmallBuild) {
             if (isStart) {
                 long now = net.minecraft.Util.getMillis();
-                if (now - creraces$lastMiniInteractionTime < 50) {
+                if (now - creraces$lastMiniInteractionTime < CreRacesConfig.MINI_PLACEMENT_SPAM_THRESHOLD_MS.get()) {
                     return true; // Suppress rapid spam
                 }
                 creraces$lastMiniInteractionTime = now;

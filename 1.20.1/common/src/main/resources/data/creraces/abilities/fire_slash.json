@@ -15,7 +15,10 @@
             "radius": 4.0,
             "set_on_fire": true,
             "fire_duration": 5,
-            "target_players": false
+            "targets": [
+                "enemies",
+                "!players"
+            ]
         },
         {
             "type": "creraces:play_sound",
@@ -25,13 +28,13 @@
         }
     ],
     "remote_description": {
-        "selector": "",
-        "fallback": "ability.creraces.fire_slash.description",
-        "source": "https://creraces.wiki.gg/api.php?action=cargoquery&format=json&tables=Abilities&fields=Description&where=Name=\u0027Fire_Slash\u0027"
+        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Fire_Slash&prop=wikitext",
+        "fallback": "ability.creraces.fire_slash.description"
     },
     "remote_full_description": {
-        "selector": "(?i)==\\\\s*Description\\\\s*==[\\\\s\\\\r\\\\n]*(.*?)(?=[\\\\s\\\\r\\\\n]+==|$)",
-        "fallback": "ability.creraces.fire_slash.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Fire_Slash&prop=wikitext"
+        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
+        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Fire_Slash&prop=wikitext",
+        "fallback": "ability.creraces.fire_slash.description"
     }
 }
