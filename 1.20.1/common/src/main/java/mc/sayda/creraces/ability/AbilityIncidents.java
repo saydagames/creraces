@@ -59,7 +59,7 @@ public class AbilityIncidents {
 
                     double haste = player
                             .getAttributeValue(mc.sayda.creraces.registry.ModAttributes.ABILITY_HASTE.get());
-                    double cap = mc.sayda.creraces.config.CreRacesConfig.ABILITY_HASTE_CAP.get();
+                    double cap = 40.0; // ABILITY_HASTE_CAP default
                     double effectiveHaste = Math.min(haste, cap);
                     double multiplier = 1.0 - (effectiveHaste / 100.0);
                     int cooledTicks = (int) (ability.cooldown() * multiplier);

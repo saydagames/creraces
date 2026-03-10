@@ -48,7 +48,7 @@ public class StealItemAction implements ActionRegistry.RaceAction {
             if (!nonEmpty.isEmpty()) {
                 int pickedSlot = nonEmpty.get(player.level().random.nextInt(nonEmpty.size()));
                 stolenStack = targetPlayer.getInventory().getItem(pickedSlot).copy();
-                targetPlayer.getInventory().getItem(pickedSlot).setCount(0);
+                targetPlayer.getInventory().setItem(pickedSlot, net.minecraft.world.item.ItemStack.EMPTY);
             }
         }
 
@@ -62,8 +62,8 @@ public class StealItemAction implements ActionRegistry.RaceAction {
 
     public static void register() {
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "steal_item"), json -> {
-            ScalingValue chance = ScalingValue.fromJson(json, "chance", 0.1);
-            String slot = GsonHelper.getAsString(json, "slot", "mainhand");
+            ScalingValue chance = ScalingValue.fromJson(json, "chance", 0.5);
+            String slot = GsonHelper.getAsString(json, "slot", "random");
             return new StealItemAction(chance, slot);
         });
     }

@@ -31,7 +31,11 @@ import javax.annotation.Nullable;
  */
 public class MicroBlock extends BaseEntityBlock {
 
+    // Idk about this Box implementation to be entierly honest, these numbers are
+    // kinda just freshly served from my rear ngl, hopefully it stops the crash
+    // though
     public static final IntegerProperty LIGHT = IntegerProperty.create("light", 0, 15);
+    public static final VoxelShape BOX = Block.box(0.01, 0.01, 0.01, 0.02, 0.02, 0.02);
 
     public static final BlockBehaviour.Properties PROPERTIES = BlockBehaviour.Properties.of()
             .noOcclusion()
@@ -72,17 +76,21 @@ public class MicroBlock extends BaseEntityBlock {
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         if (level.getBlockEntity(pos) instanceof MicroBlockEntity micro) {
-            return micro.getOrCreateShape(false, level);
+            VoxelShape shape = micro.getOrCreateShape(false, level);
+            return shape.isEmpty() ? BOX : shape;
         }
-        return Shapes.empty();
+        return BOX;
+
     }
 
     @Override
     public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         if (level.getBlockEntity(pos) instanceof MicroBlockEntity micro) {
-            return micro.getOrCreateShape(true, level);
+            VoxelShape shape = micro.getOrCreateShape(true, level);
+            return shape.isEmpty() ? BOX : shape;
         }
-        return Shapes.empty();
+        return BOX;
+
     }
 
     // ─── Solidity & Occlusion ───────────────────────────────────────────────────
@@ -114,6 +122,11 @@ public class MicroBlock extends BaseEntityBlock {
             net.minecraft.world.InteractionHand hand, net.minecraft.world.phys.BlockHitResult hitResult) {
         if (level.isClientSide()) {
             return net.minecraft.world.InteractionResult.SUCCESS;
+        }
+
+        // --- PERMISSION CHECK ---
+        if (!mc.sayda.creraces.capability.DataUtils.canInteractWithMiniBuild(player)) {
+            return net.minecraft.world.InteractionResult.PASS;
         }
 
         if (level.getBlockEntity(pos) instanceof MicroBlockEntity micro) {

@@ -82,14 +82,5 @@
             "if_false": []
         }
     ],
-    "remote_description": {
-        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Thorn_Shackles&prop=wikitext",
-        "fallback": "ability.creraces.thorn_shackles.description"
-    },
-    "remote_full_description": {
-        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Thorn_Shackles&prop=wikitext",
-        "fallback": "ability.creraces.thorn_shackles.description"
-    }
+    "wiki_page": "Ability:Thorn_Shackles"
 }

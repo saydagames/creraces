@@ -1,23 +1,51 @@
 package mc.sayda.creraces.engine.actions;
 
+import com.google.gson.JsonObject;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.engine.ActionRegistry;
+import mc.sayda.creraces.engine.ScalingValue;
+import mc.sayda.creraces.util.GsonHelper;
+import mc.sayda.creraces.util.PocketManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
 public class PocketEntryAction implements ActionRegistry.RaceAction {
-    private static final ResourceLocation POCKET_DIM = new ResourceLocation(CreRaces.MODID, "pocket");
-    private static final ResourceLocation POCKET_STRUCTURE = new ResourceLocation(CreRaces.MODID, "dryad_box_1");
+    private final ResourceLocation dimension;
+    private final ResourceLocation structure;
+    private final ScalingValue spawnOffsetX;
+    private final ScalingValue spawnOffsetY;
+    private final ScalingValue spawnOffsetZ;
+    private final ScalingValue structureOffsetX;
+    private final ScalingValue structureOffsetY;
+    private final ScalingValue structureOffsetZ;
+    private final ScalingValue returnOffsetX;
+    private final ScalingValue returnOffsetY;
+    private final ScalingValue returnOffsetZ;
+
+    public PocketEntryAction(ResourceLocation dimension, ResourceLocation structure,
+            ScalingValue spawnOffsetX, ScalingValue spawnOffsetY, ScalingValue spawnOffsetZ,
+            ScalingValue structureOffsetX, ScalingValue structureOffsetY, ScalingValue structureOffsetZ,
+            ScalingValue returnOffsetX, ScalingValue returnOffsetY, ScalingValue returnOffsetZ) {
+        this.dimension = dimension;
+        this.structure = structure;
+        this.spawnOffsetX = spawnOffsetX;
+        this.spawnOffsetY = spawnOffsetY;
+        this.spawnOffsetZ = spawnOffsetZ;
+        this.structureOffsetX = structureOffsetX;
+        this.structureOffsetY = structureOffsetY;
+        this.structureOffsetZ = structureOffsetZ;
+        this.returnOffsetX = returnOffsetX;
+        this.returnOffsetY = returnOffsetY;
+        this.returnOffsetZ = returnOffsetZ;
+    }
 
     @Override
     public boolean execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
@@ -26,27 +54,19 @@ public class PocketEntryAction implements ActionRegistry.RaceAction {
         if (!(player instanceof ServerPlayer serverPlayer))
             return true;
 
-        ServerLevel pocketWorld = serverPlayer.server.getLevel(ResourceKey.create(Registries.DIMENSION, POCKET_DIM));
+        ServerLevel pocketWorld = serverPlayer.server.getLevel(ResourceKey.create(Registries.DIMENSION, dimension));
         if (pocketWorld == null) {
-            CreRaces.LOGGER.error("Could not find pocket dimension: {}", POCKET_DIM);
+            CreRaces.LOGGER.error("Could not find pocket dimension: {}", dimension);
             return true;
         }
 
         DataUtils.getVariables(serverPlayer).ifPresent(vars -> {
-            if (serverPlayer.level().dimension().location().equals(POCKET_DIM)) {
-                // Return to Overworld
-                ResourceLocation returnDim = new ResourceLocation(vars.getReturnDim());
-                ServerLevel overworld = serverPlayer.server
-                        .getLevel(ResourceKey.create(Registries.DIMENSION, returnDim));
-                if (overworld != null) {
-                    serverPlayer.teleportTo(overworld, vars.getReturnX(), vars.getReturnY(), vars.getReturnZ(),
-                            serverPlayer.getYRot(), serverPlayer.getXRot());
-                } else {
-                    // Fallback to Overworld spawn if return dim is invalid
-                    ServerLevel ow = serverPlayer.server.overworld();
-                    BlockPos spawn = ow.getSharedSpawnPos();
-                    serverPlayer.teleportTo(ow, spawn.getX(), spawn.getY(), spawn.getZ(), 0, 0);
-                }
+            if (serverPlayer.level().dimension().location().equals(dimension)) {
+                // Return to Entry Dimension
+                double rx = vars.getReturnX() + returnOffsetX.evaluate(player, target);
+                double ry = vars.getReturnY() + returnOffsetY.evaluate(player, target);
+                double rz = vars.getReturnZ() + returnOffsetZ.evaluate(player, target);
+                teleport(serverPlayer, vars.getReturnDim(), rx, ry, rz);
                 return;
             }
 
@@ -63,44 +83,84 @@ public class PocketEntryAction implements ActionRegistry.RaceAction {
             double ty = vars.getPocketY();
             double tz = vars.getPocketZ();
 
-            // Default fallback if not set — assign a unique grid slot based on player
-            // entity ID.
-            // Grid: 10,000-unit spacing in both X and Z to avoid structure collisions.
-            // Using a 1000×1000 grid (up to 1,000,000 unique slots).
-            if (tx == 0 && ty == 0 && tz == 0) {
-                int id = serverPlayer.getId();
-                tx = 10000.0 * (id % 1000);
-                ty = 100.0;
-                tz = 10000.0 * (id / 1000);
+            if (firstTime) {
+                // If this is a fresh acquisition (e.g. after race reset),
+                // get a brand new index even if we had one before.
+                vars.setPocketIndex(PocketManager.getNextIndex());
+
+                int index = vars.getPocketIndex();
+                tx = 1000 * (index % 1000);
+                ty = 128;
+                tz = 1000 * (index / 1000);
                 vars.setPocketX(tx);
                 vars.setPocketY(ty);
                 vars.setPocketZ(tz);
-            }
 
-            if (firstTime) {
                 final double finalTx = tx;
                 final double finalTy = ty;
                 final double finalTz = tz;
+                double sOffX = structureOffsetX.evaluate(player, target);
+                double sOffY = structureOffsetY.evaluate(player, target);
+                double sOffZ = structureOffsetZ.evaluate(player, target);
 
-                StructureTemplate template = pocketWorld.getStructureManager().getOrCreate(POCKET_STRUCTURE);
+                StructureTemplate template = pocketWorld.getStructureManager().getOrCreate(structure);
                 if (template != null) {
                     template.placeInWorld(pocketWorld,
-                            BlockPos.containing(finalTx, finalTy, finalTz),
-                            BlockPos.containing(finalTx, finalTy, finalTz),
+                            BlockPos.containing(finalTx + sOffX, finalTy + sOffY, finalTz + sOffZ),
+                            BlockPos.containing(finalTx + sOffX, finalTy + sOffY, finalTz + sOffZ),
                             new StructurePlaceSettings(), pocketWorld.random, 3);
                 } else {
-                    CreRaces.LOGGER.warn("Pocket structure not found: {}", POCKET_STRUCTURE);
+                    CreRaces.LOGGER.warn("Pocket structure not found: {}", structure);
                 }
                 vars.setHasPocket(true);
+
+                // Initialize stable spawn point for this host's pocket
+                vars.setPocketSpawnX(tx + spawnOffsetX.evaluate(player, target) + sOffX);
+                vars.setPocketSpawnY(ty + spawnOffsetY.evaluate(player, target) + sOffY);
+                vars.setPocketSpawnZ(tz + spawnOffsetZ.evaluate(player, target) + sOffZ);
             }
 
-            // Teleport to the pocket spawn point
-            serverPlayer.teleportTo(pocketWorld, tx + 4.5, ty + 1.0, tz + 4.5, 0, 0);
+            // Teleport to the saved stable spawn point
+            serverPlayer.teleportTo(pocketWorld,
+                    vars.getPocketSpawnX(),
+                    vars.getPocketSpawnY(),
+                    vars.getPocketSpawnZ(), 0, 0);
         });
         return true;
     }
 
+    public static void teleport(ServerPlayer player, String dimension, double x, double y, double z) {
+        String dimName = (dimension == null || dimension.isEmpty()) ? "minecraft:overworld" : dimension;
+        ResourceLocation dimLoc = new ResourceLocation(dimName);
+        ResourceKey<net.minecraft.world.level.Level> dimKey = ResourceKey
+                .create(net.minecraft.core.registries.Registries.DIMENSION, dimLoc);
+        ServerLevel level = player.server.getLevel(dimKey);
+        if (level != null) {
+            player.teleportTo(level, x, y, z, player.getYRot(), player.getXRot());
+        } else {
+            ServerLevel ow = player.server.overworld();
+            BlockPos spawn = ow.getSharedSpawnPos();
+            player.teleportTo(ow, spawn.getX(), spawn.getY(), spawn.getZ(), 0, 0);
+        }
+    }
+
     public static void register() {
-        ActionRegistry.register(new ResourceLocation("creraces:enter_pocket"), json -> new PocketEntryAction());
+        ActionRegistry.register(new ResourceLocation("creraces:enter_pocket"), json -> {
+            ResourceLocation dimension = new ResourceLocation(
+                    GsonHelper.getAsString(json, "dimension", "creraces:pocket"));
+            ResourceLocation structure = new ResourceLocation(
+                    GsonHelper.getAsString(json, "structure", "creraces:box"));
+            ScalingValue spawnX = ScalingValue.fromJson(json, "spawn_x", 6);
+            ScalingValue spawnY = ScalingValue.fromJson(json, "spawn_y", 2.0);
+            ScalingValue spawnZ = ScalingValue.fromJson(json, "spawn_z", 6);
+            ScalingValue structX = ScalingValue.fromJson(json, "structure_x", 0.0);
+            ScalingValue structY = ScalingValue.fromJson(json, "structure_y", 0.0);
+            ScalingValue structZ = ScalingValue.fromJson(json, "structure_z", 0.0);
+            ScalingValue returnX = ScalingValue.fromJson(json, "return_offset_x", 0.0);
+            ScalingValue returnY = ScalingValue.fromJson(json, "return_offset_y", 0.0);
+            ScalingValue returnZ = ScalingValue.fromJson(json, "return_offset_z", 0.0);
+            return new PocketEntryAction(dimension, structure, spawnX, spawnY, spawnZ, structX, structY, structZ,
+                    returnX, returnY, returnZ);
+        });
     }
 }

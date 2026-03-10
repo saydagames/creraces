@@ -36,12 +36,16 @@ public class RemoveEffectAction implements ActionRegistry.RaceAction {
         };
 
         double r = radius.evaluate(player, target);
+        int maxAoeRadius = 100;
+        if (maxAoeRadius > 0)
+            r = Math.min(r, maxAoeRadius);
+
         if (r > 0) {
             // AoE Mode
             net.minecraft.world.phys.AABB area = player.getBoundingBox().inflate(r);
             player.level().getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class, area, e -> {
                 return targets.isValid(e, player);
-            }).forEach(e -> remove.accept(e));
+            }).forEach(remove);
         } else {
             // Single Target Mode
             net.minecraft.world.entity.LivingEntity entity = (target != null) ? target : (useTarget ? null : player);

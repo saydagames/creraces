@@ -6,8 +6,6 @@ import mc.sayda.creraces.CreRaces;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.state.BlockBehaviour;
-import net.minecraft.world.level.block.state.properties.BlockSetType;
-import net.minecraft.world.level.block.state.properties.WoodType;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
 import net.minecraft.world.level.block.SoundType;
@@ -32,7 +30,7 @@ public class ModBlocks {
         public static final RegistrySupplier<Block> DRYAD_PETRIFIED_WOOD = BLOCKS.register("dryad_petrified_wood",
                         () -> new RotatedPillarBlock(
                                         BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_GREEN)
-                                                        .strength(2.0f).sound(SoundType.WOOD)));
+                                                        .strength(-1.0f, 3600000.0f).sound(SoundType.WOOD)));
         public static final RegistrySupplier<Block> DRYAD_PLANKS = BLOCKS.register("dryad_planks",
                         () -> new Block(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_GREEN).strength(2.0f)
                                         .sound(SoundType.WOOD)));
@@ -43,11 +41,11 @@ public class ModBlocks {
                                         BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_GREEN).strength(0.2f)
                                                         .randomTicks().sound(SoundType.GRASS).noOcclusion()));
         public static final RegistrySupplier<Block> DRYAD_LEAVES_FLOWERING = BLOCKS.register("dryad_leaves_flowering",
-                        () -> new LeavesBlock(
+                        () -> new mc.sayda.creraces.block.DryadLeavesFloweringBlock(
                                         BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_GREEN).strength(0.2f)
                                                         .randomTicks().sound(SoundType.GRASS).noOcclusion()));
         public static final RegistrySupplier<Block> DRYAD_LEAVES_FRUIT = BLOCKS.register("dryad_leaves_fruit",
-                        () -> new LeavesBlock(
+                        () -> new mc.sayda.creraces.block.DryadLeavesFruitBlock(
                                         BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_GREEN).strength(0.2f)
                                                         .randomTicks().sound(SoundType.GRASS).noOcclusion()));
 
@@ -62,13 +60,15 @@ public class ModBlocks {
                                                                                            // be
                                                                                            // added
         public static final RegistrySupplier<Block> DRYAD_ROOT = BLOCKS.register("dryad_root",
-                        () -> new mc.sayda.creraces.block.DryadRootBlock(BlockBehaviour.Properties.copy(Blocks.DIRT)
-                                        .strength(-1.0f, 3600000.0f)));
+                        () -> new mc.sayda.creraces.block.RootBlock(
+                                        mc.sayda.creraces.block.RootBlock.getDefaultProperties()));
         public static final RegistrySupplier<Block> DRYAD_LANTERN = BLOCKS.register("dryad_lantern",
-                        () -> new LanternBlock(BlockBehaviour.Properties.of().strength(3.5f).sound(SoundType.LANTERN)
-                                        .lightLevel(state -> 15).noOcclusion()));
+                        () -> new Block(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_GREEN).strength(3.5f)
+                                        .sound(SoundType.WOOD).lightLevel(state -> 15)));
         public static final RegistrySupplier<Block> DRYAD_TOTEM = BLOCKS.register("dryad_totem",
                         () -> new Block(BlockBehaviour.Properties.of().strength(2.5f).sound(SoundType.WOOD)));
+        public static final RegistrySupplier<Block> DRYAD_EXPANSION_PANEL = BLOCKS.register("dryad_expansion_panel",
+                        () -> new mc.sayda.creraces.block.DryadExpansionPanelBlock());
 
         // Dryad Furniture/Structural
         public static final RegistrySupplier<Block> DRYAD_STAIRS = BLOCKS.register("dryad_stairs",

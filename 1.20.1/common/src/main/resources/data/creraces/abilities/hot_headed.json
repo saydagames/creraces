@@ -37,14 +37,13 @@
             ]
         }
     ],
-    "remote_description": {
-        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Hot_Headed&prop=wikitext",
-        "fallback": "ability.creraces.hot_headed.description"
-    },
-    "remote_full_description": {
-        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Hot_Headed&prop=wikitext",
-        "fallback": "ability.creraces.hot_headed.description"
-    }
+    "on_deactivate": [
+        {
+            "type": "creraces:set_state",
+            "state": "slot",
+            "operation": "SET",
+            "value": 0
+        }
+    ],
+    "wiki_page": "Ability:Hot_Headed"
 }

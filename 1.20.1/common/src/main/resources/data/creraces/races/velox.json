@@ -55,7 +55,7 @@
                     "condition": {
                         "type": "creraces:entity_data",
                         "key": "creraces:foul_play_stacks",
-                        "operator": "\u003e=",
+                        "operator": ">=",
                         "value": 3
                     },
                     "if_true": [
@@ -106,14 +106,5 @@
         "creraces:slash_n_dash",
         "creraces:crescent_swivel"
     ],
-    "remote_description": {
-        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "fallback": "race.creraces.velox.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Velox&prop=wikitext"
-    },
-    "remote_passive": {
-        "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "fallback": "No passive documentation found on wiki.",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Velox&prop=wikitext"
-    }
+    "wiki_page": "Velox"
 }

@@ -1,50 +1,41 @@
 {
-    "name":  "ability.creraces.quick_current.name",
-    "description":  "ability.creraces.quick_current.description",
-    "type":  "ACTIVE",
-    "icon":  "minecraft:kelp",
-    "cooldown":  100,
-    "cost":  15,
-    "race":  [
-                 "creraces:naiad"
-             ],
-    "actions":  [
-                    {
-                        "type":  "creraces:aoe",
-                        "radius":  6,
-                        "actions":  [
-                                        {
-                                            "type":  "creraces:apply_effect",
-                                            "effect":  "creraces:rooted",
-                                            "duration":  100,
-                                            "amplifier":  0
-                                        },
-                                        {
-                                            "type":  "creraces:apply_particles",
-                                            "particle":  "minecraft:bubble",
-                                            "count":  15,
-                                            "spread_x":  1,
-                                            "spread_y":  0.5,
-                                            "spread_z":  1
-                                        },
-                                        {
-                                            "type":  "creraces:play_sound",
-                                            "sound":  "minecraft:block.wet_grass.place",
-                                            "volume":  1,
-                                            "pitch":  0.8,
-                                            "use_target":  true
-                                        }
-                                    ]
-                    }
-                ],
-    "remote_description": {
-        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Quick_Current&prop=wikitext",
-        "fallback": "ability.creraces.quick_current.description"
-    },
-    "remote_full_description": {
-        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Quick_Current&prop=wikitext",
-        "fallback": "ability.creraces.quick_current.description"
-    }
+    "name": "ability.creraces.quick_current.name",
+    "description": "ability.creraces.quick_current.description",
+    "type": "ACTIVE",
+    "icon": "minecraft:kelp",
+    "cooldown": 100,
+    "cost": 15,
+    "race": [
+        "creraces:naiad"
+    ],
+    "actions": [
+        {
+            "type": "creraces:aoe",
+            "radius": 6,
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "creraces:rooted",
+                    "duration": 100,
+                    "amplifier": 0
+                },
+                {
+                    "type": "creraces:apply_particles",
+                    "particle": "minecraft:bubble",
+                    "count": 15,
+                    "spread_x": 1,
+                    "spread_y": 0.5,
+                    "spread_z": 1
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:block.wet_grass.place",
+                    "volume": 1,
+                    "pitch": 0.8,
+                    "use_target": true
+                }
+            ]
+        }
+    ],
+    "wiki_page": "Ability:Quick_Current"
 }

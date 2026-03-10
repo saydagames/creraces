@@ -37,7 +37,8 @@ public class PermanentEffectTrait implements TraitRegistry.RaceTrait {
             // Apply for moderate duration to avoid flickering, but short enough to clear if
             // race changes
             player.addEffect(
-                    new MobEffectInstance(effect, 220, (int) amplifier.evaluate(player), ambient, showParticles));
+                    new MobEffectInstance(effect, 200,
+                            (int) amplifier.evaluate(player), ambient, showParticles));
         }
     }
 
@@ -48,8 +49,8 @@ public class PermanentEffectTrait implements TraitRegistry.RaceTrait {
 
             mc.sayda.creraces.engine.ScalingValue amplifier = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
                     "amplifier", 0.0);
-            boolean ambient = GsonHelper.getAsBoolean(json, "ambient", false);
-            boolean showParticles = GsonHelper.getAsBoolean(json, "visible", false); // Default invisible for passives
+            boolean ambient = GsonHelper.getAsBoolean(json, "ambient", true);
+            boolean showParticles = GsonHelper.getAsBoolean(json, "visible", true);
 
             mc.sayda.creraces.engine.condition.Condition condition = null;
             if (json.has("condition")) {

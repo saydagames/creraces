@@ -48,14 +48,5 @@
     ],
     "portrait": "creraces:textures/screens/orc_portrait.png",
     "name_texture": "creraces:textures/screens/orc_text.png",
-    "remote_description": {
-        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "fallback": "race.creraces.orc.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Orc&prop=wikitext"
-    },
-    "remote_passive": {
-        "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "fallback": "No passive documentation found on wiki.",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Orc&prop=wikitext"
-    }
+    "wiki_page": "Orc"
 }

@@ -65,6 +65,11 @@ public class EquipAbilityPacket {
                 }
 
                 vars.equipAbility(slot, abilityId);
+                // Force an immediate attribute refresh to handle passive modifier changes
+                if (context.getPlayer() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                    mc.sayda.creraces.race.AttributeIncidents.eikiJudgment(sp);
+                }
+
                 // Sync back to client (and others)
                 BoundaryHandler.resyncVariables(context.getPlayer(), context.getPlayer());
             });

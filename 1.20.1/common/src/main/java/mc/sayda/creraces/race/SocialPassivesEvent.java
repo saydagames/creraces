@@ -19,7 +19,7 @@ import java.util.List;
  */
 public class SocialPassivesEvent {
 
-    private static final double DEFENSE_RANGE = 16.0; // Blocks
+    // private static final double DEFENSE_RANGE = 16.0; // Blocks
 
     public static void register() {
         // Listen to player damage events for defensive allies
@@ -53,7 +53,8 @@ public class SocialPassivesEvent {
 
         // Find nearby entities that defend this race (using tag-aware helper)
         Level level = player.level();
-        AABB searchBox = player.getBoundingBox().inflate(DEFENSE_RANGE);
+        double r = 16.0;
+        AABB searchBox = player.getBoundingBox().inflate(r);
         List<Mob> nearbyMobs = level.getEntitiesOfClass(Mob.class, searchBox,
                 mob -> SocialPassivesHelper.defendsRace(player, mob));
 

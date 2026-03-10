@@ -2,9 +2,9 @@ package mc.sayda.creraces.capability;
 
 import mc.sayda.creraces.ability.AbilitySlot;
 import net.minecraft.resources.ResourceLocation;
-
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Interface for player-specific variables in CreRaces.
@@ -144,6 +144,20 @@ public interface IPlayerVariables extends ISerializableData {
 
     void setHasPocket(boolean hasPocket);
 
+    double getPocketSize();
+
+    void setPocketSize(double size);
+
+    int getPocketIndex();
+
+    void setPocketIndex(int index);
+
+    Set<UUID> getPocketInvitations();
+
+    void inviteToPocket(UUID uuid);
+
+    void revokePocketInvitation(UUID uuid);
+
     double getPocketX();
 
     void setPocketX(double x);
@@ -155,6 +169,18 @@ public interface IPlayerVariables extends ISerializableData {
     double getPocketZ();
 
     void setPocketZ(double z);
+
+    double getPocketSpawnX();
+
+    void setPocketSpawnX(double x);
+
+    double getPocketSpawnY();
+
+    void setPocketSpawnY(double y);
+
+    double getPocketSpawnZ();
+
+    void setPocketSpawnZ(double z);
 
     double getReturnX();
 
@@ -180,5 +206,12 @@ public interface IPlayerVariables extends ISerializableData {
 
     void setSmallBuild(boolean smallBuild);
 
+    Map<ResourceLocation, Integer> getTraitTimers();
+
+    void setTraitTimer(ResourceLocation id, int ticks);
+
     void resetOnDeath();
+
+    /** Triggers a network sync for this data. */
+    void sync(net.minecraft.world.entity.player.Player player);
 }

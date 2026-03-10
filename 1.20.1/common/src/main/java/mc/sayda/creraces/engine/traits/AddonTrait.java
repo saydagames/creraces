@@ -18,12 +18,30 @@ public class AddonTrait implements TraitRegistry.RaceTrait {
     private final String tint; // Hex color or null
     private final boolean permanent; // If true, not shown in mirror UI
     private final Condition condition;
+    /**
+     * Config group this addon belongs to. RACE_ADDONS_ENABLED must be true for any
+     * group.
+     * "lore_addons" additionally requires LORE_ADDONS_ENABLED.
+     * Defaults to "race_addons" if not specified.
+     */
+    private final String configGroup;
 
-    public AddonTrait(String addonId, String tint, boolean permanent, @Nullable Condition condition) {
+    public AddonTrait(String addonId, String tint, boolean permanent, @Nullable Condition condition,
+            String configGroup) {
         this.addonId = addonId;
         this.tint = tint;
         this.permanent = permanent;
         this.condition = condition;
+        this.configGroup = configGroup;
+    }
+
+    /** Returns false if the config gate for this addon group is disabled. */
+    public boolean isEnabled() {
+        if (!mc.sayda.creraces.config.CreRacesConfig.RACE_ADDONS_ENABLED.get())
+            return false;
+        if ("lore_addons".equals(configGroup) && !mc.sayda.creraces.config.CreRacesConfig.LORE_ADDONS_ENABLED.get())
+            return false;
+        return true;
     }
 
     @Override
@@ -43,6 +61,10 @@ public class AddonTrait implements TraitRegistry.RaceTrait {
         return permanent;
     }
 
+    public String getConfigGroup() {
+        return configGroup;
+    }
+
     @Nullable
     public Condition getCondition() {
         return condition;
@@ -53,8 +75,9 @@ public class AddonTrait implements TraitRegistry.RaceTrait {
             String addonId = GsonHelper.getAsString(json, "addon_id");
             String tint = GsonHelper.getAsString(json, "tint", null);
             boolean permanent = GsonHelper.getAsBoolean(json, "permanent", false);
+            String configGroup = GsonHelper.getAsString(json, "config", "race_addons");
             Condition condition = json.has("condition") ? Condition.fromJson(json.getAsJsonObject("condition")) : null;
-            return new AddonTrait(addonId, tint, permanent, condition);
+            return new AddonTrait(addonId, tint, permanent, condition, configGroup);
         });
     }
 }

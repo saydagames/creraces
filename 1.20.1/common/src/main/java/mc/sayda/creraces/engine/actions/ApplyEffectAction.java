@@ -9,6 +9,7 @@ import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import java.util.Objects;
 
 /**
  * Action that applies a status effect (potion effect) to the player or target.
@@ -16,7 +17,7 @@ import net.minecraft.world.entity.player.Player;
 public class ApplyEffectAction implements ActionRegistry.RaceAction {
     public static final ResourceLocation ID = new ResourceLocation("creraces", "apply_effect");
 
-    private final ResourceLocation effectId;
+    private final net.minecraft.world.effect.MobEffect cachedEffect;
     private final ScalingValue duration;
     private final ScalingValue amplifier;
     private final boolean ambient;
@@ -30,7 +31,7 @@ public class ApplyEffectAction implements ActionRegistry.RaceAction {
             ScalingValue amplifier, boolean ambient, boolean visible,
             boolean useTarget, ScalingValue radius, mc.sayda.creraces.engine.TargetFilter targets,
             boolean incrementAmplifier) {
-        this.effectId = effectId;
+        this.cachedEffect = Objects.requireNonNull(BuiltInRegistries.MOB_EFFECT.get(Objects.requireNonNull(effectId)));
         this.duration = duration;
         this.amplifier = amplifier;
         this.ambient = ambient;
@@ -43,10 +44,14 @@ public class ApplyEffectAction implements ActionRegistry.RaceAction {
 
     public static void register() {
         ActionRegistry.register(ID, json -> {
-            ResourceLocation effectId = new ResourceLocation(GsonHelper.getAsString(json, "effect"));
+            ResourceLocation effectId = new ResourceLocation(
+                    Objects.requireNonNull(GsonHelper.getAsString(json, "effect")));
+            if (!BuiltInRegistries.MOB_EFFECT.containsKey(effectId)) {
+                mc.sayda.creraces.CreRaces.LOGGER.error("Unknown mob effect ID in apply_effect action: {}", effectId);
+            }
             ScalingValue duration = ScalingValue.fromJson(json, "duration", 200.0);
             ScalingValue amplifier = ScalingValue.fromJson(json, "amplifier", 0.0);
-            boolean ambient = GsonHelper.getAsBoolean(json, "ambient", false);
+            boolean ambient = GsonHelper.getAsBoolean(json, "ambient", true);
             boolean visible = GsonHelper.getAsBoolean(json, "visible", true);
             boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
 
@@ -65,24 +70,23 @@ public class ApplyEffectAction implements ActionRegistry.RaceAction {
     public boolean execute(Player player, @javax.annotation.Nullable LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
-        MobEffect effect = BuiltInRegistries.MOB_EFFECT.get(effectId);
-        if (effect == null)
+        if (cachedEffect == null)
             return true;
 
         double r = radius.evaluate(player, target);
-        int maxAoeRadius = mc.sayda.creraces.config.CreRacesConfig.AOE_MAX_RADIUS.get();
+        int maxAoeRadius = 100;
         if (maxAoeRadius > 0)
             r = Math.min(r, maxAoeRadius);
         if (r > 0) {
             // AoE Mode
             net.minecraft.world.phys.AABB area = player.getBoundingBox().inflate(r);
             player.level().getEntitiesOfClass(LivingEntity.class, area, e -> targets.isValid(e, player))
-                    .forEach(e -> applyToEntity(player, e, effect));
+                    .forEach(e -> applyToEntity(player, e, cachedEffect));
         } else {
             // Single Target Mode
             LivingEntity entity = (target != null) ? target : (useTarget ? null : player);
             if (entity != null && targets.isValid(entity, player)) {
-                applyToEntity(player, entity, effect);
+                applyToEntity(player, entity, cachedEffect);
             }
         }
         return true;

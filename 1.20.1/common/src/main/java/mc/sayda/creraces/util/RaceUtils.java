@@ -21,4 +21,34 @@ public class RaceUtils {
             return 1.0;
         }).orElse(1.0);
     }
+
+    /**
+     * Checks if the entity (if it's a player) is immune to the specified potion
+     * effect
+     * based on their race's negate_effects list.
+     */
+    public static boolean isImmuneToEffect(net.minecraft.world.entity.LivingEntity entity,
+            net.minecraft.resources.ResourceLocation effectId) {
+        if (!(entity instanceof Player player))
+            return false;
+
+        return DataUtils.getVariables(player).map(vars -> {
+            Race race = RaceRegistry.get(vars.getRace());
+            if (race == null || race.passives() == null)
+                return false;
+
+            java.util.List<String> negated = race.passives().immuneToPotionEffects();
+            if (negated == null || negated.isEmpty())
+                return false;
+
+            String idStr = effectId.toString();
+            String path = effectId.getPath();
+            for (String blocked : negated) {
+                if (blocked.equals(idStr) || blocked.equals(path)) {
+                    return true;
+                }
+            }
+            return false;
+        }).orElse(false);
+    }
 }

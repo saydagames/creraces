@@ -7,7 +7,7 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.ResourceLocation;
+import java.util.UUID;
 
 /**
  * Modern GUI for managing Race Teams.
@@ -19,17 +19,24 @@ import net.minecraft.resources.ResourceLocation;
  */
 @SuppressWarnings("null")
 public class RaceTeamScreen extends Screen {
-    private static final ResourceLocation BACKGROUND = new ResourceLocation("creraces", "textures/screens/team_bg.png");
 
     private static java.util.List<mc.sayda.creraces.network.TeamUpdatePacket.MemberInfo> members = new java.util.ArrayList<>();
     private static boolean friendlyFire;
     private static String pendingInviteTeamName = "";
+    private static mc.sayda.creraces.network.TeamUpdatePacket.MemberInfo selectedMember = null;
 
     private EditBox teamNameBox;
     private EditBox invitePlayerBox;
+    private Button promoteButton;
+    private Button demoteButton;
+    private mc.sayda.creraces.team.RaceTeamManager.Role localRole = mc.sayda.creraces.team.RaceTeamManager.Role.MEMBER;
 
     public RaceTeamScreen() {
-        super(Component.translatable("gui.creraces.team.title"));
+        this(Component.translatable("gui.creraces.team.title"));
+    }
+
+    public RaceTeamScreen(Component title) {
+        super(title);
     }
 
     public static void open() {
@@ -41,6 +48,12 @@ public class RaceTeamScreen extends Screen {
         members = membersIn;
         friendlyFire = friendlyFireIn;
         pendingInviteTeamName = invitedTeamNameIn;
+
+        if (selectedMember != null) {
+            selectedMember = members.stream().filter(m -> m.uuid().equals(selectedMember.uuid())).findFirst()
+                    .orElse(null);
+        }
+
         if (Minecraft.getInstance().screen instanceof RaceTeamScreen screen) {
             screen.init(Minecraft.getInstance(), Minecraft.getInstance().getWindow().getGuiScaledWidth(),
                     Minecraft.getInstance().getWindow().getGuiScaledHeight());
@@ -78,15 +91,30 @@ public class RaceTeamScreen extends Screen {
             }
         }).bounds(centerX - 15, centerY - 50, 50, 20).build());
 
+        // Role Management (Leader only)
+        UUID localId = Minecraft.getInstance().player != null ? Minecraft.getInstance().player.getUUID() : null;
+        this.localRole = mc.sayda.creraces.team.RaceTeamManager.Role.MEMBER;
+        for (var m : members) {
+            if (m.uuid().equals(localId)) {
+                this.localRole = m.role();
+                break;
+            }
+        }
+
         // Friendly Fire Toggle
-        this.addRenderableWidget(
-                Button.builder(Component.translatable("gui.creraces.team.friendly_fire",
-                        Component.translatable(friendlyFire ? "gui.creraces.on" : "gui.creraces.off")), b -> {
-                            mc.sayda.creraces.network.BoundaryHandler
-                                    .sendTeamRequest(new mc.sayda.creraces.network.TeamRequestPacket(
-                                            mc.sayda.creraces.network.TeamRequestPacket.Action.TOGGLE_FRIENDLY_FIRE,
-                                            ""));
-                        }).bounds(centerX + 40, centerY - 80, 100, 20).build());
+        boolean canToggleFF = this.localRole == mc.sayda.creraces.team.RaceTeamManager.Role.LEADER
+                || this.localRole == mc.sayda.creraces.team.RaceTeamManager.Role.OFFICER;
+
+        Button btn = Button.builder(Component.translatable("gui.creraces.team.friendly_fire",
+                Component.translatable(friendlyFire ? "gui.creraces.on" : "gui.creraces.off")), b -> {
+                    mc.sayda.creraces.network.BoundaryHandler
+                            .sendTeamRequest(new mc.sayda.creraces.network.TeamRequestPacket(
+                                    mc.sayda.creraces.network.TeamRequestPacket.Action.TOGGLE_FRIENDLY_FIRE,
+                                    ""));
+                }).bounds(centerX + 40, centerY - 80, 100, 20)
+                .build();
+        btn.active = canToggleFF;
+        this.addRenderableWidget(btn);
 
         // Leave Team
         this.addRenderableWidget(Button.builder(Component.translatable("gui.creraces.team.leave"), b -> {
@@ -104,9 +132,43 @@ public class RaceTeamScreen extends Screen {
                     }).bounds(centerX - 50, centerY + 20, 100, 20).build());
         }
 
+        if (this.localRole == mc.sayda.creraces.team.RaceTeamManager.Role.LEADER) {
+            promoteButton = Button.builder(Component.translatable("gui.creraces.team.promote"), b -> {
+                if (selectedMember != null) {
+                    mc.sayda.creraces.network.BoundaryHandler
+                            .sendTeamRequest(new mc.sayda.creraces.network.TeamRequestPacket(
+                                    mc.sayda.creraces.network.TeamRequestPacket.Action.PROMOTE, selectedMember.uuid()));
+                }
+            }).bounds(centerX + 60, centerY + 20, 70, 20).build();
+
+            demoteButton = Button.builder(Component.translatable("gui.creraces.team.demote"), b -> {
+                if (selectedMember != null) {
+                    mc.sayda.creraces.network.BoundaryHandler
+                            .sendTeamRequest(new mc.sayda.creraces.network.TeamRequestPacket(
+                                    mc.sayda.creraces.network.TeamRequestPacket.Action.DEMOTE, selectedMember.uuid()));
+                }
+            }).bounds(centerX + 60, centerY + 45, 70, 20).build();
+
+            this.addRenderableWidget(promoteButton);
+            this.addRenderableWidget(demoteButton);
+            updateRoleButtons();
+        }
+
         // Close button
         this.addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> this.minecraft.setScreen(null))
                 .bounds(centerX - 50, centerY + 80, 100, 20).build());
+    }
+
+    private void updateRoleButtons() {
+        if (promoteButton != null && demoteButton != null) {
+            boolean hasSelection = selectedMember != null;
+            UUID localId = Minecraft.getInstance().player != null ? Minecraft.getInstance().player.getUUID() : null;
+            boolean isSelf = hasSelection && selectedMember.uuid().equals(localId);
+
+            promoteButton.active = hasSelection && !isSelf;
+            demoteButton.active = hasSelection && !isSelf
+                    && selectedMember.role() != mc.sayda.creraces.team.RaceTeamManager.Role.MEMBER;
+        }
     }
 
     @Override
@@ -128,16 +190,53 @@ public class RaceTeamScreen extends Screen {
         graphics.drawString(this.font, Component.translatable("gui.creraces.team.members"), centerX - 120, y, 0xAAAAAA,
                 false);
         y += 12;
+
+        UUID localId = Minecraft.getInstance().player != null ? Minecraft.getInstance().player.getUUID() : null;
+
         synchronized (members) {
             for (mc.sayda.creraces.network.TeamUpdatePacket.MemberInfo member : members) {
-                MutableComponent text = Component.literal(member.name());
-                if (member.isLeader()) {
-                    text.append(Component.translatable("gui.creraces.team.leader"));
+                if (member.uuid().equals(localId)) {
+                    this.localRole = member.role();
+                    break;
                 }
-                graphics.drawString(this.font, text, centerX - 110, y, 0xFFFFFF, false);
+            }
+
+            for (mc.sayda.creraces.network.TeamUpdatePacket.MemberInfo member : members) {
+                MutableComponent text = Component.literal(member.name() + " ");
+                String roleKey = "gui.creraces.team.role." + member.role().name().toLowerCase();
+                text.append(Component.translatable(roleKey).withStyle(net.minecraft.ChatFormatting.GRAY));
+
+                int color = 0xFFFFFF;
+                if (selectedMember != null && selectedMember.uuid().equals(member.uuid())) {
+                    color = 0xFFFF55;
+                    graphics.fill(centerX - 112, y - 1, centerX + 50, y + 9, 0x44FFFFFF);
+                }
+
+                graphics.drawString(this.font, text, centerX - 110, y, color, false);
                 y += 10;
             }
         }
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        int centerX = this.width / 2;
+        int centerY = this.height / 2;
+
+        if (mouseX >= centerX - 110 && mouseX <= centerX + 50) {
+            int y = centerY - 8;
+            synchronized (members) {
+                for (var member : members) {
+                    if (mouseY >= y && mouseY < y + 10) {
+                        selectedMember = member;
+                        updateRoleButtons();
+                        return true;
+                    }
+                    y += 10;
+                }
+            }
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override

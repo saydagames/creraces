@@ -1,6 +1,7 @@
 package mc.sayda.creraces.commands;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.Suggestions;
@@ -204,7 +205,50 @@ public class CreracesCommand {
                                                                                                                 StringArgumentType
                                                                                                                                 .getString(ctx, "variable"),
                                                                                                                 StringArgumentType
-                                                                                                                                .getString(ctx, "value"))))))));
+                                                                                                                                .getString(ctx, "value")))))))
+                                .then(Commands.literal("pocket")
+                                                .then(Commands.literal("goto")
+                                                                .requires(src -> src.hasPermission(2))
+                                                                .then(Commands.argument("index",
+                                                                                IntegerArgumentType.integer(1))
+                                                                                .executes(ctx -> executePocketTeleport(
+                                                                                                ctx.getSource(),
+                                                                                                IntegerArgumentType
+                                                                                                                .getInteger(ctx,
+                                                                                                                                "index")))))
+                                                .then(Commands.literal("invite")
+                                                                .then(Commands.argument("target",
+                                                                                EntityArgument.player())
+                                                                                .executes(ctx -> executePocketInvite(
+                                                                                                ctx.getSource(),
+                                                                                                EntityArgument.getPlayer(
+                                                                                                                ctx,
+                                                                                                                "target")))))
+                                                .then(Commands.literal("revoke")
+                                                                .then(Commands.argument("target",
+                                                                                EntityArgument.player())
+                                                                                .executes(ctx -> executePocketRevoke(
+                                                                                                ctx.getSource(),
+                                                                                                EntityArgument.getPlayer(
+                                                                                                                ctx,
+                                                                                                                "target")))))
+                                                .then(Commands.literal("kick")
+                                                                .then(Commands.argument("target",
+                                                                                EntityArgument.player())
+                                                                                .executes(ctx -> executePocketKick(
+                                                                                                ctx.getSource(),
+                                                                                                EntityArgument.getPlayer(
+                                                                                                                ctx,
+                                                                                                                "target")))))
+                                                .then(Commands.literal("list")
+                                                                .executes(ctx -> executePocketList(ctx.getSource())))
+                                                .then(Commands.literal("join")
+                                                                .then(Commands.argument("host", EntityArgument.player())
+                                                                                .executes(ctx -> executePocketJoin(
+                                                                                                ctx.getSource(),
+                                                                                                EntityArgument.getPlayer(
+                                                                                                                ctx,
+                                                                                                                "host")))))));
         }
 
         private static int executeHelp(CommandSourceStack source) {
@@ -233,6 +277,13 @@ public class CreracesCommand {
                                 () -> Component.literal("/creraces mirror" + (isOp ? " [player]" : ""))
                                                 .withStyle(ChatFormatting.GRAY)
                                                 .append(Component.translatable("creraces.help.mirror")
+                                                                .withStyle(ChatFormatting.DARK_GRAY)),
+                                false);
+
+                source.sendSuccess(
+                                () -> Component.literal("/creraces pocket <invite|join|list|kick|revoke>")
+                                                .withStyle(ChatFormatting.GRAY)
+                                                .append(Component.literal(" - Pocket management commands")
                                                                 .withStyle(ChatFormatting.DARK_GRAY)),
                                 false);
 
@@ -280,6 +331,12 @@ public class CreracesCommand {
                                                         .withStyle(ChatFormatting.GRAY)
                                                         .append(Component
                                                                         .literal(" - Reloads all race and ability data")
+                                                                        .withStyle(ChatFormatting.DARK_GRAY)),
+                                        false);
+                        source.sendSuccess(
+                                        () -> Component.literal("/creraces pocket goto <index>")
+                                                        .withStyle(ChatFormatting.GRAY)
+                                                        .append(Component.literal(" - Teleport to any pocket index")
                                                                         .withStyle(ChatFormatting.DARK_GRAY)),
                                         false);
                 }
@@ -536,6 +593,175 @@ public class CreracesCommand {
                 source.sendSuccess(() -> Component.literal("Refreshed racial state.")
                                 .withStyle(ChatFormatting.GREEN), false);
                 return 1;
+        }
+
+        private static int executePocketInvite(CommandSourceStack source, ServerPlayer target) {
+                ServerPlayer player = source.getPlayer();
+                if (player == null)
+                        return 0;
+                if (player == target) {
+                        source.sendFailure(Component.literal("You cannot invite yourself."));
+                        return 0;
+                }
+
+                return mc.sayda.creraces.capability.DataUtils.getVariables(player).map(vars -> {
+                        vars.inviteToPocket(target.getUUID());
+                        source.sendSuccess(() -> Component
+                                        .literal("Invited " + target.getGameProfile().getName() + " to your pocket.")
+                                        .withStyle(ChatFormatting.GREEN), true);
+                        target.sendSystemMessage(Component.literal(player.getGameProfile().getName()
+                                        + " has invited you to their pocket! Type /creraces pocket join "
+                                        + player.getGameProfile().getName() + " to enter.")
+                                        .withStyle(ChatFormatting.GOLD));
+                        return 1;
+                }).orElse(0);
+        }
+
+        private static int executePocketRevoke(CommandSourceStack source, ServerPlayer target) {
+                ServerPlayer player = source.getPlayer();
+                if (player == null)
+                        return 0;
+
+                return mc.sayda.creraces.capability.DataUtils.getVariables(player).map(vars -> {
+                        vars.revokePocketInvitation(target.getUUID());
+                        source.sendSuccess(() -> Component
+                                        .literal("Revoked " + target.getGameProfile().getName() + "'s invitation.")
+                                        .withStyle(ChatFormatting.YELLOW), true);
+                        return 1;
+                }).orElse(0);
+        }
+
+        private static int executePocketKick(CommandSourceStack source, ServerPlayer target) {
+                ServerPlayer player = source.getPlayer();
+                if (player == null)
+                        return 0;
+
+                // Check if target is in the player's pocket
+                String pocketDim = "creraces:pocket";
+                if (!target.level().dimension().location().toString().equals(pocketDim)) {
+                        source.sendFailure(Component.literal("Target is not in a pocket dimension."));
+                        return 0;
+                }
+
+                return mc.sayda.creraces.capability.DataUtils.getVariables(player).map(vars -> {
+                        double tx = vars.getPocketX();
+                        double tz = vars.getPocketZ();
+                        double range = 500; // Pocket boundary
+
+                        if (Math.abs(target.getX() - tx) < range && Math.abs(target.getZ() - tz) < range) {
+                                // Kick them out
+                                ResourceLocation returnDimName = new ResourceLocation(vars.getReturnDim());
+                                net.minecraft.server.level.ServerLevel world = player.server.getLevel(
+                                                net.minecraft.resources.ResourceKey.create(
+                                                                net.minecraft.core.registries.Registries.DIMENSION,
+                                                                returnDimName));
+                                if (world == null)
+                                        world = player.server.overworld();
+
+                                target.teleportTo(world, world.getSharedSpawnPos().getX(),
+                                                world.getSharedSpawnPos().getY(), world.getSharedSpawnPos().getZ(), 0,
+                                                0);
+                                source.sendSuccess(() -> Component
+                                                .literal("Kicked " + target.getGameProfile().getName()
+                                                                + " from your pocket.")
+                                                .withStyle(ChatFormatting.RED), true);
+                                target.sendSystemMessage(Component
+                                                .literal("You have been kicked from "
+                                                                + player.getGameProfile().getName() + "'s pocket.")
+                                                .withStyle(ChatFormatting.RED));
+                                return 1;
+                        } else {
+                                source.sendFailure(Component.literal("Target is not inside your pocket area."));
+                                return 0;
+                        }
+                }).orElse(0);
+        }
+
+        private static int executePocketList(CommandSourceStack source) {
+                ServerPlayer player = source.getPlayer();
+                if (player == null)
+                        return 0;
+
+                return mc.sayda.creraces.capability.DataUtils.getVariables(player).map(vars -> {
+                        java.util.Set<java.util.UUID> invites = vars.getPocketInvitations();
+                        if (invites.isEmpty()) {
+                                source.sendSuccess(() -> Component.literal("No active invitations."), false);
+                        } else {
+                                source.sendSuccess(() -> Component.literal("Invited players: ")
+                                                .withStyle(ChatFormatting.GOLD), false);
+                                for (java.util.UUID uuid : invites) {
+                                        source.sendSuccess(() -> Component.literal("- " + uuid.toString())
+                                                        .withStyle(ChatFormatting.GRAY), false);
+                                }
+                        }
+                        return 1;
+                }).orElse(0);
+        }
+
+        private static int executePocketTeleport(CommandSourceStack source, int index) {
+                ServerPlayer player = source.getPlayer();
+                if (player == null)
+                        return 0;
+
+                String pocketDimName = "creraces:pocket";
+                net.minecraft.server.level.ServerLevel pocketWorld = player.server.getLevel(
+                                net.minecraft.resources.ResourceKey.create(
+                                                net.minecraft.core.registries.Registries.DIMENSION,
+                                                new ResourceLocation(pocketDimName)));
+
+                if (pocketWorld == null) {
+                        source.sendFailure(Component.literal("Pocket dimension not found."));
+                        return 0;
+                }
+
+                double tx = 1000 * (index % 1000);
+                double ty = 128;
+                double tz = 1000 * (index / 1000);
+
+                player.teleportTo(pocketWorld, tx + 0.5, ty + 1.0, tz + 0.5, 0, 0);
+
+                source.sendSuccess(() -> Component
+                                .literal("Teleported to pocket index " + index + " at " + (int) tx + ", " + (int) ty
+                                                + ", " + (int) tz)
+                                .withStyle(ChatFormatting.GREEN), false);
+                return 1;
+        }
+
+        private static int executePocketJoin(CommandSourceStack source, ServerPlayer host) {
+                ServerPlayer player = source.getPlayer();
+                if (player == null)
+                        return 0;
+
+                return mc.sayda.creraces.capability.DataUtils.getVariables(host).map(hostVars -> {
+                        if (!hostVars.getPocketInvitations().contains(player.getUUID()) && !source.hasPermission(2)) {
+                                source.sendFailure(Component.literal("You have not been invited to "
+                                                + host.getGameProfile().getName() + "'s pocket."));
+                                return 0;
+                        }
+
+                        // Teleport to host's pocket
+                        String pocketDimName = "creraces:pocket";
+                        net.minecraft.server.level.ServerLevel pocketWorld = player.server.getLevel(
+                                        net.minecraft.resources.ResourceKey.create(
+                                                        net.minecraft.core.registries.Registries.DIMENSION,
+                                                        new ResourceLocation(pocketDimName)));
+
+                        if (pocketWorld == null) {
+                                source.sendFailure(Component.literal("Pocket dimension not found."));
+                                return 0;
+                        }
+
+                        double tx = hostVars.getPocketSpawnX();
+                        double ty = hostVars.getPocketSpawnY();
+                        double tz = hostVars.getPocketSpawnZ();
+
+                        player.teleportTo(pocketWorld, tx, ty, tz, 0, 0);
+
+                        source.sendSuccess(() -> Component
+                                        .literal("Joined " + host.getGameProfile().getName() + "'s pocket.")
+                                        .withStyle(ChatFormatting.GREEN), false);
+                        return 1;
+                }).orElse(0);
         }
 
         private static CompletableFuture<Suggestions> suggestRaces(CommandContext<CommandSourceStack> context,

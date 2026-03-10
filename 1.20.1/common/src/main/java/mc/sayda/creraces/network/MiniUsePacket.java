@@ -10,6 +10,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.function.Supplier;
+import java.util.Objects;
 
 /**
  * C2S: Client requests to open the interface of a mini-block in a specific
@@ -36,19 +37,19 @@ public class MiniUsePacket {
 
     /** Decode from network buffer. */
     public MiniUsePacket(FriendlyByteBuf buf) {
-        this.hostPos = buf.readBlockPos();
+        this.hostPos = Objects.requireNonNull(buf.readBlockPos());
         this.slotX = buf.readByte();
         this.slotY = buf.readByte();
         this.slotZ = buf.readByte();
-        this.hand = buf.readEnum(net.minecraft.world.InteractionHand.class);
+        this.hand = Objects.requireNonNull(buf.readEnum(net.minecraft.world.InteractionHand.class));
     }
 
     public void encode(FriendlyByteBuf buf) {
-        buf.writeBlockPos(hostPos);
+        buf.writeBlockPos(Objects.requireNonNull(hostPos));
         buf.writeByte(slotX);
         buf.writeByte(slotY);
         buf.writeByte(slotZ);
-        buf.writeEnum(hand);
+        buf.writeEnum(Objects.requireNonNull(hand));
     }
 
     @SuppressWarnings("null")
@@ -58,7 +59,12 @@ public class MiniUsePacket {
             if (!(ctx.getPlayer() instanceof ServerPlayer player))
                 return;
 
+            if (!mc.sayda.creraces.capability.DataUtils.canInteractWithMiniBuild(player)) {
+                return;
+            }
+
             var level = player.serverLevel();
+
             var blockState = level.getBlockState(hostPos);
 
             if (!blockState.is(ModBlocks.MICRO_BLOCK.get()))

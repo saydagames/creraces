@@ -12,6 +12,9 @@
         {
             "type": "creraces:aoe",
             "radius": 6,
+            "targets": [
+                "enemies"
+            ],
             "actions": [
                 {
                     "type": "creraces:apply_velocity",
@@ -29,20 +32,16 @@
             ]
         },
         {
+            "type": "creraces:summon_entity",
+            "entity": "creraces:tornado",
+            "tame": true
+        },
+        {
             "type": "creraces:play_sound",
             "sound": "minecraft:entity.phantom.flap",
             "volume": 1,
             "pitch": 0.5
         }
     ],
-    "remote_description": {
-        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Tornado&prop=wikitext",
-        "fallback": "ability.creraces.tornado.description"
-    },
-    "remote_full_description": {
-        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Tornado&prop=wikitext",
-        "fallback": "ability.creraces.tornado.description"
-    }
+    "wiki_page": "Ability:Tornado"
 }

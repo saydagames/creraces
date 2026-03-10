@@ -13,6 +13,7 @@
     "base_cr": 8,
     "resource_type": "MANA",
     "max_resource": 100,
+    "g_state": "FEMALE",
     "tier": "creraces:common",
     "difficulty": 1,
     "passives": {
@@ -70,16 +71,15 @@
                     "value": 0.0
                 }
             ]
+        },
+        {
+            "type": "creraces:addon",
+            "addon_id": "moss"
+        },
+        {
+            "type": "creraces:addon",
+            "addon_id": "naiad_body"
         }
     ],
-    "remote_description": {
-        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "fallback": "race.creraces.naiad.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Naiad&prop=wikitext"
-    },
-    "remote_passive": {
-        "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "fallback": "No passive documentation found on wiki.",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Naiad&prop=wikitext"
-    }
+    "wiki_page": "Naiad"
 }

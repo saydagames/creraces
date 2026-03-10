@@ -13,8 +13,8 @@
     "base_cr": 10,
     "resource_type": "MANA",
     "max_resource": 120,
-    "tier": "creraces:rare",
-    "difficulty": 2,
+    "stacks_affect_resource": false,
+    "g_state": "FEMALE",
     "passives": {
         "lava_vision": true,
         "unaffected_by_lava": true,
@@ -162,16 +162,11 @@
                     "use_target": true
                 }
             ]
+        },
+        {
+            "type": "creraces:addon",
+            "addon_id": "oread_body"
         }
     ],
-    "remote_description": {
-        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "fallback": "race.creraces.oread.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Oread&prop=wikitext"
-    },
-    "remote_passive": {
-        "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "fallback": "No passive documentation found on wiki.",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Oread&prop=wikitext"
-    }
+    "wiki_page": "Oread"
 }

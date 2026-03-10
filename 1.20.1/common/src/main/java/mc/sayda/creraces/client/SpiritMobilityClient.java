@@ -2,9 +2,6 @@ package mc.sayda.creraces.client;
 
 import dev.architectury.event.events.client.ClientTickEvent;
 import mc.sayda.creraces.capability.DataUtils;
-import mc.sayda.creraces.race.Race;
-import mc.sayda.creraces.race.RaceRegistry;
-import mc.sayda.creraces.engine.TraitRegistry;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.phys.Vec3;
 
@@ -13,6 +10,7 @@ public class SpiritMobilityClient {
     private static boolean wasJumpKeyDown = false;
     private static boolean wasOnGround = true;
 
+    @SuppressWarnings("null")
     public static void init() {
         ClientTickEvent.CLIENT_POST.register(minecraft -> {
             LocalPlayer player = minecraft.player;
@@ -20,20 +18,9 @@ public class SpiritMobilityClient {
                 return;
 
             DataUtils.getVariables(player).ifPresent(vars -> {
-                int maxAirJumps = 0;
-                Race race = RaceRegistry.get(vars.getRace());
-                if (race != null && race.traits() != null) {
-                    for (TraitRegistry.RaceTrait trait : race.traits()) {
-                        if (trait instanceof mc.sayda.creraces.engine.traits.DoubleJumpTrait djt) {
-                            maxAirJumps = (int) djt.getMaxJumps().evaluate(player);
-                            break;
-                        }
-                    }
-                }
-
-                if (vars.isInSpiritRealm()) {
-                    maxAirJumps += 1;
-                }
+                net.minecraft.world.entity.ai.attributes.Attribute doubleJumpAttr = mc.sayda.creraces.registry.ModAttributes.DOUBLE_JUMP
+                        .get();
+                int maxAirJumps = doubleJumpAttr != null ? (int) player.getAttributeValue(doubleJumpAttr) : 0;
 
                 boolean isJumpKeyDown = minecraft.options.keyJump.isDown();
                 boolean onGround = player.onGround();
@@ -48,6 +35,21 @@ public class SpiritMobilityClient {
 
                     // Client-side feedback
                     player.playSound(net.minecraft.sounds.SoundEvents.ENDER_DRAGON_FLAP, 0.5f, 1.5f);
+
+                    // Add cloud particles for 'completed' feel
+                    for (int i = 0; i < 10; ++i) {
+                        double d0 = player.getRandom().nextGaussian() * 0.02D;
+                        double d1 = player.getRandom().nextGaussian() * 0.02D;
+                        double d2 = player.getRandom().nextGaussian() * 0.02D;
+                        player.level().addParticle(net.minecraft.core.particles.ParticleTypes.CLOUD,
+                                player.getX() + (double) (player.getRandom().nextFloat() * player.getBbWidth() * 2.0F)
+                                        - (double) player.getBbWidth(),
+                                player.getY(),
+                                player.getZ() + (double) (player.getRandom().nextFloat() * player.getBbWidth() * 2.0F)
+                                        - (double) player.getBbWidth(),
+                                d0, d1, d2);
+                    }
+
                     player.fallDistance = 0;
                     airJumps++;
                 }

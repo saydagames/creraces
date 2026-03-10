@@ -1,5 +1,7 @@
 package mc.sayda.creraces.entity;
 
+import mc.sayda.creraces.config.CreRacesConfig;
+
 import mc.sayda.creraces.registry.ModEntities;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -15,10 +17,12 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 
+import javax.annotation.Nonnull;
+
 public class FeatherProjectile extends ThrowableItemProjectile {
     private static final EntityDataAccessor<ItemStack> ITEM_STACK = SynchedEntityData.defineId(FeatherProjectile.class,
             EntityDataSerializers.ITEM_STACK);
-    private float damage = 1.0f;
+    private float damage = CreRacesConfig.ENTITY_FEATHER_DAMAGE.get().floatValue();
 
     public FeatherProjectile(EntityType<? extends ThrowableItemProjectile> entityType, Level level) {
         super(entityType, level);
@@ -28,7 +32,8 @@ public class FeatherProjectile extends ThrowableItemProjectile {
         super(ModEntities.FEATHER_PROJECTILE.get(), shooter, level);
     }
 
-    public void setItem(ItemStack stack) {
+    @Override
+    public void setItem(@Nonnull ItemStack stack) {
         this.getEntityData().set(ITEM_STACK, stack.copy());
     }
 
@@ -41,6 +46,7 @@ public class FeatherProjectile extends ThrowableItemProjectile {
     }
 
     @Override
+    @Nonnull
     protected Item getDefaultItem() {
         return Items.FEATHER;
     }
@@ -52,12 +58,13 @@ public class FeatherProjectile extends ThrowableItemProjectile {
     }
 
     @Override
+    @Nonnull
     public ItemStack getItem() {
         return this.getEntityData().get(ITEM_STACK);
     }
 
     @Override
-    protected void onHit(HitResult result) {
+    protected void onHit(@Nonnull HitResult result) {
         if (result.getType() == HitResult.Type.ENTITY) {
             super.onHit(result);
         } else if (result.getType() == HitResult.Type.BLOCK) {
@@ -77,20 +84,23 @@ public class FeatherProjectile extends ThrowableItemProjectile {
     }
 
     @Override
-    protected void onHitEntity(EntityHitResult result) {
+    protected void onHitEntity(@Nonnull EntityHitResult result) {
         if (!this.level().isClientSide && result.getEntity() instanceof LivingEntity living) {
-            living.hurt(this.damageSources().thrown(this, this.getOwner()), this.damage);
+            net.minecraft.world.damagesource.DamageSource source = this.damageSources().thrown(this, this.getOwner());
+            if (source != null) {
+                living.hurt(source, this.damage);
+            }
             this.discard();
         }
     }
 
     @Override
-    public void playerTouch(Player player) {
+    public void playerTouch(@Nonnull Player player) {
         if (!this.level().isClientSide && this.onGround()) {
             java.util.Optional<mc.sayda.creraces.capability.IPlayerVariables> vars = mc.sayda.creraces.capability.DataUtils
                     .getVariables(player);
             if (vars.isPresent()
-                    && new net.minecraft.resources.ResourceLocation("creraces", "harpy").equals(vars.get().getRace())) {
+                    && mc.sayda.creraces.race.RaceRegistry.HARPY.equals(vars.get().getRace())) {
                 if (player.getInventory().add(getItem())) {
                     this.discard();
                 }
@@ -103,7 +113,8 @@ public class FeatherProjectile extends ThrowableItemProjectile {
         if (!this.onGround()) {
             super.tick();
             if (!this.isNoGravity()) {
-                this.setDeltaMovement(this.getDeltaMovement().add(0, -0.015D, 0)); // Subtle floaty fall
+                this.setDeltaMovement(this.getDeltaMovement().add(0,
+                        -CreRacesConfig.ENTITY_FEATHER_GRAVITY.get(), 0)); // Subtle floaty fall
             }
         } else {
             // Stay stuck to ground/surface

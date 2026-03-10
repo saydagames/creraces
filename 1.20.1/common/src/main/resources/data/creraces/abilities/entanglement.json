@@ -1,50 +1,41 @@
 {
-    "name":  "ability.creraces.entanglement.name",
-    "description":  "ability.creraces.entanglement.description",
-    "type":  "ACTIVE",
-    "icon":  "minecraft:vines",
-    "cooldown":  160,
-    "cost":  25,
-    "race":  [
-                 "creraces:dryad"
-             ],
-    "actions":  [
-                    {
-                        "type":  "creraces:aoe",
-                        "radius":  6,
-                        "actions":  [
-                                        {
-                                            "type":  "creraces:apply_effect",
-                                            "effect":  "creraces:rooted",
-                                            "duration":  160,
-                                            "amplifier":  0
-                                        },
-                                        {
-                                            "type":  "creraces:apply_particles",
-                                            "particle":  "minecraft:spore_blossom_air",
-                                            "count":  10,
-                                            "spread_x":  0.5,
-                                            "spread_y":  1,
-                                            "spread_z":  0.5
-                                        },
-                                        {
-                                            "type":  "creraces:play_sound",
-                                            "sound":  "minecraft:block.wood.place",
-                                            "volume":  0.8,
-                                            "pitch":  0.6,
-                                            "use_target":  true
-                                        }
-                                    ]
-                    }
-                ],
-    "remote_description": {
-        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Entanglement&prop=wikitext",
-        "fallback": "ability.creraces.entanglement.description"
-    },
-    "remote_full_description": {
-        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Entanglement&prop=wikitext",
-        "fallback": "ability.creraces.entanglement.description"
-    }
+    "name": "ability.creraces.entanglement.name",
+    "description": "ability.creraces.entanglement.description",
+    "type": "ACTIVE",
+    "icon": "minecraft:vines",
+    "cooldown": 480,
+    "cost": 25,
+    "race": [
+        "creraces:dryad"
+    ],
+    "actions": [
+        {
+            "type": "creraces:aoe",
+            "radius": 6,
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "creraces:rooted",
+                    "duration": 160,
+                    "amplifier": 0
+                },
+                {
+                    "type": "creraces:apply_particles",
+                    "particle": "minecraft:spore_blossom_air",
+                    "count": 10,
+                    "spread_x": 0.5,
+                    "spread_y": 1,
+                    "spread_z": 0.5
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:block.wood.place",
+                    "volume": 0.8,
+                    "pitch": 0.6,
+                    "use_target": true
+                }
+            ]
+        }
+    ],
+    "wiki_page": "Ability:Entanglement"
 }

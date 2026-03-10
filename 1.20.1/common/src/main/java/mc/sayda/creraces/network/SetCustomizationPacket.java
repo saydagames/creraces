@@ -69,7 +69,12 @@ public class SetCustomizationPacket {
                                     player.getName().getString(), key);
                             return;
                         }
-                        vars.setCustomization(key, value);
+                        // Clamp value length to prevent exploits
+                        String clampedValue = value;
+                        if (clampedValue.length() > 128) {
+                            clampedValue = clampedValue.substring(0, 128);
+                        }
+                        vars.setCustomization(key, clampedValue);
                     });
 
                     // Apply to cosmetic system

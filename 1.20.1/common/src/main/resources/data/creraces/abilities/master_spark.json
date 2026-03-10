@@ -1,47 +1,45 @@
 {
-    "name":  "ability.creraces.master_spark.name",
-    "description":  "ability.creraces.master_spark.description",
-    "type":  "ACTIVE",
-    "icon":  "minecraft:feather",
-    "cooldown":  200,
-    "cost":  20,
-    "actions":  [
-                    {
-                        "type":  "creraces:beam",
-                        "length":  30,
-                        "radius":  15,
-                        "color":  [
-                                      1,
-                                      1,
-                                      1,
-                                      0.8
-                                  ],
-                        "duration":  100,
-                        "drain_rate":  2.0,
-                        "actions":  [
-                                        {
-                                            "type":  "creraces:damage",
-                                            "amount":  2,
-                                            "damage_type":  "minecraft:player_attack",
-                                            "knockback":  0.2
-                                        }
-                                    ]
-                    },
-                    {
-                        "type":  "creraces:play_sound",
-                        "sound":  "creraces:master_spark",
-                        "volume":  2,
-                        "pitch":  1
-                    }
-                ],
-    "remote_description": {
-        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Master_Spark&prop=wikitext",
-        "fallback": "ability.creraces.master_spark.description"
-    },
-    "remote_full_description": {
-        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Master_Spark&prop=wikitext",
-        "fallback": "ability.creraces.master_spark.description"
-    }
+    "name": "ability.creraces.master_spark.name",
+    "description": "ability.creraces.master_spark.description",
+    "type": "ACTIVE",
+    "icon": "minecraft:feather",
+    "cooldown": 200,
+    "cost": 20,
+    "actions": [
+        {
+            "type": "creraces:beam",
+            "length": 30,
+            "radius": 15,
+            "color": [
+                1,
+                1,
+                1,
+                0.8
+            ],
+            "duration": 100,
+            "drain_rate": 2.0,
+            "actions": [
+                {
+                    "type": "creraces:damage",
+                    "amount": 2,
+                    "damage_type": "minecraft:player_attack",
+                    "knockback": 0.2
+                }
+            ]
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "creraces:master_spark",
+            "volume": 2,
+            "pitch": 1
+        }
+    ],
+    "on_deactivate": [
+        {
+            "type": "creraces:stop_sound",
+            "sound": "creraces:master_spark",
+            "source": "PLAYERS"
+        }
+    ],
+    "wiki_page": "Ability:Master_Spark"
 }

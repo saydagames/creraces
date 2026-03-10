@@ -185,8 +185,7 @@ public abstract class LivingEntityMixin implements ISleepSlotTracker {
 
     /**
      * Cancel applying a mob effect if the player's race negates it.
-     * Covers both "negate_effects" and "immune_to_potion_effects" JSON keys
-     * (both populate the same list in Race.Passives.immuneToPotionEffects).
+     * Covers both "negate_effects" JSON keys.
      */
     @Inject(method = "addEffect(Lnet/minecraft/world/effect/MobEffectInstance;Lnet/minecraft/world/entity/Entity;)Z", at = @At("HEAD"), cancellable = true)
     private void creraces$blockNegatedEffect(

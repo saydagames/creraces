@@ -53,6 +53,11 @@ public class CosmeticIncidents {
         // 3. Trait Application (Still used for fixed/complex logic)
         for (var trait : race.traits()) {
             if (trait instanceof AddonTrait addonTrait) {
+                // Check config group gate before applying
+                if (!addonTrait.isEnabled()) {
+                    continue;
+                }
+
                 var condition = addonTrait.getCondition();
                 if (condition != null && !condition.evaluate(player, null, null, null)) {
                     continue;
@@ -66,6 +71,12 @@ public class CosmeticIncidents {
                     addons.setAddonTint(addonId, tintColor);
                 }
             }
+        }
+
+        if (player instanceof net.minecraft.server.level.ServerPlayer) {
+            mc.sayda.twilight_lib.network.NetworkHandler.sendAddonsToAll(
+                    new mc.sayda.twilight_lib.network.SyncAddonsPacket(player.getUUID(), addons.getActiveAddons(),
+                            addons.getAllAddonTints()));
         }
     }
 
@@ -143,6 +154,11 @@ public class CosmeticIncidents {
         IAddons addonsRaw = DataUtils.getAddonsData(player);
         if (addonsRaw instanceof AddonsData addons) {
             clearRacialAddons(addons);
+            if (player instanceof net.minecraft.server.level.ServerPlayer) {
+                mc.sayda.twilight_lib.network.NetworkHandler.sendAddonsToAll(
+                        new mc.sayda.twilight_lib.network.SyncAddonsPacket(player.getUUID(), addons.getActiveAddons(),
+                                addons.getAllAddonTints()));
+            }
         }
     }
 
@@ -150,10 +166,9 @@ public class CosmeticIncidents {
         // External grants (race-applied) are the only active addons a player can have
         // WITHOUT owning — player /tlcosmetics selections always require ownership.
         // So: racial addons = active addons NOT in the player's owned set.
-        // This avoids depending on getExternalGrants() which requires twilight-lib
-        // rebuild.
         Set<String> owned = new HashSet<>(addons.getAddons());
         Set<String> active = new HashSet<>(addons.getActiveAddons());
+
         for (String id : active) {
             if (!owned.contains(id)) {
                 addons.forceUnequipAddon(id); // racial grant — safe to remove
@@ -210,6 +225,69 @@ public class CosmeticIncidents {
             return Integer.parseInt(hex, 16);
         } catch (NumberFormatException e) {
             return def;
+        }
+    }
+
+    /**
+     * Called on race selection: recalculates effective gState and optionally
+     * applies the alex model
+     * and chest addon internally. Addon equipping is mainly handled by the trait
+     * loop, but forced
+     * gender aesthetics are applied here.
+     */
+    public static void applyGStateCosmetics(net.minecraft.server.level.ServerPlayer player, Race race,
+            mc.sayda.creraces.capability.IPlayerVariables vars) {
+        if (!mc.sayda.creraces.config.CreRacesConfig.GENDER_SYSTEM_ENABLED.get())
+            return;
+
+        if (race.getGState() == mc.sayda.creraces.engine.GState.FEMALE) {
+            if (vars instanceof mc.sayda.creraces.capability.PlayerVariables pv)
+                pv.setGState(1);
+        } else if (race.getGState() == mc.sayda.creraces.engine.GState.MALE) {
+            if (vars instanceof mc.sayda.creraces.capability.PlayerVariables pv)
+                pv.setGState(0);
+        }
+
+        applyGStateAddons(player);
+    }
+
+    /**
+     * Called on race RESET when gState == 1: re-equips the female model slide and
+     * chest addon.
+     * Mirrors legacy MakeResetProcedure behavior.
+     */
+    public static void applyGStateAddons(net.minecraft.server.level.ServerPlayer player) {
+        if (!mc.sayda.creraces.config.CreRacesConfig.GENDER_SYSTEM_ENABLED.get())
+            return;
+
+        int effectiveState = mc.sayda.creraces.capability.DataUtils.getVariables(player)
+                .map(mc.sayda.creraces.capability.IPlayerVariables::getGState).orElse(0);
+
+        if (mc.sayda.creraces.config.CreRacesConfig.LORE_ADDONS_ENABLED.get()) {
+            var modelVariant = mc.sayda.twilight_lib.capabilities.DataUtils.getModelVariantData(player);
+            if (modelVariant != null) {
+                modelVariant.setModelVariant(effectiveState == 1 ? "alex" : "default");
+                mc.sayda.twilight_lib.capabilities.DataUtils.getPersistentData(player)
+                        .put(mc.sayda.twilight_lib.TwilightConstants.NBT_MODEL_VARIANT, modelVariant.serialize());
+                mc.sayda.twilight_lib.network.NetworkHandler.sendModelVariantToAll(
+                        mc.sayda.twilight_lib.network.SyncModelVariantPacket.of(player.getUUID(), modelVariant));
+            }
+        }
+
+        if (mc.sayda.creraces.config.CreRacesConfig.RACE_ADDONS_ENABLED.get()) {
+            IAddons addonsRaw = DataUtils.getAddonsData(player);
+            if (addonsRaw instanceof AddonsData addons) {
+                if (effectiveState == 1) {
+                    addons.setActiveAddon("chest", true, true);
+                } else {
+                    if (!addons.getAddons().contains("chest")) {
+                        addons.forceUnequipAddon("chest");
+                    }
+                }
+                mc.sayda.twilight_lib.network.NetworkHandler.sendAddonsToAll(
+                        new mc.sayda.twilight_lib.network.SyncAddonsPacket(player.getUUID(),
+                                addons.getActiveAddons(), addons.getAllAddonTints()));
+            }
         }
     }
 }

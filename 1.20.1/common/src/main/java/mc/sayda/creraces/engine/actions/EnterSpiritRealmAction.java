@@ -24,8 +24,21 @@ public class EnterSpiritRealmAction implements ActionRegistry.RaceAction {
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
         DataUtils.getVariables(player).ifPresent(vars -> {
-            boolean newState = !vars.isInSpiritRealm();
-            vars.setInSpiritRealm(newState);
+            if (!vars.isInSpiritRealm()) {
+                vars.setInSpiritRealm(true);
+                vars.setReturnX(player.getX());
+                vars.setReturnY(player.getY());
+                vars.setReturnZ(player.getZ());
+                vars.setReturnDim(player.level().dimension().location().toString());
+
+                // Sync to client
+                mc.sayda.creraces.network.BoundaryHandler.resyncVariables(player, player);
+            } else {
+                vars.setInSpiritRealm(false);
+                // Sync to client
+                mc.sayda.creraces.network.BoundaryHandler.resyncVariables(player, player);
+            }
+
             // Sync to self and trackers (for visibility)
             BoundaryHandler.resyncForAllTrackers(player);
             BoundaryHandler.resyncVariables(player, player);
@@ -39,7 +52,7 @@ public class EnterSpiritRealmAction implements ActionRegistry.RaceAction {
                     if (nearby == player)
                         continue;
                     DataUtils.getVariables(nearby).ifPresent(nVars -> {
-                        nVars.setInSpiritRealm(newState);
+                        nVars.setInSpiritRealm(vars.isInSpiritRealm()); // Set nearby to the same state as player
                         BoundaryHandler.resyncForAllTrackers(nearby);
                         BoundaryHandler.resyncVariables(nearby, nearby);
                     });

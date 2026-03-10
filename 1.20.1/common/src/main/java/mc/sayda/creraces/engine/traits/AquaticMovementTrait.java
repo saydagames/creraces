@@ -27,8 +27,8 @@ public class AquaticMovementTrait implements TraitRegistry.RaceTrait {
 
     public static void register() {
         TraitRegistry.register(new ResourceLocation(CreRaces.MODID, "aquatic_movement"), json -> {
-            ScalingValue speed = ScalingValue.fromJson(json, "speed", 1.0);
-            boolean buoyancy = GsonHelper.getAsBoolean(json, "neutral_buoyancy", true);
+            ScalingValue speed = ScalingValue.fromJson(json, "speed", 0.05);
+            boolean buoyancy = GsonHelper.getAsBoolean(json, "neutral_buoyancy", false);
             return new AquaticMovementTrait(speed, buoyancy);
         });
     }

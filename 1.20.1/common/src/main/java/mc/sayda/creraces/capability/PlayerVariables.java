@@ -36,7 +36,9 @@ public class PlayerVariables implements IPlayerVariables {
     private final Map<ResourceLocation, Integer> cooldowns = new ConcurrentHashMap<>();
     private final Set<ResourceLocation> unlockedAbilities = ConcurrentHashMap.newKeySet();
     private final Map<AbilitySlot, ResourceLocation> equippedAbilities = new ConcurrentHashMap<>();
+    private final Map<ResourceLocation, Integer> traitTimers = new ConcurrentHashMap<>();
     private final Map<String, String> customizations = new ConcurrentHashMap<>();
+
     private final Map<ResourceLocation, Double> abilityStates = new ConcurrentHashMap<>();
     private boolean morphed = false;
     private UUID teamId = null;
@@ -47,9 +49,15 @@ public class PlayerVariables implements IPlayerVariables {
     private double activeAbilityDrain = 0.0;
     private int gState = 0;
     private boolean hasPocket = false;
+    private double pocketSize = 0.0;
+    private int pocketIndex = 0;
+    private final Set<UUID> pocketInvitations = new HashSet<>();
     private double pocketX = 0.0;
     private double pocketY = 0.0;
     private double pocketZ = 0.0;
+    private double pocketSpawnX = 0.0;
+    private double pocketSpawnY = 0.0;
+    private double pocketSpawnZ = 0.0;
     private double returnX = 0.0;
     private double returnY = 0.0;
     private double returnZ = 0.0;
@@ -64,7 +72,9 @@ public class PlayerVariables implements IPlayerVariables {
 
     @Override
     public void setRace(ResourceLocation race) {
-        this.race = race;
+        if (!Objects.equals(this.race, race)) {
+            this.race = race;
+        }
     }
 
     @Override
@@ -271,10 +281,11 @@ public class PlayerVariables implements IPlayerVariables {
 
     @Override
     public void equipAbility(AbilitySlot slot, ResourceLocation abilityId) {
-        if (abilityId == null)
+        if (abilityId == null) {
             equippedAbilities.remove(slot);
-        else
+        } else {
             equippedAbilities.put(slot, abilityId);
+        }
     }
 
     @Override
@@ -291,7 +302,7 @@ public class PlayerVariables implements IPlayerVariables {
         this.ad = 0;
         this.ah = 0;
         this.cr = 0;
-        this.coins = 0;
+        // Preservation: coins are NOT reset
         this.mana = 0;
         this.rage = 0;
         this.energy = 0;
@@ -312,6 +323,12 @@ public class PlayerVariables implements IPlayerVariables {
         this.pocketX = 0;
         this.pocketY = 0;
         this.pocketZ = 0;
+        this.pocketSpawnX = 0;
+        this.pocketSpawnY = 0;
+        this.pocketSpawnZ = 0;
+        this.pocketIndex = 0;
+        this.pocketSize = 0;
+        this.pocketInvitations.clear();
         this.returnX = 0;
         this.returnY = 0;
         this.returnZ = 0;
@@ -322,6 +339,12 @@ public class PlayerVariables implements IPlayerVariables {
         this.activeAbility = null;
         this.activeAbilityDuration = 0;
         this.activeAbilityDrain = 0;
+    }
+
+    @Override
+    public void sync(net.minecraft.world.entity.player.Player player) {
+        // Data container itself doesn't know how to sync,
+        // delegated to Mixed-in player or platform-specific handler.
     }
 
     @Override
@@ -350,6 +373,8 @@ public class PlayerVariables implements IPlayerVariables {
         this.activeAbility = null;
         this.activeAbilityDuration = 0;
         this.activeAbilityDrain = 0;
+
+        this.isInSpiritRealm = false;
     }
 
     @Override
@@ -448,6 +473,41 @@ public class PlayerVariables implements IPlayerVariables {
     }
 
     @Override
+    public double getPocketSize() {
+        return pocketSize;
+    }
+
+    @Override
+    public void setPocketSize(double size) {
+        this.pocketSize = size;
+    }
+
+    @Override
+    public int getPocketIndex() {
+        return pocketIndex;
+    }
+
+    @Override
+    public void setPocketIndex(int index) {
+        this.pocketIndex = index;
+    }
+
+    @Override
+    public Set<UUID> getPocketInvitations() {
+        return pocketInvitations;
+    }
+
+    @Override
+    public void inviteToPocket(UUID uuid) {
+        pocketInvitations.add(uuid);
+    }
+
+    @Override
+    public void revokePocketInvitation(UUID uuid) {
+        pocketInvitations.remove(uuid);
+    }
+
+    @Override
     public double getPocketX() {
         return pocketX;
     }
@@ -475,6 +535,36 @@ public class PlayerVariables implements IPlayerVariables {
     @Override
     public void setPocketZ(double z) {
         this.pocketZ = z;
+    }
+
+    @Override
+    public double getPocketSpawnX() {
+        return pocketSpawnX;
+    }
+
+    @Override
+    public void setPocketSpawnX(double x) {
+        this.pocketSpawnX = x;
+    }
+
+    @Override
+    public double getPocketSpawnY() {
+        return pocketSpawnY;
+    }
+
+    @Override
+    public void setPocketSpawnY(double y) {
+        this.pocketSpawnY = y;
+    }
+
+    @Override
+    public double getPocketSpawnZ() {
+        return pocketSpawnZ;
+    }
+
+    @Override
+    public void setPocketSpawnZ(double z) {
+        this.pocketSpawnZ = z;
     }
 
     @Override
@@ -568,13 +658,29 @@ public class PlayerVariables implements IPlayerVariables {
     }
 
     @Override
+    public Map<ResourceLocation, Integer> getTraitTimers() {
+        return traitTimers;
+    }
+
+    @Override
+    public void setTraitTimer(ResourceLocation id, int ticks) {
+        if (ticks <= 0)
+            traitTimers.remove(id);
+        else
+            traitTimers.put(id, ticks);
+    }
+
+    @Override
     public boolean isSmallBuild() {
+
         return smallBuild;
     }
 
     @Override
     public void setSmallBuild(boolean smallBuild) {
-        this.smallBuild = smallBuild;
+        if (this.smallBuild != smallBuild) {
+            this.smallBuild = smallBuild;
+        }
     }
 
     @Override
@@ -618,6 +724,10 @@ public class PlayerVariables implements IPlayerVariables {
         abilityStates.forEach((id, val) -> statesTag.putDouble(Objects.requireNonNull(id.toString()), val));
         tag.put("abilityStates", statesTag);
 
+        CompoundTag traitTimersTag = new CompoundTag();
+        traitTimers.forEach((id, val) -> traitTimersTag.putInt(Objects.requireNonNull(id.toString()), val));
+        tag.put("traitTimers", traitTimersTag);
+
         tag.putBoolean("morphed", morphed);
 
         if (teamId != null) {
@@ -626,13 +736,21 @@ public class PlayerVariables implements IPlayerVariables {
         tag.putString("teamName", Objects.requireNonNull(teamName));
         tag.putInt("gState", gState);
         tag.putBoolean("hasPocket", hasPocket);
+        tag.putDouble("pocketSize", pocketSize);
         tag.putDouble("pocketX", pocketX);
         tag.putDouble("pocketY", pocketY);
         tag.putDouble("pocketZ", pocketZ);
+        tag.putDouble("pocketSpawnX", pocketSpawnX);
+        tag.putDouble("pocketSpawnY", pocketSpawnY);
+        tag.putDouble("pocketSpawnZ", pocketSpawnZ);
         tag.putDouble("returnX", returnX);
         tag.putDouble("returnY", returnY);
         tag.putDouble("returnZ", returnZ);
         tag.putString("returnDim", Objects.requireNonNull(returnDim));
+        tag.putInt("pocketIndex", pocketIndex);
+        ListTag invitationsList = new ListTag();
+        pocketInvitations.forEach(uuid -> invitationsList.add(net.minecraft.nbt.StringTag.valueOf(uuid.toString())));
+        tag.put("pocketInvitations", invitationsList);
         tag.putBoolean("isInSpiritRealm", isInSpiritRealm);
         tag.putBoolean("smallBuild", smallBuild);
         tag.putBoolean("abilityActive", abilityActive);
@@ -723,7 +841,17 @@ public class PlayerVariables implements IPlayerVariables {
                 this.abilityStates.put(new ResourceLocation(key), statesTag.getDouble(key));
             }
         }
+
+        this.traitTimers.clear();
+        if (tag.contains("traitTimers", Tag.TAG_COMPOUND)) {
+            CompoundTag traitTimersTag = tag.getCompound("traitTimers");
+            for (String key : traitTimersTag.getAllKeys()) {
+                this.traitTimers.put(new ResourceLocation(key), traitTimersTag.getInt(key));
+            }
+        }
+
         if (tag.contains("morphed"))
+
             this.morphed = tag.getBoolean("morphed");
 
         if (tag.contains("teamId"))
@@ -734,12 +862,33 @@ public class PlayerVariables implements IPlayerVariables {
             this.gState = tag.getInt("gState");
         if (tag.contains("hasPocket"))
             this.hasPocket = tag.getBoolean("hasPocket");
+        if (tag.contains("pocketSize"))
+            this.pocketSize = tag.getDouble("pocketSize");
         if (tag.contains("pocketX"))
             this.pocketX = tag.getDouble("pocketX");
         if (tag.contains("pocketY"))
             this.pocketY = tag.getDouble("pocketY");
         if (tag.contains("pocketZ"))
             this.pocketZ = tag.getDouble("pocketZ");
+        if (tag.contains("pocketSpawnX"))
+            this.pocketSpawnX = tag.getDouble("pocketSpawnX");
+        if (tag.contains("pocketSpawnY"))
+            this.pocketSpawnY = tag.getDouble("pocketSpawnY");
+        if (tag.contains("pocketSpawnZ"))
+            this.pocketSpawnZ = tag.getDouble("pocketSpawnZ");
+        if (tag.contains("pocketIndex"))
+            this.pocketIndex = tag.getInt("pocketIndex");
+        if (tag.contains("pocketInvitations", Tag.TAG_LIST)) {
+            this.pocketInvitations.clear();
+            ListTag list = tag.getList("pocketInvitations", Tag.TAG_STRING);
+            for (int i = 0; i < list.size(); i++) {
+                try {
+                    this.pocketInvitations.add(UUID.fromString(list.getString(i)));
+                } catch (Exception ignored) {
+                }
+            }
+        }
+        this.pocketZ = tag.getDouble("pocketZ");
         if (tag.contains("returnX"))
             this.returnX = tag.getDouble("returnX");
         if (tag.contains("returnY"))
@@ -754,8 +903,11 @@ public class PlayerVariables implements IPlayerVariables {
             this.smallBuild = tag.getBoolean("smallBuild");
         if (tag.contains("abilityActive"))
             this.abilityActive = tag.getBoolean("abilityActive");
-        if (tag.contains("activeAbility"))
-            this.activeAbility = new ResourceLocation(tag.getString("activeAbility"));
+        if (tag.contains("activeAbility")) {
+            String activeId = tag.getString("activeAbility");
+            if (!activeId.isEmpty())
+                this.activeAbility = new ResourceLocation(activeId);
+        }
         if (tag.contains("activeAbilityDuration"))
             this.activeAbilityDuration = tag.getInt("activeAbilityDuration");
         if (tag.contains("activeAbilityDrain"))

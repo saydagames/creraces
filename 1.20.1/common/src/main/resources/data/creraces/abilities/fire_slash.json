@@ -27,14 +27,5 @@
             "pitch": 1.0
         }
     ],
-    "remote_description": {
-        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Fire_Slash&prop=wikitext",
-        "fallback": "ability.creraces.fire_slash.description"
-    },
-    "remote_full_description": {
-        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Fire_Slash&prop=wikitext",
-        "fallback": "ability.creraces.fire_slash.description"
-    }
+    "wiki_page": "Ability:Fire_Slash"
 }

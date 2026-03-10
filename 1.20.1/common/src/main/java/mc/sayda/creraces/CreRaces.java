@@ -26,7 +26,7 @@ public class CreRaces {
         ReloadListenerRegistry.register(PackType.SERVER_DATA, new mc.sayda.creraces.race.RaceManager());
 
         // Network
-        BoundaryHandler.registerC2S();
+        BoundaryHandler.init();
         mc.sayda.creraces.ability.ModAbilities.registerExecutors();
 
         // Engine Registries
@@ -38,17 +38,23 @@ public class CreRaces {
         mc.sayda.creraces.engine.SpiritSpawningHandler.init();
 
         dev.architectury.event.events.common.BlockEvent.BREAK.register((level, pos, state, player, xp) -> {
-            if (state.is(mc.sayda.creraces.registry.ModBlocks.MICRO_BLOCK.get())) {
-                boolean isSmallBuild = mc.sayda.creraces.capability.DataUtils.getVariables(player)
-                        .map(mc.sayda.creraces.capability.IPlayerVariables::isSmallBuild)
-                        .orElse(false);
+            if (state.getBlock() instanceof mc.sayda.creraces.block.RootBlock) {
+                if (player != null && !player.isCreative() && !mc.sayda.creraces.block.RootBlock.isOwner(player, pos)) {
+                    return dev.architectury.event.EventResult.interruptFalse();
+                }
+            }
 
-                if (isSmallBuild) {
-                    // Minibuild users are strictly forbidden from breaking the host block
-                    return dev.architectury.event.EventResult.interruptFalse();
-                } else if (!player.isShiftKeyDown()) {
-                    // Global rule: Non-minibuild users must sneak to break it
-                    return dev.architectury.event.EventResult.interruptFalse();
+            if (state.is(mc.sayda.creraces.registry.ModBlocks.MICRO_BLOCK.get())) {
+                if (player != null) {
+                    boolean isSmallBuild = mc.sayda.creraces.capability.DataUtils.getVariables(player)
+                            .map(mc.sayda.creraces.capability.IPlayerVariables::isSmallBuild)
+                            .orElse(false);
+
+                    if (isSmallBuild) {
+                        return dev.architectury.event.EventResult.interruptFalse();
+                    } else if (!player.isShiftKeyDown()) {
+                        return dev.architectury.event.EventResult.interruptFalse();
+                    }
                 }
             }
             return dev.architectury.event.EventResult.pass();

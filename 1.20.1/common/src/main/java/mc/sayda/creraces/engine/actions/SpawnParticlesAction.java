@@ -20,24 +20,24 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
                 ParticleOptions particle, int count, double speed, double spin);
 
         static ParticlePattern fromJson(JsonObject json) {
-            String type = GsonHelper.getAsString(json, "type", "random");
+            String type = GsonHelper.getAsString(json, "type", "circle");
             return switch (type.toLowerCase()) {
                 case "circle" -> {
                     ScalingValue radius = ScalingValue.fromJson(json, "radius", 1.0);
-                    ScalingValue count = ScalingValue.fromJson(json, "count", 8.0);
+                    ScalingValue count = ScalingValue.fromJson(json, "count", 10.0);
                     String axis = GsonHelper.getAsString(json, "axis", "Y");
                     yield new CirclePattern(radius, count, axis);
                 }
                 case "sphere" -> {
                     ScalingValue radius = ScalingValue.fromJson(json, "radius", 1.0);
-                    ScalingValue count = ScalingValue.fromJson(json, "count", 16.0);
+                    ScalingValue count = ScalingValue.fromJson(json, "count", 20.0);
                     yield new SpherePattern(radius, count);
                 }
                 case "helix" -> {
                     ScalingValue radius = ScalingValue.fromJson(json, "radius", 1.0);
                     ScalingValue height = ScalingValue.fromJson(json, "height", 2.0);
-                    ScalingValue count = ScalingValue.fromJson(json, "count", 20.0);
-                    ScalingValue rotations = ScalingValue.fromJson(json, "rotations", 1.0);
+                    ScalingValue count = ScalingValue.fromJson(json, "count", 30.0);
+                    ScalingValue rotations = ScalingValue.fromJson(json, "rotations", 2.0);
                     yield new HelixPattern(radius, height, count, rotations);
                 }
                 default -> null;
@@ -45,7 +45,17 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
         }
     }
 
-    private record CirclePattern(ScalingValue radius, ScalingValue points, String axis) implements ParticlePattern {
+    private static class CirclePattern implements ParticlePattern {
+        private final ScalingValue radius;
+        private final ScalingValue points;
+        private final String axis;
+
+        public CirclePattern(ScalingValue radius, ScalingValue points, String axis) {
+            this.radius = radius;
+            this.points = points;
+            this.axis = axis;
+        }
+
         @Override
         public void spawn(ServerLevel level, Player player, net.minecraft.world.entity.LivingEntity target,
                 ParticleOptions particle, int count, double speed, double spin) {
@@ -76,7 +86,15 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
         }
     }
 
-    private record SpherePattern(ScalingValue radius, ScalingValue points) implements ParticlePattern {
+    private static class SpherePattern implements ParticlePattern {
+        private final ScalingValue radius;
+        private final ScalingValue points;
+
+        public SpherePattern(ScalingValue radius, ScalingValue points) {
+            this.radius = radius;
+            this.points = points;
+        }
+
         @Override
         public void spawn(ServerLevel level, Player player, net.minecraft.world.entity.LivingEntity target,
                 ParticleOptions particle, int count, double speed, double spin) {
@@ -99,8 +117,19 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
         }
     }
 
-    private record HelixPattern(ScalingValue radius, ScalingValue height, ScalingValue points, ScalingValue rotations)
-            implements ParticlePattern {
+    private static class HelixPattern implements ParticlePattern {
+        private final ScalingValue radius;
+        private final ScalingValue height;
+        private final ScalingValue points;
+        private final ScalingValue rotations;
+
+        public HelixPattern(ScalingValue radius, ScalingValue height, ScalingValue points, ScalingValue rotations) {
+            this.radius = radius;
+            this.height = height;
+            this.points = points;
+            this.rotations = rotations;
+        }
+
         @Override
         public void spawn(ServerLevel level, Player player, net.minecraft.world.entity.LivingEntity target,
                 ParticleOptions particle, int count, double speed, double spin) {
@@ -175,6 +204,10 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
                 return null;
 
             ResourceLocation loc = new ResourceLocation(particleId);
+            if (!BuiltInRegistries.PARTICLE_TYPE.containsKey(loc)) {
+                CreRaces.LOGGER.error("SpawnParticlesAction: Unknown particle ID '{}'.", particleId);
+                return null;
+            }
             ParticleType<?> type = BuiltInRegistries.PARTICLE_TYPE.get(loc);
 
             ParticleOptions options;
@@ -182,15 +215,22 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
                 options = po;
             } else if (type == net.minecraft.core.particles.ParticleTypes.BLOCK
                     || type == net.minecraft.core.particles.ParticleTypes.FALLING_DUST) {
-                String blockId = GsonHelper.getAsString(json, "block", "minecraft:stone");
-                net.minecraft.world.level.block.Block block = BuiltInRegistries.BLOCK
-                        .get(new ResourceLocation(blockId));
+                String blockId = GsonHelper.getAsString(json, "block", "minecraft:air");
+                ResourceLocation bLoc = new ResourceLocation(blockId);
+                if (!BuiltInRegistries.BLOCK.containsKey(bLoc)) {
+                    CreRaces.LOGGER.error("SpawnParticlesAction: Unknown block ID '{}' for block particle.", blockId);
+                }
+                net.minecraft.world.level.block.Block block = BuiltInRegistries.BLOCK.get(bLoc);
                 @SuppressWarnings("unchecked")
                 net.minecraft.core.particles.ParticleType<net.minecraft.core.particles.BlockParticleOption> blockType = (net.minecraft.core.particles.ParticleType<net.minecraft.core.particles.BlockParticleOption>) type;
                 options = new net.minecraft.core.particles.BlockParticleOption(blockType, block.defaultBlockState());
             } else if (type == net.minecraft.core.particles.ParticleTypes.ITEM) {
-                String itemId = GsonHelper.getAsString(json, "item", "minecraft:stone");
-                net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(new ResourceLocation(itemId));
+                String itemId = GsonHelper.getAsString(json, "item", "minecraft:air");
+                ResourceLocation iLoc = new ResourceLocation(itemId);
+                if (!BuiltInRegistries.ITEM.containsKey(iLoc)) {
+                    CreRaces.LOGGER.error("SpawnParticlesAction: Unknown item ID '{}' for item particle.", itemId);
+                }
+                net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(iLoc);
                 @SuppressWarnings("unchecked")
                 net.minecraft.core.particles.ParticleType<net.minecraft.core.particles.ItemParticleOption> itemType = (net.minecraft.core.particles.ParticleType<net.minecraft.core.particles.ItemParticleOption>) type;
                 options = new net.minecraft.core.particles.ItemParticleOption(itemType,
@@ -200,7 +240,7 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
                 return null;
             }
 
-            ScalingValue count = ScalingValue.fromJson(json, "count", 1.0);
+            ScalingValue count = ScalingValue.fromJson(json, "count", 10.0);
             ScalingValue speed = ScalingValue.fromJson(json, "speed", 0.0);
             ScalingValue dx = ScalingValue.fromJson(json, "dx", 0.0);
             ScalingValue dy = ScalingValue.fromJson(json, "dy", 0.0);

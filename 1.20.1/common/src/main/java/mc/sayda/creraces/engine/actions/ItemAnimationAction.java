@@ -21,7 +21,7 @@ public class ItemAnimationAction implements ActionRegistry.RaceAction {
 
     public static void register() {
         ActionRegistry.register(ID, json -> {
-            String itemStr = GsonHelper.getAsString(json, "item");
+            String itemStr = GsonHelper.getAsString(json, "item", "minecraft:air");
             ResourceLocation item = new ResourceLocation(itemStr);
             return new ItemAnimationAction(item);
         });

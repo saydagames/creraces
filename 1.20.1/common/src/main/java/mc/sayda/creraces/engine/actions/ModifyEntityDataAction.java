@@ -11,12 +11,24 @@ import net.minecraft.world.entity.player.Player;
 
 public class ModifyEntityDataAction implements ActionRegistry.RaceAction {
 
+    public enum Operation {
+        SET, ADD, REMOVE, MULTIPLY;
+
+        public static Operation fromString(String op) {
+            for (Operation o : values()) {
+                if (o.name().equalsIgnoreCase(op))
+                    return o;
+            }
+            return SET;
+        }
+    }
+
     private final String key;
-    private final String operation; // set, add, remove
+    private final Operation operation;
     private final mc.sayda.creraces.engine.ScalingValue value;
     private final boolean useTarget;
 
-    public ModifyEntityDataAction(String key, String operation, mc.sayda.creraces.engine.ScalingValue value,
+    public ModifyEntityDataAction(String key, Operation operation, mc.sayda.creraces.engine.ScalingValue value,
             boolean useTarget) {
         this.key = key;
         this.operation = operation;
@@ -35,7 +47,7 @@ public class ModifyEntityDataAction implements ActionRegistry.RaceAction {
             return true;
         CompoundTag persistentData = ((IPersistentDataAccessor) entity).creraces$getPersistentData();
 
-        if (operation.equalsIgnoreCase("remove")) {
+        if (operation == Operation.REMOVE) {
             persistentData.remove(key);
             return true;
         }
@@ -44,12 +56,12 @@ public class ModifyEntityDataAction implements ActionRegistry.RaceAction {
         double current = persistentData.getDouble(key);
         double newValue = current;
 
-        if (operation.equalsIgnoreCase("add")) {
-            newValue += val;
-        } else if (operation.equalsIgnoreCase("set")) {
-            newValue = val;
-        } else if (operation.equalsIgnoreCase("multiply")) {
-            newValue *= val;
+        switch (operation) {
+            case ADD -> newValue += val;
+            case SET -> newValue = val;
+            case MULTIPLY -> newValue *= val;
+            default -> {
+            }
         }
 
         persistentData.putDouble(key, newValue);
@@ -73,16 +85,17 @@ public class ModifyEntityDataAction implements ActionRegistry.RaceAction {
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "modify_entity_data"), json -> {
             String key = GsonHelper.getAsString(json, "key");
             // Limit key length to prevent NBT bloat via crafted race JSONs
-            int keyMaxLen = mc.sayda.creraces.config.CreRacesConfig.ENTITY_DATA_KEY_MAX_LENGTH.get();
+            int keyMaxLen = 64;
             if (keyMaxLen > 0 && key.length() > keyMaxLen) {
                 CreRaces.LOGGER.warn("[CreRaces] ModifyEntityDataAction: key '{}' exceeds {} chars, truncating", key,
                         keyMaxLen);
                 key = key.substring(0, keyMaxLen);
             }
-            String op = GsonHelper.getAsString(json, "operation", "set");
+            String opStr = GsonHelper.getAsString(json, "operation", "SET");
+            Operation op = Operation.fromString(opStr);
             mc.sayda.creraces.engine.ScalingValue val = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "value",
                     0.0);
-            boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", true);
+            boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
 
             return new ModifyEntityDataAction(key, op, val, useTarget);
         });

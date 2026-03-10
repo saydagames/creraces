@@ -1,63 +1,54 @@
 {
-    "name":  "ability.creraces.rampant_growth.name",
-    "description":  "ability.creraces.rampant_growth.description",
-    "type":  "ACTIVE",
-    "icon":  "minecraft:oak_sapling",
-    "cooldown":  400,
-    "cost":  40,
-    "race":  [
-                 "creraces:dryad"
-             ],
-    "actions":  [
-                    {
-                        "type":  "creraces:apply_effect",
-                        "effect":  "creraces:rooted",
-                        "duration":  200,
-                        "amplifier":  0
-                    },
-                    {
-                        "type":  "creraces:apply_effect",
-                        "effect":  "minecraft:resistance",
-                        "duration":  200,
-                        "amplifier":  1
-                    },
-                    {
-                        "type":  "creraces:apply_particles",
-                        "particle":  "minecraft:happy_villager",
-                        "count":  15,
-                        "spread_x":  0.5,
-                        "spread_y":  1,
-                        "spread_z":  0.5
-                    },
-                    {
-                        "type":  "creraces:apply_particles",
-                        "particle":  "minecraft:composter",
-                        "count":  10,
-                        "spread_x":  0.3,
-                        "spread_y":  0.5,
-                        "spread_z":  0.3
-                    },
-                    {
-                        "type":  "creraces:play_sound",
-                        "sound":  "minecraft:item.bone_meal.use",
-                        "volume":  1,
-                        "pitch":  0.9
-                    },
-                    {
-                        "type":  "creraces:play_sound",
-                        "sound":  "minecraft:block.moss.place",
-                        "volume":  0.8,
-                        "pitch":  1.1
-                    }
-                ],
-    "remote_description": {
-        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Rampant_Growth&prop=wikitext",
-        "fallback": "ability.creraces.rampant_growth.description"
-    },
-    "remote_full_description": {
-        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Rampant_Growth&prop=wikitext",
-        "fallback": "ability.creraces.rampant_growth.description"
-    }
+    "name": "ability.creraces.rampant_growth.name",
+    "description": "ability.creraces.rampant_growth.description",
+    "type": "ACTIVE",
+    "icon": "minecraft:oak_sapling",
+    "cooldown": 240,
+    "cost": 40,
+    "race": [
+        "creraces:dryad"
+    ],
+    "actions": [
+        {
+            "type": "creraces:apply_effect",
+            "effect": "creraces:rooted",
+            "duration": 200,
+            "amplifier": 0
+        },
+        {
+            "type": "creraces:apply_effect",
+            "effect": "minecraft:resistance",
+            "duration": 200,
+            "amplifier": 1
+        },
+        {
+            "type": "creraces:apply_particles",
+            "particle": "minecraft:happy_villager",
+            "count": 15,
+            "spread_x": 0.5,
+            "spread_y": 1,
+            "spread_z": 0.5
+        },
+        {
+            "type": "creraces:apply_particles",
+            "particle": "minecraft:composter",
+            "count": 10,
+            "spread_x": 0.3,
+            "spread_y": 0.5,
+            "spread_z": 0.3
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:item.bone_meal.use",
+            "volume": 1,
+            "pitch": 0.9
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:block.moss.place",
+            "volume": 0.8,
+            "pitch": 1.1
+        }
+    ],
+    "wiki_page": "Ability:Rampant_Growth"
 }

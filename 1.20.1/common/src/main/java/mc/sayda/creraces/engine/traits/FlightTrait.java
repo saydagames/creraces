@@ -12,10 +12,7 @@ import mc.sayda.creraces.engine.ScalingValue;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import mc.sayda.creraces.engine.ActionRegistry;
 
 /**
@@ -23,17 +20,17 @@ import mc.sayda.creraces.engine.ActionRegistry;
  * Can be conditional (e.g., only while Foxfire is active).
  */
 public class FlightTrait implements TraitRegistry.RaceTrait {
+    private final ResourceLocation traitId;
     private final ResourceType resource;
     private final ScalingValue drainRate;
     private final boolean forceFly;
     @Nullable
     private final Condition condition;
     private final List<ActionRegistry.RaceAction> onFail;
-    // Per-player failure state (trait is a race-level singleton)
-    private final Map<UUID, Boolean> failedMap = new HashMap<>();
 
-    public FlightTrait(ResourceType resource, ScalingValue drainRate, boolean forceFly, @Nullable Condition condition,
-            List<ActionRegistry.RaceAction> onFail) {
+    public FlightTrait(ResourceLocation traitId, ResourceType resource, ScalingValue drainRate, boolean forceFly,
+            @Nullable Condition condition, List<ActionRegistry.RaceAction> onFail) {
+        this.traitId = traitId;
         this.resource = resource;
         this.drainRate = drainRate;
         this.forceFly = forceFly;
@@ -43,7 +40,6 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
 
     @Override
     public void tick(Player player) {
-
         boolean conditionMet = condition == null || condition.evaluate(player, null, null, null);
 
         DataUtils.getVariables(player).ifPresent(vars -> {
@@ -91,9 +87,11 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
                     }
 
                     // On Fail Logic
-                    boolean alreadyFailed = failedMap.getOrDefault(player.getUUID(), false);
+                    ResourceLocation failId = new ResourceLocation(traitId.getNamespace(),
+                            traitId.getPath() + "_failed");
+                    boolean alreadyFailed = vars.getAbilityState(failId) > 0;
                     if (conditionMet && currentResource < evaluatedDrain && !alreadyFailed) {
-                        failedMap.put(player.getUUID(), true);
+                        vars.setAbilityState(failId, 1.0);
                         for (ActionRegistry.RaceAction action : onFail) {
                             action.execute(player, null, null, null);
                         }
@@ -102,7 +100,8 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
             }
 
             if (conditionMet && currentResource >= evaluatedDrain) {
-                failedMap.put(player.getUUID(), false);
+                ResourceLocation failId = new ResourceLocation(traitId.getNamespace(), traitId.getPath() + "_failed");
+                vars.setAbilityState(failId, 0.0);
             }
 
             // Sync if changed
@@ -114,9 +113,11 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
 
     public static void register() {
         TraitRegistry.register(new ResourceLocation(CreRaces.MODID, "flight"), json -> {
-            String resStr = GsonHelper.getAsString(json, "resource", "ENERGY").toUpperCase();
-            ResourceType resource = ResourceType.valueOf(resStr);
-            ScalingValue drainRate = ScalingValue.fromJson(json, "drain_rate", 0.1);
+            String resStr = GsonHelper.getAsString(json, "resource", "NONE");
+            if (resStr.contains(":"))
+                resStr = resStr.substring(resStr.indexOf(':') + 1);
+            ResourceType resource = ResourceType.valueOf(resStr.toUpperCase());
+            ScalingValue drainRate = ScalingValue.fromJson(json, "drain_rate", 0.0);
             boolean forceFly = GsonHelper.getAsBoolean(json, "force_fly", false);
 
             Condition condition = null;
@@ -136,7 +137,11 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
                 }
             }
 
-            return new FlightTrait(resource, drainRate, forceFly, condition, onFail);
+            String traitName = json.has("name") ? json.get("name").getAsString()
+                    : "flight_" + Math.abs(json.toString().hashCode());
+            ResourceLocation traitId = new ResourceLocation(CreRaces.MODID, "trait_" + traitName);
+
+            return new FlightTrait(traitId, resource, drainRate, forceFly, condition, onFail);
         });
     }
 }

@@ -3,9 +3,6 @@ package mc.sayda.creraces.engine;
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.race.Race;
 import mc.sayda.creraces.race.RaceRegistry;
-import net.minecraft.world.effect.MobEffect;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -35,7 +32,6 @@ public class AquaticMovementHandler {
 
                     if (!player.level().isClientSide()) {
                         handleSpeed(player, race, aquaticTrait);
-                        handleVision(player, race);
                     }
 
                     handleBuoyancy(player, aquaticTrait);
@@ -135,42 +131,4 @@ public class AquaticMovementHandler {
         // sinking: leave velocity unchanged so Sneak naturally pulls them down
     }
 
-    private static void handleVision(Player player, Race race) {
-        Race.Passives passives = race.passives() != null ? race.passives() : Race.Passives.DEFAULT;
-
-        // Water Vision: server-side Night Vision effect.
-        // Client-side fog/overlay removal is handled by FogRendererMixin +
-        // LiquidOverlayMixin.
-        if (passives.waterVision() && player.isInWater()) {
-            MobEffect nightVision = MobEffects.NIGHT_VISION;
-            if (nightVision != null) {
-                player.addEffect(new MobEffectInstance(nightVision, 205, 0, false, false, false));
-            }
-        }
-
-        // Lava Vision: also grants Fire Resistance so the player can actually use the
-        // sight.
-        // Client-side fog/overlay removal is handled by FogRendererMixin +
-        // LiquidOverlayMixin.
-        if (passives.lavaVision() && player.isInLava()) {
-            MobEffect nightVision = MobEffects.NIGHT_VISION;
-            MobEffect fireResistance = MobEffects.FIRE_RESISTANCE;
-            if (nightVision != null) {
-                player.addEffect(new MobEffectInstance(nightVision, 205, 0, false, false, false));
-            }
-            if (fireResistance != null) {
-                player.addEffect(new MobEffectInstance(fireResistance, 205, 0, false, false, false));
-            }
-        }
-
-        // unaffectedByLava: also grant Night Vision + Fire Resistance while in lava
-        if (passives.unaffectedByLava() && player.isInLava()) {
-            MobEffect nightVision = MobEffects.NIGHT_VISION;
-            MobEffect fireResistance = MobEffects.FIRE_RESISTANCE;
-            if (nightVision != null)
-                player.addEffect(new MobEffectInstance(nightVision, 205, 0, false, false, false));
-            if (fireResistance != null)
-                player.addEffect(new MobEffectInstance(fireResistance, 205, 0, false, false, false));
-        }
-    }
 }

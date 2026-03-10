@@ -1,9 +1,11 @@
 package mc.sayda.creraces.entity;
 
+import mc.sayda.creraces.config.CreRacesConfig;
+
 import mc.sayda.creraces.registry.ModEntities;
 import mc.sayda.creraces.registry.ModMobEffects;
 import mc.sayda.creraces.util.IPersistentDataAccessor;
-import mc.sayda.creraces.config.CreRacesConfig;
+
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
@@ -48,11 +50,11 @@ public class PoisonEmitterMobileEntity extends TamableAnimal {
 
     public static AttributeSupplier.Builder createAttributes() {
         return createMobAttributes()
-                .add(Attributes.MOVEMENT_SPEED, 0.35)
-                .add(Attributes.MAX_HEALTH, 16.0)
+                .add(Attributes.MOVEMENT_SPEED, CreRacesConfig.ENTITY_POISON_EMITTER_MOBILE_MOVEMENT_SPEED.get())
+                .add(Attributes.MAX_HEALTH, CreRacesConfig.ENTITY_POISON_EMITTER_MOBILE_MAX_HEALTH.get())
                 .add(Attributes.ARMOR, 0.0)
                 .add(Attributes.ATTACK_DAMAGE, 0.0)
-                .add(Attributes.FOLLOW_RANGE, 16.0);
+                .add(Attributes.FOLLOW_RANGE, CreRacesConfig.ENTITY_POISON_EMITTER_FOLLOW_RANGE.get());
     }
 
     @Override
@@ -76,31 +78,45 @@ public class PoisonEmitterMobileEntity extends TamableAnimal {
         ticksAlive++;
 
         // Stacks logic
-        int amplifier = (int) (ticksAlive / CreRacesConfig.POISON_EMITTER_PULSE_INTERVAL.get());
+        int amplifier = (int) (ticksAlive / CreRacesConfig.ENTITY_POISON_EMITTER_PULSE_INTERVAL.get());
 
         // Pulse Ratvenom to nearby entities
         var venomEffect = ModMobEffects.RAT_VENOM.get();
         if (venomEffect != null) {
             Vec3 center = this.position();
+            LivingEntity owner = getOwner();
+
+            // Cleanup: if owner IS a player but is no longer online/valid, discard the
+            // emitter
+            if (owner instanceof Player p && (!p.isAlive() || !this.level().players().contains(p))) {
+                this.discard();
+                return;
+            }
+
+            net.minecraft.resources.ResourceLocation venomId = new net.minecraft.resources.ResourceLocation(
+                    "creraces", "rat_venom");
             List<LivingEntity> nearby = this.level().getEntitiesOfClass(
                     LivingEntity.class,
-                    new AABB(center, center).inflate(CreRacesConfig.POISON_EMITTER_RADIUS.get()),
-                    e -> e != this && (getOwner() == null
-                            || !mc.sayda.creraces.team.RaceTeamManager.canHurt(e, (Player) getOwner())));
+                    new AABB(center, center).inflate(CreRacesConfig.ENTITY_POISON_EMITTER_RADIUS.get()),
+                    e -> e != this && (owner == null
+                            || mc.sayda.creraces.team.RaceTeamManager.canHurt(e, owner))
+                            && !mc.sayda.creraces.util.RaceUtils.isImmuneToEffect(e, venomId));
 
             for (LivingEntity target : nearby) {
                 // Apply source tag for attribution if owner is present
-                if (getOwner() != null && target instanceof IPersistentDataAccessor accessor) {
+                if (owner != null && target instanceof IPersistentDataAccessor accessor) {
                     CompoundTag data = accessor.creraces$getPersistentData();
-                    data.putString("creraces:venom_source", getOwnerUUID().toString());
+                    data.putString("creraces:venom_source", owner.getUUID().toString());
                 }
 
-                target.addEffect(new MobEffectInstance(venomEffect, 102, amplifier, true, true));
+                target.addEffect(
+                        new MobEffectInstance(venomEffect, CreRacesConfig.ENTITY_POISON_EMITTER_VENOM_DURATION.get(),
+                                amplifier, true, true));
             }
         }
 
         // Self-destruct after lifetime expires
-        if (ticksAlive >= CreRacesConfig.POISON_EMITTER_LIFETIME_TICKS.get()) {
+        if (ticksAlive >= CreRacesConfig.ENTITY_POISON_EMITTER_LIFETIME_TICKS.get()) {
             this.level().playSound(null, this.blockPosition(),
                     net.minecraft.sounds.SoundEvents.STONE_BREAK,
                     net.minecraft.sounds.SoundSource.NEUTRAL, 1.0f, 1.3f);

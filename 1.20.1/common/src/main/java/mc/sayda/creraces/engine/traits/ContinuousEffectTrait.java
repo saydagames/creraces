@@ -1,6 +1,5 @@
 package mc.sayda.creraces.engine.traits;
 
-import com.google.gson.JsonObject;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.engine.ActionRegistry;
@@ -17,32 +16,28 @@ import net.minecraft.world.entity.player.Player;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Applies a mob effect while a condition is met, draining a resource.
  */
 public class ContinuousEffectTrait implements TraitRegistry.RaceTrait {
+    private final ResourceLocation traitId;
     private final ResourceLocation effectId;
-    private final mc.sayda.creraces.engine.ScalingValue amplifier;
+    private final ScalingValue amplifier;
     private final boolean visible;
     private final ResourceType resource;
     private final ScalingValue drainRate;
-    private final mc.sayda.creraces.engine.ScalingValue duration;
+    private final ScalingValue duration;
     @Nullable
     private final Condition condition;
     private final List<ActionRegistry.RaceAction> onFail;
-    // Per-player failure state: traits are race-level singletons so instance fields
-    // would be shared across all players of the same race.
-    private final Map<UUID, Boolean> failedMap = new HashMap<>();
 
-    public ContinuousEffectTrait(ResourceLocation effectId, mc.sayda.creraces.engine.ScalingValue amplifier,
-            boolean visible, ResourceType resource,
-            ScalingValue drainRate, mc.sayda.creraces.engine.ScalingValue duration, @Nullable Condition condition,
+    public ContinuousEffectTrait(ResourceLocation traitId, ResourceLocation effectId,
+            ScalingValue amplifier, boolean visible, ResourceType resource,
+            ScalingValue drainRate, ScalingValue duration, @Nullable Condition condition,
             List<ActionRegistry.RaceAction> onFail) {
+        this.traitId = traitId;
         this.effectId = effectId;
         this.amplifier = amplifier;
         this.visible = visible;
@@ -64,6 +59,7 @@ public class ContinuousEffectTrait implements TraitRegistry.RaceTrait {
                 case GRIT -> vars.getGrit();
                 case RAGE -> vars.getRage();
                 case SOULS -> vars.getSouls();
+                case STACKS -> vars.getAbilityState(new ResourceLocation(CreRaces.MODID, "stacks"));
                 case NONE -> 0.0;
                 default -> 100.0;
             };
@@ -85,6 +81,9 @@ public class ContinuousEffectTrait implements TraitRegistry.RaceTrait {
                             case GRIT -> vars.setGrit(Math.max(0, vars.getGrit() - evaluatedDrain));
                             case RAGE -> vars.setRage(Math.max(0, vars.getRage() - evaluatedDrain));
                             case SOULS -> vars.setSouls(Math.max(0, vars.getSouls() - evaluatedDrain));
+                            case STACKS -> vars.setAbilityState(new ResourceLocation(CreRaces.MODID, "stacks"),
+                                    Math.max(0, vars.getAbilityState(new ResourceLocation(CreRaces.MODID, "stacks"))
+                                            - evaluatedDrain));
                             case NONE -> {
                             }
                         }
@@ -92,10 +91,11 @@ public class ContinuousEffectTrait implements TraitRegistry.RaceTrait {
                 }
             } else {
                 // Handle failure
-                boolean alreadyFailed = failedMap.getOrDefault(player.getUUID(), false);
+                ResourceLocation failId = new ResourceLocation(traitId.getNamespace(), traitId.getPath() + "_failed");
+                boolean alreadyFailed = vars.getAbilityState(failId) > 0;
                 if (conditionMet && resource != ResourceType.NONE && currentResource < evaluatedDrain
                         && !alreadyFailed) {
-                    failedMap.put(player.getUUID(), true);
+                    vars.setAbilityState(failId, 1.0);
                     for (ActionRegistry.RaceAction action : onFail) {
                         action.execute(player, null, null, null);
                     }
@@ -103,7 +103,8 @@ public class ContinuousEffectTrait implements TraitRegistry.RaceTrait {
             }
 
             if (conditionMet && (resource == ResourceType.NONE || currentResource >= evaluatedDrain)) {
-                failedMap.put(player.getUUID(), false);
+                ResourceLocation failId = new ResourceLocation(traitId.getNamespace(), traitId.getPath() + "_failed");
+                vars.setAbilityState(failId, 0.0);
             }
         });
     }
@@ -111,14 +112,14 @@ public class ContinuousEffectTrait implements TraitRegistry.RaceTrait {
     public static void register() {
         TraitRegistry.register(new ResourceLocation(CreRaces.MODID, "continuous_effect"), json -> {
             ResourceLocation effectId = new ResourceLocation(GsonHelper.getAsString(json, "effect"));
-            mc.sayda.creraces.engine.ScalingValue amplifier = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
-                    "amplifier", 0.0);
+            ScalingValue amplifier = ScalingValue.fromJson(json, "amplifier", 0);
             boolean visible = GsonHelper.getAsBoolean(json, "visible", true);
-            String resStr = GsonHelper.getAsString(json, "resource", "NONE").toUpperCase();
-            ResourceType resource = ResourceType.valueOf(resStr);
+            String resStr = GsonHelper.getAsString(json, "resource", "NONE");
+            if (resStr.contains(":"))
+                resStr = resStr.substring(resStr.indexOf(':') + 1);
+            ResourceType resource = ResourceType.valueOf(resStr.toUpperCase());
             ScalingValue drainRate = ScalingValue.fromJson(json, "drain_rate", 0.0);
-            mc.sayda.creraces.engine.ScalingValue duration = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
-                    "duration", 40.0); // 2 second default
+            ScalingValue duration = ScalingValue.fromJson(json, "duration", 20);
 
             Condition condition = null;
             if (json.has("condition")) {
@@ -137,8 +138,12 @@ public class ContinuousEffectTrait implements TraitRegistry.RaceTrait {
                 }
             }
 
-            return new ContinuousEffectTrait(effectId, amplifier, visible, resource, drainRate, duration, condition,
-                    onFail);
+            String traitName = json.has("name") ? json.get("name").getAsString()
+                    : "continuous_" + Math.abs(json.toString().hashCode());
+            ResourceLocation traitId = new ResourceLocation(CreRaces.MODID, "trait_" + traitName);
+
+            return new ContinuousEffectTrait(traitId, effectId, amplifier, visible, resource, drainRate, duration,
+                    condition, onFail);
         });
     }
 }

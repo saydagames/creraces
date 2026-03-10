@@ -12,6 +12,8 @@ import net.minecraft.world.entity.player.Player;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Helper utilities for race social interaction passives
@@ -21,6 +23,11 @@ import java.util.List;
  * - Exclusions: "!minecraft:drowned" or "!#minecraft:skeletons" (starts with !)
  */
 public class SocialPassivesHelper {
+    private static final Map<String, TagKey<EntityType<?>>> TAG_CACHE = new ConcurrentHashMap<>();
+
+    private static TagKey<EntityType<?>> getOrCreateTag(String path) {
+        return TAG_CACHE.computeIfAbsent(path, p -> TagKey.create(Registries.ENTITY_TYPE, new ResourceLocation(p)));
+    }
 
     /**
      * Check if an entity type is hated by the player's race
@@ -99,8 +106,7 @@ public class SocialPassivesHelper {
             if (entry.startsWith("#")) {
                 // Tag reference
                 String tagPath = entry.substring(1); // Remove #
-                ResourceLocation tagLocation = new ResourceLocation(tagPath);
-                TagKey<EntityType<?>> tag = TagKey.create(Registries.ENTITY_TYPE, tagLocation);
+                TagKey<EntityType<?>> tag = getOrCreateTag(tagPath);
 
                 if (entityType.is(tag)) {
                     matched = true;
@@ -136,8 +142,7 @@ public class SocialPassivesHelper {
             if (exclusion.startsWith("#")) {
                 // Tag exclusion
                 String tagPath = exclusion.substring(1); // Remove # after !
-                ResourceLocation tagLocation = new ResourceLocation(tagPath);
-                TagKey<EntityType<?>> tag = TagKey.create(Registries.ENTITY_TYPE, tagLocation);
+                TagKey<EntityType<?>> tag = getOrCreateTag(tagPath);
 
                 if (entityType.is(tag)) {
                     return false; // Excluded by tag

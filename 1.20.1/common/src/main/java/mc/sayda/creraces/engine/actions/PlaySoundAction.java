@@ -33,7 +33,12 @@ public class PlaySoundAction implements ActionRegistry.RaceAction {
             @Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @Nullable net.minecraft.core.BlockPos interactionPos) {
         SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(soundId);
-        if (sound != null && player.level() != null) {
+        if (sound == null) {
+            CreRaces.LOGGER.error("[CreRaces] PlaySoundAction: unknown sound event '{}'", soundId);
+            return true;
+        }
+
+        if (player.level() != null) {
             // Smart Targeting: Prefer target if present, otherwise respect useTarget flag
             net.minecraft.world.entity.LivingEntity subject = (target != null) ? target : (useTarget ? target : player);
             if (subject != null) {

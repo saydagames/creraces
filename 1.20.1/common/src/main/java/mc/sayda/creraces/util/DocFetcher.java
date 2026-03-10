@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
  */
 public class DocFetcher {
     private static final HttpClient CLIENT = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(mc.sayda.creraces.config.CreRacesConfig.DOC_FETCH_TIMEOUT_SECONDS.get()))
+            .connectTimeout(Duration.ofSeconds(10))
             .build();
 
     /**

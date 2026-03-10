@@ -1,48 +1,56 @@
 package mc.sayda.creraces.engine.traits;
 
-import com.google.gson.JsonObject;
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.engine.TraitRegistry;
 import mc.sayda.creraces.engine.condition.Condition;
-import mc.sayda.creraces.util.GsonHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.core.BlockPos;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.WeakHashMap;
 
 /**
  * Trait that executes actions when a player lands on the ground.
  */
 public class OnLandTrait implements TraitRegistry.RaceTrait {
 
+    private final ResourceLocation traitId;
     private final List<ActionRegistry.RaceAction> actions;
     private final Condition condition;
-    private final Map<UUID, Boolean> lastOnGround = new WeakHashMap<>();
 
-    public OnLandTrait(List<ActionRegistry.RaceAction> actions, Condition condition) {
+    public OnLandTrait(ResourceLocation traitId, List<ActionRegistry.RaceAction> actions, Condition condition) {
+        this.traitId = traitId;
         this.actions = actions;
         this.condition = condition;
     }
 
     @Override
     public void tick(Player player) {
-        boolean onGround = player.onGround();
-        boolean wasOnGround = lastOnGround.getOrDefault(player.getUUID(), true);
+        DataUtils.getVariables(player).ifPresent(vars -> {
+            boolean onGround = player.onGround();
+            ResourceLocation stateId = new ResourceLocation(traitId.getNamespace(),
+                    traitId.getPath() + "_was_on_ground");
 
-        if (onGround && !wasOnGround) {
-            if (condition == null || condition.evaluate(player, null, null, null)) {
-                for (ActionRegistry.RaceAction action : actions) {
-                    action.execute(player, null, null, null);
+            // wasOnGround will be true if we haven't tracked this player yet (to avoid
+            // firing on first spawn)
+            boolean wasOnGround = vars.getAbilityState(stateId) > 0.5 || !vars.getTraitTimers().containsKey(traitId);
+
+            if (onGround && !wasOnGround) {
+                BlockPos pos = player.blockPosition();
+                if (condition == null || condition.evaluate(player, null, null, pos)) {
+                    for (ActionRegistry.RaceAction action : actions) {
+                        action.execute(player, null, null, pos);
+                    }
                 }
             }
-        }
 
-        lastOnGround.put(player.getUUID(), onGround);
+            vars.setAbilityState(stateId, onGround ? 1.0 : 0.0);
+            // Mark that we've seen this player
+            vars.setTraitTimer(traitId, 1);
+        });
     }
 
     public static void register() {
@@ -61,7 +69,11 @@ public class OnLandTrait implements TraitRegistry.RaceTrait {
                 }
             }
 
-            return new OnLandTrait(actions, condition);
+            String traitName = json.has("name") ? json.get("name").getAsString()
+                    : "on_land_" + Math.abs(json.toString().hashCode());
+            ResourceLocation traitId = new ResourceLocation(CreRaces.MODID, "trait_" + traitName);
+
+            return new OnLandTrait(traitId, actions, condition);
         });
     }
 }

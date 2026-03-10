@@ -1,6 +1,5 @@
 package mc.sayda.creraces.world.inventory.micro;
 
-import mc.sayda.creraces.config.CreRacesConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -31,7 +30,7 @@ public class MicroCraftingMenu extends CraftingMenu {
             }
             // Basic proximity check (vanilla uses 64.0)
             return player.distanceToSqr((double) pos.getX() + 0.5, (double) pos.getY() + 0.5,
-                    (double) pos.getZ() + 0.5) <= CreRacesConfig.MINI_CRAFTING_DISTANCE_SQR.get();
+                    (double) pos.getZ() + 0.5) <= 64.0;
         }, true);
     }
 }

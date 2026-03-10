@@ -48,7 +48,9 @@ public class DashAction implements ActionRegistry.RaceAction {
         }
 
         // Apply dash with configurable Y scaling
-        double yScale = "up".equalsIgnoreCase(direction) || "down".equalsIgnoreCase(direction) ? 1.0 : ym;
+        double yScale = "up".equalsIgnoreCase(direction) || "down".equalsIgnoreCase(direction)
+                ? 1.0
+                : ym;
         player.setDeltaMovement(motion.add(dashVec.x * p, dashVec.y * p * yScale + yb, dashVec.z * p));
         player.hurtMarked = true;
 
@@ -64,8 +66,8 @@ public class DashAction implements ActionRegistry.RaceAction {
             ScalingValue power = ScalingValue.fromJson(json, "power", 1.0);
             String direction = GsonHelper.getAsString(json, "direction", "forward");
             boolean resetFall = GsonHelper.getAsBoolean(json, "reset_fall", false);
-            ScalingValue yMultiplier = ScalingValue.fromJson(json, "y_multiplier", 0.5);
-            ScalingValue yBoost = ScalingValue.fromJson(json, "y_boost", 0.2);
+            ScalingValue yMultiplier = ScalingValue.fromJson(json, "y_multiplier", 0.0);
+            ScalingValue yBoost = ScalingValue.fromJson(json, "y_boost", 0.0);
 
             return new DashAction(power, direction, yMultiplier, yBoost, resetFall);
         });

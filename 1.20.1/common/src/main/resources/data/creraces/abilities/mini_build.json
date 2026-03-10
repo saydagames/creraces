@@ -42,14 +42,5 @@
             "pitch": 2
         }
     ],
-    "remote_description": {
-        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Mini_Build&prop=wikitext",
-        "fallback": "ability.creraces.mini_build.description"
-    },
-    "remote_full_description": {
-        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Mini_Build&prop=wikitext",
-        "fallback": "ability.creraces.mini_build.description"
-    }
+    "wiki_page": "Ability:Mini_Build"
 }

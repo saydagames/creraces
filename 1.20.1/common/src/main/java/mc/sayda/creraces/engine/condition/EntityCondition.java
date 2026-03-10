@@ -7,17 +7,36 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 
-public record EntityCondition(
-        @javax.annotation.Nullable String entityType,
-        @javax.annotation.Nullable String tag,
-        boolean useTarget) implements Condition {
+public class EntityCondition implements Condition {
+    private final String entityType;
+    private final String tag;
+    private final boolean useTarget;
+
+    public EntityCondition(@javax.annotation.Nullable String entityType, @javax.annotation.Nullable String tag,
+            boolean useTarget) {
+        this.entityType = entityType;
+        this.tag = tag;
+        this.useTarget = useTarget;
+    }
+
+    public @javax.annotation.Nullable String entityType() {
+        return entityType;
+    }
+
+    public @javax.annotation.Nullable String tag() {
+        return tag;
+    }
+
+    public boolean useTarget() {
+        return useTarget;
+    }
 
     @Override
     public boolean evaluate(Player player, @javax.annotation.Nullable LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
         // Smart Targeting: Prefer target if present, otherwise respect useTarget flag
-        LivingEntity entity = (target != null) ? target : (useTarget ? target : player);
+        LivingEntity entity = (target != null) ? target : (useTarget ? null : player);
         if (entity == null)
             return false;
 

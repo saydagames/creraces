@@ -73,7 +73,7 @@ public class RaceSelectionScreen extends Screen {
                                 .collect(Collectors.toList());
 
                 if (!raceEntries.isEmpty() && selectedRaceId == null) {
-                        selectedRaceId = raceEntries.get(0).id();
+                        selectedRaceId = raceEntries.get(0).id;
                         updateMaxInfoPages();
                 }
 
@@ -212,7 +212,18 @@ public class RaceSelectionScreen extends Screen {
                 return false;
         }
 
-        private record RaceEntry(ResourceLocation id, Component name, ResourceLocation portrait,
-                        boolean isParentGroup) {
+        private static class RaceEntry {
+                public final ResourceLocation id;
+                public final Component name;
+                public final ResourceLocation portrait;
+                public final boolean isParentGroup;
+
+                public RaceEntry(ResourceLocation id, Component name, ResourceLocation portrait,
+                                boolean isParentGroup) {
+                        this.id = id;
+                        this.name = name;
+                        this.portrait = portrait;
+                        this.isParentGroup = isParentGroup;
+                }
         }
 }

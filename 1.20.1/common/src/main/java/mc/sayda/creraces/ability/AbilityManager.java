@@ -36,6 +36,7 @@ public class AbilityManager extends SimplePreparableReloadListener<Map<ResourceL
             @Nonnull ProfilerFiller profiler) {
         RAW_DATA.clear();
         RAW_DATA.putAll(data);
+        mc.sayda.creraces.util.RemoteDocFetcher.clearCache();
         internalApply(data);
 
         // Sync with clients if we are on a server
@@ -113,6 +114,15 @@ public class AbilityManager extends SimplePreparableReloadListener<Map<ResourceL
                 }
 
                 // Remote Documentation
+                if (jsonObject.has("wiki_page")) {
+                    String wikiPage = jsonObject.get("wiki_page").getAsString();
+                    AbilityRegistry.registerRemoteDoc(id, mc.sayda.creraces.util.RemoteDocConfig.fromWikiPage(wikiPage,
+                            mc.sayda.creraces.util.RemoteDocConfig.INFODOC_SELECTOR, descStrFixed));
+                    AbilityRegistry.registerRemoteFullDoc(id,
+                            mc.sayda.creraces.util.RemoteDocConfig.fromWikiPage(wikiPage,
+                                    mc.sayda.creraces.util.RemoteDocConfig.HEADERDOC_SELECTOR, descStrFixed));
+                }
+
                 if (jsonObject.has("remote_description")) {
                     mc.sayda.creraces.util.RemoteDocConfig remoteConfig = mc.sayda.creraces.util.RemoteDocConfig
                             .fromJson(jsonObject.getAsJsonObject("remote_description"));

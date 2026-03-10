@@ -68,12 +68,11 @@ public class LaunchProjectileAction implements ActionRegistry.RaceAction {
 
     public static void register() {
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "launch_projectile"), json -> {
-            String type = GsonHelper.getAsString(json, "projectile", "arrow");
+            String type = GsonHelper.getAsString(json, "projectile", "minecraft:arrow");
             mc.sayda.creraces.engine.ScalingValue damage = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
-                    "damage",
-                    2.0);
+                    "damage", 1.0);
             mc.sayda.creraces.engine.ScalingValue speed = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "speed",
-                    2.5);
+                    1.0);
             mc.sayda.creraces.engine.ScalingValue inaccuracy = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
                     "inaccuracy", 1.0);
             return new LaunchProjectileAction(type, damage, speed, inaccuracy);

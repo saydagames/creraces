@@ -114,6 +114,5 @@ public class TraitRegistry {
         mc.sayda.creraces.engine.traits.TetherTrait.register();
         mc.sayda.creraces.engine.traits.DomainTrait.register();
         mc.sayda.creraces.engine.traits.OnAbilityUseTrait.register();
-        mc.sayda.creraces.engine.traits.DoubleJumpTrait.register();
     }
 }

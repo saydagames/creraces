@@ -1,15 +1,7 @@
 {
   "variants": {
-    "hanging=false": {
+    "": {
       "model": "creraces:block/dryad_lantern"
-    },
-    "hanging=true": {
-      "model": "creraces:block/dryad_lantern",
-      "translation": [
-        0,
-        1,
-        0
-      ]
     }
   }
 }

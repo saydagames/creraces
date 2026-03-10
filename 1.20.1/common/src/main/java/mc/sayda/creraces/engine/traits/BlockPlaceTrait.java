@@ -34,7 +34,7 @@ public class BlockPlaceTrait implements TraitRegistry.RaceTrait {
 
     public static void register() {
         TraitRegistry.register(new ResourceLocation(CreRaces.MODID, "block_place"), data -> {
-            String blockStr = GsonHelper.getAsString(data, "block", "#minecraft:logs");
+            String blockStr = GsonHelper.getAsString(data, "block", "minecraft:air");
             Condition condition = data.has("condition") ? Condition.fromJson(data.getAsJsonObject("condition")) : null;
             List<ActionRegistry.RaceAction> actions = new ArrayList<>();
             if (data.has("actions")) {

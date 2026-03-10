@@ -22,6 +22,11 @@ public class ModItems {
         public static final RegistrySupplier<Item> TOWEL = ITEMS.register("towel",
                         () -> new mc.sayda.creraces.item.TowelItem(new Item.Properties()));
 
+        public static final RegistrySupplier<Item> DIME = ITEMS.register("dime",
+                        () -> new mc.sayda.creraces.item.currency.DimeItem(new Item.Properties()));
+        public static final RegistrySupplier<Item> DRYAD_APPLE = ITEMS.register("dryad_apple",
+                        () -> new Item(new Item.Properties()));
+
         // Block Items
         public static final RegistrySupplier<Item> DRYAD_LOG_ITEM = registerBlockItem(ModBlocks.DRYAD_LOG);
         public static final RegistrySupplier<Item> DRYAD_LOG_CORE_ITEM = registerBlockItem(ModBlocks.DRYAD_LOG_CORE);
@@ -38,6 +43,8 @@ public class ModItems {
         public static final RegistrySupplier<Item> DRYAD_ROOT_ITEM = registerBlockItem(ModBlocks.DRYAD_ROOT);
         public static final RegistrySupplier<Item> DRYAD_LANTERN_ITEM = registerBlockItem(ModBlocks.DRYAD_LANTERN);
         public static final RegistrySupplier<Item> DRYAD_TOTEM_ITEM = registerBlockItem(ModBlocks.DRYAD_TOTEM);
+        public static final RegistrySupplier<Item> DRYAD_EXPANSION_PANEL_ITEM = registerBlockItem(
+                        ModBlocks.DRYAD_EXPANSION_PANEL);
         public static final RegistrySupplier<Item> DRYAD_STAIRS_ITEM = registerBlockItem(ModBlocks.DRYAD_STAIRS);
         public static final RegistrySupplier<Item> DRYAD_SLAB_ITEM = registerBlockItem(ModBlocks.DRYAD_SLAB);
         public static final RegistrySupplier<Item> DRYAD_FENCE_ITEM = registerBlockItem(ModBlocks.DRYAD_FENCE);

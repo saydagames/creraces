@@ -112,6 +112,10 @@ public class DamageAction implements ActionRegistry.RaceAction {
                     ? ScalingValue.fromJson(json, "damage_per_stack", 0.0)
                     : null;
             String effect = net.minecraft.util.GsonHelper.getAsString(json, "stack_effect", "");
+            if (!effect.isEmpty() && !net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT
+                    .containsKey(new ResourceLocation(effect))) {
+                CreRaces.LOGGER.error("DamageAction: Unknown mob effect ID '{}' in stack_effect field.", effect);
+            }
 
             return new DamageAction(amount, damageType, knockback, source, fire, heal, dmgPerStack, effect);
         });

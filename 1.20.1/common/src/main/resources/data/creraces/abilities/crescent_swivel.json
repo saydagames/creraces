@@ -77,14 +77,5 @@
             "count": 5
         }
     ],
-    "remote_description": {
-        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Crescent_Swivel&prop=wikitext",
-        "fallback": "ability.creraces.crescent_swivel.description"
-    },
-    "remote_full_description": {
-        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Crescent_Swivel&prop=wikitext",
-        "fallback": "ability.creraces.crescent_swivel.description"
-    }
+    "wiki_page": "Ability:Crescent_Swivel"
 }

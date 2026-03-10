@@ -40,11 +40,7 @@ public class ToriBellBlock extends BellBlock {
     }
 
     @Override
-    public net.minecraft.world.level.block.RenderShape getRenderShape(BlockState state) {
-        return net.minecraft.world.level.block.RenderShape.MODEL;
-    }
-
-    @Override
+    @SuppressWarnings("null")
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand,
             BlockHitResult hit) {
         // First, handle the spirit realm logic
@@ -57,6 +53,7 @@ public class ToriBellBlock extends BellBlock {
     }
 
     @Override
+    @SuppressWarnings("null")
     public void onProjectileHit(Level level, BlockState state, BlockHitResult hit, Projectile projectile) {
         // Optional: Do we want projectiles to trigger spirit realm? Probably not, just
         // ring.

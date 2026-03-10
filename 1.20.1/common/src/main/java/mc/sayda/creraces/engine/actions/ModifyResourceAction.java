@@ -1,6 +1,5 @@
 package mc.sayda.creraces.engine.actions;
 
-import com.google.gson.JsonObject;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.engine.ActionRegistry;
@@ -111,7 +110,7 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
 
     public static void register() {
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "modify_resource"), json -> {
-            String resource = GsonHelper.getAsString(json, "resource", "energy");
+            String resource = GsonHelper.getAsString(json, "resource", "mana");
             String op = GsonHelper.getAsString(json, "operation", "add");
             mc.sayda.creraces.engine.ScalingValue val = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "value",
                     0.0);

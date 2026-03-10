@@ -3,7 +3,7 @@ package mc.sayda.creraces.client.render;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import mc.sayda.creraces.block.entity.MicroBlockEntity;
-import mc.sayda.creraces.config.CreRacesConfig;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.LevelRenderer;
@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Renders the contents of a MicroBlockEntity using a vertex caching system.
@@ -38,14 +39,14 @@ public class MiniBlockEntityRenderer implements BlockEntityRenderer<MicroBlockEn
     private final Map<BlockPos, CachedMiniModel> modelCache = new LinkedHashMap<>(16, 0.75f, true) {
         @Override
         protected boolean removeEldestEntry(Map.Entry<BlockPos, CachedMiniModel> eldest) {
-            return size() > CreRacesConfig.MINI_MODEL_CACHE_SIZE.get();
+            return size() > 128; // MINI_MODEL_CACHE_SIZE default
         }
     };
 
     private final Map<BlockState, BlockEntity> dummyCache = new LinkedHashMap<>(16, 0.75f, true) {
         @Override
         protected boolean removeEldestEntry(Map.Entry<BlockState, BlockEntity> eldest) {
-            return size() > CreRacesConfig.MINI_DUMMY_CACHE_SIZE.get();
+            return size() > 32; // MINI_DUMMY_CACHE_SIZE default
         }
     };
 
@@ -143,7 +144,7 @@ public class MiniBlockEntityRenderer implements BlockEntityRenderer<MicroBlockEn
                 return;
 
             // Sample light for this specific slot
-            BlockPos pos = entity.getBlockPos();
+            BlockPos pos = Objects.requireNonNull(entity.getBlockPos().immutable());
             int slotLight = LevelRenderer.getLightColor(level, pos);
 
             BakedModel model = blockRenderer.getBlockModel(state);
@@ -229,12 +230,15 @@ public class MiniBlockEntityRenderer implements BlockEntityRenderer<MicroBlockEn
     private static RenderType getEntityCompatibleRenderType(BlockState state) {
         RenderType chunk = ItemBlockRenderTypes.getChunkRenderType(state);
         if (chunk == RenderType.translucent()) {
-            return RenderType.entityTranslucentCull(net.minecraft.world.inventory.InventoryMenu.BLOCK_ATLAS);
+            return RenderType.entityTranslucentCull(
+                    Objects.requireNonNull(net.minecraft.world.inventory.InventoryMenu.BLOCK_ATLAS));
         } else if (chunk == RenderType.cutout() || chunk == RenderType.cutoutMipped()) {
-            return RenderType.entityCutout(net.minecraft.world.inventory.InventoryMenu.BLOCK_ATLAS);
+            return RenderType
+                    .entityCutout(Objects.requireNonNull(net.minecraft.world.inventory.InventoryMenu.BLOCK_ATLAS));
         } else {
             // solid / tripwire / everything else → solid entity cutout
-            return RenderType.entityCutout(net.minecraft.world.inventory.InventoryMenu.BLOCK_ATLAS);
+            return RenderType
+                    .entityCutout(Objects.requireNonNull(net.minecraft.world.inventory.InventoryMenu.BLOCK_ATLAS));
         }
     }
 

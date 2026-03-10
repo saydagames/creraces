@@ -5,11 +5,13 @@ import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.engine.ScalingValue;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 public class DelayAction implements ActionRegistry.RaceAction {
@@ -31,27 +33,37 @@ public class DelayAction implements ActionRegistry.RaceAction {
             return true;
 
         int t = Math.max(1, (int) ticks.evaluate(player, target));
-        // Capture only UUID + target UUID to avoid holding strong Player references
-        // across the delay
-        UUID playerUUID = player.getUUID();
-        UUID targetUUID = target != null ? target.getUUID() : null;
+        // Safety cap: prevents scheduler bloat (0 = disabled)
+        int max = 1200;
+        if (max > 0) {
+            t = Math.min(t, max);
+        }
+
+        final net.minecraft.server.MinecraftServer server = player.getServer();
+        if (server == null)
+            return true;
+
+        final UUID playerUUID = player.getUUID();
+        final UUID targetUUID = target != null ? target.getUUID() : null;
+        final net.minecraft.core.BlockPos immutablePos = interactionPos != null ? interactionPos.immutable() : null;
+
         mc.sayda.creraces.util.Scheduler.delay(t, () -> {
-            if (!(player.level() instanceof net.minecraft.server.level.ServerLevel serverLevel))
-                return;
-            net.minecraft.server.MinecraftServer server = serverLevel.getServer();
-            Player delayedPlayer = server.getPlayerList().getPlayer(playerUUID);
+            ServerPlayer delayedPlayer = server.getPlayerList().getPlayer(Objects.requireNonNull(playerUUID));
             if (delayedPlayer == null)
                 return; // Player left — skip silently
+
             LivingEntity delayedTarget = null;
-            if (targetUUID != null) {
+            if (targetUUID != null
+                    && delayedPlayer.level() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
                 // Look up the target entity by UUID in the player's current level
                 net.minecraft.world.entity.Entity found = serverLevel.getEntity(targetUUID);
                 if (found instanceof LivingEntity le)
                     delayedTarget = le;
             }
+
             final LivingEntity resolvedTarget = delayedTarget;
             for (ActionRegistry.RaceAction action : actions) {
-                action.execute(delayedPlayer, resolvedTarget, slot, interactionPos);
+                action.execute(delayedPlayer, resolvedTarget, slot, immutablePos);
             }
         });
         return true;

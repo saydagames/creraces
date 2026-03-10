@@ -12,14 +12,15 @@ import net.minecraft.world.phys.AABB;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class AOEAction implements ActionRegistry.RaceAction {
     public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "aoe");
 
     private final mc.sayda.creraces.engine.ScalingValue radius;
     private final mc.sayda.creraces.engine.TargetFilter targets;
-    private final String requiredEffect;
-    private final String notEffect;
+    private final net.minecraft.world.effect.MobEffect cachedRequired;
+    private final net.minecraft.world.effect.MobEffect cachedNot;
     private final List<ActionRegistry.RaceAction> actions;
 
     public AOEAction(mc.sayda.creraces.engine.ScalingValue radius, mc.sayda.creraces.engine.TargetFilter targets,
@@ -27,9 +28,16 @@ public class AOEAction implements ActionRegistry.RaceAction {
             String notEffect, List<ActionRegistry.RaceAction> actions) {
         this.radius = radius;
         this.targets = targets;
-        this.requiredEffect = requiredEffect;
-        this.notEffect = notEffect;
         this.actions = actions;
+
+        this.cachedRequired = (requiredEffect != null && !requiredEffect.isEmpty())
+                ? net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT
+                        .get(new net.minecraft.resources.ResourceLocation(requiredEffect))
+                : null;
+        this.cachedNot = (notEffect != null && !notEffect.isEmpty())
+                ? net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT
+                        .get(new net.minecraft.resources.ResourceLocation(notEffect))
+                : null;
     }
 
     @Override
@@ -41,10 +49,12 @@ public class AOEAction implements ActionRegistry.RaceAction {
             return true;
 
         double r = radius.evaluate(player, target);
-        int maxRadius = mc.sayda.creraces.config.CreRacesConfig.AOE_MAX_RADIUS.get();
+        int maxRadius = 100;
         if (maxRadius > 0)
             r = Math.min(r, maxRadius);
-        AABB area = player.getBoundingBox().inflate(r);
+
+        final AABB area = Objects.requireNonNull(player.getBoundingBox().inflate(r));
+
         List<LivingEntity> hitTargets = player.level().getEntitiesOfClass(
                 LivingEntity.class,
                 area,
@@ -52,23 +62,11 @@ public class AOEAction implements ActionRegistry.RaceAction {
                     if (!this.targets.isValid(e, player))
                         return false;
 
-                    if (requiredEffect != null && !requiredEffect.isEmpty()) {
-                        net.minecraft.resources.ResourceLocation effectId = new net.minecraft.resources.ResourceLocation(
-                                requiredEffect);
-                        net.minecraft.world.effect.MobEffect effect = net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT
-                                .get(effectId);
-                        if (effect != null && !e.hasEffect(effect))
-                            return false;
-                    }
+                    if (cachedRequired != null && !e.hasEffect(cachedRequired))
+                        return false;
 
-                    if (notEffect != null && !notEffect.isEmpty()) {
-                        net.minecraft.resources.ResourceLocation effectId = new net.minecraft.resources.ResourceLocation(
-                                notEffect);
-                        net.minecraft.world.effect.MobEffect effect = net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT
-                                .get(effectId);
-                        if (effect != null && e.hasEffect(effect))
-                            return false;
-                    }
+                    if (cachedNot != null && e.hasEffect(cachedNot))
+                        return false;
 
                     return true;
                 });

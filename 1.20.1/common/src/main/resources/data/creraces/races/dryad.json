@@ -13,6 +13,8 @@
     "base_cr": 12,
     "resource_type": "MANA",
     "max_resource": 120,
+    "stacks_affect_resource": false,
+    "g_state": "FEMALE",
     "tier": "creraces:common",
     "difficulty": 2,
     "passives": {
@@ -45,44 +47,70 @@
             },
             "actions": [
                 {
-                    "type": "creraces:set_customization",
-                    "key": "tx",
-                    "mode": "TARGET_BLOCK_X",
-                    "offset_y": -1
-                },
-                {
-                    "type": "creraces:set_customization",
-                    "key": "ty",
-                    "mode": "TARGET_BLOCK_Y",
-                    "offset_y": -1
-                },
-                {
-                    "type": "creraces:set_customization",
-                    "key": "tz",
-                    "mode": "TARGET_BLOCK_Z",
-                    "offset_y": -1
-                },
-                {
-                    "type": "creraces:place_block",
-                    "block": "creraces:dryad_root",
-                    "use_target_block": true,
-                    "offset_y": -1
-                },
-                {
-                    "type": "creraces:apply_particles",
-                    "particle": "minecraft:happy_villager",
-                    "count": 15,
-                    "spread_x": 0.5,
-                    "spread_y": 0.5,
-                    "spread_z": 0.5,
-                    "use_target": true
-                },
-                {
-                    "type": "creraces:play_sound",
-                    "sound": "minecraft:item.bone_meal.use",
-                    "volume": 1.0,
-                    "pitch": 1.0,
-                    "use_target": true
+                    "type": "creraces:conditional",
+                    "condition": {
+                        "type": "creraces:is_block",
+                        "block": "creraces:dryad_root",
+                        "offset_y": -1
+                    },
+                    "if_true": [
+                        {
+                            "type": "creraces:message",
+                            "text": "Dryad Sapling location is &cAlready Claimed&f!",
+                            "actionbar": true
+                        }
+                    ],
+                    "if_false": [
+                        {
+                            "type": "creraces:set_customization",
+                            "key": "tx",
+                            "mode": "TARGET_BLOCK_X"
+                        },
+                        {
+                            "type": "creraces:set_customization",
+                            "key": "ty",
+                            "mode": "TARGET_BLOCK_Y",
+                            "offset_y": -1
+                        },
+                        {
+                            "type": "creraces:set_customization",
+                            "key": "tz",
+                            "mode": "TARGET_BLOCK_Z"
+                        },
+                        {
+                            "type": "creraces:set_customization",
+                            "key": "td",
+                            "mode": "POS_DIM"
+                        },
+                        {
+                            "type": "creraces:place_block",
+                            "block": "creraces:dryad_root",
+                            "use_target_block": true,
+                            "offset_y": -1,
+                            "overwrite": true
+                        },
+                        {
+                            "type": "creraces:apply_particles",
+                            "particle": "minecraft:happy_villager",
+                            "count": 15,
+                            "spread_x": 0.5,
+                            "spread_y": 0.5,
+                            "spread_z": 0.5,
+                            "use_target": true
+                        },
+                        {
+                            "type": "creraces:play_sound",
+                            "sound": "minecraft:item.bone_meal.use",
+                            "volume": 1.0,
+                            "pitch": 1.0,
+                            "use_target": true
+                        },
+                        {
+                            "type": "creraces:message",
+                            "text": "Dryad Sapling &aClaimed&f!",
+                            "actionbar": true
+                        }
+                    ]
                 }
             ]
         },
@@ -94,47 +122,9 @@
             },
             "actions": [
                 {
-                    "type": "creraces:enter_pocket"
-                }
-            ]
-        },
-        {
-            "type": "creraces:block_interaction",
-            "block": "creraces:dryad_root",
-            "condition": {
-                "type": "and",
-                "conditions": [
-                    {
-                        "type": "creraces:sneaking"
-                    },
-                    {
-                        "type": "creraces:is_position",
-                        "x": "custom:tx",
-                        "y": "custom:ty",
-                        "z": "custom:tz"
-                    }
-                ]
-            },
-            "actions": [
-                {
-                    "type": "creraces:set_customization",
-                    "key": "tx",
-                    "value": "0"
-                },
-                {
-                    "type": "creraces:set_customization",
-                    "key": "ty",
-                    "value": "0"
-                },
-                {
-                    "type": "creraces:set_customization",
-                    "key": "tz",
-                    "value": "0"
-                },
-                {
-                    "type": "creraces:place_block",
-                    "use_target_block": true,
-                    "block": "minecraft:dirt"
+                    "type": "creraces:enter_pocket",
+                    "structure": "creraces:dryad_box_1",
+                    "return_offset_z": -1.0
                 }
             ]
         },
@@ -151,7 +141,7 @@
                         "x": "custom:tx",
                         "y": "custom:ty",
                         "z": "custom:tz",
-                        "max_distance": 32.0
+                        "range": 64.0
                     },
                     {
                         "type": "dimension",
@@ -194,16 +184,173 @@
                     "value": 0.0
                 }
             ]
+        },
+        {
+            "type": "creraces:block_interaction",
+            "block": "creraces:dryad_root",
+            "actions": [
+                {
+                    "type": "creraces:conditional",
+                    "condition": {
+                        "type": "creraces:and",
+                        "conditions": [
+                            {
+                                "type": "creraces:sneaking",
+                                "value": true
+                            },
+                            {
+                                "type": "creraces:is_position",
+                                "x": "custom:tx",
+                                "y": "custom:ty",
+                                "z": "custom:tz"
+                            }
+                        ]
+                    },
+                    "if_true": [
+                        {
+                            "type": "creraces:conditional",
+                            "condition": {
+                                "type": "creraces:is_block",
+                                "block": "creraces:dryad_log",
+                                "offset_y": 2
+                            },
+                            "if_true": [
+                                {
+                                    "type": "creraces:give_item",
+                                    "item": "creraces:dryad_sapling",
+                                    "amount": 1
+                                }
+                            ]
+                        },
+                        {
+                            "type": "creraces:set_customization",
+                            "key": "tx",
+                            "mode": "REMOVE"
+                        },
+                        {
+                            "type": "creraces:set_customization",
+                            "key": "ty",
+                            "mode": "REMOVE"
+                        },
+                        {
+                            "type": "creraces:set_customization",
+                            "key": "tz",
+                            "mode": "REMOVE"
+                        },
+                        {
+                            "type": "creraces:set_customization",
+                            "key": "td",
+                            "mode": "REMOVE"
+                        },
+                        {
+                            "type": "creraces:place_block",
+                            "block": "minecraft:coarse_dirt",
+                            "use_target_block": true,
+                            "overwrite": true
+                        },
+                        {
+                            "type": "creraces:message",
+                            "text": "msg.creraces.tree_location_removed",
+                            "actionbar": true
+                        }
+                    ],
+                    "if_false": [
+                        {
+                            "type": "creraces:conditional",
+                            "condition": {
+                                "type": "creraces:and",
+                                "conditions": [
+                                    {
+                                        "type": "creraces:sneaking",
+                                        "value": false
+                                    },
+                                    {
+                                        "type": "creraces:is_position",
+                                        "x": "custom:tx",
+                                        "y": "custom:ty",
+                                        "z": "custom:tz"
+                                    }
+                                ]
+                            },
+                            "if_true": [
+                                {
+                                    "type": "creraces:message",
+                                    "text": "msg.creraces.tree_location_check",
+                                    "actionbar": true
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "creraces:block_interaction",
+            "block": "creraces:dryad_expansion_panel",
+            "actions": [
+                {
+                    "type": "creraces:expand_pocket",
+                    "cost": 200.0,
+                    "limit": 8.0,
+                    "door_block": "creraces:dryad_expansion_panel",
+                    "door_width": 3,
+                    "door_height": 3,
+                    "door_depth": 2,
+                    "faces": {
+                        "north": {
+                            "structure": "creraces:dryad_box_1",
+                            "check_block": "creraces:dryad_petrified_wood",
+                            "check_x": 0,
+                            "check_y": -3,
+                            "check_z": 5,
+                            "offset_x": -5,
+                            "offset_y": -3,
+                            "offset_z": 0
+                        },
+                        "south": {
+                            "structure": "creraces:dryad_box_1",
+                            "check_block": "creraces:dryad_petrified_wood",
+                            "check_x": 0,
+                            "check_y": -3,
+                            "check_z": -5,
+                            "offset_x": -5,
+                            "offset_y": -3,
+                            "offset_z": -10
+                        },
+                        "west": {
+                            "structure": "creraces:dryad_box_1",
+                            "check_block": "creraces:dryad_petrified_wood",
+                            "check_x": 5,
+                            "check_y": -3,
+                            "check_z": 0,
+                            "offset_x": 0,
+                            "offset_y": -3,
+                            "offset_z": -5
+                        },
+                        "east": {
+                            "structure": "creraces:dryad_box_1",
+                            "check_block": "creraces:dryad_petrified_wood",
+                            "check_x": -5,
+                            "check_y": -3,
+                            "check_z": 0,
+                            "offset_x": -10,
+                            "offset_y": -3,
+                            "offset_z": -5
+                        },
+                        "down": {
+                            "mode": "SHELL",
+                            "shell_block": "creraces:dryad_petrified_wood",
+                            "shell_radius": 14,
+                            "shell_height": 7
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "type": "creraces:addon",
+            "addon_id": "dryad_body"
         }
     ],
-    "remote_description": {
-        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "fallback": "race.creraces.dryad.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Dryad&prop=wikitext"
-    },
-    "remote_passive": {
-        "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "fallback": "No passive documentation found on wiki.",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Dryad&prop=wikitext"
-    }
+    "wiki_page": "Dryad"
 }

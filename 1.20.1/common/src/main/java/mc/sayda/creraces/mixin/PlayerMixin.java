@@ -128,8 +128,11 @@ public class PlayerMixin implements IPlayerVariables {
             var rageDecay = ModAttributes.RAGE_DECAY.get();
             if (rageDecay != null)
                 cir.getReturnValue().add(rageDecay);
+            var doubleJump = ModAttributes.DOUBLE_JUMP.get();
+            if (doubleJump != null)
+                cir.getReturnValue().add(doubleJump);
         } catch (Exception e) {
-            // Attribute registration failed — this usually means ModAttributes.init()
+            // Attribute registration failed - this usually means ModAttributes.init()
             // hasn't run yet (a Fabric bootstrap ordering issue). BootstrapMixin should
             // prevent this, but log it so it's visible if it ever happens.
             com.mojang.logging.LogUtils.getLogger().error(
@@ -465,6 +468,41 @@ public class PlayerMixin implements IPlayerVariables {
     }
 
     @Override
+    public double getPocketSize() {
+        return creraces$variables.getPocketSize();
+    }
+
+    @Override
+    public void setPocketSize(double size) {
+        creraces$variables.setPocketSize(size);
+    }
+
+    @Override
+    public int getPocketIndex() {
+        return creraces$variables.getPocketIndex();
+    }
+
+    @Override
+    public void setPocketIndex(int index) {
+        creraces$variables.setPocketIndex(index);
+    }
+
+    @Override
+    public java.util.Set<java.util.UUID> getPocketInvitations() {
+        return creraces$variables.getPocketInvitations();
+    }
+
+    @Override
+    public void inviteToPocket(java.util.UUID uuid) {
+        creraces$variables.inviteToPocket(uuid);
+    }
+
+    @Override
+    public void revokePocketInvitation(java.util.UUID uuid) {
+        creraces$variables.revokePocketInvitation(uuid);
+    }
+
+    @Override
     public double getPocketX() {
         return creraces$variables.getPocketX();
     }
@@ -492,6 +530,36 @@ public class PlayerMixin implements IPlayerVariables {
     @Override
     public void setPocketZ(double z) {
         creraces$variables.setPocketZ(z);
+    }
+
+    @Override
+    public double getPocketSpawnX() {
+        return creraces$variables.getPocketSpawnX();
+    }
+
+    @Override
+    public void setPocketSpawnX(double x) {
+        creraces$variables.setPocketSpawnX(x);
+    }
+
+    @Override
+    public double getPocketSpawnY() {
+        return creraces$variables.getPocketSpawnY();
+    }
+
+    @Override
+    public void setPocketSpawnY(double y) {
+        creraces$variables.setPocketSpawnY(y);
+    }
+
+    @Override
+    public double getPocketSpawnZ() {
+        return creraces$variables.getPocketSpawnZ();
+    }
+
+    @Override
+    public void setPocketSpawnZ(double z) {
+        creraces$variables.setPocketSpawnZ(z);
     }
 
     @Override
@@ -605,7 +673,23 @@ public class PlayerMixin implements IPlayerVariables {
     }
 
     @Override
+    public Map<ResourceLocation, Integer> getTraitTimers() {
+        return this.creraces$variables.getTraitTimers();
+    }
+
+    @Override
+    public void setTraitTimer(ResourceLocation id, int ticks) {
+        this.creraces$variables.setTraitTimer(id, ticks);
+    }
+
+    @Override
     public void resetOnDeath() {
         creraces$variables.resetOnDeath();
+        mc.sayda.creraces.engine.ActionRegistry.cleanup((Player) (Object) this);
+    }
+
+    @Override
+    public void sync(Player player) {
+        mc.sayda.creraces.network.BoundaryHandler.resyncVariables((Player) (Object) this, player);
     }
 }

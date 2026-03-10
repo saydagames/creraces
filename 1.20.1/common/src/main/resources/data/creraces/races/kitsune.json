@@ -237,14 +237,5 @@
     ],
     "portrait": "creraces:textures/screens/kitsune_portrait.png",
     "name_texture": "creraces:textures/screens/kitsune_text.png",
-    "remote_description": {
-        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "fallback": "race.creraces.kitsune.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Kitsune&prop=wikitext"
-    },
-    "remote_passive": {
-        "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "fallback": "No passive documentation found on wiki.",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Kitsune&prop=wikitext"
-    }
+    "wiki_page": "Kitsune"
 }

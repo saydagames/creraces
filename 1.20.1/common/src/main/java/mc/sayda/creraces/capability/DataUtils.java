@@ -46,6 +46,18 @@ public class DataUtils {
     }
 
     /**
+     * Checks if the player can interact with the mini-build system.
+     */
+    public static boolean canInteractWithMiniBuild(Player player) {
+        if (!mc.sayda.creraces.config.CreRacesConfig.MINIBUILD_REQUIRES_LEARNED.get())
+            return true;
+
+        return getVariables(player).map(vars -> {
+            return vars.isAbilityUnlocked(new net.minecraft.resources.ResourceLocation("creraces:mini_build"));
+        }).orElse(false);
+    }
+
+    /**
      * Gets the player's Ability Power.
      * TEMPORARILY REVERTED TO AVOID TRANSFORMER ERROR
      */

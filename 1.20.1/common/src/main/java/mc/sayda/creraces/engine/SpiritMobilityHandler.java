@@ -14,6 +14,11 @@ public class SpiritMobilityHandler {
     private static final AttributeModifier SPEED_MODIFIER = new AttributeModifier(SPEED_MODIFIER_UUID,
             "Spirit Speed Boost", 0.3, AttributeModifier.Operation.MULTIPLY_TOTAL);
 
+    private static final UUID SPIRIT_DOUBLE_JUMP_MODIFIER_ID = UUID.fromString("c0d3b4be-0001-4000-8000-000000000006");
+    private static final AttributeModifier SPIRIT_DOUBLE_JUMP_MODIFIER = new AttributeModifier(
+            SPIRIT_DOUBLE_JUMP_MODIFIER_ID,
+            "Spirit Double Jump", 1.0, AttributeModifier.Operation.ADDITION);
+
     /**
      * Called from LivingEntityMixin to handle server-side/synced mechanics like
      * speed and slow fall.
@@ -44,6 +49,20 @@ public class SpiritMobilityHandler {
                     } else {
                         if (hasMod) {
                             speedAttr.removeModifier(SPEED_MODIFIER_UUID);
+                        }
+                    }
+                }
+
+                var doubleJumpAttr = player.getAttribute(mc.sayda.creraces.registry.ModAttributes.DOUBLE_JUMP.get());
+                if (doubleJumpAttr != null) {
+                    boolean hasMod = doubleJumpAttr.getModifier(SPIRIT_DOUBLE_JUMP_MODIFIER_ID) != null;
+                    if (vars.isInSpiritRealm()) {
+                        if (!hasMod) {
+                            doubleJumpAttr.addPermanentModifier(SPIRIT_DOUBLE_JUMP_MODIFIER);
+                        }
+                    } else {
+                        if (hasMod) {
+                            doubleJumpAttr.removeModifier(SPIRIT_DOUBLE_JUMP_MODIFIER_ID);
                         }
                     }
                 }

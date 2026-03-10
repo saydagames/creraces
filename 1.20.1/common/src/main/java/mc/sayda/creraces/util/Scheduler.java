@@ -6,12 +6,19 @@ import java.util.List;
 
 public class Scheduler {
     private static final List<DelayedTask> TASKS = new ArrayList<>();
+    private static final java.util.Queue<DelayedTask> PENDING = new java.util.concurrent.ConcurrentLinkedQueue<>();
 
     public static void delay(int ticks, Runnable task) {
-        TASKS.add(new DelayedTask(ticks, task));
+        PENDING.add(new DelayedTask(ticks, task));
     }
 
     public static void tick() {
+        // Drain pending into main list (only called on server thread)
+        DelayedTask p;
+        while ((p = PENDING.poll()) != null) {
+            TASKS.add(p);
+        }
+
         Iterator<DelayedTask> iterator = TASKS.iterator();
         while (iterator.hasNext()) {
             DelayedTask task = iterator.next();

@@ -107,14 +107,5 @@
             ]
         }
     ],
-    "remote_description": {
-        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Tectonic_Smash&prop=wikitext",
-        "fallback": "ability.creraces.tectonic_smash.description"
-    },
-    "remote_full_description": {
-        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Tectonic_Smash&prop=wikitext",
-        "fallback": "ability.creraces.tectonic_smash.description"
-    }
+    "wiki_page": "Ability:Tectonic_Smash"
 }

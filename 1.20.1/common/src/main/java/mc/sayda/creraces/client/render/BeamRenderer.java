@@ -55,6 +55,10 @@ public class BeamRenderer {
         }
     }
 
+    public static void clear() {
+        ACTIVE_BEAMS.clear();
+    }
+
     /**
      * Render all active beams. Called from LevelRendererMixin at TAIL of
      * renderLevel.
@@ -205,6 +209,19 @@ public class BeamRenderer {
         }
     }
 
-    private record BeamData(float r, float g, float b, float a, float radius) {
+    private static class BeamData {
+        public final float r;
+        public final float g;
+        public final float b;
+        public final float a;
+        public final float radius;
+
+        public BeamData(float r, float g, float b, float a, float radius) {
+            this.r = r;
+            this.g = g;
+            this.b = b;
+            this.a = a;
+            this.radius = radius;
+        }
     }
 }

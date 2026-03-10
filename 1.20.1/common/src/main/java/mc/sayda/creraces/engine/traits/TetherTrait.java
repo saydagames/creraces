@@ -3,70 +3,103 @@ package mc.sayda.creraces.engine.traits;
 import com.google.gson.JsonArray;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.engine.ActionRegistry;
+import mc.sayda.creraces.engine.ScalingValue;
 import mc.sayda.creraces.engine.TraitRegistry;
+import mc.sayda.creraces.capability.IPlayerVariables;
+import mc.sayda.creraces.CreRaces;
+
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.AABB;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
-public class TetherTrait implements TraitRegistry.RaceTrait {
+public class TetherTrait extends PeriodicTrait {
 
-    private final String targetTag; // e.g., "minecraft:skeletons"
-    private final mc.sayda.creraces.engine.ScalingValue radius;
+    private final String targetStr;
+    private final TagKey<EntityType<?>> targetTag;
+    private final ResourceLocation targetId;
+    private final ScalingValue radius;
+    private final String texture;
+    private final float width;
     private final List<ActionRegistry.RaceAction> actions;
-    private final mc.sayda.creraces.engine.ScalingValue interval;
-    private int timer = 0;
 
-    public TetherTrait(String targetTag, mc.sayda.creraces.engine.ScalingValue radius,
-            List<ActionRegistry.RaceAction> actions, mc.sayda.creraces.engine.ScalingValue interval) {
-        this.targetTag = targetTag;
+    public TetherTrait(ResourceLocation traitId, String targetStr,
+            ScalingValue radius,
+            List<ActionRegistry.RaceAction> actions, ScalingValue interval, String texture, float width) {
+        super(traitId, interval);
+        this.targetStr = targetStr;
         this.radius = radius;
         this.actions = actions;
-        this.interval = interval;
+        this.texture = texture;
+        this.width = width;
+
+        if (this.targetStr.startsWith("#")) {
+            this.targetTag = TagKey.create(Registries.ENTITY_TYPE, new ResourceLocation(this.targetStr.substring(1)));
+            this.targetId = null;
+        } else {
+            this.targetTag = null;
+            this.targetId = new ResourceLocation(this.targetStr);
+        }
     }
 
     @Override
-    public void tick(Player player) {
+    protected boolean shouldExecute(Player player, IPlayerVariables vars) {
+        return true;
+    }
+
+    @Override
+    protected void execute(Player player, IPlayerVariables vars) {
         if (player.level().isClientSide())
             return;
 
-        timer++;
-        if (timer < interval.evaluate(player))
-            return;
-        timer = 0;
+        double r = radius.evaluate(player);
+        int maxAoeRadius = 100;
+        if (maxAoeRadius > 0)
+            r = Math.min(r, maxAoeRadius);
 
+        final AABB playerBox = Objects.requireNonNull(player.getBoundingBox());
         List<LivingEntity> targets = player.level().getEntitiesOfClass(LivingEntity.class,
-                player.getBoundingBox().inflate(radius.evaluate(player)), e -> {
-                    if (e == player)
+                Objects.requireNonNull(playerBox.inflate(r)), e -> {
+                    if (e == player || e == null)
                         return false;
-                    if (targetTag.startsWith("#")) {
-                        return e.getType()
-                                .is(net.minecraft.tags.TagKey.create(
-                                        net.minecraft.core.registries.Registries.ENTITY_TYPE,
-                                        new ResourceLocation(targetTag.substring(1))));
-                    } else {
-                        return net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(e.getType())
-                                .toString().equals(targetTag);
-                    }
+                    return matchesTarget(e);
                 });
 
         for (LivingEntity target : targets) {
             for (ActionRegistry.RaceAction action : actions) {
                 action.execute(player, target, null, null);
             }
-            // Logic for visual beam would go here (packet to client)
         }
+    }
+
+    private boolean matchesTarget(LivingEntity entity) {
+        if (targetTag != null) {
+            return entity.getType().is(targetTag);
+        }
+        return EntityType.getKey(entity.getType()).equals(targetId);
     }
 
     public static void register() {
         TraitRegistry.register(new ResourceLocation(CreRaces.MODID, "tether"), json -> {
+            String traitName = json.has("name") ? json.get("name").getAsString()
+                    : "tether_" + Math.abs(json.toString().hashCode());
+            ResourceLocation traitId = new ResourceLocation(CreRaces.MODID, "trait_" + traitName);
+
             String target = json.has("target") ? json.get("target").getAsString() : "minecraft:player";
-            mc.sayda.creraces.engine.ScalingValue radius = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
-                    "radius", 10.0);
-            mc.sayda.creraces.engine.ScalingValue interval = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
-                    "interval", 20.0);
+
+            ScalingValue radius = ScalingValue.fromJson(json, "radius", 10.0);
+            ScalingValue interval = ScalingValue.fromJson(json, "interval", 20.0);
+            String texture = json.has("texture") ? json.get("texture").getAsString()
+                    : "creraces:textures/misc/tether.png";
+            float width = json.has("width") ? json.get("width").getAsFloat() : 0.1f;
+
             List<ActionRegistry.RaceAction> actions = new ArrayList<>();
             if (json.has("actions")) {
                 JsonArray array = json.getAsJsonArray("actions");
@@ -74,7 +107,7 @@ public class TetherTrait implements TraitRegistry.RaceTrait {
                     actions.add(ActionRegistry.fromJson(array.get(i).getAsJsonObject()));
                 }
             }
-            return new TetherTrait(target, radius, actions, interval);
+            return new TetherTrait(traitId, target, radius, actions, interval, texture, width);
         });
     }
 }

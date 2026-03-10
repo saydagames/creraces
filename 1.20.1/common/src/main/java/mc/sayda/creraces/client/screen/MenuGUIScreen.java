@@ -9,6 +9,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
+import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.Util;
 
 import java.util.Calendar;
@@ -31,6 +32,11 @@ public class MenuGUIScreen extends AbstractContainerScreen<MenuGUIMenu> {
             "textures/screens/halloween_decoration.png");
     private static final ResourceLocation DECO_MIDSUMMER = new ResourceLocation("creraces",
             "textures/screens/midsummer_decoration.png");
+
+    private static final ResourceLocation M_ICON = new ResourceLocation("creraces", "textures/screens/m.png");
+    private static final ResourceLocation F_ICON = new ResourceLocation("creraces", "textures/screens/f.png");
+    private static final ResourceLocation MF_BUTTON = new ResourceLocation("creraces",
+            "textures/screens/atlas/button_mf.png");
 
     public MenuGUIScreen(MenuGUIMenu container, Inventory inventory, Component text) {
         super(container, inventory, text);
@@ -83,6 +89,26 @@ public class MenuGUIScreen extends AbstractContainerScreen<MenuGUIMenu> {
                         }, url, true));
                     }
                 }).bounds(this.leftPos + 21, this.topPos + 148, 133, 10).build());
+
+        // Gender System Toggle
+        if (mc.sayda.creraces.config.CreRacesConfig.GENDER_SYSTEM_ENABLED.get()) {
+            this.addRenderableWidget(
+                    Button.builder(Component.translatable("gui.creraces.menu_gui.button_mf"), button -> {
+                        if (this.minecraft != null && this.minecraft.player != null) {
+                            mc.sayda.creraces.capability.DataUtils.getVariables(this.minecraft.player)
+                                    .ifPresent(vars -> {
+                                        int gState = vars.getGState();
+                                        int nextState = gState == 0 ? 1 : 0; // Both is mostly skipped by user
+                                                                             // interaction
+                                        vars.setGState(nextState);
+                                        mc.sayda.creraces.network.BoundaryHandler.sendGStateUpdate(nextState);
+                                    });
+                        }
+                    }).bounds(this.leftPos - 70, this.topPos + 16, 40, 20).tooltip(
+                            net.minecraft.client.gui.components.Tooltip
+                                    .create(Component.translatable("gui.creraces.menu_gui.tooltip_gender")))
+                            .build());
+        }
     }
 
     @Override
@@ -121,6 +147,19 @@ public class MenuGUIScreen extends AbstractContainerScreen<MenuGUIMenu> {
             graphics.blit(DECO_MIDSUMMER, this.leftPos + 11, this.topPos + -56, 0, 0, 151, 42, 151, 42);
         }
 
+        // Render Gender Icons Next to Toggle
+        if (mc.sayda.creraces.config.CreRacesConfig.GENDER_SYSTEM_ENABLED.get() && this.minecraft != null
+                && this.minecraft.player != null) {
+            mc.sayda.creraces.capability.DataUtils.getVariables(this.minecraft.player).ifPresent(vars -> {
+                int gState = vars.getGState();
+                if (gState == 0) {
+                    graphics.blit(M_ICON, this.leftPos - 97, this.topPos - 20, 0, 0, 16, 16, 16, 16);
+                } else if (gState == 1) {
+                    graphics.blit(F_ICON, this.leftPos - 97, this.topPos - 20, 0, 0, 16, 16, 16, 16);
+                }
+            });
+        }
+
         RenderSystem.disableBlend();
     }
 
@@ -136,5 +175,17 @@ public class MenuGUIScreen extends AbstractContainerScreen<MenuGUIMenu> {
                 20, 171, 0xb0b0b0);
         graphics.drawString(this.font, Component.translatable("gui.creraces.menu_gui.label_keybind_hint3",
                 ModKeyMappings.MENU_GUI.getTranslatedKeyMessage()), 20, 181, 0xb0b0b0);
+
+        if (mc.sayda.creraces.config.CreRacesConfig.GENDER_SYSTEM_ENABLED.get() && this.minecraft != null
+                && this.minecraft.player != null) {
+            graphics.drawString(this.font, Component.literal("Change"), -79, -20, -1, false);
+            graphics.drawString(this.font, Component.literal("Appearance"), -79, -11, -1, false);
+
+            mc.sayda.creraces.capability.DataUtils.getVariables(this.minecraft.player).ifPresent(vars -> {
+                int gState = vars.getGState();
+                String stateStr = (gState == 1) ? " \u00A7dFeminine" : "\u00A79Masculine";
+                graphics.drawString(this.font, Component.literal(stateStr), -73, 2, -1, false);
+            });
+        }
     }
 }

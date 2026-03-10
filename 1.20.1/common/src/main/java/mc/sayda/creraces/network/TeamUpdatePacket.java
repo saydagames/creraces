@@ -5,6 +5,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import java.util.*;
 import java.util.function.Supplier;
+import java.util.Objects;
 
 /**
  * Packet sent from server to client to update team member info.
@@ -16,7 +17,28 @@ public class TeamUpdatePacket {
     private final boolean friendlyFire;
     private final String invitedTeamName;
 
-    public static record MemberInfo(UUID uuid, String name, boolean isLeader) {
+    public static class MemberInfo {
+        private final UUID uuid;
+        private final String name;
+        private final mc.sayda.creraces.team.RaceTeamManager.Role role;
+
+        public MemberInfo(UUID uuid, String name, mc.sayda.creraces.team.RaceTeamManager.Role role) {
+            this.uuid = uuid;
+            this.name = name;
+            this.role = role;
+        }
+
+        public UUID uuid() {
+            return uuid;
+        }
+
+        public String name() {
+            return name;
+        }
+
+        public mc.sayda.creraces.team.RaceTeamManager.Role role() {
+            return role;
+        }
     }
 
     public TeamUpdatePacket(List<MemberInfo> members, boolean friendlyFire, String invitedTeamName) {
@@ -28,11 +50,14 @@ public class TeamUpdatePacket {
     public TeamUpdatePacket(FriendlyByteBuf buf) {
         int size = buf.readInt();
         this.members = new ArrayList<>(size);
+        int playerNameMax = 16;
+        int teamNameMax = 16;
         for (int i = 0; i < size; i++) {
-            this.members.add(new MemberInfo(buf.readUUID(), buf.readUtf(), buf.readBoolean()));
+            this.members.add(new MemberInfo(buf.readUUID(), buf.readUtf(playerNameMax),
+                    buf.readEnum(mc.sayda.creraces.team.RaceTeamManager.Role.class)));
         }
         this.friendlyFire = buf.readBoolean();
-        this.invitedTeamName = buf.readUtf();
+        this.invitedTeamName = buf.readUtf(teamNameMax);
     }
 
     public void encode(FriendlyByteBuf buf) {
@@ -40,7 +65,7 @@ public class TeamUpdatePacket {
         for (MemberInfo member : members) {
             buf.writeUUID(member.uuid());
             buf.writeUtf(member.name());
-            buf.writeBoolean(member.isLeader());
+            buf.writeEnum(Objects.requireNonNull(member.role()));
         }
         buf.writeBoolean(friendlyFire);
         buf.writeUtf(invitedTeamName);

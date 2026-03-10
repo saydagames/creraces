@@ -5,16 +5,21 @@ import net.minecraft.network.chat.Component;
 public class WikiUtils {
     public static String getAbilityUrl(Component name) {
         String nameStr = name.getString().replace(" ", "_");
-        return getBaseWikiUrl() + mc.sayda.creraces.config.CreRacesConfig.WIKI_PAGE_PATH.get()
-                + mc.sayda.creraces.config.CreRacesConfig.WIKI_ABILITY_NAMESPACE.get() + nameStr;
+        return getBaseWikiUrl() + "wiki/"
+                + "abilities/" + nameStr;
     }
 
     public static String getRaceUrl(Component name) {
         String nameStr = name.getString().replace(" ", "_");
-        return getBaseWikiUrl() + mc.sayda.creraces.config.CreRacesConfig.WIKI_PAGE_PATH.get() + nameStr;
+        return getBaseWikiUrl() + "wiki/" + nameStr;
     }
 
     public static String getBaseWikiUrl() {
-        return mc.sayda.creraces.config.CreRacesConfig.WIKI_BASE_URL.get();
+        return "https://wiki.saydagames.com/";
+    }
+
+    public static String getWikiApiUrl(String pageName) {
+        return "https://api.wiki.saydagames.com/api.php"
+                + "?action=parse&format=json&prop=wikitext&page=" + pageName.replace(" ", "%20");
     }
 }

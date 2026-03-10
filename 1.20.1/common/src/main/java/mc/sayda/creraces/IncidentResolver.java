@@ -40,17 +40,19 @@ public class IncidentResolver {
         // Tick Events
         TickEvent.SERVER_POST.register(IncidentResolver::onGensokyoTick);
 
-        // Disconnect: clear beam cache and save teams
+        // Disconnect: clear transient engine states and save teams
         PlayerEvent.PLAYER_QUIT.register(player -> {
-            mc.sayda.creraces.engine.actions.BeamAction.clearForPlayer(player);
+            mc.sayda.creraces.engine.ActionRegistry.cleanup(player);
         });
 
         // Team persistence
         dev.architectury.event.events.common.LifecycleEvent.SERVER_STARTED.register(server -> {
             mc.sayda.creraces.team.RaceTeamManager.load(server);
+            mc.sayda.creraces.util.PocketManager.load(server);
         });
         dev.architectury.event.events.common.LifecycleEvent.SERVER_STOPPING.register(server -> {
             mc.sayda.creraces.team.RaceTeamManager.save(server);
+            mc.sayda.creraces.util.PocketManager.save(server);
         });
 
         // Social Passives (defendedByEntities)
@@ -202,11 +204,11 @@ public class IncidentResolver {
         // each existing player only needs to receive the new player's data once.
         if (player.level() != null) {
             player.level().players().forEach(other -> {
-                if (other != player) {
+                if (other != player && other instanceof ServerPlayer otherPlayer) {
                     // Send this player's vars to the existing player
-                    BoundaryHandler.resyncVariables(player, (ServerPlayer) other);
+                    BoundaryHandler.resyncVariables(player, otherPlayer);
                     // Send the existing player's vars to this player
-                    BoundaryHandler.resyncVariables(other, player);
+                    BoundaryHandler.resyncVariables(otherPlayer, player);
                 }
             });
         }
@@ -257,7 +259,7 @@ public class IncidentResolver {
     }
 
     private static void onGensokyoTick(net.minecraft.server.MinecraftServer server) {
-        if (mc.sayda.creraces.config.CreRacesConfig.FORCED_SELECTION.get()) {
+        if (mc.sayda.creraces.config.CreRacesConfig.FORCED_SELECTION.get()) { // FORCED_SELECTION default is false
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                 DataUtils.getVariables(player).ifPresent(vars -> {
                     if (!vars.hasChosenRace()) {
@@ -278,6 +280,7 @@ public class IncidentResolver {
             mc.sayda.creraces.race.ResourceTicker.tick(player);
         }
         mc.sayda.creraces.util.Scheduler.tick();
+        mc.sayda.creraces.team.RaceTeamManager.tick(server);
     }
 
     public static void onTrackingBegin(ServerPlayer tracker, net.minecraft.world.entity.Entity target) {

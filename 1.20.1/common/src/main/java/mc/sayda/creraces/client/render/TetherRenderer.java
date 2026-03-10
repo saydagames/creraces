@@ -13,6 +13,7 @@ import org.joml.Vector3f;
 
 import java.util.Map;
 import java.util.UUID;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -27,6 +28,10 @@ public class TetherRenderer {
     // -------------------------------------------------------------------------
     // Public API
     // -------------------------------------------------------------------------
+
+    public static void clear() {
+        ACTIVE_TETHERS.clear();
+    }
 
     public static void handleSync(UUID casterId, UUID targetId, boolean active, String texture, float width) {
         if (active) {
@@ -64,25 +69,38 @@ public class TetherRenderer {
         RenderSystem.applyModelViewMatrix();
 
         try {
+            // Pruning pass: Remove tethers with dead or missing casters/targets
+            ACTIVE_TETHERS.entrySet().removeIf(casterEntry -> {
+                Entity caster = mc.level.getPlayerByUUID(Objects.requireNonNull(casterEntry.getKey()));
+                if (caster == null || !caster.isAlive()) {
+                    // Only prune if they've been missing for a while (handled by target checks
+                    // or just immediate for the caster as they are players)
+                    return true;
+                }
+
+                casterEntry.getValue().entrySet().removeIf(targetEntry -> {
+                    Entity target = getClientEntityByUUID(mc.level, targetEntry.getKey());
+                    return target == null || !target.isAlive();
+                });
+
+                return casterEntry.getValue().isEmpty();
+            });
+
             for (Map.Entry<UUID, Map<UUID, TetherRenderData>> casterEntry : ACTIVE_TETHERS.entrySet()) {
                 Entity caster = mc.level.getPlayerByUUID(casterEntry.getKey());
-                if (caster == null || !caster.isAlive())
+                if (caster == null)
                     continue;
 
                 for (Map.Entry<UUID, TetherRenderData> targetEntry : casterEntry.getValue().entrySet()) {
-                    // Mobs aren't cleanly fetched by UUID via mc.level on client, need to scan
-                    // entities
-                    // or use getEntity API if available on client level. ClientLevel has
-                    // getEntity().
                     Entity target = getClientEntityByUUID(mc.level, targetEntry.getKey());
-
-                    if (target == null || !target.isAlive())
+                    if (target == null)
                         continue;
 
                     renderTether(caster, target, targetEntry.getValue(), cam, partialTick, gameTime);
                 }
             }
         } finally {
+
             mvs.popPose();
             RenderSystem.applyModelViewMatrix();
             RenderSystem.setProjectionMatrix(savedProj, null);
@@ -218,6 +236,13 @@ public class TetherRenderer {
         }
     }
 
-    private record TetherRenderData(ResourceLocation texture, float width) {
+    private static class TetherRenderData {
+        public final ResourceLocation texture;
+        public final float width;
+
+        public TetherRenderData(ResourceLocation texture, float width) {
+            this.texture = texture;
+            this.width = width;
+        }
     }
 }

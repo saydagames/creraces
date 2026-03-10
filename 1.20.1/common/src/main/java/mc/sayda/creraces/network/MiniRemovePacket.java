@@ -2,7 +2,6 @@ package mc.sayda.creraces.network;
 
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.block.entity.MicroBlockEntity;
-import mc.sayda.creraces.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
@@ -55,8 +54,12 @@ public class MiniRemovePacket {
         ctx.queue(() -> {
             if (!(ctx.getPlayer() instanceof ServerPlayer serverPlayer))
                 return;
-            ServerLevel level = serverPlayer.serverLevel();
 
+            if (!mc.sayda.creraces.capability.DataUtils.canInteractWithMiniBuild(serverPlayer)) {
+                return;
+            }
+
+            ServerLevel level = serverPlayer.serverLevel();
             if (!(level.getBlockEntity(hostPos) instanceof MicroBlockEntity micro))
                 return;
 

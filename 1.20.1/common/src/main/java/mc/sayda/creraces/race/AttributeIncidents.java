@@ -9,24 +9,28 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import java.util.UUID;
 
 /**
- * Handles the application of RP attributes (Eiki's field of judgment).
+ * Handles the application of RP attributes.
  */
+@SuppressWarnings("null")
 public class AttributeIncidents {
     // Unique UUID for racial AD modifier (applied from IPlayerVariables.getAd())
     private static final UUID RACE_AD_MODIFIER = UUID.fromString("c0d3b4be-0001-4000-8000-000000000001");
+    private static final UUID RESOURCE_MODIFIER = UUID.fromString("c0d3b4be-0001-4000-8000-000000000004");
+    private static final UUID EQUIP_DOUBLE_JUMP_MODIFIER = UUID.fromString("c0d3b4be-0001-4000-8000-000000000005");
 
     public static void eikiJudgment(ServerPlayer player) {
-        // 1. Clear all racial modifiers first to ensure reset works
-        clearAllRacialModifiers(player);
-
         DataUtils.getVariables(player).ifPresent(vars -> {
+
+            // 1. Clear all racial modifiers first to ensure reset works
+            clearAllRacialModifiers(player);
             // Attack Damage (AD) -> Vanilla Attack Damage (1% per point)
             AttributeInstance attackDamage = player.getAttribute(Attributes.ATTACK_DAMAGE);
             if (attackDamage != null) {
                 double racialAD = vars.getAd();
                 if (racialAD != 0) {
                     attackDamage.addPermanentModifier(new AttributeModifier(
-                            RACE_AD_MODIFIER, "Race Base AD", racialAD * 0.01,
+                            RACE_AD_MODIFIER, "Race Base AD",
+                            racialAD * mc.sayda.creraces.config.CreRacesConfig.RACIAL_AD_MULTIPLIER.get(),
                             AttributeModifier.Operation.MULTIPLY_TOTAL));
                 }
             }
@@ -64,29 +68,27 @@ public class AttributeIncidents {
                 // Resources (Dynamic)
                 applyResourceModifier(player, race);
 
-                // Armor Locking Attributes (Twilight Lib)
-                mc.sayda.creraces.race.Race.Passives p = race.passives();
-                if (p != null) {
-                    applyLockAttribute(player, "twilight_lib:lock_helmet", p.cannotWearHelmet());
-                    applyLockAttribute(player, "twilight_lib:lock_chestplate", p.cannotWearChestplate());
-                    applyLockAttribute(player, "twilight_lib:lock_leggings", p.cannotWearLeggings());
-                    applyLockAttribute(player, "twilight_lib:lock_boots", p.cannotWearBoots());
+                // Double Jump Passive Ability Support
+                var doubleJumpAttr = player.getAttribute(mc.sayda.creraces.registry.ModAttributes.DOUBLE_JUMP.get());
+                if (doubleJumpAttr != null) {
+                    boolean isEquipped = false;
+                    for (var slot : mc.sayda.creraces.ability.AbilitySlot.values()) {
+                        if (new net.minecraft.resources.ResourceLocation("creraces", "double_jump")
+                                .equals(vars.getAbilityInSlot(slot))) {
+                            isEquipped = true;
+                            break;
+                        }
+                    }
+
+                    if (isEquipped) {
+                        if (doubleJumpAttr.getModifier(EQUIP_DOUBLE_JUMP_MODIFIER) == null) {
+                            doubleJumpAttr.addPermanentModifier(new AttributeModifier(EQUIP_DOUBLE_JUMP_MODIFIER,
+                                    "Double Jump Ability", 1.0, AttributeModifier.Operation.ADDITION));
+                        }
+                    }
                 }
             }
         });
-    }
-
-    private static void applyLockAttribute(ServerPlayer player, String attrId, boolean active) {
-        AttributeInstance instance = player.getAttribute(net.minecraft.core.registries.BuiltInRegistries.ATTRIBUTE
-                .get(new net.minecraft.resources.ResourceLocation(attrId)));
-        if (instance != null) {
-            UUID id = UUID.nameUUIDFromBytes(("creraces:lock:" + attrId).getBytes());
-            instance.removeModifier(id);
-            if (active) {
-                instance.addPermanentModifier(new AttributeModifier(id, "Race Armor Lock", 1.0,
-                        AttributeModifier.Operation.ADDITION));
-            }
-        }
     }
 
     private static void clearAllRacialModifiers(ServerPlayer player) {
@@ -94,59 +96,56 @@ public class AttributeIncidents {
         clearModifier(player, Attributes.ATTACK_DAMAGE, RACE_AD_MODIFIER);
 
         // All generic trait attribute modifiers are applied via AttributeModifierTrait
-        // using deterministic per-attribute UUIDs — iterate syncable attributes to
-        // clear them
+        // using deterministic per-attribute UUIDs — iterate only if needed?
+        // Actually, the loop is necessary to ensure cleanup of all racial traits
+        // when switching races.
         player.getAttributes().getSyncableAttributes().forEach(instance -> {
-            UUID uuid = UUID
-                    .nameUUIDFromBytes(("creraces:trait:" + instance.getAttribute().getDescriptionId()).getBytes());
-            if (instance.getModifier(uuid) != null) {
-                instance.removeModifier(uuid);
+            String descId = instance.getAttribute().getDescriptionId();
+            if (descId != null) {
+                UUID uuid = UUID.nameUUIDFromBytes(("creraces:trait:" + descId).getBytes());
+                if (instance.getModifier(uuid) != null) {
+                    instance.removeModifier(uuid);
+                }
             }
         });
 
-        UUID RESOURCE_MODIFIER_ID = UUID.fromString("c0d3b4be-0001-4000-8000-000000000004");
-        clearModifier(player, mc.sayda.creraces.registry.ModAttributes.MAX_MANA.get(), RESOURCE_MODIFIER_ID);
-        clearModifier(player, mc.sayda.creraces.registry.ModAttributes.MAX_RAGE.get(), RESOURCE_MODIFIER_ID);
-        clearModifier(player, mc.sayda.creraces.registry.ModAttributes.MAX_ENERGY.get(), RESOURCE_MODIFIER_ID);
-        clearModifier(player, mc.sayda.creraces.registry.ModAttributes.MAX_GRIT.get(), RESOURCE_MODIFIER_ID);
+        clearModifier(player, mc.sayda.creraces.registry.ModAttributes.MAX_MANA.get(), RESOURCE_MODIFIER);
+        clearModifier(player, mc.sayda.creraces.registry.ModAttributes.MAX_RAGE.get(), RESOURCE_MODIFIER);
+        clearModifier(player, mc.sayda.creraces.registry.ModAttributes.MAX_ENERGY.get(), RESOURCE_MODIFIER);
+        clearModifier(player, mc.sayda.creraces.registry.ModAttributes.MAX_GRIT.get(), RESOURCE_MODIFIER);
+        clearModifier(player, mc.sayda.creraces.registry.ModAttributes.DOUBLE_JUMP.get(),
+                EQUIP_DOUBLE_JUMP_MODIFIER);
     }
 
     private static void applyResourceModifier(ServerPlayer player, mc.sayda.creraces.race.Race race) {
-        UUID RESOURCE_MODIFIER_ID = UUID.fromString("c0d3b4be-0001-4000-8000-000000000004");
-
-        clearModifier(player, mc.sayda.creraces.registry.ModAttributes.MAX_MANA.get(), RESOURCE_MODIFIER_ID);
-        clearModifier(player, mc.sayda.creraces.registry.ModAttributes.MAX_RAGE.get(), RESOURCE_MODIFIER_ID);
-        clearModifier(player, mc.sayda.creraces.registry.ModAttributes.MAX_ENERGY.get(), RESOURCE_MODIFIER_ID);
-        clearModifier(player, mc.sayda.creraces.registry.ModAttributes.MAX_GRIT.get(), RESOURCE_MODIFIER_ID);
+        clearModifier(player, mc.sayda.creraces.registry.ModAttributes.MAX_MANA.get(), RESOURCE_MODIFIER);
+        clearModifier(player, mc.sayda.creraces.registry.ModAttributes.MAX_RAGE.get(), RESOURCE_MODIFIER);
+        clearModifier(player, mc.sayda.creraces.registry.ModAttributes.MAX_ENERGY.get(), RESOURCE_MODIFIER);
+        clearModifier(player, mc.sayda.creraces.registry.ModAttributes.MAX_GRIT.get(), RESOURCE_MODIFIER);
 
         DataUtils.getVariables(player).ifPresent(vars -> {
             switch (race.resourceType()) {
-                case MANA:
-                    applyModifier(player, mc.sayda.creraces.registry.ModAttributes.MAX_MANA.get(),
-                            RESOURCE_MODIFIER_ID,
-                            race.maxResource(), "Race Mana");
-                    break;
-                case RAGE:
-                    applyModifier(player, mc.sayda.creraces.registry.ModAttributes.MAX_RAGE.get(),
-                            RESOURCE_MODIFIER_ID,
-                            race.maxResource(), "Race Rage");
-                    break;
-                case ENERGY:
+                case MANA -> applyModifier(player, mc.sayda.creraces.registry.ModAttributes.MAX_MANA.get(),
+                        RESOURCE_MODIFIER,
+                        race.maxResource(), "Race Mana");
+                case RAGE -> applyModifier(player, mc.sayda.creraces.registry.ModAttributes.MAX_RAGE.get(),
+                        RESOURCE_MODIFIER,
+                        race.maxResource(), "Race Rage");
+                case ENERGY -> {
                     double max = race.maxResource();
                     if (race.stacksAffectResource()) {
                         max -= vars.getStacks();
                     }
                     applyModifier(player, mc.sayda.creraces.registry.ModAttributes.MAX_ENERGY.get(),
-                            RESOURCE_MODIFIER_ID,
-                            Math.max(1, max), "Race Energy");
-                    break;
-                case GRIT:
-                    applyModifier(player, mc.sayda.creraces.registry.ModAttributes.MAX_GRIT.get(),
-                            RESOURCE_MODIFIER_ID,
-                            race.maxResource(), "Race Grit");
-                    break;
-                default:
-                    break;
+                            RESOURCE_MODIFIER,
+                            Math.max(mc.sayda.creraces.config.CreRacesConfig.RESOURCE_MIN_CAPACITY.get(), max),
+                            "Race Energy");
+                }
+                case GRIT -> applyModifier(player, mc.sayda.creraces.registry.ModAttributes.MAX_GRIT.get(),
+                        RESOURCE_MODIFIER,
+                        race.maxResource(), "Race Grit");
+                default -> {
+                }
             }
         });
     }

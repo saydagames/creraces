@@ -11,14 +11,53 @@ import java.util.List;
  * Integrated version: Can carry raw JSON data for automatic cosmetic
  * application.
  */
-public record RaceCustomization(
-                @Nonnull String id,
-                @Nonnull String type, // "addon", "property", "tint"
-                String addonId, // simple/legacy ID
-                JsonObject addonData, // Raw mapping/pattern data for integrated cosmetics
-                @Nonnull List<String> options,
-                @Nonnull String defaultValue,
-                boolean hidden) {
+public class RaceCustomization {
+        private final String id;
+        private final String type;
+        private final String addonId;
+        private final JsonObject addonData;
+        private final List<String> options;
+        private final String defaultValue;
+        private final boolean hidden;
+
+        public RaceCustomization(@Nonnull String id, @Nonnull String type, String addonId, JsonObject addonData,
+                        @Nonnull List<String> options, @Nonnull String defaultValue, boolean hidden) {
+                this.id = id;
+                this.type = type;
+                this.addonId = addonId;
+                this.addonData = addonData;
+                this.options = options;
+                this.defaultValue = defaultValue;
+                this.hidden = hidden;
+        }
+
+        public String id() {
+                return id;
+        }
+
+        public String type() {
+                return type;
+        }
+
+        public String addonId() {
+                return addonId;
+        }
+
+        public JsonObject addonData() {
+                return addonData;
+        }
+
+        public List<String> options() {
+                return options;
+        }
+
+        public String defaultValue() {
+                return defaultValue;
+        }
+
+        public boolean hidden() {
+                return hidden;
+        }
 
         public static RaceCustomization fromJson(JsonObject json) {
                 List<String> options = new ArrayList<>();

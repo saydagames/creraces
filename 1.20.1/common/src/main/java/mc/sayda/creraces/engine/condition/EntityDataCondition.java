@@ -7,8 +7,35 @@ import mc.sayda.creraces.capability.DataUtils;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 
-public record EntityDataCondition(String key, String operator, mc.sayda.creraces.engine.ScalingValue value,
-        boolean useTarget) implements Condition {
+public class EntityDataCondition implements Condition {
+    private final String key;
+    private final String operator;
+    private final mc.sayda.creraces.engine.ScalingValue value;
+    private final boolean useTarget;
+
+    public EntityDataCondition(String key, String operator, mc.sayda.creraces.engine.ScalingValue value,
+            boolean useTarget) {
+        this.key = key;
+        this.operator = operator;
+        this.value = value;
+        this.useTarget = useTarget;
+    }
+
+    public String key() {
+        return key;
+    }
+
+    public String operator() {
+        return operator;
+    }
+
+    public mc.sayda.creraces.engine.ScalingValue value() {
+        return value;
+    }
+
+    public boolean useTarget() {
+        return useTarget;
+    }
 
     @Override
     @SuppressWarnings("null")
@@ -50,7 +77,7 @@ public record EntityDataCondition(String key, String operator, mc.sayda.creraces
 
     public static Condition fromJson(JsonObject json) {
         String key = GsonHelper.getAsString(json, "key");
-        String op = GsonHelper.getAsString(json, "operator", "==");
+        String op = GsonHelper.getAsString(json, "operator", ">=");
         mc.sayda.creraces.engine.ScalingValue val = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "value", 0.0);
         boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
         return new EntityDataCondition(key, op, val, useTarget);

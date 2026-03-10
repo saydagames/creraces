@@ -77,7 +77,7 @@ public class ToggleStateAction implements ActionRegistry.RaceAction {
 
     public static void register() {
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "toggle_state"), json -> {
-            String state = GsonHelper.getAsString(json, "state", "slot");
+            String state = GsonHelper.getAsString(json, "state", "a1");
             ScalingValue on = ScalingValue.fromJson(json, "on_value", 1.0);
             ScalingValue off = ScalingValue.fromJson(json, "off_value", 0.0);
 

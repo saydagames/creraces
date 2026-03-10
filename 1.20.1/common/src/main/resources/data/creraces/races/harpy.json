@@ -11,8 +11,19 @@
     "resource_type": "ENERGY",
     "max_resource": 100,
     "tier": "creraces:rare",
+    "stacks_affect_resource": false,
+    "g_state": "FEMALE",
     "difficulty": 2,
-    "traits": [
+    "passives": [
+        {
+            "type": "creraces:addon",
+            "addon_id": "short_torso"
+        },
+        {
+            "type": "creraces:addon",
+            "addon_id": "chest",
+            "config": "lore_addons"
+        },
         {
             "type": "creraces:attribute_modifier",
             "attribute": "creraces:ability_power",
@@ -30,6 +41,22 @@
             "operation": "addition"
         },
         {
+            "type": "creraces:attribute_modifier",
+            "attribute": "twilight_lib:allow_leggings",
+            "value": {
+                "base": 0.0
+            },
+            "operation": "multiply_total"
+        },
+        {
+            "type": "creraces:attribute_modifier",
+            "attribute": "twilight_lib:allow_boots",
+            "value": {
+                "base": 0.0
+            },
+            "operation": "multiply_total"
+        },
+        {
             "type": "creraces:on_hit",
             "condition": {
                 "type": "creraces:attack_charged"
@@ -41,7 +68,7 @@
                     "duration": 60,
                     "amplifier": 0,
                     "visible": true,
-                    "target": "hit_entity"
+                    "use_target": true
                 }
             ]
         },
@@ -241,14 +268,5 @@
     ],
     "portrait": "creraces:textures/screens/harpy_portrait.png",
     "name_texture": "creraces:textures/screens/harpy_text.png",
-    "remote_description": {
-        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "fallback": "race.creraces.harpy.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Harpy&prop=wikitext"
-    },
-    "remote_passive": {
-        "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "fallback": "No passive documentation found on wiki.",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Harpy&prop=wikitext"
-    }
+    "wiki_page": "Harpy"
 }

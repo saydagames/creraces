@@ -53,17 +53,17 @@ public class SetStateAction implements ActionRegistry.RaceAction {
 
     public static void register() {
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "set_state"), json -> {
-            String state = GsonHelper.getAsString(json, "state", "slot");
+            String state = GsonHelper.getAsString(json, "state", "a1");
             mc.sayda.creraces.engine.ScalingValue value = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "value",
                     0.0);
             String ability = GsonHelper.getAsString(json, "ability", null);
-            String operation = GsonHelper.getAsString(json, "operation", "set");
+            String operation = GsonHelper.getAsString(json, "operation", "add");
             ResourceLocation abilityLoc = ability != null ? new ResourceLocation(ability) : null;
             return new SetStateAction(state, value, abilityLoc, operation);
         });
         // Alias for legacy modify_state
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "modify_state"), json -> {
-            String state = GsonHelper.getAsString(json, "state", "slot");
+            String state = GsonHelper.getAsString(json, "state", "a1");
             mc.sayda.creraces.engine.ScalingValue value = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "value",
                     0.0);
             String ability = GsonHelper.getAsString(json, "ability", null);

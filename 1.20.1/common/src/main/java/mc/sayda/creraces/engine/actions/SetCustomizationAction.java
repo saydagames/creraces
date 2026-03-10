@@ -49,6 +49,7 @@ public class SetCustomizationAction implements ActionRegistry.RaceAction {
                 case "POS_X" -> valToSet = String.valueOf(player.getX() + ox);
                 case "POS_Y" -> valToSet = String.valueOf(player.getY() + oy);
                 case "POS_Z" -> valToSet = String.valueOf(player.getZ() + oz);
+                case "POS_DIM" -> valToSet = player.level().dimension().location().toString();
                 case "BLOCK_X" -> valToSet = String.valueOf(player.blockPosition().getX() + (int) ox);
                 case "BLOCK_Y" -> valToSet = String.valueOf(player.blockPosition().getY() + (int) oy);
                 case "BLOCK_Z" -> valToSet = String.valueOf(player.blockPosition().getZ() + (int) oz);
@@ -65,25 +66,43 @@ public class SetCustomizationAction implements ActionRegistry.RaceAction {
                         valToSet = String.valueOf(target.getZ() + oz);
                 }
                 case "TARGET_BLOCK_X" -> {
-                    net.minecraft.world.phys.HitResult hit = player.pick(5.0, 0.0F, false);
-                    if (hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
-                        valToSet = String.valueOf(
-                                ((net.minecraft.world.phys.BlockHitResult) hit).getBlockPos().getX() + (int) ox);
+                    if (interactionPos != null) {
+                        valToSet = String.valueOf(interactionPos.getX() + (int) ox);
+                    } else {
+                        net.minecraft.world.phys.HitResult hit = player.pick(5.0, 0.0F, false);
+                        if (hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
+                            valToSet = String.valueOf(
+                                    ((net.minecraft.world.phys.BlockHitResult) hit).getBlockPos().getX() + (int) ox);
+                        }
                     }
                 }
                 case "TARGET_BLOCK_Y" -> {
-                    net.minecraft.world.phys.HitResult hit = player.pick(5.0, 0.0F, false);
-                    if (hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
-                        valToSet = String.valueOf(
-                                ((net.minecraft.world.phys.BlockHitResult) hit).getBlockPos().getY() + (int) oy);
+                    if (interactionPos != null) {
+                        valToSet = String.valueOf(interactionPos.getY() + (int) oy);
+                    } else {
+                        net.minecraft.world.phys.HitResult hit = player.pick(5.0, 0.0F, false);
+                        if (hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
+                            valToSet = String.valueOf(
+                                    ((net.minecraft.world.phys.BlockHitResult) hit).getBlockPos().getY() + (int) oy);
+                        }
                     }
                 }
                 case "TARGET_BLOCK_Z" -> {
-                    net.minecraft.world.phys.HitResult hit = player.pick(5.0, 0.0F, false);
-                    if (hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
-                        valToSet = String.valueOf(
-                                ((net.minecraft.world.phys.BlockHitResult) hit).getBlockPos().getZ() + (int) oz);
+                    if (interactionPos != null) {
+                        valToSet = String.valueOf(interactionPos.getZ() + (int) oz);
+                    } else {
+                        net.minecraft.world.phys.HitResult hit = player.pick(5.0, 0.0F, false);
+                        if (hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
+                            valToSet = String.valueOf(
+                                    ((net.minecraft.world.phys.BlockHitResult) hit).getBlockPos().getZ() + (int) oz);
+                        }
                     }
+                }
+                case "TARGET_BLOCK_DIM" -> {
+                    valToSet = player.level().dimension().location().toString();
+                }
+                case "REMOVE" -> {
+                    valToSet = null;
                 }
             }
             vars.setCustomization(key, valToSet);

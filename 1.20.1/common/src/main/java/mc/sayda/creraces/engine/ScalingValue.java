@@ -11,21 +11,61 @@ import net.minecraft.world.entity.player.Player;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Objects;
 
-public record ScalingValue(double base, @javax.annotation.Nullable String scalingStat, double factor,
-        List<Component> additionalScales) {
+public class ScalingValue {
+    private final double base;
+    private final Evaluator evaluator;
+    private final double factor;
+    private final List<ScalingComponent> additionalScales;
 
-    public record Component(String stat, double factor) {
+    public ScalingValue(double base, @javax.annotation.Nullable Evaluator evaluator, double factor,
+            List<ScalingComponent> additionalScales) {
+        this.base = base;
+        this.evaluator = evaluator;
+        this.factor = factor;
+        this.additionalScales = additionalScales != null ? additionalScales : new java.util.ArrayList<>();
+    }
+
+    public double base() {
+        return base;
+    }
+
+    public @javax.annotation.Nullable Evaluator evaluator() {
+        return evaluator;
+    }
+
+    public double factor() {
+        return factor;
+    }
+
+    public List<ScalingComponent> additionalScales() {
+        return additionalScales;
+    }
+
+    public static class ScalingComponent {
+        private final Evaluator evaluator;
+        private final double factor;
+
+        public ScalingComponent(Evaluator evaluator, double factor) {
+            this.evaluator = evaluator;
+            this.factor = factor;
+        }
+
+        public Evaluator evaluator() {
+            return evaluator;
+        }
+
+        public double factor() {
+            return factor;
+        }
     }
 
     public static final ScalingValue ZERO = new ScalingValue(0, null, 0, new ArrayList<>());
 
-    public ScalingValue(double base, @javax.annotation.Nullable String scalingStat, double factor) {
-        this(base, precomputeStat(scalingStat), factor, new ArrayList<>());
-    }
-
-    private static @javax.annotation.Nullable String precomputeStat(@javax.annotation.Nullable String stat) {
-        return stat == null ? null : stat.toLowerCase();
+    @FunctionalInterface
+    public interface Evaluator {
+        double evaluate(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target);
     }
 
     public double evaluate(Player player) {
@@ -34,85 +74,103 @@ public record ScalingValue(double base, @javax.annotation.Nullable String scalin
 
     public double evaluate(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target) {
         double result = base;
-        if (scalingStat != null && !scalingStat.isEmpty()) {
-            result += evaluateStat(player, target, scalingStat) * factor;
+        if (evaluator != null) {
+            result += evaluator.evaluate(player, target) * factor;
         }
 
-        for (Component comp : additionalScales) {
-            result += evaluateStat(player, target, comp.stat().toLowerCase()) * comp.factor();
+        for (int i = 0; i < additionalScales.size(); i++) {
+            ScalingComponent comp = additionalScales.get(i);
+            result += comp.evaluator().evaluate(player, target) * comp.factor();
         }
 
         return result;
     }
 
-    private double evaluateStat(Player player,
-            @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
-            String statKey) {
-        net.minecraft.world.entity.LivingEntity evalEntity = player;
+    private static Evaluator parseEvaluator(String statKey) {
+        if (statKey == null || statKey.isEmpty())
+            return (p, t) -> 0.0;
 
-        if (statKey.startsWith("target_")) {
-            if (target == null)
-                return 0.0;
-            evalEntity = target;
-            statKey = statKey.substring(7);
-        }
+        final String finalKey = statKey.toLowerCase();
 
-        if (statKey.equals("ap") || statKey.equals("creraces:ability_power")) {
-            @SuppressWarnings("null")
-            var attr = ModAttributes.ABILITY_POWER.get();
-            return attr != null ? evalEntity.getAttributeValue(attr) : 0.0;
-        }
-        if (statKey.equals("ad") || statKey.equals("creraces:attack_damage")) {
-            @SuppressWarnings("null")
-            var attr = ModAttributes.ATTACK_DAMAGE.get();
-            return attr != null ? evalEntity.getAttributeValue(attr) : 0.0;
-        }
-        if (statKey.equals("ah") || statKey.equals("haste") || statKey.equals("creraces:ability_haste")) {
-            @SuppressWarnings("null")
-            var attr = ModAttributes.ABILITY_HASTE.get();
-            if (attr == null)
-                return 0.0;
-            double val = evalEntity.getAttributeValue(attr);
-            double cap = mc.sayda.creraces.config.CreRacesConfig.ABILITY_HASTE_CAP.get();
-            return Math.min(val, cap);
-        }
-        if (statKey.equals("crit") || statKey.equals("cr") || statKey.equals("creraces:crit_rate")) {
-            @SuppressWarnings("null")
-            var attr = ModAttributes.CRIT_RATE.get();
-            return attr != null ? evalEntity.getAttributeValue(attr) : 0.0;
-        }
-        if (statKey.equals("pen") || statKey.equals("creraces:armor_penetration")) {
-            @SuppressWarnings("null")
-            var attr = ModAttributes.ARMOR_PENETRATION.get();
-            return attr != null ? evalEntity.getAttributeValue(attr) : 0.0;
-        }
-        if (statKey.equals("hp") || statKey.equals("health")) {
-            return evalEntity.getHealth();
-        }
-        if (statKey.equals("max_hp") || statKey.equals("max_health")
-                || statKey.equals("minecraft:generic.max_health")) {
-            return evalEntity.getMaxHealth();
-        }
-        if (statKey.equals("armor") || statKey.equals("minecraft:generic.armor")) {
-            return evalEntity.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR);
-        }
-        if (statKey.equals("mr") || statKey.equals("movement") || statKey.equals("speed")
-                || statKey.equals("minecraft:generic.movement_speed")) {
-            return evalEntity.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);
+        if (finalKey.startsWith("target_")) {
+            final String subKey = finalKey.substring(7);
+            final Evaluator subEval = parseEvaluator(subKey);
+            return (p, t) -> t != null ? subEval.evaluate(p, t) : 0.0;
         }
 
-        if (evalEntity instanceof Player p) {
-            mc.sayda.creraces.capability.IPlayerVariables vars = DataUtils.getVariables(p).orElse(null);
-            if (vars != null) {
-                if (statKey.startsWith("custom:")) {
-                    String key = statKey.substring(7);
+        // Hardcoded Attributes
+        if (finalKey.equals("ap") || finalKey.equals("creraces:ability_power")) {
+            return (p, t) -> {
+                var attr = ModAttributes.ABILITY_POWER.get();
+                return attr != null ? p.getAttributeValue(attr) : 0.0;
+            };
+        }
+        if (finalKey.equals("ad") || finalKey.equals("creraces:attack_damage")) {
+            return (p, t) -> {
+                var attr = ModAttributes.ATTACK_DAMAGE.get();
+                return attr != null ? p.getAttributeValue(attr) : 0.0;
+            };
+        }
+        if (finalKey.equals("ah") || finalKey.equals("haste") || finalKey.equals("creraces:ability_haste")) {
+            return (p, t) -> {
+                var attr = ModAttributes.ABILITY_HASTE.get();
+                if (attr == null)
+                    return 0.0;
+                double val = p.getAttributeValue(attr);
+                double cap = 40.0;
+                return Math.min(val, cap);
+            };
+        }
+        if (finalKey.equals("crit") || finalKey.equals("cr") || finalKey.equals("creraces:crit_rate")) {
+            return (p, t) -> {
+                var attr = ModAttributes.CRIT_RATE.get();
+                return attr != null ? p.getAttributeValue(attr) : 0.0;
+            };
+        }
+        if (finalKey.equals("pen") || finalKey.equals("creraces:armor_penetration")) {
+            return (p, t) -> {
+                var attr = ModAttributes.ARMOR_PENETRATION.get();
+                return attr != null ? p.getAttributeValue(attr) : 0.0;
+            };
+        }
+        if (finalKey.equals("hp") || finalKey.equals("health")) {
+            return (p, t) -> p.getHealth();
+        }
+        if (finalKey.equals("max_hp") || finalKey.equals("max_health")
+                || finalKey.equals("minecraft:generic.max_health")) {
+            return (p, t) -> p.getMaxHealth();
+        }
+        if (finalKey.equals("armor") || finalKey.equals("minecraft:generic.armor")) {
+            return (p, t) -> p.getAttributeValue(
+                    Objects.requireNonNull(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR));
+        }
+        if (finalKey.equals("mr") || finalKey.equals("movement") || finalKey.equals("speed")
+                || finalKey.equals("minecraft:generic.movement_speed")) {
+            return (p, t) -> p.getAttributeValue(
+                    Objects.requireNonNull(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED));
+        }
+
+        // Custom Variables
+        if (finalKey.startsWith("custom:")) {
+            final String key = finalKey.substring(7);
+            return (p, t) -> {
+                mc.sayda.creraces.capability.IPlayerVariables vars = DataUtils.getVariables(p).orElse(null);
+                if (vars != null) {
                     String val = vars.getCustomization(key);
                     try {
                         return val != null ? Double.parseDouble(val) : 0.0;
                     } catch (NumberFormatException ignored) {
                     }
-                } else if (statKey.startsWith("var:")) {
-                    String key = statKey.substring(4);
+                }
+                return 0.0;
+            };
+        }
+
+        if (finalKey.startsWith("var:")) {
+            final String key = finalKey.substring(4);
+            return (p, t) -> {
+                mc.sayda.creraces.capability.IPlayerVariables vars = DataUtils.getVariables(p).orElse(null);
+                if (vars != null) {
                     return switch (key) {
                         case "mana" -> vars.getMana();
                         case "energy" -> vars.getEnergy();
@@ -124,78 +182,78 @@ public record ScalingValue(double base, @javax.annotation.Nullable String scalin
                         case "coins" -> vars.getCoins();
                         default -> 0.0;
                     };
-                } else if (statKey.startsWith("ability:")) {
-                    ResourceLocation abilityId = new ResourceLocation(statKey.substring(8));
-                    return vars.getAbilityState(abilityId);
                 }
-            }
+                return 0.0;
+            };
         }
 
-        // Generic attribute fallback
-        try {
-            String lookupKey = statKey.contains(":") ? statKey : "minecraft:" + statKey;
-            Attribute attr = BuiltInRegistries.ATTRIBUTE.get(new ResourceLocation(lookupKey));
-            if (attr != null && evalEntity.getAttributes().hasAttribute(attr)) {
-                return evalEntity.getAttributeValue(attr);
-            }
-        } catch (Exception ignored) {
+        if (finalKey.startsWith("ability:")) {
+            final String subKey = finalKey.substring(8);
+            final ResourceLocation abilityId = new ResourceLocation(Objects.requireNonNull(subKey));
+            return (p, t) -> {
+                mc.sayda.creraces.capability.IPlayerVariables vars = DataUtils.getVariables(p).orElse(null);
+                return vars != null ? vars.getAbilityState(abilityId) : 0.0;
+            };
         }
 
-        return 0.0;
+        // Generic fallback
+        final ResourceLocation attrId = new ResourceLocation(
+                finalKey.contains(":") ? finalKey : "minecraft:" + finalKey);
+        return (p, t) -> {
+            Attribute attr = BuiltInRegistries.ATTRIBUTE.get(attrId);
+            if (attr != null && p.getAttributes().hasAttribute(attr)) {
+                return p.getAttributeValue(attr);
+            }
+            return 0.0;
+        };
     }
 
     public static ScalingValue fromJson(JsonObject json, String key, double defaultBase) {
         if (!json.has(key)) {
-            return new ScalingValue(defaultBase, null, 0);
+            return new ScalingValue(defaultBase, null, 0, new ArrayList<>());
         }
 
         if (json.get(key).isJsonObject()) {
             JsonObject obj = json.getAsJsonObject(key);
             double base = GsonHelper.getAsDouble(obj, "base", defaultBase);
             String stat = GsonHelper.getAsString(obj, "scales_with", null);
-            double factor = GsonHelper.getAsDouble(obj, "factor", 0.0);
+            double factor = GsonHelper.getAsDouble(obj, "factor", 1.0);
 
-            List<Component> additional = new ArrayList<>();
+            List<ScalingComponent> additional = new ArrayList<>();
 
-            // 1. Array-based scaling (documented as most robust)
             if (obj.has("scales") && obj.get("scales").isJsonArray()) {
                 com.google.gson.JsonArray array = obj.getAsJsonArray("scales");
                 for (int i = 0; i < array.size(); i++) {
                     JsonObject scaleObj = array.get(i).getAsJsonObject();
                     String s = GsonHelper.getAsString(scaleObj, "stat", null);
-                    double f = GsonHelper.getAsDouble(scaleObj, "factor", 0.0);
+                    double f = GsonHelper.getAsDouble(scaleObj, "factor", 1.0);
                     if (s != null) {
-                        additional.add(new Component(s, f));
+                        additional.add(new ScalingComponent(parseEvaluator(s), f));
                     }
                 }
             }
 
-            // 2. Nested "scaling" object (documented format)
             if (obj.has("scaling") && obj.get("scaling").isJsonObject()) {
                 JsonObject scalingObj = obj.getAsJsonObject("scaling");
                 for (String sKey : scalingObj.keySet()) {
-                    additional.add(new Component(sKey, scalingObj.get(sKey).getAsDouble()));
+                    additional.add(new ScalingComponent(parseEvaluator(sKey), scalingObj.get(sKey).getAsDouble()));
                 }
             }
 
-            // 3. Flat stat shorthand (documented shorthand: "ap": 0.5)
-            // We iterate over keys and exclude known metadata keys
             for (String sKey : obj.keySet()) {
                 if (sKey.equals("base") || sKey.equals("scales_with") || sKey.equals("factor")
                         || sKey.equals("scales") || sKey.equals("scaling")) {
                     continue;
                 }
                 if (obj.get(sKey).isJsonPrimitive() && obj.get(sKey).getAsJsonPrimitive().isNumber()) {
-                    additional.add(new Component(sKey, obj.get(sKey).getAsDouble()));
+                    additional.add(new ScalingComponent(parseEvaluator(sKey), obj.get(sKey).getAsDouble()));
                 }
             }
 
-            return new ScalingValue(base, stat, factor, additional);
+            return new ScalingValue(base, parseEvaluator(stat), factor, additional);
         } else if (json.get(key).isJsonPrimitive() && json.get(key).getAsJsonPrimitive().isString()) {
-            // String shorthand: treat as a stat key with factor 1.0 and base 0.0
-            return new ScalingValue(0.0, json.get(key).getAsString(), 1.0, new ArrayList<>());
+            return new ScalingValue(0.0, parseEvaluator(json.get(key).getAsString()), 1.0, new ArrayList<>());
         } else {
-            // Simple number
             return new ScalingValue(json.get(key).getAsDouble(), null, 0, new ArrayList<>());
         }
     }

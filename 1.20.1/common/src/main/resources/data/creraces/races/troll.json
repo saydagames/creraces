@@ -163,7 +163,7 @@
                     "duration": 240,
                     "amplifier": 0,
                     "visible": true,
-                    "target": "hit_entity"
+                    "use_target": true
                 },
                 {
                     "type": "creraces:set_state",
@@ -190,11 +190,11 @@
             "actions": [
                 {
                     "type": "creraces:apply_effect",
-                    "effect": "creraces:stun",
+                    "effect": "creraces:stunned",
                     "duration": 60,
                     "amplifier": 0,
                     "visible": true,
-                    "target": "hit_entity"
+                    "use_target": true
                 },
                 {
                     "type": "creraces:set_state",
@@ -210,14 +210,5 @@
     ],
     "portrait": "creraces:textures/screens/troll_portrait.png",
     "name_texture": "creraces:textures/screens/troll_text.png",
-    "remote_description": {
-        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "fallback": "race.creraces.troll.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Troll&prop=wikitext"
-    },
-    "remote_passive": {
-        "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "fallback": "No passive documentation found on wiki.",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Troll&prop=wikitext"
-    }
+    "wiki_page": "Troll"
 }

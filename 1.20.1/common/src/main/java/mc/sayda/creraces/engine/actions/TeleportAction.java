@@ -11,6 +11,8 @@ public class TeleportAction implements ActionRegistry.RaceAction {
     private final ScalingValue y;
     private final ScalingValue z;
     private final ResourceLocation dimension;
+    private final String dimensionKey; // Generic dimension resolution
+
     /**
      * True only when at least one coordinate was explicitly written in the JSON.
      * Prevents an unconfigured TeleportAction from silently warping the player to
@@ -19,11 +21,12 @@ public class TeleportAction implements ActionRegistry.RaceAction {
     private final boolean configured;
 
     public TeleportAction(ScalingValue x, ScalingValue y, ScalingValue z, ResourceLocation dimension,
-            boolean configured) {
+            String dimensionKey, boolean configured) {
         this.x = x;
         this.y = y;
         this.z = z;
         this.dimension = dimension;
+        this.dimensionKey = dimensionKey;
         this.configured = configured;
     }
 
@@ -34,10 +37,6 @@ public class TeleportAction implements ActionRegistry.RaceAction {
         if (!(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer))
             return true;
 
-        // If no x/y/z were ever specified in JSON, this action is unconfigured — do
-        // nothing.
-        // Note: x=0, y=0, z=0 IS valid (world origin) and will execute when
-        // 'configured' is true.
         if (!configured)
             return true;
 
@@ -45,10 +44,24 @@ public class TeleportAction implements ActionRegistry.RaceAction {
         double targetY = y.evaluate(player, target);
         double targetZ = z.evaluate(player, target);
 
-        if (dimension != null) {
+        ResourceLocation targetDim = dimension;
+        if (dimensionKey != null) {
+            String customDim = mc.sayda.creraces.capability.DataUtils.getVariables(serverPlayer)
+                    .map(vars -> vars.getCustomization(dimensionKey)).orElse(null);
+            if (customDim != null && !customDim.isEmpty()) {
+                try {
+                    targetDim = new ResourceLocation(customDim);
+                } catch (Exception e) {
+                    mc.sayda.creraces.CreRaces.LOGGER.error("TeleportAction: Invalid dimension in key {}: {}",
+                            dimensionKey, customDim);
+                }
+            }
+        }
+
+        if (targetDim != null) {
             net.minecraft.server.level.ServerLevel targetLevel = serverPlayer.server
                     .getLevel(net.minecraft.resources.ResourceKey
-                            .create(net.minecraft.core.registries.Registries.DIMENSION, dimension));
+                            .create(net.minecraft.core.registries.Registries.DIMENSION, targetDim));
             if (targetLevel != null) {
                 serverPlayer.teleportTo(targetLevel, targetX, targetY, targetZ, serverPlayer.getYRot(),
                         serverPlayer.getXRot());
@@ -62,15 +75,17 @@ public class TeleportAction implements ActionRegistry.RaceAction {
 
     public static void register() {
         ActionRegistry.register(new ResourceLocation("creraces:teleport"), json -> {
-            // Detect whether the JSON author explicitly included any coordinate
-            boolean configured = json.has("x") || json.has("y") || json.has("z") || json.has("dimension");
+            boolean configured = json.has("x") || json.has("y") || json.has("z") || json.has("dimension")
+                    || json.has("dimension_key");
             ScalingValue x = ScalingValue.fromJson(json, "x", 0.0);
             ScalingValue y = ScalingValue.fromJson(json, "y", 0.0);
             ScalingValue z = ScalingValue.fromJson(json, "z", 0.0);
             ResourceLocation dimension = json.has("dimension")
                     ? new ResourceLocation(json.get("dimension").getAsString())
                     : null;
-            return new TeleportAction(x, y, z, dimension, configured);
+            String dimensionKey = json.has("dimension_key") ? json.get("dimension_key").getAsString() : null;
+
+            return new TeleportAction(x, y, z, dimension, dimensionKey, configured);
         });
     }
 }

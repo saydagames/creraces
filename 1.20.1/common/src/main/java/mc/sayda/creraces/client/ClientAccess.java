@@ -39,12 +39,19 @@ public class ClientAccess {
             target = minecraft.level.getPlayerByUUID(playerId);
         }
 
-        if (target == null)
+        if (target == null) {
+            mc.sayda.creraces.CreRaces.LOGGER.warn("ClientAccess: Could not find target player {} for sync", playerId);
             return;
+        }
 
         final net.minecraft.world.entity.player.Player finalTarget = target;
         mc.sayda.creraces.capability.DataUtils.getVariables(finalTarget).ifPresent(vars -> {
+            boolean oldSmallBuild = vars.isSmallBuild();
             vars.deserialize(data);
+            if (vars.isSmallBuild() != oldSmallBuild) {
+                mc.sayda.creraces.CreRaces.LOGGER.info("ClientAccess: smallBuild for {} changed from {} to {}",
+                        finalTarget.getName().getString(), oldSmallBuild, vars.isSmallBuild());
+            }
             mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
 
             // Skip cosmetic application if the local player is in the Mirror Screen
@@ -58,6 +65,13 @@ public class ClientAccess {
                         vars.getCustomizations(),
                         race);
             }
+
+            // Sync persistent data tag directly to the Entity for client-side tag checks
+            if (data.contains("creraces:persistent_data")
+                    && finalTarget instanceof mc.sayda.creraces.util.IPersistentDataAccessor accessor) {
+                accessor.creraces$getPersistentData().merge(data.getCompound("creraces:persistent_data"));
+            }
+
             if (finalTarget == minecraft.player) {
                 hasReceivedInitialSync = true;
                 if (data.contains("hasChosenRace") && data.getBoolean("hasChosenRace")) {

@@ -11,6 +11,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import java.util.Objects;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
@@ -19,6 +20,7 @@ import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import net.minecraft.ChatFormatting;
@@ -54,6 +56,9 @@ public class DebugScreen extends Screen {
                         debugLines.add(Component.literal("  Player: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component.literal(player.getName().getString())
                                                         .withStyle(ChatFormatting.WHITE)));
+                        debugLines.add(Component.literal("  UUID: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(player.getUUID().toString())
+                                                        .withStyle(ChatFormatting.DARK_GRAY)));
                         debugLines.add(Component.literal("  Race ID: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component.literal(vars.getRace().toString())
                                                         .withStyle(ChatFormatting.AQUA)));
@@ -63,31 +68,25 @@ public class DebugScreen extends Screen {
                         debugLines.add(Component.literal("  Race Name: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component.literal(raceName).withStyle(ChatFormatting.AQUA)));
 
+                        if (vars.getTeamId() != null) {
+                                debugLines.add(Component.literal("  Team: ").withStyle(ChatFormatting.GRAY)
+                                                .append(Component.literal(vars.getTeamName())
+                                                                .withStyle(ChatFormatting.WHITE))
+                                                .append(Component.literal(" (")
+                                                                .withStyle(ChatFormatting.GRAY))
+                                                .append(Component.literal(vars.getTeamId().toString().substring(0, 8))
+                                                                .withStyle(ChatFormatting.DARK_GRAY))
+                                                .append(Component.literal("...)")
+                                                                .withStyle(ChatFormatting.GRAY)));
+                        }
+
                         if (race != null) {
-                                if (race.parentRace() != null) {
+                                ResourceLocation parent = race.parentRace();
+                                if (parent != null) {
                                         debugLines.add(Component.literal("  Parent: ").withStyle(ChatFormatting.GRAY)
-                                                        .append(Component.literal(race.parentRace().toString())
+                                                        .append(Component.literal(parent.toString())
                                                                         .withStyle(ChatFormatting.DARK_AQUA)));
                                 }
-                                debugLines.add(Component.literal("  Flags: ").withStyle(ChatFormatting.GRAY)
-                                                .append(Component.literal("Spirit: ").withStyle(ChatFormatting.GRAY))
-                                                .append(Component.literal(String.valueOf(race.isSpirit()))
-                                                                .withStyle(race.isSpirit() ? ChatFormatting.GREEN
-                                                                                : ChatFormatting.RED))
-                                                .append(Component.literal(" | Tiny: ").withStyle(ChatFormatting.GRAY))
-                                                .append(Component.literal(String.valueOf(race.isTiny()))
-                                                                .withStyle(race.isTiny() ? ChatFormatting.GREEN
-                                                                                : ChatFormatting.RED))
-                                                .append(Component.literal(" | StkRes: ").withStyle(ChatFormatting.GRAY))
-                                                .append(Component.literal(String.valueOf(race.stacksAffectResource()))
-                                                                .withStyle(race.stacksAffectResource()
-                                                                                ? ChatFormatting.GREEN
-                                                                                : ChatFormatting.RED)));
-
-                                debugLines.add(Component.literal("  gState: ").withStyle(ChatFormatting.GRAY)
-                                                .append(Component.literal(String.valueOf(vars.getGState()))
-                                                                .withStyle(ChatFormatting.WHITE)));
-
                                 debugLines.add(Component.literal("  Base Ratios: ").withStyle(ChatFormatting.GRAY)
                                                 .append(Component.literal("AP: " + race.baseAp())
                                                                 .withStyle(ChatFormatting.GOLD))
@@ -147,11 +146,25 @@ public class DebugScreen extends Screen {
                                                                 .withStyle(ChatFormatting.DARK_PURPLE)));
                         }
 
-                        debugLines.add(Component.literal("  States: ").withStyle(ChatFormatting.GRAY)
-                                        .append(Component.literal("Morphed: ").withStyle(ChatFormatting.GRAY))
+                        // --- STATES ---
+                        addHeader("STATES");
+                        debugLines.add(Component.literal("  Morphed: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component.literal(String.valueOf(vars.isMorphed()))
                                                         .withStyle(vars.isMorphed() ? ChatFormatting.GREEN
+                                                                        : ChatFormatting.RED))
+                                        .append(Component.literal(" | Spirit: ").withStyle(ChatFormatting.GRAY))
+                                        .append(Component.literal(String.valueOf(vars.isInSpiritRealm()))
+                                                        .withStyle(vars.isInSpiritRealm() ? ChatFormatting.GREEN
                                                                         : ChatFormatting.RED)));
+
+                        debugLines.add(Component.literal("  Small Build: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(String.valueOf(vars.isSmallBuild()))
+                                                        .withStyle(vars.isSmallBuild() ? ChatFormatting.GREEN
+                                                                        : ChatFormatting.RED)));
+
+                        debugLines.add(Component.literal("  gState: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(String.valueOf(vars.getGState()))
+                                                        .withStyle(ChatFormatting.WHITE)));
 
                         // --- ACTIVE ABILITY ---
                         addHeader("ACTIVE ABILITY");
@@ -178,15 +191,51 @@ public class DebugScreen extends Screen {
                         debugLines.add(Component.literal("  Pocket: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component.literal(String.valueOf(vars.hasPocket()))
                                                         .withStyle(vars.hasPocket() ? ChatFormatting.GREEN
-                                                                        : ChatFormatting.RED)));
+                                                                        : ChatFormatting.RED))
+                                        .append(Component.literal(" | Index: ").withStyle(ChatFormatting.GRAY))
+                                        .append(Component.literal(String.valueOf(vars.getPocketIndex()))
+                                                        .withStyle(ChatFormatting.WHITE)));
+
                         if (vars.hasPocket()) {
                                 debugLines.add(Component.literal("    Pos: ").withStyle(ChatFormatting.GRAY)
                                                 .append(Component
                                                                 .literal(String.format("%.1f, %.1f, %.1f",
                                                                                 vars.getPocketX(),
                                                                                 vars.getPocketY(), vars.getPocketZ()))
+                                                                .withStyle(ChatFormatting.WHITE))
+                                                .append(Component.literal(" | Size: ").withStyle(ChatFormatting.GRAY))
+                                                .append(Component.literal(String.valueOf(vars.getPocketSize()))
                                                                 .withStyle(ChatFormatting.WHITE)));
+
+                                debugLines.add(Component.literal("    Host Spawn: ").withStyle(ChatFormatting.GRAY)
+                                                .append(Component.literal(String.format("%.1f, %.1f, %.1f",
+                                                                vars.getPocketSpawnX(),
+                                                                vars.getPocketSpawnY(), vars.getPocketSpawnZ()))
+                                                                .withStyle(ChatFormatting.YELLOW)));
+
+                                Set<java.util.UUID> invites = vars.getPocketInvitations();
+                                if (!invites.isEmpty()) {
+                                        debugLines.add(Component.literal("    Invites: ").withStyle(ChatFormatting.GRAY)
+                                                        .append(Component.literal(String.valueOf(invites.size()))
+                                                                        .withStyle(ChatFormatting.WHITE)));
+                                }
                         }
+
+                        // --- TRAIT TIMERS ---
+                        Map<ResourceLocation, Integer> timers = vars.getTraitTimers();
+                        boolean hasActiveTimers = timers.values().stream().anyMatch(t -> t > 0);
+                        if (hasActiveTimers) {
+                                addHeader("TRAIT TIMERS");
+                                timers.forEach((id, time) -> {
+                                        if (time > 0) {
+                                                debugLines.add(Component.literal("  " + id.getPath() + ": ")
+                                                                .withStyle(ChatFormatting.GRAY)
+                                                                .append(Component.literal(String.valueOf(time))
+                                                                                .withStyle(ChatFormatting.WHITE)));
+                                        }
+                                });
+                        }
+
                         debugLines.add(Component.literal("  Return Dim: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component.literal(vars.getReturnDim())
                                                         .withStyle(ChatFormatting.WHITE)));
@@ -219,12 +268,20 @@ public class DebugScreen extends Screen {
                         // --- ABILITIES & SLOTS ---
                         addHeader("ABILITIES & SLOTS");
                         debugLines.add(Component.literal("  Slots: ").withStyle(ChatFormatting.GRAY)
-                                        .append(formatSlot(vars, mc.sayda.creraces.ability.AbilitySlot.A1))
-                                        .append(" ").append(formatSlot(vars, mc.sayda.creraces.ability.AbilitySlot.A2))
-                                        .append(" ").append(formatSlot(vars, mc.sayda.creraces.ability.AbilitySlot.A3))
-                                        .append(" ").append(formatSlot(vars, mc.sayda.creraces.ability.AbilitySlot.A4))
+                                        .append(Objects.requireNonNull(
+                                                        formatSlot(vars, mc.sayda.creraces.ability.AbilitySlot.A1)))
                                         .append(" ")
-                                        .append(formatSlot(vars, mc.sayda.creraces.ability.AbilitySlot.A5)));
+                                        .append(Objects.requireNonNull(
+                                                        formatSlot(vars, mc.sayda.creraces.ability.AbilitySlot.A2)))
+                                        .append(" ")
+                                        .append(Objects.requireNonNull(
+                                                        formatSlot(vars, mc.sayda.creraces.ability.AbilitySlot.A3)))
+                                        .append(" ")
+                                        .append(Objects.requireNonNull(
+                                                        formatSlot(vars, mc.sayda.creraces.ability.AbilitySlot.A4)))
+                                        .append(" ")
+                                        .append(Objects.requireNonNull(
+                                                        formatSlot(vars, mc.sayda.creraces.ability.AbilitySlot.A5))));
 
                         debugLines.add(Component.literal("  Unlocked:").withStyle(ChatFormatting.GRAY));
                         Set<ResourceLocation> unlocked = vars.getUnlockedAbilities();
@@ -259,7 +316,7 @@ public class DebugScreen extends Screen {
                 refreshDebugInfo();
                 this.renderBackground(graphics);
 
-                graphics.drawCenteredString(this.font, this.title, this.width / 2, 8, 0xFFD700);
+                graphics.drawCenteredString(Objects.requireNonNull(this.font), this.title, this.width / 2, 8, 0xFFD700);
 
                 int listWidth = Math.min(this.width - 40, 400);
                 int listLeft = (this.width - listWidth) / 2;

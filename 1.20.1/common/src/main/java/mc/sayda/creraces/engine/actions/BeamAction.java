@@ -16,11 +16,11 @@ import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class BeamAction implements ActionRegistry.RaceAction {
     public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "beam");
-    private static final Map<ResourceLocation, BeamAction> CACHED_INSTANCES = new HashMap<>();
+    private static final Map<java.util.UUID, Map<ResourceLocation, BeamAction>> CACHED_INSTANCES = new ConcurrentHashMap<>();
 
     private final ScalingValue length;
     private final ScalingValue radius;
@@ -29,9 +29,11 @@ public class BeamAction implements ActionRegistry.RaceAction {
     private final ScalingValue drainRate;
     private final List<ActionRegistry.RaceAction> actions;
     private final float[] color;
+    private final int syncInterval;
 
     public BeamAction(ScalingValue length, ScalingValue radius, mc.sayda.creraces.engine.TargetFilter targets,
-            ScalingValue duration, ScalingValue drainRate, List<ActionRegistry.RaceAction> actions, float[] color) {
+            ScalingValue duration, ScalingValue drainRate, List<ActionRegistry.RaceAction> actions, float[] color,
+            int syncInterval) {
         this.length = length;
         this.radius = radius;
         this.targets = targets;
@@ -39,12 +41,16 @@ public class BeamAction implements ActionRegistry.RaceAction {
         this.drainRate = drainRate;
         this.actions = actions;
         this.color = color;
+        this.syncInterval = syncInterval;
     }
 
     @Override
     public boolean execute(Player player, @javax.annotation.Nullable LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+        if (player.level().isClientSide())
+            return false;
+
         double dr = drainRate.evaluate(player, target);
         double dur = duration.evaluate(player, target);
         if (dur > 0 || dr > 0) {
@@ -53,7 +59,9 @@ public class BeamAction implements ActionRegistry.RaceAction {
                 vars.setActiveAbility(vars.getAbilityInSlot(slot)); // Link to the ability being cast
                 vars.setActiveAbilityDuration((int) dur);
                 vars.setActiveAbilityDrain(dr);
-                CACHED_INSTANCES.put(vars.getActiveAbility(), this);
+                CACHED_INSTANCES.computeIfAbsent(player.getUUID(), k -> new ConcurrentHashMap<>()).put(
+                        vars.getActiveAbility(),
+                        this);
 
                 // Sync start of beam
                 float rVal = (float) radius.evaluate(player, null);
@@ -71,12 +79,8 @@ public class BeamAction implements ActionRegistry.RaceAction {
     }
 
     private void broadcastBeamSync(Player player, mc.sayda.creraces.network.SyncBeamPacket pkt) {
-        var server = player.getServer();
-        if (server != null) {
-            for (net.minecraft.server.level.ServerPlayer p : server.getPlayerList().getPlayers()) {
-                mc.sayda.creraces.network.BoundaryHandler.sendSyncBeam(p, pkt);
-            }
-        }
+        mc.sayda.creraces.network.BoundaryHandler.sendToTrackers(player, mc.sayda.creraces.network.SyncBeamPacket.ID,
+                pkt::encode);
     }
 
     @SuppressWarnings("null")
@@ -84,7 +88,7 @@ public class BeamAction implements ActionRegistry.RaceAction {
         Vec3 start = player.getEyePosition();
         Vec3 direction = player.getLookAngle();
         double l = length.evaluate(player, null);
-        int maxLen = mc.sayda.creraces.config.CreRacesConfig.BEAM_MAX_LENGTH.get();
+        int maxLen = 64;
         if (maxLen > 0)
             l = Math.min(l, maxLen);
         double rVal = radius.evaluate(player, null);
@@ -109,24 +113,32 @@ public class BeamAction implements ActionRegistry.RaceAction {
     }
 
     private void broadcastAnimationSync(Player player, mc.sayda.creraces.network.SyncAnimationPacket pkt) {
-        var server = player.getServer();
-        if (server != null) {
-            for (net.minecraft.server.level.ServerPlayer p : server.getPlayerList().getPlayers()) {
-                mc.sayda.creraces.network.BoundaryHandler.sendSyncAnimation(p, pkt);
-            }
-        }
+        mc.sayda.creraces.network.BoundaryHandler.sendToTrackers(player,
+                mc.sayda.creraces.network.SyncAnimationPacket.ID, pkt::encode);
     }
 
     public static void tickExecution(Player player, ResourceLocation abilityId) {
-        BeamAction action = CACHED_INSTANCES.get(abilityId);
+        if (player.level().isClientSide())
+            return;
+
+        Map<ResourceLocation, BeamAction> playerBeams = CACHED_INSTANCES.get(player.getUUID());
+        if (playerBeams == null)
+            return;
+
+        BeamAction action = playerBeams.get(abilityId);
         if (action != null) {
             DataUtils.getVariables(player).ifPresent(vars -> {
                 if (vars.isAbilityActive() && vars.getActiveAbilityDuration() > 0) {
                     action.performBeamLogic(player);
 
                     // Periodically re-sync to ensure trackers see it
-                    if (player.tickCount % 3 == 0) {
+                    if (player.tickCount % 2 == 0) {
                         float rVal = (float) action.radius.evaluate(player, null);
+                        // Clamp radius by configuring max
+                        int maxRadius = 100;
+                        if (maxRadius > 0)
+                            rVal = Math.min(rVal, (float) maxRadius);
+
                         var pkt = new mc.sayda.creraces.network.SyncBeamPacket(
                                 player.getUUID(), true, action.color[0], action.color[1], action.color[2],
                                 action.color[3],
@@ -144,7 +156,10 @@ public class BeamAction implements ActionRegistry.RaceAction {
                     action.broadcastAnimationSync(player, animPkt);
 
                     // Remove from cache so we stop sending STOP packets every tick
-                    CACHED_INSTANCES.remove(abilityId);
+                    playerBeams.remove(abilityId);
+                    if (playerBeams.isEmpty()) {
+                        CACHED_INSTANCES.remove(player.getUUID());
+                    }
                 }
             });
         }
@@ -155,12 +170,19 @@ public class BeamAction implements ActionRegistry.RaceAction {
      * Prevents the static map from accumulating stale entries.
      */
     public static void clearForPlayer(Player player) {
-        DataUtils.getVariables(player).ifPresent(vars -> {
-            ResourceLocation active = vars.getActiveAbility();
-            if (active != null) {
-                CACHED_INSTANCES.remove(active);
-            }
-        });
+        if (player != null) {
+            CACHED_INSTANCES.remove(player.getUUID());
+        }
+    }
+
+    /**
+     * Extra safety pass to clean up stale entries if a player somehow bypasses
+     * disconnect events.
+     */
+    public static void cleanupStaleEntries(net.minecraft.server.level.ServerPlayer player) {
+        if (player.isRemoved() || !player.connection.isAcceptingMessages()) {
+            CACHED_INSTANCES.remove(player.getUUID());
+        }
     }
 
     @SuppressWarnings("null")
@@ -176,12 +198,13 @@ public class BeamAction implements ActionRegistry.RaceAction {
 
     public static void register() {
         ActionRegistry.register(ID, json -> {
-            ScalingValue length = ScalingValue.fromJson(json, "length", 20.0);
-            ScalingValue radius = ScalingValue.fromJson(json, "radius", 2.0);
+            ScalingValue length = ScalingValue.fromJson(json, "length", 16.0);
+            ScalingValue radius = ScalingValue.fromJson(json, "radius", 0.25);
             mc.sayda.creraces.engine.TargetFilter targets = mc.sayda.creraces.engine.TargetFilter.fromJson(json,
                     "targets");
             ScalingValue duration = ScalingValue.fromJson(json, "duration", 0.0);
             ScalingValue drainRate = ScalingValue.fromJson(json, "drain_rate", 0.0);
+            int syncInterval = json.has("sync_interval") ? json.get("sync_interval").getAsInt() : 2;
 
             float[] color = new float[] { 1.0f, 1.0f, 1.0f, 1.0f };
             if (json.has("color")) {
@@ -199,7 +222,7 @@ public class BeamAction implements ActionRegistry.RaceAction {
                 }
             }
             return new BeamAction(length, radius, targets, duration,
-                    drainRate, actions, color);
+                    drainRate, actions, color, syncInterval);
         });
     }
 }

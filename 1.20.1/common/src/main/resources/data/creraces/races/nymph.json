@@ -16,6 +16,8 @@
     "max_resource": 100,
     "tier": "creraces:common",
     "difficulty": 1,
+    "stacks_affect_resource": false,
+    "g_state": "FEMALE",
     "is_spirit": true,
     "passives": {
         "regeneration_multiplier": 1.1
@@ -24,7 +26,7 @@
         {
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.max_health",
-            "value": 4.0,
+            "value": -4.0,
             "operation": "addition"
         },
         {
@@ -36,16 +38,12 @@
                 "type": "creraces:race_equals",
                 "race": "creraces:nymph"
             }
+        },
+        {
+            "type": "creraces:addon",
+            "addon_id": "body",
+            "config": "lore_addons"
         }
     ],
-    "remote_description": {
-        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "fallback": "race.creraces.nymph.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Nymph&prop=wikitext"
-    },
-    "remote_passive": {
-        "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "fallback": "No passive documentation found on wiki.",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Nymph&prop=wikitext"
-    }
+    "wiki_page": "Nymph"
 }

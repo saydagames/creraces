@@ -15,14 +15,5 @@
     "difficulty": 2,
     "portrait": "creraces:textures/screens/spring_fairy_portrait.png",
     "name_texture": "creraces:textures/screens/spring_fairy_text.png",
-    "remote_description": {
-        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "fallback": "race.creraces.spring_fairy.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Spring_Fairy&prop=wikitext"
-    },
-    "remote_passive": {
-        "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "fallback": "No passive documentation found on wiki.",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Spring_Fairy&prop=wikitext"
-    }
+    "wiki_page": "Spring_Fairy"
 }

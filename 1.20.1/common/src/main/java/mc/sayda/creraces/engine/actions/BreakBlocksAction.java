@@ -26,7 +26,7 @@ public class BreakBlocksAction implements ActionRegistry.RaceAction {
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
         BlockPos center = player.blockPosition();
         int r = (int) radius.evaluate(player, target);
-        int maxRadius = mc.sayda.creraces.config.CreRacesConfig.BREAK_BLOCKS_MAX_RADIUS.get();
+        int maxRadius = 10;
         if (maxRadius > 0)
             r = Math.min(r, maxRadius);
         for (int x = -r; x <= r; x++) {

@@ -1,5 +1,7 @@
 package mc.sayda.creraces.team;
 
+import java.util.Objects;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -20,25 +22,28 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class RaceTeamManager {
     private static final Map<UUID, RaceTeam> TEAMS = new ConcurrentHashMap<>();
-    private static final Map<UUID, UUID> PENDING_INVITES = new ConcurrentHashMap<>(); // Invitee -> TeamId
+    private static final Map<UUID, InviteData> PENDING_INVITES = new ConcurrentHashMap<>(); // Invitee -> InviteData
+
+    public enum Role {
+        MEMBER, OFFICER, LEADER
+    }
 
     public static void broadcastUpdate(RaceTeam team, net.minecraft.server.MinecraftServer server) {
         List<mc.sayda.creraces.network.TeamUpdatePacket.MemberInfo> memberInfos = new ArrayList<>();
         for (UUID memberId : team.getMembers()) {
-            ServerPlayer member = server.getPlayerList().getPlayer(memberId);
-            if (member != null) {
-                memberInfos.add(new mc.sayda.creraces.network.TeamUpdatePacket.MemberInfo(
-                        memberId,
-                        member.getName().getString(),
-                        memberId.equals(team.getLeader())));
-            }
+            ServerPlayer member = server.getPlayerList().getPlayer(Objects.requireNonNull(memberId));
+            String name = member != null ? member.getName().getString() : "Unknown";
+            memberInfos.add(new mc.sayda.creraces.network.TeamUpdatePacket.MemberInfo(
+                    memberId,
+                    name,
+                    team.getRole(memberId)));
         }
 
         mc.sayda.creraces.network.TeamUpdatePacket pkt = new mc.sayda.creraces.network.TeamUpdatePacket(memberInfos,
                 team.isFriendlyFire(), null);
 
         for (UUID memberId : team.getMembers()) {
-            ServerPlayer member = server.getPlayerList().getPlayer(memberId);
+            ServerPlayer member = server.getPlayerList().getPlayer(Objects.requireNonNull(memberId));
             if (member != null) {
                 mc.sayda.creraces.network.BoundaryHandler.sendTeamUpdate(member, pkt);
             }
@@ -59,12 +64,14 @@ public class RaceTeamManager {
         private UUID leader;
         private boolean friendlyFire = false;
         private final Set<UUID> members = ConcurrentHashMap.newKeySet();
+        private final Map<UUID, Role> memberRoles = new ConcurrentHashMap<>();
 
         public RaceTeam(UUID id, String name, UUID leader) {
             this.id = id;
             this.name = name;
             this.leader = leader;
             this.members.add(leader);
+            this.memberRoles.put(leader, Role.LEADER);
         }
 
         public UUID getId() {
@@ -76,7 +83,12 @@ public class RaceTeamManager {
         }
 
         public void setName(String name) {
-            this.name = name;
+            int maxLen = 16; // NETWORK_TEAM_NAME_MAX_LEN default
+            if (name.length() > maxLen) {
+                this.name = name.substring(0, maxLen);
+            } else {
+                this.name = name;
+            }
         }
 
         public UUID getLeader() {
@@ -97,6 +109,23 @@ public class RaceTeamManager {
 
         public void setFriendlyFire(boolean friendlyFire) {
             this.friendlyFire = friendlyFire;
+        }
+
+        public Role getRole(UUID uuid) {
+            return memberRoles.getOrDefault(uuid, Role.MEMBER);
+        }
+
+        public void setRole(UUID uuid, Role role) {
+            if (role == Role.LEADER) {
+                // Demote old leader
+                memberRoles.put(leader, Role.OFFICER);
+                leader = uuid;
+            }
+            memberRoles.put(uuid, role);
+        }
+
+        public Map<UUID, Role> getMemberRoles() {
+            return memberRoles;
         }
     }
 
@@ -144,7 +173,9 @@ public class RaceTeamManager {
 
     public static RaceTeam createTeam(ServerPlayer leader, String name) {
         UUID teamId = UUID.randomUUID();
-        RaceTeam team = new RaceTeam(teamId, name, leader.getUUID());
+        int maxLen = 16;
+        String finalName = name.length() > maxLen ? name.substring(0, maxLen) : name;
+        RaceTeam team = new RaceTeam(teamId, finalName, leader.getUUID());
         TEAMS.put(teamId, team);
 
         applyTeamToPlayer(leader, team);
@@ -156,6 +187,7 @@ public class RaceTeamManager {
         RaceTeam team = TEAMS.get(teamId);
         if (team != null) {
             team.getMembers().add(player.getUUID());
+            team.setRole(player.getUUID(), Role.MEMBER);
             applyTeamToPlayer(player, team);
             broadcastUpdate(team, player.getServer());
         }
@@ -168,11 +200,14 @@ public class RaceTeamManager {
                 RaceTeam team = TEAMS.get(teamId);
                 if (team != null) {
                     team.getMembers().remove(player.getUUID());
+                    team.getMemberRoles().remove(player.getUUID());
                     if (team.getMembers().isEmpty()) {
                         TEAMS.remove(teamId);
                     } else {
                         if (team.getLeader().equals(player.getUUID())) {
-                            team.setLeader(team.getMembers().iterator().next());
+                            UUID next = team.getMembers().iterator().next();
+                            team.setLeader(next);
+                            team.setRole(next, Role.LEADER);
                         }
                         broadcastUpdate(team, player.getServer());
                     }
@@ -197,17 +232,29 @@ public class RaceTeamManager {
     }
 
     public static void invitePlayer(ServerPlayer inviter, ServerPlayer invitee, UUID teamId) {
-        PENDING_INVITES.put(invitee.getUUID(), teamId);
+        RaceTeam team = TEAMS.get(teamId);
+        if (team == null)
+            return;
+
+        Role role = team.getRole(inviter.getUUID());
+        if (role != Role.LEADER && role != Role.OFFICER) {
+            inviter.sendSystemMessage(Objects
+                    .requireNonNull(net.minecraft.network.chat.Component.translatable("msg.creraces.team.no_perm")));
+            return;
+        }
+
+        PENDING_INVITES.put(invitee.getUUID(), new InviteData(teamId, inviter.getServer().getTickCount()));
         String inviterName = inviter.getName().getString();
-        String teamName = getTeam(teamId).map(RaceTeam::getName).orElse("a team");
-        invitee.sendSystemMessage(net.minecraft.network.chat.Component.literal(
-                String.format("\u00A76%s invited you to join \u00A7b%s\u00A76! Use /creraces team to accept.",
-                        inviterName, teamName)));
+        String teamName = team.getName();
+        invitee.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal(
+                Objects.requireNonNull(
+                        String.format("\u00A76%s invited you to join \u00A7b%s\u00A76! Use /creraces team to accept.",
+                                inviterName, teamName)))));
         syncInvite(invitee);
     }
 
     public static Optional<UUID> getPendingInvite(UUID invitee) {
-        return Optional.ofNullable(PENDING_INVITES.get(invitee));
+        return Optional.ofNullable(PENDING_INVITES.get(invitee)).map(data -> data.teamId);
     }
 
     public static void clearInvite(UUID invitee) {
@@ -221,11 +268,77 @@ public class RaceTeamManager {
 
     public static void toggleFriendlyFire(ServerPlayer player) {
         getPlayerTeam(player).ifPresent(team -> {
-            if (team.getLeader().equals(player.getUUID())) {
+            Role role = team.getRole(player.getUUID());
+            if (role == Role.LEADER || role == Role.OFFICER) {
                 team.setFriendlyFire(!team.isFriendlyFire());
                 broadcastUpdate(team, player.getServer());
+            } else {
+                player.sendSystemMessage(Objects.requireNonNull(
+                        net.minecraft.network.chat.Component.translatable("msg.creraces.team.no_perm")));
             }
         });
+    }
+
+    public static void promoteMember(ServerPlayer actor, UUID targetId, MinecraftServer server) {
+        getPlayerTeam(actor).ifPresent(team -> {
+            if (team.getRole(actor.getUUID()) != Role.LEADER) {
+                actor.sendSystemMessage(Objects.requireNonNull(
+                        net.minecraft.network.chat.Component.translatable("msg.creraces.team.no_perm")));
+                return;
+            }
+            if (!team.getMembers().contains(targetId))
+                return;
+
+            Role current = team.getRole(targetId);
+            if (current == Role.MEMBER) {
+                team.setRole(targetId, Role.OFFICER);
+            } else if (current == Role.OFFICER) {
+                team.setRole(targetId, Role.LEADER);
+                // Actor is demoted to officer by setRole(LEADER)
+            }
+            broadcastUpdate(team, server);
+        });
+    }
+
+    public static void demoteMember(ServerPlayer actor, UUID targetId, MinecraftServer server) {
+        getPlayerTeam(actor).ifPresent(team -> {
+            if (team.getRole(actor.getUUID()) != Role.LEADER) {
+                actor.sendSystemMessage(Objects.requireNonNull(
+                        net.minecraft.network.chat.Component.translatable("msg.creraces.team.no_perm")));
+                return;
+            }
+            if (!team.getMembers().contains(targetId))
+                return;
+
+            Role current = team.getRole(targetId);
+            if (current == Role.OFFICER) {
+                team.setRole(targetId, Role.MEMBER);
+            } else if (current == Role.LEADER) {
+                // Leader cannot demote themselves easily here, usually they leave or promote
+                // another
+                actor.sendSystemMessage(
+                        Objects.requireNonNull(net.minecraft.network.chat.Component
+                                .translatable("msg.creraces.team.cannot_demote_leader")));
+                return;
+            }
+            broadcastUpdate(team, server);
+        });
+    }
+
+    public static void tick(MinecraftServer server) {
+        int currentTick = server.getTickCount();
+        // Clear invites older than 5 minutes (6000 ticks)
+        PENDING_INVITES.entrySet().removeIf(entry -> (currentTick - entry.getValue().timestamp) > 6000);
+    }
+
+    private static class InviteData {
+        final UUID teamId;
+        final int timestamp;
+
+        InviteData(UUID teamId, int timestamp) {
+            this.teamId = teamId;
+            this.timestamp = timestamp;
+        }
     }
 
     // ─── Persistence ─────────────────────────────────────────────────────────
@@ -234,7 +347,8 @@ public class RaceTeamManager {
     private static final String SAVE_FILE_NAME = "creraces_teams.json";
 
     public static void save(MinecraftServer server) {
-        Path savePath = server.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT)
+        Path savePath = server
+                .getWorldPath(Objects.requireNonNull(net.minecraft.world.level.storage.LevelResource.ROOT))
                 .resolve(SAVE_FILE_NAME);
         JsonArray teamsArray = new JsonArray();
         TEAMS.values().forEach(team -> {
@@ -244,7 +358,12 @@ public class RaceTeamManager {
             obj.addProperty("leader", team.getLeader().toString());
             obj.addProperty("friendlyFire", team.isFriendlyFire());
             JsonArray members = new JsonArray();
-            team.getMembers().forEach(m -> members.add(m.toString()));
+            team.getMembers().forEach(m -> {
+                JsonObject mObj = new JsonObject();
+                mObj.addProperty("uuid", m.toString());
+                mObj.addProperty("role", team.getRole(m).name());
+                members.add(mObj);
+            });
             obj.add("members", members);
             teamsArray.add(obj);
         });
@@ -257,7 +376,8 @@ public class RaceTeamManager {
     }
 
     public static void load(MinecraftServer server) {
-        Path savePath = server.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT)
+        Path savePath = server
+                .getWorldPath(Objects.requireNonNull(net.minecraft.world.level.storage.LevelResource.ROOT))
                 .resolve(SAVE_FILE_NAME);
         if (!Files.exists(savePath))
             return;
@@ -274,13 +394,20 @@ public class RaceTeamManager {
                 boolean ff = obj.has("friendlyFire") && obj.get("friendlyFire").getAsBoolean();
                 RaceTeam team = new RaceTeam(id, name, leader);
                 team.setFriendlyFire(ff);
-                team.getMembers().clear(); // constructor adds leader; re-add from saved list
-                obj.getAsJsonArray("members").forEach(m -> team.getMembers().add(UUID.fromString(m.getAsString())));
+                team.getMembers().clear();
+                team.getMemberRoles().clear();
+                obj.getAsJsonArray("members").forEach(mElem -> {
+                    JsonObject mObj = mElem.getAsJsonObject();
+                    UUID mUuid = UUID.fromString(mObj.get("uuid").getAsString());
+                    Role role = Role.valueOf(mObj.get("role").getAsString());
+                    team.getMembers().add(mUuid);
+                    team.getMemberRoles().put(mUuid, role);
+                });
                 TEAMS.put(id, team);
 
                 // Re-wire teamId/teamName into any already-online players (e.g. after /reload)
                 team.getMembers().forEach(memberId -> {
-                    ServerPlayer online = server.getPlayerList().getPlayer(memberId);
+                    ServerPlayer online = server.getPlayerList().getPlayer(Objects.requireNonNull(memberId));
                     if (online != null)
                         applyTeamToPlayer(online, team);
                 });

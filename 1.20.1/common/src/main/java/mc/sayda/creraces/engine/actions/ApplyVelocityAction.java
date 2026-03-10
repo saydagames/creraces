@@ -76,6 +76,14 @@ public class ApplyVelocityAction implements ActionRegistry.RaceAction {
             velocity = new Vec3(vx, vy, vz);
         }
 
+        double maxV = 10.0;
+        if (maxV > 0) {
+            velocity = new Vec3(
+                    Math.max(-maxV, Math.min(velocity.x, maxV)),
+                    Math.max(-maxV, Math.min(velocity.y, maxV)),
+                    Math.max(-maxV, Math.min(velocity.z, maxV)));
+        }
+
         entity.push(velocity.x, velocity.y, velocity.z);
         entity.hurtMarked = true;
         return true;

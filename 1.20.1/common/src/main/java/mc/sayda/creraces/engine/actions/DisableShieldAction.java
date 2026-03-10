@@ -37,7 +37,7 @@ public class DisableShieldAction implements ActionRegistry.RaceAction {
                 json -> {
                     mc.sayda.creraces.engine.ScalingValue duration = mc.sayda.creraces.engine.ScalingValue.fromJson(
                             json,
-                            "duration", 0.0);
+                            "duration", 60.0);
                     return new DisableShieldAction(duration);
                 });
     }

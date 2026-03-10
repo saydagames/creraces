@@ -1,72 +1,72 @@
 package mc.sayda.creraces.engine.traits;
 
-import com.google.gson.JsonObject;
+import java.util.Objects;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.engine.TraitRegistry;
 import mc.sayda.creraces.engine.condition.Condition;
-import mc.sayda.creraces.util.GsonHelper;
+import mc.sayda.creraces.capability.IPlayerVariables;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Trait for passive abilities that execute actions periodically.
  * Example: Harpy hunger drain while flying, auto-regen on low health, etc.
  */
-public class OnTickTrait implements TraitRegistry.RaceTrait {
+public class OnTickTrait extends PeriodicTrait {
 
     private final List<ActionRegistry.RaceAction> actions;
     private final List<ActionRegistry.RaceAction> onFail;
-    private final mc.sayda.creraces.engine.ScalingValue interval;
     private final Condition condition;
-    // Per-player state (trait is a race-level singleton — instance fields would be
-    // shared)
-    private final Map<UUID, Integer> tickCounters = new HashMap<>();
-    private final Map<UUID, Boolean> failedMap = new HashMap<>();
 
-    public OnTickTrait(List<ActionRegistry.RaceAction> actions, List<ActionRegistry.RaceAction> onFail,
+    public OnTickTrait(ResourceLocation traitId, List<ActionRegistry.RaceAction> actions,
+            List<ActionRegistry.RaceAction> onFail,
             mc.sayda.creraces.engine.ScalingValue interval,
             Condition condition) {
+        super(traitId, interval);
         this.actions = actions;
         this.onFail = onFail;
-        this.interval = interval;
         this.condition = condition;
     }
 
     @Override
-    public void tick(Player player) {
-        int count = tickCounters.getOrDefault(player.getUUID(), 0) + 1;
-        tickCounters.put(player.getUUID(), count);
-        if (count >= interval.evaluate(player)) {
-            tickCounters.put(player.getUUID(), 0);
+    protected boolean shouldExecute(Player player, IPlayerVariables vars) {
+        if (player.level().isClientSide())
+            return false;
 
-            if (condition != null && !condition.evaluate(player, null, null, null)) {
-                if (!failedMap.getOrDefault(player.getUUID(), false)) {
-                    failedMap.put(player.getUUID(), true);
-                    for (ActionRegistry.RaceAction action : onFail) {
-                        action.execute(player, null, null, null);
-                    }
+        boolean success = condition == null || condition.evaluate(player, null, null, null);
+        ResourceLocation failId = new ResourceLocation(Objects.requireNonNull(traitId.getNamespace()),
+                Objects.requireNonNull(traitId.getPath()) + "_failed");
+
+        if (!success) {
+            // Run onFail only once when transition from success to fail happens
+            if (vars.getAbilityState(failId) == 0.0) {
+                vars.setAbilityState(failId, 1.0);
+                for (ActionRegistry.RaceAction action : onFail) {
+                    action.execute(player, null, null, null);
                 }
-                return;
             }
+            return false;
+        }
 
-            failedMap.put(player.getUUID(), false);
-            for (ActionRegistry.RaceAction action : actions) {
-                action.execute(player, null, null, null);
-            }
+        vars.setAbilityState(failId, 0.0);
+        return true;
+    }
+
+    @Override
+    protected void execute(Player player, IPlayerVariables vars) {
+        for (ActionRegistry.RaceAction action : actions) {
+            action.execute(player, null, null, null);
         }
     }
 
     public static void register() {
         TraitRegistry.register(new ResourceLocation(CreRaces.MODID, "on_tick"), json -> {
             mc.sayda.creraces.engine.ScalingValue interval = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
-                    "interval", 20.0); // Default: 1 second
+                    "interval", 20.0);
             Condition condition = json.has("condition") ? Condition.fromJson(json.getAsJsonObject("condition")) : null;
 
             List<ActionRegistry.RaceAction> actions = new ArrayList<>();
@@ -93,7 +93,12 @@ public class OnTickTrait implements TraitRegistry.RaceTrait {
                 }
             }
 
-            return new OnTickTrait(actions, onFail, interval, condition);
+            String traitName = json.has("name") ? json.get("name").getAsString()
+                    : "ontick_" + Math.abs(json.toString().hashCode());
+            ResourceLocation traitId = new ResourceLocation(CreRaces.MODID, "trait_" + traitName);
+
+            return new OnTickTrait(traitId, actions, onFail, interval, condition);
         });
     }
+
 }

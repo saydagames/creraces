@@ -19,7 +19,7 @@ public class TeamRequestPacket {
     private UUID teamId;
 
     public enum Action {
-        CREATE, JOIN, LEAVE, INVITE, TOGGLE_FRIENDLY_FIRE
+        CREATE, JOIN, LEAVE, INVITE, TOGGLE_FRIENDLY_FIRE, PROMOTE, DEMOTE
     }
 
     public TeamRequestPacket(Action action, String data) {
@@ -35,7 +35,15 @@ public class TeamRequestPacket {
     public TeamRequestPacket(FriendlyByteBuf buf) {
         this.action = buf.readEnum(Action.class);
         if (buf.readBoolean())
-            this.data = buf.readUtf();
+            this.data = buf.readUtf(32767); // Safe
+                                            // upper
+                                            // bound
+                                            // for
+                                            // reading,
+                                            // validated
+                                            // further
+                                            // in
+                                            // handle()
         if (buf.readBoolean())
             this.teamId = buf.readUUID();
     }
@@ -59,10 +67,11 @@ public class TeamRequestPacket {
                 case CREATE -> {
                     if (data == null || data.isBlank())
                         return;
-                    if (data.length() > 32) {
+                    int teamMax = 16;
+                    if (data.length() > teamMax) {
                         CreRaces.LOGGER.warn("Player {} tried to create team with oversized name ({} chars)",
                                 player.getName().getString(), data.length());
-                        return;
+                        data = data.substring(0, teamMax);
                     }
                     RaceTeamManager.createTeam(player, data);
                 }
@@ -76,6 +85,12 @@ public class TeamRequestPacket {
                 case INVITE -> {
                     if (data == null || data.isBlank())
                         return;
+                    int playerMax = 16;
+                    if (data.length() > playerMax) {
+                        CreRaces.LOGGER.warn("Player {} tried to invite oversized name ({} chars)",
+                                player.getName().getString(), data.length());
+                        data = data.substring(0, playerMax);
+                    }
                     ServerPlayer target = player.getServer().getPlayerList().getPlayerByName(data);
                     if (target != null) {
                         RaceTeamManager.getPlayerTeam(player).ifPresent(team -> {
@@ -84,6 +99,16 @@ public class TeamRequestPacket {
                     }
                 }
                 case TOGGLE_FRIENDLY_FIRE -> RaceTeamManager.toggleFriendlyFire(player);
+                case PROMOTE -> {
+                    if (teamId != null) {
+                        RaceTeamManager.promoteMember(player, teamId, player.getServer());
+                    }
+                }
+                case DEMOTE -> {
+                    if (teamId != null) {
+                        RaceTeamManager.demoteMember(player, teamId, player.getServer());
+                    }
+                }
             }
         });
     }

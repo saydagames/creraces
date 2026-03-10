@@ -8,6 +8,27 @@ import java.util.Map;
 import mc.sayda.creraces.CreRaces;
 
 public class ActionRegistry {
+    /**
+     * Clears all non-persistent cached states related to actions for a player.
+     * Should be called on logout, death (if resetOnDeath), or race reset.
+     *
+     * This serves as the 'Universal Clear' for both server and client side.
+     */
+    public static void cleanup(Player player) {
+        if (player == null)
+            return;
+
+        // Server-side action state cleanup
+        mc.sayda.creraces.engine.actions.BeamAction.clearForPlayer(player);
+        mc.sayda.creraces.engine.actions.TetherAction.clearTethersFor(player);
+
+        // Client-side renderer cleanup
+        dev.architectury.utils.EnvExecutor.runInEnv(dev.architectury.utils.Env.CLIENT, () -> () -> {
+            mc.sayda.creraces.client.render.AnimationHandler.clear();
+            mc.sayda.creraces.client.render.BeamRenderer.clear();
+            mc.sayda.creraces.client.render.TetherRenderer.clear();
+        });
+    }
 
     public interface RaceAction {
         boolean execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
@@ -20,6 +41,8 @@ public class ActionRegistry {
     }
 
     private static final Map<ResourceLocation, ActionFactory> REGISTRY = new HashMap<>();
+    private static final ThreadLocal<Integer> RECURSION_DEPTH = ThreadLocal.withInitial(() -> 0);
+    private static final int MAX_RECURSION_DEPTH = 16;
 
     public static void register(ResourceLocation id, ActionFactory factory) {
         REGISTRY.put(id, factory);
@@ -40,17 +63,27 @@ public class ActionRegistry {
         try {
             RaceAction action = factory.create(json);
 
-            if (json.has("chance")) {
-                ScalingValue chance = ScalingValue.fromJson(json, "chance", 1.0);
-                return (player, target, slot, interactionPos) -> {
-                    if (player.getRandom().nextDouble() < chance.evaluate(player, target)) {
-                        return action.execute(player, target, slot, interactionPos);
-                    }
-                    return true;
-                };
-            }
+            ScalingValue chance = json.has("chance") ? ScalingValue.fromJson(json, "chance", 1.0) : null;
 
-            return action;
+            return (player, target, slot, interactionPos) -> {
+                int depth = RECURSION_DEPTH.get();
+                if (depth >= MAX_RECURSION_DEPTH) {
+                    CreRaces.LOGGER.warn(
+                            "Action recursion depth limit reached (16)! Skipping action to prevent stack overflow.");
+                    return true;
+                }
+
+                if (chance != null && player.getRandom().nextDouble() >= chance.evaluate(player, target)) {
+                    return true;
+                }
+
+                RECURSION_DEPTH.set(depth + 1);
+                try {
+                    return action.execute(player, target, slot, interactionPos);
+                } finally {
+                    RECURSION_DEPTH.set(depth);
+                }
+            };
         } catch (Exception e) {
             CreRaces.LOGGER.error(
                     "Failed to parse action '{}': {} — action will be skipped at runtime. JSON: {}",
@@ -71,6 +104,7 @@ public class ActionRegistry {
         mc.sayda.creraces.engine.actions.DamageAction.register();
         mc.sayda.creraces.engine.actions.HealAction.register();
         mc.sayda.creraces.engine.actions.PocketEntryAction.register();
+        mc.sayda.creraces.engine.actions.ExpandPocketAction.register();
         mc.sayda.creraces.engine.actions.ToggleStateAction.register();
         mc.sayda.creraces.engine.actions.SpawnParticlesAction.register();
         mc.sayda.creraces.engine.actions.MorphAction.register();
@@ -105,6 +139,8 @@ public class ActionRegistry {
         mc.sayda.creraces.engine.actions.SetOnFireAction.register();
         mc.sayda.creraces.engine.actions.DisplayResourceAction.register();
         mc.sayda.creraces.engine.actions.TetherAction.register();
+        mc.sayda.creraces.engine.actions.StopSoundAction.register();
         mc.sayda.creraces.engine.actions.CancelAction.register();
+        mc.sayda.creraces.engine.actions.GiveItemAction.register();
     }
 }

@@ -3,6 +3,8 @@ package mc.sayda.creraces.network;
 import com.mojang.logging.LogUtils;
 import dev.architectury.networking.NetworkManager;
 import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.util.IPersistentDataAccessor;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
@@ -16,6 +18,12 @@ import net.minecraft.network.FriendlyByteBuf;
  */
 public class BoundaryHandler {
     private static final Logger LOGGER = LogUtils.getLogger();
+
+    public static void init() {
+        registerC2S();
+        registerS2C();
+        LOGGER.info("Yukari has established the world network boundaries.");
+    }
 
     public static void registerC2S() {
         // Register server-bound packets
@@ -71,6 +79,16 @@ public class BoundaryHandler {
                     var pkt = new mc.sayda.creraces.network.MiniUsePacket(buf);
                     pkt.handle(() -> context);
                 });
+
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, PocketInvitePacket.ID, (buf, context) -> {
+            var pkt = new PocketInvitePacket(buf);
+            pkt.handle(() -> context);
+        });
+
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, UpdateGStatePacket.ID, (buf, context) -> {
+            var pkt = new UpdateGStatePacket(buf);
+            pkt.handle(() -> context);
+        });
 
         LOGGER.info("Yukari has established the server network boundaries.");
     }
@@ -144,6 +162,11 @@ public class BoundaryHandler {
 
         NetworkManager.registerReceiver(NetworkManager.Side.S2C, SyncTetherPacket.ID, (buf, context) -> {
             var pkt = new SyncTetherPacket(buf);
+            pkt.handle(() -> context);
+        });
+
+        NetworkManager.registerReceiver(NetworkManager.Side.S2C, StopSoundPacket.ID, (buf, context) -> {
+            var pkt = new StopSoundPacket(buf);
             pkt.handle(() -> context);
         });
 
@@ -254,6 +277,22 @@ public class BoundaryHandler {
         send(player, SyncAnimationPacket.ID, pkt::encode);
     }
 
+    public static void sendStopSound(ServerPlayer player, ResourceLocation soundId,
+            net.minecraft.sounds.SoundSource source) {
+        var pkt = new StopSoundPacket(soundId, source);
+        send(player, StopSoundPacket.ID, pkt::encode);
+    }
+
+    public static void broadcastStopSound(Player player, ResourceLocation soundId,
+            net.minecraft.sounds.SoundSource source) {
+        var pkt = new StopSoundPacket(soundId, source);
+        sendToTrackers(player, StopSoundPacket.ID, pkt::encode);
+        // Also send to the player themselves
+        if (player instanceof ServerPlayer sp) {
+            sendStopSound(sp, soundId, source);
+        }
+    }
+
     public static void sendSetCustomization(SetCustomizationPacket pkt) {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         pkt.encode(buf);
@@ -264,6 +303,12 @@ public class BoundaryHandler {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         new OpenMenuPacket().encode(buf);
         NetworkManager.sendToServer(OpenMenuPacket.ID, buf);
+    }
+
+    public static void sendGStateUpdate(int gState) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        new UpdateGStatePacket(gState).toBytes(buf);
+        NetworkManager.sendToServer(UpdateGStatePacket.ID, buf);
     }
 
     public static void sendMiniPlace(mc.sayda.creraces.network.MiniPlacePacket pkt) {
@@ -292,7 +337,17 @@ public class BoundaryHandler {
      */
     public static void resyncVariables(Player target, Player recipient, boolean fullSync) {
         DataUtils.getVariables(target).ifPresent(vars -> {
-            var pkt = new SyncIncidentPacket(target.getUUID(), vars.serialize(fullSync));
+            CompoundTag tag = vars.serialize(fullSync);
+
+            // Also sync persistent data from IPersistentDataAccessor
+            if (target instanceof IPersistentDataAccessor accessor) {
+                CompoundTag persistentData = accessor.creraces$getPersistentData();
+                if (!persistentData.isEmpty()) {
+                    tag.put("creraces:persistent_data", persistentData.copy());
+                }
+            }
+
+            var pkt = new SyncIncidentPacket(target.getUUID(), tag);
             sendIncidentToPlayer(recipient, pkt);
         });
     }
@@ -312,10 +367,32 @@ public class BoundaryHandler {
     }
 
     public static void resyncForAllTrackers(Player player, boolean fullSync) {
+        mc.sayda.creraces.CreRaces.LOGGER.info("BoundaryHandler: resyncForAllTrackers called for {} (fullSync={})",
+                player.getName().getString(), fullSync);
         DataUtils.getVariables(player).ifPresent(vars -> {
             var pkt = new SyncIncidentPacket(player.getUUID(), vars.serialize(fullSync));
-            sendIncidentToAll(pkt);
+            sendToTrackers(player, SyncIncidentPacket.ID, pkt::encode);
         });
+    }
+
+    public static void sendToTrackers(Player entity, ResourceLocation id,
+            java.util.function.Consumer<net.minecraft.network.FriendlyByteBuf> encoder) {
+        if (!(entity.level() instanceof net.minecraft.server.level.ServerLevel serverLevel))
+            return;
+
+        var players = serverLevel.getServer().getPlayerList().getPlayers();
+        int syncDist = mc.sayda.creraces.config.CreRacesConfig.VISUAL_SYNC_DISTANCE.get();
+        double syncDistSqr = syncDist * syncDist;
+
+        int count = 0;
+        for (net.minecraft.server.level.ServerPlayer p : players) {
+            if (p.level().dimension() == entity.level().dimension() && p.distanceToSqr(entity) < syncDistSqr) {
+                send(p, id, encoder);
+                count++;
+            }
+        }
+        mc.sayda.creraces.CreRaces.LOGGER.info("BoundaryHandler: Sent packet {} to {} trackers for {}", id, count,
+                entity.getName().getString());
     }
 
     private static void send(ServerPlayer player, net.minecraft.resources.ResourceLocation id,

@@ -17,15 +17,17 @@ public class PlaceBlockAction implements ActionRegistry.RaceAction {
     private final ScalingValue offsetX;
     private final ScalingValue offsetY;
     private final ScalingValue offsetZ;
+    private final boolean overwrite;
 
     public PlaceBlockAction(ResourceLocation block, boolean useTarget, boolean useTargetBlock, ScalingValue offsetX,
-            ScalingValue offsetY, ScalingValue offsetZ) {
+            ScalingValue offsetY, ScalingValue offsetZ, boolean overwrite) {
         this.block = block;
         this.useTarget = useTarget;
         this.useTargetBlock = useTargetBlock;
         this.offsetX = offsetX;
         this.offsetY = offsetY;
         this.offsetZ = offsetZ;
+        this.overwrite = overwrite;
     }
 
     @SuppressWarnings("null")
@@ -56,7 +58,17 @@ public class PlaceBlockAction implements ActionRegistry.RaceAction {
             return false;
         }
 
-        if (player.level().getBlockState(finalPos).isAir() || player.level().getBlockState(finalPos).canBeReplaced()) {
+        if (overwrite || player.level().getBlockState(finalPos).isAir()
+                || player.level().getBlockState(finalPos).canBeReplaced()) {
+
+            // Protection for RootBlock: only owner (or creative) can replace it.
+            net.minecraft.world.level.block.state.BlockState existingState = player.level().getBlockState(finalPos);
+            if (existingState.getBlock() instanceof mc.sayda.creraces.block.RootBlock) {
+                if (!player.isCreative() && !mc.sayda.creraces.block.RootBlock.isOwner(player, finalPos)) {
+                    return false;
+                }
+            }
+
             player.level().setBlockAndUpdate(finalPos, resolvedBlock.defaultBlockState());
             return true;
         }
@@ -75,7 +87,8 @@ public class PlaceBlockAction implements ActionRegistry.RaceAction {
             ScalingValue offsetX = ScalingValue.fromJson(json, "offset_x", 0.0);
             ScalingValue offsetY = ScalingValue.fromJson(json, "offset_y", 0.0);
             ScalingValue offsetZ = ScalingValue.fromJson(json, "offset_z", 0.0);
-            return new PlaceBlockAction(block, useTarget, useTargetBlock, offsetX, offsetY, offsetZ);
+            boolean overwrite = GsonHelper.getAsBoolean(json, "overwrite", false);
+            return new PlaceBlockAction(block, useTarget, useTargetBlock, offsetX, offsetY, offsetZ, overwrite);
         });
     }
 }

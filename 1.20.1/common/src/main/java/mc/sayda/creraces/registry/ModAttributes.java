@@ -14,35 +14,47 @@ public class ModAttributes {
 
         // Resources
         public static final RegistrySupplier<Attribute> MAX_MANA = ATTRIBUTES.register("max_mana",
-                        () -> new RangedAttribute("attribute.creraces.max_mana", 0.0, 0.0, 10000.0).setSyncable(true));
+                        () -> new RangedAttribute("attribute.creraces.max_mana", 0.0, 0.0,
+                                        1000.0).setSyncable(true));
 
         public static final RegistrySupplier<Attribute> MAX_RAGE = ATTRIBUTES.register("max_rage",
-                        () -> new RangedAttribute("attribute.creraces.max_rage", 0.0, 0.0, 100.0).setSyncable(true));
+                        () -> new RangedAttribute("attribute.creraces.max_rage", 0.0, 0.0,
+                                        10.0)
+                                        .setSyncable(true));
 
         public static final RegistrySupplier<Attribute> MAX_ENERGY = ATTRIBUTES.register("max_energy",
-                        () -> new RangedAttribute("attribute.creraces.max_energy", 0.0, 0.0, 1000.0).setSyncable(true));
+                        () -> new RangedAttribute("attribute.creraces.max_energy", 0.0, 0.0,
+                                        1000.0).setSyncable(true));
 
         public static final RegistrySupplier<Attribute> MAX_GRIT = ATTRIBUTES.register("max_grit",
-                        () -> new RangedAttribute("attribute.creraces.max_grit", 0.0, 0.0, 100.0).setSyncable(true));
+                        () -> new RangedAttribute("attribute.creraces.max_grit", 0.0, 0.0,
+                                        10.0)
+                                        .setSyncable(true));
 
         // RPG Stats
         public static final RegistrySupplier<Attribute> ABILITY_POWER = ATTRIBUTES.register("ability_power",
-                        () -> new RangedAttribute("attribute.creraces.ability_power", 0.0, 0.0, 10000.0)
+                        () -> new RangedAttribute("attribute.creraces.ability_power", 0.0, 0.0,
+                                        1000.0) // MAX_STAT_CAP default
                                         .setSyncable(true));
 
         public static final RegistrySupplier<Attribute> ATTACK_DAMAGE = ATTRIBUTES.register("attack_damage",
-                        () -> new RangedAttribute("attribute.creraces.attack_damage", 0.0, 0.0, 10000.0)
+                        () -> new RangedAttribute("attribute.creraces.attack_damage", 0.0, 0.0,
+                                        1000.0) // MAX_STAT_CAP default
                                         .setSyncable(true));
 
         public static final RegistrySupplier<Attribute> CRIT_RATE = ATTRIBUTES.register("crit_rate",
-                        () -> new RangedAttribute("attribute.creraces.crit_rate", 0.0, 0.0, 100.0).setSyncable(true)); // Percentage
+                        () -> new RangedAttribute("attribute.creraces.crit_rate", 0.0, 0.0,
+                                        10.0)
+                                        .setSyncable(true)); // Percentage
 
         public static final RegistrySupplier<Attribute> ARMOR_PENETRATION = ATTRIBUTES.register("armor_penetration",
-                        () -> new RangedAttribute("attribute.creraces.armor_penetration", 0.0, 0.0, 100.0)
+                        () -> new RangedAttribute("attribute.creraces.armor_penetration", 0.0, 0.0,
+                                        10.0)
                                         .setSyncable(true)); // Percentage
 
         public static final RegistrySupplier<Attribute> ABILITY_HASTE = ATTRIBUTES.register("ability_haste",
-                        () -> new RangedAttribute("attribute.creraces.ability_haste", 0.0, 0.0, 100.0)
+                        () -> new RangedAttribute("attribute.creraces.ability_haste", 0.0, 0.0,
+                                        10.0)
                                         .setSyncable(true));
 
         // Regeneration & Decay
@@ -58,6 +70,10 @@ public class ModAttributes {
 
         public static final RegistrySupplier<Attribute> RAGE_DECAY = ATTRIBUTES.register("rage_decay",
                         () -> new RangedAttribute("attribute.creraces.rage_decay", 0.25, 0.0, 1000.0)
+                                        .setSyncable(true));
+
+        public static final RegistrySupplier<Attribute> DOUBLE_JUMP = ATTRIBUTES.register("double_jump",
+                        () -> new RangedAttribute("attribute.creraces.double_jump", 0.0, 0.0, 10.0)
                                         .setSyncable(true));
 
         private static boolean initialized = false;

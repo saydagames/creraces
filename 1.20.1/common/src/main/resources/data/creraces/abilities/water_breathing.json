@@ -14,14 +14,11 @@
             "visible": false
         }
     ],
-    "remote_description": {
-        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Water_Breathing&prop=wikitext",
-        "fallback": "ability.creraces.water_breathing.description"
-    },
-    "remote_full_description": {
-        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Water_Breathing&prop=wikitext",
-        "fallback": "ability.creraces.water_breathing.description"
-    }
+    "on_deactivate": [
+        {
+            "type": "creraces:remove_effect",
+            "effect": "minecraft:water_breathing"
+        }
+    ],
+    "wiki_page": "Ability:Water_Breathing"
 }

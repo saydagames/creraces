@@ -29,18 +29,23 @@ public class MessageAction implements ActionRegistry.RaceAction {
             return true;
         }
 
-        // Replace basic color codes if any (optional, but helpful)
-        String formattedText = text.replace("&", "§");
+        Component msg;
+        // Detect translation keys: no spaces and no '&' color codes → translatable
+        // Literal strings (chat messages with colors/spaces) stay as literal.
+        if (!text.contains(" ") && !text.contains("&")) {
+            msg = Component.translatable(text);
+        } else {
+            msg = Component.literal(text.replace("&", "§"));
+        }
 
-        player.displayClientMessage(Component.literal(formattedText), actionbar);
-
+        player.displayClientMessage(msg, actionbar);
         return true;
     }
 
     public static void register() {
         ActionRegistry.register(ID, json -> {
             String text = GsonHelper.getAsString(json, "text", "");
-            boolean actionbar = GsonHelper.getAsBoolean(json, "actionbar", true);
+            boolean actionbar = GsonHelper.getAsBoolean(json, "actionbar", false);
             return new MessageAction(text, actionbar);
         });
     }

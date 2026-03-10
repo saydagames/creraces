@@ -1,65 +1,56 @@
 {
-    "name":  "ability.creraces.fox_form.name",
-    "description":  "ability.creraces.fox_form.description",
-    "type":  "ACTIVE",
-    "icon":  "creraces:textures/screens/kitsune_icon.png",
-    "cooldown":  200,
-    "cost":  20,
-    "persistent":  false,
-    "race":  [
-                 "creraces:kitsune"
-             ],
-    "actions":  [
-                    {
-                        "type":  "creraces:conditional",
-                        "condition":  {
-                                          "type":  "creraces:morphed",
-                                          "value":  false
-                                      },
-                        "if_true":  [
-                                        {
-                                            "type":  "creraces:morph",
-                                            "entity_type":  "twilight_lib:{color}_fox"
-                                        },
-                                        {
-                                            "type":  "creraces:set_state",
-                                            "ability":  "creraces:fox_form",
-                                            "value":  1.0
-                                        },
-                                        {
-                                            "type":  "creraces:play_sound",
-                                            "sound":  "minecraft:entity.fox.ambient",
-                                            "volume":  1.0,
-                                            "pitch":  1.0
-                                        }
-                                    ],
-                        "if_false":  [
-                                         {
-                                             "type":  "creraces:morph",
-                                             "entity_type":  ""
-                                         },
-                                         {
-                                             "type":  "creraces:set_state",
-                                             "ability":  "creraces:fox_form",
-                                             "value":  0.0
-                                         },
-                                         {
-                                             "type":  "creraces:play_sound",
-                                             "sound":  "minecraft:entity.fox.teleport",
-                                             "volume":  1.0,
-                                             "pitch":  1.0
-                                         }
-                                     ]
-                    }
-                ],
-    "remote_description": {
-        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Fox_Form&prop=wikitext",
-        "fallback": "ability.creraces.fox_form.description"
-    },
-    "remote_full_description": {
-        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Fox_Form&prop=wikitext",
-        "fallback": "ability.creraces.fox_form.description"
-    }
+    "name": "ability.creraces.fox_form.name",
+    "description": "ability.creraces.fox_form.description",
+    "type": "ACTIVE",
+    "icon": "creraces:textures/screens/kitsune_icon.png",
+    "cooldown": 200,
+    "cost": 20,
+    "persistent": false,
+    "race": [
+        "creraces:kitsune"
+    ],
+    "actions": [
+        {
+            "type": "creraces:conditional",
+            "condition": {
+                "type": "creraces:morphed",
+                "value": false
+            },
+            "if_true": [
+                {
+                    "type": "creraces:morph",
+                    "entity_type": "twilight_lib:{color}_fox"
+                },
+                {
+                    "type": "creraces:set_state",
+                    "ability": "creraces:fox_form",
+                    "value": 1.0
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:entity.fox.ambient",
+                    "volume": 1.0,
+                    "pitch": 1.0
+                }
+            ],
+            "if_false": [
+                {
+                    "type": "creraces:morph",
+                    "entity_type": ""
+                },
+                {
+                    "type": "creraces:set_state",
+                    "ability": "creraces:fox_form",
+                    "value": 0.0
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:entity.fox.teleport",
+                    "volume": 1.0,
+                    "pitch": 1.0
+                }
+            ]
+        }
+    ],
+    "wiki_page": "Ability:Fox_Form"
 }

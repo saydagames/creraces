@@ -44,6 +44,7 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
     protected void apply(@Nonnull Map<ResourceLocation, JsonElement> data, @Nonnull ResourceManager resourceManager,
             @Nonnull ProfilerFiller profiler) {
         lastRawData = data;
+        mc.sayda.creraces.util.RemoteDocFetcher.clearCache();
         syncFromServer(data);
 
         // Sync to all online players
@@ -65,9 +66,7 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
         data.forEach((id, element) -> {
             if (element.isJsonObject()) {
                 try {
-                    // We need an instance to call resolveInheritance (or make it static)
-                    RaceManager manager = new RaceManager();
-                    resolvedData.put(id, manager.resolveInheritance(id, data, new java.util.HashSet<>()));
+                    resolvedData.put(id, resolveInheritance(id, data, new java.util.HashSet<>()));
                 } catch (Exception e) {
                     CreRaces.LOGGER.error("Failed to resolve inheritance for race {}: {}", id, e.getMessage());
                     // Fallback to raw data if inheritance fails
@@ -106,6 +105,8 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                 int maxResource = GsonHelper.getAsInt(jsonObject, "max_resource", 100);
                 RaceScale scale = RaceScale.fromJson(jsonObject.get("scale"));
                 String resourceTypeStr = GsonHelper.getAsString(jsonObject, "resource_type", "NONE");
+                if (resourceTypeStr.contains(":"))
+                    resourceTypeStr = resourceTypeStr.substring(resourceTypeStr.indexOf(':') + 1);
                 ResourceType resourceType = ResourceType.valueOf(resourceTypeStr.toUpperCase());
 
                 String tierStr = GsonHelper.getAsString(jsonObject, "tier", "creraces:common");
@@ -158,7 +159,33 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                     }
                 }
 
+                // gState
+                mc.sayda.creraces.engine.GState gState = mc.sayda.creraces.engine.GState.BOTH;
+                if (jsonObject.has("g_state")) {
+                    gState = mc.sayda.creraces.engine.GState.fromString(jsonObject.get("g_state").getAsString());
+                }
+                List<String> raceAddons = new ArrayList<>();
+                if (jsonObject.has("race_addons")) {
+                    for (JsonElement e : jsonObject.getAsJsonArray("race_addons")) {
+                        raceAddons.add(e.getAsString());
+                    }
+                }
+                List<String> loreAddons = new ArrayList<>();
+                if (jsonObject.has("lore_addons")) {
+                    for (JsonElement e : jsonObject.getAsJsonArray("lore_addons")) {
+                        loreAddons.add(e.getAsString());
+                    }
+                }
+
                 // Remote Documentation
+                if (jsonObject.has("wiki_page")) {
+                    String wikiPage = jsonObject.get("wiki_page").getAsString();
+                    RaceRegistry.registerRemoteDoc(id, mc.sayda.creraces.util.RemoteDocConfig.fromWikiPage(wikiPage,
+                            mc.sayda.creraces.util.RemoteDocConfig.INFODOC_SELECTOR, descStr));
+                    RaceRegistry.registerRemotePassive(id, mc.sayda.creraces.util.RemoteDocConfig.fromWikiPage(wikiPage,
+                            mc.sayda.creraces.util.RemoteDocConfig.PASSIVE_SELECTOR, descStr));
+                }
+
                 if (jsonObject.has("remote_description")) {
                     mc.sayda.creraces.util.RemoteDocConfig remoteConfig = mc.sayda.creraces.util.RemoteDocConfig
                             .fromJson(jsonObject.getAsJsonObject("remote_description"));
@@ -204,7 +231,8 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                         traits,
                         GsonHelper.getAsBoolean(jsonObject, "is_spirit", false),
                         GsonHelper.getAsBoolean(jsonObject, "is_tiny", false),
-                        GsonHelper.getAsBoolean(jsonObject, "stacks_affect_resource", false));
+                        GsonHelper.getAsBoolean(jsonObject, "stacks_affect_resource", false),
+                        gState);
 
                 RaceRegistry.register(race);
                 count[0]++;
@@ -216,7 +244,7 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
         CreRaces.LOGGER.info("Loaded {} races.", count[0]);
     }
 
-    private JsonObject resolveInheritance(ResourceLocation id, Map<ResourceLocation, JsonElement> data,
+    private static JsonObject resolveInheritance(ResourceLocation id, Map<ResourceLocation, JsonElement> data,
             java.util.Set<ResourceLocation> visited) {
         if (!visited.add(id)) {
             return data.get(id).getAsJsonObject().deepCopy(); // Circular dependency
@@ -238,7 +266,7 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
         return current;
     }
 
-    private JsonObject mergeRaces(JsonObject parent, JsonObject child) {
+    private static JsonObject mergeRaces(JsonObject parent, JsonObject child) {
         JsonObject merged = parent.deepCopy();
         for (java.util.Map.Entry<String, JsonElement> entry : child.entrySet()) {
             String key = entry.getKey();
@@ -255,7 +283,8 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                     }
                 } else if (childVal.isJsonArray() && parentVal.isJsonArray()) {
                     // Append for specific lists
-                    if (key.equals("traits") || key.equals("starting_abilities") || key.equals("starting_items")) {
+                    if (key.equals("traits") || key.equals("starting_abilities") || key.equals("starting_items")
+                            || key.equals("race_addons")) {
                         parentVal.getAsJsonArray().addAll(childVal.getAsJsonArray());
                     } else {
                         merged.add(key, childVal);
@@ -284,16 +313,10 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
             }
         }
 
-        // Parse potion effect immunity list — supports both "negate_effects" and
-        // "immune_to_potion_effects"
+        // Parse potion effect immunity list — "negate_effects"
         List<String> immuneToPotionEffects = new ArrayList<>();
         if (p.has("negate_effects")) {
             for (JsonElement e : p.getAsJsonArray("negate_effects")) {
-                immuneToPotionEffects.add(e.getAsString());
-            }
-        }
-        if (p.has("immune_to_potion_effects")) {
-            for (JsonElement e : p.getAsJsonArray("immune_to_potion_effects")) {
                 immuneToPotionEffects.add(e.getAsString());
             }
         }
@@ -370,12 +393,6 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                 hatedByEntities,
                 respectedByEntities,
                 defendedByEntities,
-
-                // Equipment Restrictions
-                GsonHelper.getAsBoolean(p, "cannot_wear_helmet", false),
-                GsonHelper.getAsBoolean(p, "cannot_wear_chestplate", false),
-                GsonHelper.getAsBoolean(p, "cannot_wear_leggings", false),
-                GsonHelper.getAsBoolean(p, "cannot_wear_boots", false),
 
                 // Special Mechanics
                 spawnOnDeath);

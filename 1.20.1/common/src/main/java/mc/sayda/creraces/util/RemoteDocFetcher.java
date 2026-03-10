@@ -55,8 +55,7 @@ public class RemoteDocFetcher {
 
     private static Component getRemote(ResourceLocation id, RemoteDocConfig config, Component fallback,
             Map<ResourceLocation, Component> cache, String cacheSuffix) {
-        if (config == null || config.source().isEmpty()
-                || mc.sayda.creraces.config.CreRacesConfig.DISABLE_REMOTE_DOCS.get())
+        if (config == null || config.source().isEmpty())
             return fallback;
 
         // Check memory cache

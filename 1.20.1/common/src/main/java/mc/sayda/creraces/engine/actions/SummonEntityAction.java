@@ -1,6 +1,7 @@
 package mc.sayda.creraces.engine.actions;
 
 import com.google.gson.JsonObject;
+import java.util.Objects;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.engine.ScalingValue;
@@ -107,9 +108,17 @@ public class SummonEntityAction implements ActionRegistry.RaceAction {
         entity.moveTo(spawnPos.getX() + 0.5, spawnPos.getY(), spawnPos.getZ() + 0.5,
                 player.getYRot(), 0f);
 
-        // Tame to player if requested
-        if (tame && entity instanceof TamableAnimal tamable) {
-            tamable.tame(player);
+        // Attribution and Taming
+        if (entity instanceof net.minecraft.world.entity.projectile.Projectile proj) {
+            proj.setOwner(player);
+        }
+
+        if (entity instanceof TamableAnimal tamable) {
+            if (tame) {
+                tamable.tame(player);
+            } else {
+                tamable.setOwnerUUID(Objects.requireNonNull(player.getUUID()));
+            }
         }
 
         serverLevel.addFreshEntity(entity);
@@ -118,7 +127,7 @@ public class SummonEntityAction implements ActionRegistry.RaceAction {
 
     public static void register() {
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "summon_entity"), json -> {
-            String entityIdStr = GsonHelper.getAsString(json, "entity", "minecraft:zombie");
+            String entityIdStr = GsonHelper.getAsString(json, "entity", "minecraft:pig");
             ResourceLocation entityId = new ResourceLocation(entityIdStr);
             boolean useRaycast = GsonHelper.getAsBoolean(json, "use_raycast", false);
             ScalingValue rayRange = ScalingValue.fromJson(json, "ray_range", 10.0);

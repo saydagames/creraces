@@ -1,63 +1,63 @@
 package mc.sayda.creraces.engine.traits;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.engine.TraitRegistry;
 import mc.sayda.creraces.engine.condition.Condition;
+import mc.sayda.creraces.capability.IPlayerVariables;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
-import javax.annotation.Nullable;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.Objects;
 
-public class DomainTrait implements TraitRegistry.RaceTrait {
+/**
+ * Trait that applies actions in a domain around the player.
+ */
+public class DomainTrait extends PeriodicTrait {
 
     private final mc.sayda.creraces.engine.ScalingValue radius;
     private final List<ActionRegistry.RaceAction> actions;
-    @Nullable
     private final Condition condition;
-    private final mc.sayda.creraces.engine.ScalingValue interval;
-    // Per-player timer (trait is a race-level singleton)
-    private final Map<UUID, Integer> timers = new HashMap<>();
 
-    public DomainTrait(mc.sayda.creraces.engine.ScalingValue radius, List<ActionRegistry.RaceAction> actions,
+    public DomainTrait(ResourceLocation traitId, mc.sayda.creraces.engine.ScalingValue radius,
+            List<ActionRegistry.RaceAction> actions,
             Condition condition, mc.sayda.creraces.engine.ScalingValue interval) {
+        super(traitId, interval);
         this.radius = radius;
         this.actions = actions;
         this.condition = condition;
-        this.interval = interval;
     }
 
     @Override
-    public void tick(Player player) {
+    protected boolean shouldExecute(Player player, IPlayerVariables vars) {
         if (player.level().isClientSide())
-            return;
+            return false;
+        return condition == null || condition.evaluate(player, null, null, null);
+    }
 
-        int t = timers.getOrDefault(player.getUUID(), 0) + 1;
-        timers.put(player.getUUID(), t);
-        if (t < interval.evaluate(player))
-            return;
-        timers.put(player.getUUID(), 0);
+    @Override
+    protected void execute(Player player, IPlayerVariables vars) {
+        // Apply actions to the player while in their own domain
+        for (ActionRegistry.RaceAction action : actions) {
+            action.execute(player, null, null, null);
+        }
 
-        if (condition == null || condition.evaluate(player, null, null, null)) {
-            // Apply actions to the player while in their own domain
+        // Regional effects to OTHERS in the domain
+        double r = radius.evaluate(player, null);
+        int maxAoeRadius = 100;
+        if (maxAoeRadius > 0)
+            r = Math.min(r, maxAoeRadius);
+
+        List<Player> others = player.level().getEntitiesOfClass(Player.class,
+                Objects.requireNonNull(player.getBoundingBox().inflate(r)),
+                p -> p != player);
+
+        for (Player other : others) {
             for (ActionRegistry.RaceAction action : actions) {
-                action.execute(player, null, null, null);
-            }
-
-            // Regional effects to OTHERS in the domain
-            List<Player> others = player.level().getEntitiesOfClass(Player.class,
-                    player.getBoundingBox().inflate(radius.evaluate(player)), p -> p != player);
-            for (Player other : others) {
-                for (ActionRegistry.RaceAction action : actions) {
-                    action.execute(player, other, null, null);
-                }
+                action.execute(player, other, null, null);
             }
         }
     }
@@ -79,7 +79,12 @@ public class DomainTrait implements TraitRegistry.RaceTrait {
             if (json.has("condition")) {
                 condition = Condition.fromJson(json.getAsJsonObject("condition"));
             }
-            return new DomainTrait(radius, actions, condition, interval);
+            String traitName = json.has("name") ? json.get("name").getAsString()
+                    : "domain_" + Math.abs(json.toString().hashCode());
+            ResourceLocation traitId = new ResourceLocation(CreRaces.MODID, "trait_" + traitName);
+
+            return new DomainTrait(traitId, radius, actions, condition, interval);
         });
     }
+
 }

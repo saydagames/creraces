@@ -71,14 +71,5 @@
             "defaultValue": "#AADDAA"
         }
     ],
-    "remote_description": {
-        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "fallback": "race.creraces.elves.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Elves&prop=wikitext"
-    },
-    "remote_passive": {
-        "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "fallback": "No passive documentation found on wiki.",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Elves&prop=wikitext"
-    }
+    "wiki_page": "Elves"
 }

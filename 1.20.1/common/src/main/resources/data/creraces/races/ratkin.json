@@ -19,6 +19,11 @@
     "difficulty": 2,
     "portrait": "creraces:textures/screens/ratkin_portrait.png",
     "name_texture": "creraces:textures/screens/ratkin_text.png",
+    "passives": {
+        "negate_effects": [
+            "creraces:rat_venom"
+        ]
+    },
     "starting_abilities": [
         "creraces:cowardly_skirmish",
         "creraces:deadly_venom",
@@ -65,14 +70,5 @@
             ]
         }
     ],
-    "remote_description": {
-        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "fallback": "race.creraces.ratkin.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ratkin&prop=wikitext"
-    },
-    "remote_passive": {
-        "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "fallback": "No passive documentation found on wiki.",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ratkin&prop=wikitext"
-    }
+    "wiki_page": "Ratkin"
 }

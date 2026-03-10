@@ -23,6 +23,10 @@ import net.minecraft.world.Container;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import mc.sayda.creraces.registry.ModEntities;
+import mc.sayda.creraces.registry.ModMobEffects;
+import mc.sayda.creraces.config.CreRacesConfig;
+import mc.sayda.creraces.util.IPersistentDataAccessor;
 import mc.sayda.creraces.util.PlatformServices;
 
 import javax.annotation.Nullable;
@@ -200,7 +204,8 @@ public class MicroBlockEntity extends BlockEntity {
                 torchCount++;
             }
         }
-        return Math.min(torchCount * 5, 15);
+        return Math.min(torchCount * CreRacesConfig.MICRO_BLOCK_LIGHT_PER_TORCH.get(),
+                CreRacesConfig.MICRO_BLOCK_MAX_LIGHT.get());
     }
 
     public static BlockState getSlotGlobal(net.minecraft.world.level.Level level, BlockPos host, int sx, int sy,
@@ -289,7 +294,7 @@ public class MicroBlockEntity extends BlockEntity {
                 }
             }
         }
-        return combined.optimize();
+        return combined.isEmpty() ? mc.sayda.creraces.block.MicroBlock.BOX : combined.optimize();
     }
 
     private static VoxelShape scaleShape(VoxelShape shape, double scale) {

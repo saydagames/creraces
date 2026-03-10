@@ -19,16 +19,23 @@ public class ToggleMinibuildAction implements ActionRegistry.RaceAction {
     public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
             @Nullable BlockPos interactionPos) {
         DataUtils.getVariables(player).ifPresent(vars -> {
-            vars.setSmallBuild(!vars.isSmallBuild());
+            boolean newState = !vars.isSmallBuild();
+            mc.sayda.creraces.CreRaces.LOGGER.info("ToggleMinibuildAction: Toggling smallBuild for {} to {}",
+                    player.getName().getString(), newState);
 
-            // Sync variables to client
-            mc.sayda.creraces.network.BoundaryHandler.resyncVariables(player, player);
+            vars.setSmallBuild(newState);
 
-            // Optional: Message to player
-            if (player.level().isClientSide) {
-                // Feedback is usually handled client-side anyway if triggered by UI,
-                // but for abilities we might want a message or sound.
+            if (player instanceof mc.sayda.creraces.util.IPersistentDataAccessor accessor) {
+                accessor.creraces$getPersistentData().putInt("minibuild", newState ? 1 : 0);
             }
+
+            mc.sayda.creraces.CreRaces.LOGGER.info("ToggleMinibuildAction: [TRACE] Toggling smallBuild for {} to {}",
+                    player.getName().getString(), newState);
+
+            mc.sayda.creraces.network.BoundaryHandler.resyncForAllTrackers(player);
+
+            mc.sayda.creraces.CreRaces.LOGGER.info("ToggleMinibuildAction: [TRACE] resyncForAllTrackers called for {}",
+                    player.getName().getString());
         });
         return true;
     }

@@ -18,6 +18,7 @@ public class RaceRegistry {
 
     // Default race if none selected (Human or None)
     public static final ResourceLocation NONE = new ResourceLocation("creraces", "none");
+    public static final ResourceLocation HARPY = new ResourceLocation("creraces", "harpy");
 
     public static void register(Race race) {
         RACES.put(race.id(), race);

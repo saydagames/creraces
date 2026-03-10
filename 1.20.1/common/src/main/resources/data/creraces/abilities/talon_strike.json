@@ -1,56 +1,45 @@
 {
-    "name":  "ability.creraces.talon_strike.name",
-    "description":  "ability.creraces.talon_strike.description",
-    "type":  "ACTIVE",
-    "icon":  "creraces:textures/item/harpy_feather.png",
-    "cooldown":  60,
-    "cost":  5,
-    "race":  [
-                 "creraces:harpy"
-             ],
-    "actions":  [
-                    {
-                        "type":  "creraces:conditional",
-                        "condition":  {
-                                          "type":  "creraces:flying",
-                                          "value":  true
-                                      },
-                        "if_true":  [
-                                        {
-                                            "type":  "creraces:dash",
-                                            "power":  {
-                                                          "base":  1.5,
-                                                          "scales_with":  "ad",
-                                                          "factor":  0.5
-                                                      },
-                                            "direction":  "down",
-                                            "reset_fall":  true
-                                        },
-                                        {
-                                            "type":  "creraces:play_sound",
-                                            "sound":  "minecraft:entity.phantom.bite",
-                                            "volume":  1.0,
-                                            "pitch":  0.8
-                                        },
-                                        {
-                                            "type":  "creraces:set_state",
-                                            "ability":  "creraces:talon_strike",
-                                            "value":  1.0
-                                        }
-                                    ],
-                        "if_false":  [
-
-                                     ]
-                    }
-                ],
-    "remote_description": {
-        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Talon_Strike&prop=wikitext",
-        "fallback": "ability.creraces.talon_strike.description"
-    },
-    "remote_full_description": {
-        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Talon_Strike&prop=wikitext",
-        "fallback": "ability.creraces.talon_strike.description"
-    }
+    "name": "ability.creraces.talon_strike.name",
+    "description": "ability.creraces.talon_strike.description",
+    "type": "ACTIVE",
+    "icon": "creraces:textures/item/harpy_feather.png",
+    "cooldown": 60,
+    "cost": 5,
+    "race": [
+        "creraces:harpy"
+    ],
+    "actions": [
+        {
+            "type": "creraces:conditional",
+            "condition": {
+                "type": "creraces:flying",
+                "value": true
+            },
+            "if_true": [
+                {
+                    "type": "creraces:dash",
+                    "power": {
+                        "base": 1.5,
+                        "scales_with": "ad",
+                        "factor": 0.5
+                    },
+                    "direction": "down",
+                    "reset_fall": true
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:entity.phantom.bite",
+                    "volume": 1.0,
+                    "pitch": 0.8
+                },
+                {
+                    "type": "creraces:set_state",
+                    "ability": "creraces:talon_strike",
+                    "value": 1.0
+                }
+            ],
+            "if_false": []
+        }
+    ],
+    "wiki_page": "Ability:Talon_Strike"
 }

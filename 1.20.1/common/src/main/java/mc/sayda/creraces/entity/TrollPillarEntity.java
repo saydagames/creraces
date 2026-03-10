@@ -2,6 +2,7 @@ package mc.sayda.creraces.entity;
 
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.config.CreRacesConfig;
+
 import mc.sayda.creraces.registry.ModEntities;
 import mc.sayda.creraces.registry.ModMobEffects;
 import net.minecraft.resources.ResourceLocation;
@@ -54,11 +55,11 @@ public class TrollPillarEntity extends TamableAnimal {
     public static AttributeSupplier.Builder createAttributes() {
         return createMobAttributes()
                 .add(Attributes.MOVEMENT_SPEED, 0.0)
-                .add(Attributes.MAX_HEALTH, 20.0)
-                .add(Attributes.ARMOR, 0.0)
+                .add(Attributes.MAX_HEALTH, CreRacesConfig.ENTITY_TROLL_PILLAR_MAX_HEALTH.get())
+                .add(Attributes.ARMOR, CreRacesConfig.ENTITY_TROLL_PILLAR_ARMOR.get())
                 .add(Attributes.ATTACK_DAMAGE, 0.0)
-                .add(Attributes.FOLLOW_RANGE, 16.0)
-                .add(Attributes.KNOCKBACK_RESISTANCE, 1000.0);
+                .add(Attributes.FOLLOW_RANGE, CreRacesConfig.ENTITY_TROLL_PILLAR_FOLLOW_RANGE.get())
+                .add(Attributes.KNOCKBACK_RESISTANCE, CreRacesConfig.ENTITY_TROLL_PILLAR_KNOCKBACK_RES.get());
     }
 
     @Override
@@ -116,22 +117,36 @@ public class TrollPillarEntity extends TamableAnimal {
 
         ticksAlive++;
 
-        // Pulse Troll's Curse to nearby entities
-        var curseEffect = ModMobEffects.TROLL_CURSE.get();
-        if (curseEffect != null) {
-            Vec3 center = this.position();
-            List<LivingEntity> nearby = this.level().getEntitiesOfClass(
-                    LivingEntity.class,
-                    new AABB(center, center).inflate(CreRacesConfig.TROLL_PILLAR_CURSE_RADIUS.get()),
-                    e -> e != this);
-            for (LivingEntity target : nearby) {
-                target.addEffect(new MobEffectInstance(curseEffect, CreRacesConfig.TROLL_PILLAR_CURSE_DURATION.get(), 0,
-                        true, true));
+        // Pulse Troll's Curse to nearby entities (Configurable interval)
+        if (ticksAlive % CreRacesConfig.ENTITY_TROLL_PILLAR_PULSE_INTERVAL.get() == 0) {
+            var curseEffect = ModMobEffects.TROLL_CURSE.get();
+            if (curseEffect != null) {
+                Vec3 center = this.position();
+                LivingEntity owner = getOwner();
+
+                // Cleanup: if owner IS a player but is no longer online/valid, discard the
+                // pillar
+                if (owner instanceof Player p && (!p.isAlive() || !this.level().players().contains(p))) {
+                    this.discard();
+                    return;
+                }
+
+                double radius = CreRacesConfig.ENTITY_TROLL_PILLAR_CURSE_RADIUS.get();
+                List<LivingEntity> nearby = this.level().getEntitiesOfClass(
+                        LivingEntity.class,
+                        new AABB(center, center).inflate(radius),
+                        e -> e != this && (owner == null
+                                || mc.sayda.creraces.team.RaceTeamManager.canHurt(e, owner)));
+                for (LivingEntity target : nearby) {
+                    target.addEffect(
+                            new MobEffectInstance(curseEffect, CreRacesConfig.ENTITY_TROLL_PILLAR_CURSE_DURATION.get(),
+                                    0, true, true));
+                }
             }
         }
 
         // Self-destruct after lifetime expires
-        if (ticksAlive >= CreRacesConfig.TROLL_PILLAR_LIFETIME_TICKS.get()) {
+        if (ticksAlive >= CreRacesConfig.ENTITY_TROLL_PILLAR_LIFETIME_TICKS.get()) {
             this.level().playSound(null, this.blockPosition(),
                     net.minecraft.sounds.SoundEvents.STONE_BREAK,
                     net.minecraft.sounds.SoundSource.NEUTRAL, 1.0f, 1.0f);

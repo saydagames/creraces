@@ -36,13 +36,11 @@ public class SyncIncidentPacket {
         buf.writeNbt(this.data);
     }
 
-    public void handle(Supplier<dev.architectury.networking.NetworkManager.PacketContext> contextSupplier) {
-        ayaSpreadNews(contextSupplier);
-    }
-
-    private void ayaSpreadNews(Supplier<dev.architectury.networking.NetworkManager.PacketContext> contextSupplier) {
-        var context = contextSupplier.get();
-        context.queue(() -> {
+    public void handle(Supplier<dev.architectury.networking.NetworkManager.PacketContext> ctxSupplier) {
+        var ctx = ctxSupplier.get();
+        ctx.queue(() -> {
+            mc.sayda.creraces.CreRaces.LOGGER.trace("SyncIncidentPacket: [TRACE] Handling packet for UUID {}",
+                    this.playerId);
             dev.architectury.utils.EnvExecutor.runInEnv(dev.architectury.utils.Env.CLIENT,
                     () -> () -> mc.sayda.creraces.client.ClientAccess.handleSyncIncident(this.playerId, this.data));
         });

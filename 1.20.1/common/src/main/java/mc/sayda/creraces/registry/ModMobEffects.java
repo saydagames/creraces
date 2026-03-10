@@ -65,6 +65,28 @@ public class ModMobEffects {
         public static final RegistrySupplier<MobEffect> DIZZINESS = MOB_EFFECTS.register("dizziness",
                         () -> new mc.sayda.creraces.effect.DizzinessEffect(MobEffectCategory.HARMFUL, 0x87CEEB));
 
+        /**
+         * Applied by Harpy on a fully-charged hit — marks the target with a
+         * featherstorm.
+         */
+        public static final RegistrySupplier<MobEffect> FEATHERSTORM = MOB_EFFECTS.register("featherstorm",
+                        () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.HARMFUL, 0xFFD700));
+
+        /**
+         * Applied by Troll to "maul-mark" a target — reduces defenses for the follow-up
+         * hit.
+         */
+        public static final RegistrySupplier<MobEffect> MAUL = MOB_EFFECTS.register("maul",
+                        () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.HARMFUL, 0x8B4513));
+
+        /** Applied by Mermaid's Spicy Whirlpool ability to nearby enemies in water. */
+        public static final RegistrySupplier<MobEffect> BOILING = MOB_EFFECTS.register("boiling",
+                        () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.HARMFUL, 0xFF4500));
+
+        /** Stacking bleed debuff tracked on Lycan kill chains. */
+        public static final RegistrySupplier<MobEffect> BLEEDING = MOB_EFFECTS.register("bleeding",
+                        () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.HARMFUL, 0xCC0000));
+
         public static void register() {
                 MOB_EFFECTS.register();
         }

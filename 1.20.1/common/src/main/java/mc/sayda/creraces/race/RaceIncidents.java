@@ -9,9 +9,41 @@ public class RaceIncidents {
     public static void transformPlayer(ServerPlayer player, ResourceLocation raceId) {
         if (raceId.equals(RaceRegistry.NONE)) {
             DataUtils.getVariables(player).ifPresent(vars -> {
+                // If the player has a pocket, kick all people currently in it before resetting
+                if (vars.hasPocket() && player.getServer() != null) {
+                    ResourceLocation pocketDimLoc = new ResourceLocation("creraces:pocket");
+                    for (net.minecraft.server.level.ServerLevel level : player.getServer().getAllLevels()) {
+                        if (level.dimension().location().equals(pocketDimLoc)) {
+                            for (net.minecraft.server.level.ServerPlayer p : level.players()) {
+                                DataUtils.getVariables(p).ifPresent(pVars -> {
+                                    // A guest is in the pocket if their current coordinates are within the owner's
+                                    // pocket range
+                                    // Pockets are spaced 1000 blocks apart, so we check a 500-block radius.
+                                    double dx = p.getX() - vars.getPocketX();
+                                    double dz = p.getZ() - vars.getPocketZ();
+                                    if (Math.abs(dx) < 500 && Math.abs(dz) < 500) {
+                                        mc.sayda.creraces.engine.actions.PocketEntryAction.teleport(p,
+                                                pVars.getReturnDim(), pVars.getReturnX(), pVars.getReturnY(),
+                                                pVars.getReturnZ());
+                                        p.displayClientMessage(net.minecraft.network.chat.Component.literal(
+                                                "The pocket's owner has undergone a spiritual reset. You have been returned to your original location."),
+                                                true);
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+
                 vars.fantasySealReset();
                 // Clear cosmetic addons when resetting race
                 CosmeticIncidents.clearAllRacialAddons(player);
+
+                // gState: restore female model/chest after reset if gState == 1
+                if (vars.getGState() == 1) {
+                    CosmeticIncidents.applyGStateAddons(player);
+                }
+
                 AttributeIncidents.eikiJudgment(player);
 
                 // Scrub any lingering potion effects that might have been applied by passives
@@ -63,6 +95,9 @@ public class RaceIncidents {
                 }
                 CosmeticIncidents.applyCustomizations(player, vars.getCustomizations(), race);
             }
+
+            // Apply female model and/or chest addon if this race forces a gState
+            CosmeticIncidents.applyGStateCosmetics(player, race, vars);
 
             // Grant Starting Abilities
             if (race.startingAbilities() != null) {
@@ -117,6 +152,7 @@ public class RaceIncidents {
 
             // Re-apply Cosmetics
             CosmeticIncidents.applyCustomizations(player, vars.getCustomizations(), race);
+            CosmeticIncidents.applyGStateCosmetics(player, race, vars);
 
             // Full Sync to client and trackers
             BoundaryHandler.resyncVariables(player, player);

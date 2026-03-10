@@ -50,7 +50,30 @@ public class ModEntities {
                                                         .updateInterval(3)
                                                         .build("poison_emitter_mobile"));
 
+        public static final RegistrySupplier<EntityType<mc.sayda.creraces.entity.TornadoEntity>> TORNADO = ENTITIES
+                        .register(
+                                        "tornado",
+                                        () -> EntityType.Builder.<mc.sayda.creraces.entity.TornadoEntity>of(
+                                                        mc.sayda.creraces.entity.TornadoEntity::new,
+                                                        MobCategory.MISC)
+                                                        .sized(1.2F, 3.0F)
+                                                        .clientTrackingRange(8)
+                                                        .updateInterval(3)
+                                                        .build("tornado"));
+
+        public static void registerAttributes() {
+                dev.architectury.registry.level.entity.EntityAttributeRegistry.register(TROLL_PILLAR,
+                                TrollPillarEntity::createAttributes);
+                dev.architectury.registry.level.entity.EntityAttributeRegistry.register(POISON_EMITTER,
+                                PoisonEmitterEntity::createAttributes);
+                dev.architectury.registry.level.entity.EntityAttributeRegistry.register(POISON_EMITTER_MOBILE,
+                                PoisonEmitterMobileEntity::createAttributes);
+                dev.architectury.registry.level.entity.EntityAttributeRegistry.register(TORNADO,
+                                mc.sayda.creraces.entity.TornadoEntity::createAttributes);
+        }
+
         public static void register() {
                 ENTITIES.register();
+                registerAttributes();
         }
 }

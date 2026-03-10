@@ -12,6 +12,7 @@
     "max_resource": 100,
     "tier": "creraces:rare",
     "difficulty": 2,
+    "g_state": "FEMALE",
     "passives": {
         "can_breathe_underwater": true,
         "can_breathe_on_land": false,
@@ -52,14 +53,5 @@
     ],
     "portrait": "creraces:textures/screens/mermaid_portrait.png",
     "name_texture": "creraces:textures/screens/mermaid_text.png",
-    "remote_description": {
-        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "fallback": "race.creraces.mermaid.description",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Mermaid&prop=wikitext"
-    },
-    "remote_passive": {
-        "selector": "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "fallback": "No passive documentation found on wiki.",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Mermaid&prop=wikitext"
-    }
+    "wiki_page": "Mermaid"
 }

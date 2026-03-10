@@ -45,6 +45,13 @@ public class RaceDetailsScreen extends Screen {
         private static final ResourceLocation DECO_MIDSUMMER = new ResourceLocation("creraces",
                         "textures/screens/midsummer_decoration.png");
 
+        @Nonnull
+        private static final ResourceLocation M_ICON = new ResourceLocation("creraces", "textures/screens/m.png");
+        @Nonnull
+        private static final ResourceLocation F_ICON = new ResourceLocation("creraces", "textures/screens/f.png");
+        @Nonnull
+        private static final ResourceLocation MF_ICON = new ResourceLocation("creraces", "textures/screens/mf.png");
+
         private final Screen parent;
         private final Race race;
         private int leftPos, topPos;
@@ -225,6 +232,25 @@ public class RaceDetailsScreen extends Screen {
                         graphics.blit(DECO_HALLOWEEN, this.leftPos + 11, this.topPos + -65, 0, 0, 151, 42, 151, 42);
                 } else if (month >= Calendar.JUNE && month <= Calendar.AUGUST) {
                         graphics.blit(DECO_MIDSUMMER, this.leftPos + 11, this.topPos + -65, 0, 0, 151, 42, 151, 42);
+                }
+
+                // 7. Gender Indicator
+                if (mc.sayda.creraces.config.CreRacesConfig.GENDER_SYSTEM_ENABLED.get()) {
+                        if (race.getGState() == mc.sayda.creraces.engine.GState.MALE) {
+                                graphics.blit(M_ICON, this.leftPos - 142, this.topPos - 35, 0, 0, 16, 16, 16, 16);
+                        } else if (race.getGState() == mc.sayda.creraces.engine.GState.FEMALE) {
+                                graphics.blit(F_ICON, this.leftPos - 142, this.topPos - 35, 0, 0, 16, 16, 16, 16);
+                        } else {
+                                graphics.blit(MF_ICON, this.leftPos - 142, this.topPos - 35, 0, 0, 16, 16, 16, 16);
+                        }
+
+                        if (mouseX > this.leftPos - 142 && mouseX < this.leftPos - 126 &&
+                                        mouseY > this.topPos - 35 && mouseY < this.topPos - 19) {
+                                java.util.List<Component> tooltip = new java.util.ArrayList<>();
+                                tooltip.add(Component.translatable("gui.creraces.menu_gui.tooltip_gender_star1"));
+                                tooltip.add(Component.translatable("gui.creraces.menu_gui.tooltip_gender_star2"));
+                                graphics.renderComponentTooltip(this.font, tooltip, mouseX, mouseY);
+                        }
                 }
 
                 renderInfoPanel(graphics);

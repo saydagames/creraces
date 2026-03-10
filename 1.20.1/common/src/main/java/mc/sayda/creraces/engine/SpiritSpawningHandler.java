@@ -18,12 +18,16 @@ public class SpiritSpawningHandler {
                 // If it's a spirit mob, check if any player in spirit realm is nearby (64
                 // blocks)
                 boolean playerInSpiritNearby = false;
-                List<Player> players = level.getEntitiesOfClass(Player.class,
-                        new AABB(entity.blockPosition()).inflate(64));
-                for (Player p : players) {
-                    if (DataUtils.getVariables(p).map(vars -> vars.isInSpiritRealm()).orElse(false)) {
-                        playerInSpiritNearby = true;
-                        break;
+                int checkDist = 16;
+                net.minecraft.core.BlockPos pos = entity.blockPosition();
+                if (pos != null) {
+                    List<Player> players = level.getEntitiesOfClass(Player.class,
+                            new AABB(pos).inflate(checkDist));
+                    for (Player p : players) {
+                        if (DataUtils.getVariables(p).map(vars -> vars.isInSpiritRealm()).orElse(false)) {
+                            playerInSpiritNearby = true;
+                            break;
+                        }
                     }
                 }
 

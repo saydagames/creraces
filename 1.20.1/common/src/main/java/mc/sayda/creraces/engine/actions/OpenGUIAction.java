@@ -195,7 +195,7 @@ public class OpenGUIAction implements ActionRegistry.RaceAction {
 
     public static void register() {
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "open_gui"), json -> {
-            String gui = GsonHelper.getAsString(json, "gui", "crafting").toLowerCase();
+            String gui = GsonHelper.getAsString(json, "gui", "inventory").toLowerCase();
             ScalingValue radius = ScalingValue.fromJson(json, "radius", 4.0);
             return new OpenGUIAction(gui, radius);
         });

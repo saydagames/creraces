@@ -2,8 +2,7 @@ package mc.sayda.creraces.network;
 
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.block.entity.MicroBlockEntity;
-import mc.sayda.creraces.engine.MicroBlockWhitelist;
-import mc.sayda.creraces.registry.ModBlocks;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -146,24 +145,53 @@ public class MiniPlacePacket {
         ctx.queue(() -> {
             if (!(ctx.getPlayer() instanceof ServerPlayer serverPlayer))
                 return;
+
+            if (!mc.sayda.creraces.capability.DataUtils.canInteractWithMiniBuild(serverPlayer)) {
+                return;
+            }
+
             ServerLevel level = serverPlayer.serverLevel();
 
             // Validate slot
             if (slotX < 0 || slotX >= 4 || slotY < 0 || slotY >= 4 || slotZ < 0 || slotZ >= 4)
                 return;
 
+            // Validate player state
+            var vars = mc.sayda.creraces.capability.DataUtils.getVariables(serverPlayer).orElse(null);
+            if (vars == null || !vars.isSmallBuild()) {
+                mc.sayda.creraces.CreRaces.LOGGER.warn(
+                        "MiniPlace: Player {} is not in smallBuild mode (vars={}, smallBuild={})",
+                        serverPlayer.getName().getString(), vars != null, vars != null && vars.isSmallBuild());
+                return;
+            }
+
             // Validate block
             Block block = BuiltInRegistries.BLOCK.get(blockId);
-            if (block == null || block == Blocks.AIR)
+            if (block == null || block == net.minecraft.world.level.block.Blocks.AIR) {
+                mc.sayda.creraces.CreRaces.LOGGER.warn("MiniPlace: invalid block ID {}", blockId);
                 return;
-            if (!MicroBlockWhitelist.isAllowed(block)) {
+            }
+            // Whitelist check (Configurable)
+            if (mc.sayda.creraces.config.CreRacesConfig.MINI_PLACE_WHITELIST_ENABLED.get() &&
+                    !mc.sayda.creraces.engine.MicroBlockWhitelist.isAllowed(block)) {
                 CreRaces.LOGGER.warn("MiniPlace: block {} is not whitelisted", blockId);
                 return;
             }
 
-            // Target slot should be empty (check via global helper)
-            if (!MicroBlockEntity.getSlotGlobal(level, hostPos, slotX, slotY, slotZ).isAir())
+            if (!mc.sayda.creraces.config.CreRacesConfig.MINI_BUILD_ENABLED.get()) {
+                CreRaces.LOGGER.warn("MiniPlacePacket: Rejected placement: Feature disabled in config.");
                 return;
+            }
+
+            // Target slot should be empty (check via global helper)
+            if (!MicroBlockEntity.getSlotGlobal(level, hostPos, slotX, slotY, slotZ).isAir()) {
+                return;
+            }
+
+            Block heldBlock = BuiltInRegistries.BLOCK.get(blockId);
+            if (heldBlock == Blocks.AIR) {
+                return;
+            }
 
             // Compute the correct BlockState (including rotation)
             InteractionHand handUsed = serverPlayer.getUsedItemHand();
@@ -181,13 +209,14 @@ public class MiniPlacePacket {
                     held = serverPlayer.getOffhandItem();
                     handUsed = InteractionHand.OFF_HAND;
                 } else {
+                    CreRaces.LOGGER.warn("MiniPlacePacket: Rejected placement: Player {} not holding block {}",
+                            serverPlayer.getName().getString(), blockId);
                     return; // No matching block in hand
                 }
             }
 
             BlockState placementState = block.defaultBlockState();
             if (held.getItem() instanceof BlockItem) {
-                // ... (vx, vy, vz logic)
                 double vx = hostPos.getX() + ((hitPos.x - hostPos.getX() - (slotX * 0.25)) * 4.0);
                 double vy = hostPos.getY() + ((hitPos.y - hostPos.getY() - (slotY * 0.25)) * 4.0);
                 double vz = hostPos.getZ() + ((hitPos.z - hostPos.getZ() - (slotZ * 0.25)) * 4.0);
@@ -204,15 +233,12 @@ public class MiniPlacePacket {
                             .setValue(net.minecraft.world.level.block.WallTorchBlock.FACING, clickedFace);
                 } else if (block instanceof net.minecraft.world.level.block.LadderBlock ||
                         block instanceof net.minecraft.world.level.block.VineBlock) {
-                    // Force bypass survival logic for climbables to ensure they attach to the
-                    // micro-wall
                     placementState = resolveUniversalOrientation(block, clickedFace, serverPlayer);
                 } else {
                     BlockState state = block.getStateForPlacement(placeContext);
                     if (state != null) {
                         placementState = state;
                     } else {
-                        // Universal Fallback
                         placementState = resolveUniversalOrientation(block, clickedFace, serverPlayer);
                     }
                 }
@@ -220,10 +246,14 @@ public class MiniPlacePacket {
 
             // Multi-slot occupancy check
             if (block instanceof net.minecraft.world.level.block.DoorBlock) {
-                if (slotY + 1 >= 4)
+                if (slotY + 1 >= 4) {
+                    CreRaces.LOGGER.warn("MiniPlacePacket: Door placement rejected: Top of host.");
                     return;
-                if (!MicroBlockEntity.getSlotGlobal(level, hostPos, slotX, slotY + 1, slotZ).isAir())
+                }
+                if (!MicroBlockEntity.getSlotGlobal(level, hostPos, slotX, slotY + 1, slotZ).isAir()) {
+                    CreRaces.LOGGER.warn("MiniPlacePacket: Door placement rejected: Upper slot occupied.");
                     return;
+                }
 
                 MicroBlockEntity.setSlotGlobal(level, hostPos, slotX, slotY, slotZ,
                         placementState.setValue(net.minecraft.world.level.block.DoorBlock.HALF,
@@ -236,7 +266,6 @@ public class MiniPlacePacket {
                 int headSlotX = slotX + facing.getStepX();
                 int headSlotZ = slotZ + facing.getStepZ();
 
-                // Check occupancy of the head slot (can be in a different host block)
                 if (!MicroBlockEntity.getSlotGlobal(level, hostPos, headSlotX, slotY, headSlotZ).isAir())
                     return;
 
@@ -249,6 +278,9 @@ public class MiniPlacePacket {
             } else {
                 MicroBlockEntity.setSlotGlobal(level, hostPos, slotX, slotY, slotZ, placementState);
             }
+
+            mc.sayda.creraces.CreRaces.LOGGER.info("MiniPlacePacket: Placing {} for {} at {} slot {},{},{}", blockId,
+                    serverPlayer.getName().getString(), hostPos, slotX, slotY, slotZ);
 
             // Consume item
             if (!serverPlayer.isCreative()) {

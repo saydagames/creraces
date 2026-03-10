@@ -1,46 +1,37 @@
 {
-    "name":  "ability.creraces.adrenaline_rush.name",
-    "description":  "ability.creraces.adrenaline_rush.description",
-    "type":  "ACTIVE",
-    "icon":  "minecraft:textures/item/fermented_spider_eye.png",
-    "cooldown":  400,
-    "cost":  0,
-    "race":  [
-                 "creraces:troll"
-             ],
-    "actions":  [
-                    {
-                        "type":  "creraces:apply_effect",
-                        "effect":  "minecraft:speed",
-                        "duration":  200,
-                        "amplifier":  1,
-                        "visible":  true
-                    },
-                    {
-                        "type":  "creraces:set_state",
-                        "ability":  "creraces:adrenaline_rush",
-                        "value":  1
-                    },
-                    {
-                        "type":  "creraces:play_sound",
-                        "sound":  "minecraft:entity.ravager.roar",
-                        "volume":  1.0,
-                        "pitch":  0.9
-                    },
-                    {
-                        "type":  "creraces:spawn_particles",
-                        "particle":  "minecraft:angry_villager",
-                        "count":  8
-                    }
-                ],
-    "remote_description": {
-        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Adrenaline_Rush&prop=wikitext",
-        "fallback": "ability.creraces.adrenaline_rush.description"
-    },
-    "remote_full_description": {
-        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Adrenaline_Rush&prop=wikitext",
-        "fallback": "ability.creraces.adrenaline_rush.description"
-    }
+    "name": "ability.creraces.adrenaline_rush.name",
+    "description": "ability.creraces.adrenaline_rush.description",
+    "type": "ACTIVE",
+    "icon": "minecraft:textures/item/fermented_spider_eye.png",
+    "cooldown": 400,
+    "cost": 0,
+    "race": [
+        "creraces:troll"
+    ],
+    "actions": [
+        {
+            "type": "creraces:apply_effect",
+            "effect": "minecraft:speed",
+            "duration": 200,
+            "amplifier": 1,
+            "visible": true
+        },
+        {
+            "type": "creraces:set_state",
+            "ability": "creraces:adrenaline_rush",
+            "value": 1
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:entity.ravager.roar",
+            "volume": 1.0,
+            "pitch": 0.9
+        },
+        {
+            "type": "creraces:spawn_particles",
+            "particle": "minecraft:angry_villager",
+            "count": 8
+        }
+    ],
+    "wiki_page": "Ability:Adrenaline_Rush"
 }

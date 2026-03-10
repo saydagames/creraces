@@ -13,6 +13,7 @@ import net.minecraft.world.entity.player.Player;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -76,18 +77,11 @@ public class TetherAction implements ActionRegistry.RaceAction {
 
     private static void syncTetherToClients(Player caster, UUID casterId, UUID targetId, boolean add,
             ResourceLocation tex, float width) {
-        if (caster.level().isClientSide() || caster.level().getServer() == null)
-            return;
-        // Broadcast packet to everyone tracking the caster
-        mc.sayda.creraces.network.SyncTetherPacket packet = new mc.sayda.creraces.network.SyncTetherPacket(casterId,
-                targetId, add, tex.toString(), width);
-        net.minecraft.network.FriendlyByteBuf buf = new net.minecraft.network.FriendlyByteBuf(
-                io.netty.buffer.Unpooled.buffer());
-        packet.encode(buf);
-        dev.architectury.networking.NetworkManager.sendToPlayers(
-                caster.level().getServer().getPlayerList().getPlayers(),
-                mc.sayda.creraces.network.SyncTetherPacket.ID,
-                buf);
+        mc.sayda.creraces.network.BoundaryHandler.sendToTrackers(caster, mc.sayda.creraces.network.SyncTetherPacket.ID,
+                buf -> {
+                    new mc.sayda.creraces.network.SyncTetherPacket(casterId, targetId, add, tex.toString(), width)
+                            .encode(buf);
+                });
     }
 
     // Called periodically by ResourceTicker to evaluate active tethers
@@ -153,6 +147,8 @@ public class TetherAction implements ActionRegistry.RaceAction {
     }
 
     public static void clearTethersFor(Player caster) {
+        if (caster == null)
+            return;
         UUID casterId = caster.getUUID();
         Map<UUID, TetherData> tethers = ACTIVE_TETHERS.remove(casterId);
         if (tethers != null) {
@@ -165,12 +161,11 @@ public class TetherAction implements ActionRegistry.RaceAction {
     public static void register() {
         ActionRegistry.register(ID, json -> {
             ScalingValue dur = ScalingValue.fromJson(json, "duration", 100.0);
-            ScalingValue dist = ScalingValue.fromJson(json, "max_distance", 15.0);
+            ScalingValue dist = ScalingValue.fromJson(json, "max_distance", 10.0);
             ScalingValue inter = ScalingValue.fromJson(json, "interval", 20.0);
-            String texStr = GsonHelper.getAsString(json, "texture", "minecraft:textures/entity/guardian_beam.png");
-            ResourceLocation tex = new ResourceLocation(
-                    texStr != null ? texStr : "minecraft:textures/entity/guardian_beam.png");
-            ScalingValue w = ScalingValue.fromJson(json, "width", 1.0);
+            String texStr = GsonHelper.getAsString(json, "texture", "creraces:textures/misc/tether.png");
+            ResourceLocation tex = new ResourceLocation(Objects.requireNonNull(texStr));
+            ScalingValue w = ScalingValue.fromJson(json, "width", 0.1);
 
             List<ActionRegistry.RaceAction> actions = new ArrayList<>();
             if (json.has("actions")) {

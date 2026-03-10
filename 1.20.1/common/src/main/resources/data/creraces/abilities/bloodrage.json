@@ -30,14 +30,5 @@
             "pitch": 0.8
         }
     ],
-    "remote_description": {
-        "selector": "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=[\\r\\n]+\\\\||[\\r\\n]+\\}\\})",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Bloodrage&prop=wikitext",
-        "fallback": "ability.creraces.bloodrage.description"
-    },
-    "remote_full_description": {
-        "selector": "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)",
-        "source": "https://creraces.wiki.gg/api.php?action=parse&format=json&page=Ability:Bloodrage&prop=wikitext",
-        "fallback": "ability.creraces.bloodrage.description"
-    }
+    "wiki_page": "Ability:Bloodrage"
 }

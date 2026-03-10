@@ -21,22 +21,35 @@ public class DocCache {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Map<ResourceLocation, String> CACHE = new java.util.concurrent.ConcurrentHashMap<>();
     private static File cacheFile;
+    private static boolean isDirty = false;
 
     public static void init(Path configDir) {
-        cacheFile = configDir.resolve(mc.sayda.creraces.config.CreRacesConfig.DOC_CACHE_DIR.get())
-                .resolve(mc.sayda.creraces.config.CreRacesConfig.DOC_CACHE_FILENAME.get()).toFile();
+        cacheFile = configDir.resolve("creraces/cache")
+                .resolve("wiki_docs.json").toFile();
         load();
+
+        // Simple scheduled save every 30 seconds if dirty
+        new java.util.Timer("DocCache-Saver", true).scheduleAtFixedRate(new java.util.TimerTask() {
+            @Override
+            public void run() {
+                if (isDirty) {
+                    save();
+                    isDirty = false;
+                }
+            }
+        }, 30000, 30000);
     }
 
     public static void store(ResourceLocation id, String content) {
         if (content == null)
             return;
         CACHE.put(id, content);
-        save();
+        isDirty = true;
     }
 
     public static void clear() {
         CACHE.clear();
+        isDirty = false;
         if (cacheFile != null && cacheFile.exists()) {
             cacheFile.delete();
         }

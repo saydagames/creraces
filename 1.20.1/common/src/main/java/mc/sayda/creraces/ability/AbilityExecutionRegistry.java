@@ -30,12 +30,16 @@ public class AbilityExecutionRegistry {
                         // ON TOP of the surface the player is looking at.
                         lookTarget = bhr.getBlockPos().relative(bhr.getDirection());
                     }
+                    mc.sayda.creraces.CreRaces.LOGGER.info(
+                            "AbilityExecutionRegistry: Executing {} actions for ability {}",
+                            ability.onActivate().size(), ability.id());
+                    boolean anySuccess = false;
                     for (mc.sayda.creraces.engine.ActionRegistry.RaceAction action : ability.onActivate()) {
-                        if (!action.execute(player, null, slot, lookTarget)) {
-                            return false;
+                        if (action.execute(player, null, slot, lookTarget)) {
+                            anySuccess = true;
                         }
                     }
-                    return true;
+                    return anySuccess;
                 }
                 return false;
             };
