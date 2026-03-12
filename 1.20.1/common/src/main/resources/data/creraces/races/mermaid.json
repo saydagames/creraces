@@ -12,7 +12,7 @@
     "max_resource": 100,
     "tier": "creraces:rare",
     "difficulty": 2,
-    "g_state": "FEMALE",
+    "gstate": "FEMALE",
     "passives": {
         "can_breathe_underwater": true,
         "can_breathe_on_land": false,

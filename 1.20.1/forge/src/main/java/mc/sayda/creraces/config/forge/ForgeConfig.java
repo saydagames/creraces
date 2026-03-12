@@ -36,6 +36,7 @@ public class ForgeConfig {
 
         public static class Common {
                 public final ForgeConfigSpec.ConfigValue<String> wiki_base_url;
+                public final ForgeConfigSpec.ConfigValue<String> wiki_api_base;
                 public final ForgeConfigSpec.ConfigValue<String> wiki_page_path;
                 public final ForgeConfigSpec.ConfigValue<String> wiki_ability_namespace;
                 public final ForgeConfigSpec.BooleanValue disable_remote_docs;
@@ -80,6 +81,8 @@ public class ForgeConfig {
                 public Common(ForgeConfigSpec.Builder builder) {
                         builder.push("Documentation");
                         wiki_base_url = builder.comment("The base URL for the wiki").define("wiki_base_url",
+                                        "https://creraces.wiki.gg/");
+                        wiki_api_base = builder.comment("The API base URL for the wiki").define("wiki_api_base",
                                         "https://creraces.wiki.gg/");
                         wiki_page_path = builder.comment("The path part of the wiki URL").define("wiki_page_path",
                                         "wiki/");
@@ -352,6 +355,7 @@ public class ForgeConfig {
 
         public static void apply() {
                 CreRacesConfig.WIKI_BASE_URL = () -> COMMON.wiki_base_url.get();
+                CreRacesConfig.WIKI_API_BASE = () -> COMMON.wiki_api_base.get();
                 CreRacesConfig.WIKI_PAGE_PATH = () -> COMMON.wiki_page_path.get();
                 CreRacesConfig.WIKI_ABILITY_NAMESPACE = () -> COMMON.wiki_ability_namespace.get();
                 CreRacesConfig.DISABLE_REMOTE_DOCS = () -> COMMON.disable_remote_docs.get();

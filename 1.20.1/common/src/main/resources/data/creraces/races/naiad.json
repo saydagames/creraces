@@ -13,7 +13,7 @@
     "base_cr": 8,
     "resource_type": "MANA",
     "max_resource": 100,
-    "g_state": "FEMALE",
+    "gstate": "FEMALE",
     "tier": "creraces:common",
     "difficulty": 1,
     "passives": {

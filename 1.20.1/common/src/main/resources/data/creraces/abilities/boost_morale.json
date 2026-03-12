@@ -44,6 +44,18 @@
             "sound": "minecraft:entity.wither.ambient",
             "volume": 1.0,
             "pitch": 0.5
+        },
+        {
+            "type": "creraces:spawn_particles",
+            "particle": "minecraft:soul",
+            "count": 15,
+            "spread": 0.5,
+            "speed": 0.05,
+            "radius": 10.0,
+            "targets": [
+                "allies",
+                "!self"
+            ]
         }
     ],
     "wiki_page": "Ability:Boost_Morale"

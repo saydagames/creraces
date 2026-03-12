@@ -48,6 +48,22 @@
             "sound": "minecraft:entity.wither.ambient",
             "volume": 1.0,
             "pitch": 1.2
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:entity.generic.explode",
+            "volume": 0.5,
+            "pitch": 1.5
+        },
+        {
+            "type": "creraces:spawn_particles",
+            "particle": "minecraft:soul_fire_flame",
+            "count": 30,
+            "spread": 1.0,
+            "speed": 0.1,
+            "targets": [
+                "self"
+            ]
         }
     ],
     "wiki_page": "Ability:Fruitful_Sacrifice"

@@ -86,7 +86,13 @@ public class FeatherProjectile extends ThrowableItemProjectile {
     @Override
     protected void onHitEntity(@Nonnull EntityHitResult result) {
         if (!this.level().isClientSide && result.getEntity() instanceof LivingEntity living) {
-            net.minecraft.world.damagesource.DamageSource source = this.damageSources().thrown(this, this.getOwner());
+            net.minecraft.world.entity.Entity owner = this.getOwner();
+            if (owner instanceof LivingEntity shooter && !mc.sayda.creraces.team.RaceTeamManager.canHurt(living, shooter)) {
+                this.discard();
+                return;
+            }
+
+            net.minecraft.world.damagesource.DamageSource source = this.damageSources().thrown(this, owner);
             if (source != null) {
                 living.hurt(source, this.damage);
             }

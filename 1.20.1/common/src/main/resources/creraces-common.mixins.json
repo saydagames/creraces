@@ -10,12 +10,14 @@
         "ServerPlayerMixin",
         "EntityMixin",
         "MobMixin",
+        "MobGoalMixin",
         "FoodDataMixin",
         "LivingEntityMixin",
         "BlockStateSolidityMixin",
         "LivingEntitySleepMixin",
         "PlayerRespawnMixin",
-        "BlockEntityAccessor"
+        "BlockEntityAccessor",
+        "LivingEntityAccessor"
     ],
     "client": [
         "LivingEntityRendererMixin",

@@ -1,5 +1,9 @@
 package mc.sayda.creraces.mixin;
 
+import mc.sayda.creraces.entity.RemainsEntity;
+import mc.sayda.creraces.entity.UndeadRemainsEntity;
+import mc.sayda.creraces.registry.ModEntities;
+import mc.sayda.creraces.util.IPersistentDataAccessor;
 import mc.sayda.creraces.util.ISleepSlotTracker;
 
 import mc.sayda.creraces.capability.DataUtils;
@@ -7,8 +11,12 @@ import mc.sayda.creraces.capability.IPlayerVariables;
 import mc.sayda.creraces.race.Race;
 import mc.sayda.creraces.race.RaceRegistry;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.OwnableEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.core.BlockPos;
 import org.spongepowered.asm.mixin.Mixin;
@@ -20,9 +28,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Mixin(LivingEntity.class)
-public abstract class LivingEntityMixin implements ISleepSlotTracker {
+public abstract class LivingEntityMixin extends Entity implements ISleepSlotTracker {
+
+    public LivingEntityMixin(EntityType<?> type, Level level) {
+        super(type, level);
+    }
 
     @Unique
     private int creraces$sleepSlot = -1;
@@ -158,8 +171,28 @@ public abstract class LivingEntityMixin implements ISleepSlotTracker {
     }
 
     @Inject(method = "die", at = @At("HEAD"))
-    private void creraces$spawnOnDeath(DamageSource source, CallbackInfo ci) {
-        if ((Object) this instanceof Player player && !player.level().isClientSide()) {
+    private void creraces$onDeath(DamageSource source, CallbackInfo ci) {
+        if (this.level().isClientSide()) return;
+
+        LivingEntity victim = (LivingEntity) (Object) this;
+        Entity killer = source.getEntity();
+
+        // 1. SERVANT PRIORITY
+        if (creraces$isServant(victim)) {
+            creraces$spawnUndeadRemains(victim);
+            return; // Servant remains take priority
+        }
+
+        // 2. UNDEAD KILLER LOGIC
+        if (victim.getType().getCategory() != net.minecraft.world.entity.MobCategory.MISC) {
+            Player rootOwner = creraces$getRootUndeadOwner(killer);
+            if (rootOwner != null) {
+                creraces$spawnNormalRemains(victim);
+            }
+        }
+
+        // 3. Existing spawnOnDeath logic for Players
+        if ((Object) this instanceof Player player) {
             Optional<IPlayerVariables> varsOpt = DataUtils.getVariables(player);
             if (varsOpt.isPresent()) {
                 Race race = RaceRegistry.get(varsOpt.get().getRace());
@@ -366,5 +399,74 @@ public abstract class LivingEntityMixin implements ISleepSlotTracker {
     @Inject(method = "travel", at = @At("TAIL"))
     private void creraces$buoyancyTravel(net.minecraft.world.phys.Vec3 travelVector, CallbackInfo ci) {
         mc.sayda.creraces.engine.AquaticMovementHandler.buoyancyTick((LivingEntity) (Object) this);
+    }
+
+    @Unique
+    private boolean creraces$isServant(LivingEntity entity) {
+        return ((IPersistentDataAccessor) entity).creraces$getPersistentData().contains("creraces:servant_of");
+    }
+
+    @Unique
+    private Player creraces$getRootUndeadOwner(Entity killer) {
+        if (killer instanceof Player player) {
+            if (creraces$isUndead(player)) return player;
+        }
+
+        if (killer instanceof OwnableEntity ownable) {
+            Entity owner = ownable.getOwner();
+            if (owner instanceof Player player && creraces$isUndead(player)) {
+                return player;
+            }
+        }
+
+        if (killer instanceof LivingEntity le && ((IPersistentDataAccessor) le).creraces$getPersistentData().contains("creraces:servant_of")) {
+            try {
+                UUID ownerUuid = ((IPersistentDataAccessor) le).creraces$getPersistentData().getUUID("creraces:servant_of");
+                Player player = le.level().getPlayerByUUID(ownerUuid);
+                if (player != null && creraces$isUndead(player)) {
+                    return player;
+                }
+            } catch (Exception ignored) {}
+        }
+
+        return null;
+    }
+
+    @Unique
+    private boolean creraces$isUndead(Player player) {
+        return mc.sayda.creraces.capability.DataUtils.getVariables(player)
+                .map(vars -> "creraces:undead".equals(vars.getRace()))
+                .orElse(false);
+    }
+
+    @Unique
+    private void creraces$spawnUndeadRemains(LivingEntity victim) {
+        UndeadRemainsEntity remains = ModEntities.REMAINS_UNDEAD.get().create(victim.level());
+        if (remains != null) {
+            remains.moveTo(victim.getX(), victim.getY(), victim.getZ(), victim.getYRot(), 0);
+            
+            // Track owner
+            if (((IPersistentDataAccessor) victim).creraces$getPersistentData().contains("creraces:servant_of")) {
+                remains.setOwnerUUID(((IPersistentDataAccessor) victim).creraces$getPersistentData().getUUID("creraces:servant_of"));
+            }
+
+            // Ensure the remains themselves are NOT tagged as servants
+            ((IPersistentDataAccessor) remains).creraces$getPersistentData().remove("creraces:servant_of");
+
+            victim.level().addFreshEntity(remains);
+        }
+    }
+
+    @Unique
+    private void creraces$spawnNormalRemains(LivingEntity victim) {
+        RemainsEntity remains = ModEntities.REMAINS.get().create(victim.level());
+        if (remains != null) {
+            remains.moveTo(victim.getX(), victim.getY(), victim.getZ(), victim.getYRot(), 0);
+            
+            // Ensure the remains themselves are NOT tagged as servants
+            ((IPersistentDataAccessor) remains).creraces$getPersistentData().remove("creraces:servant_of");
+
+            victim.level().addFreshEntity(remains);
+        }
     }
 }

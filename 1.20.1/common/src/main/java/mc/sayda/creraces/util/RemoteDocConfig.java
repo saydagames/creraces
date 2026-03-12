@@ -30,9 +30,10 @@ public class RemoteDocConfig {
         return fallback;
     }
 
-    public static final String INFODOC_SELECTOR = "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=\\s*(?:\\||\\}\\}))";
+    public static final String INFODOC_SELECTOR = "(?i)(?:\\|\\s*description\\s*=\\s*|==\\s*Description\\s*==[\\s\\r\\n]*)(.*?)(?=\\s*(?:\\||\\}\\}|==|$))";
+    public static final String PASSIVE_SELECTOR = "(?i)==\\s*(?:Racial\\s+)?Passives?\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)";
     public static final String HEADERDOC_SELECTOR = "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)";
-    public static final String PASSIVE_SELECTOR = "(?i)==\\s*Passive\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)";
+    public static final String RACE_DESCRIPTION_SELECTOR = INFODOC_SELECTOR;
 
     public static RemoteDocConfig fromJson(JsonObject json) {
         if (json == null)

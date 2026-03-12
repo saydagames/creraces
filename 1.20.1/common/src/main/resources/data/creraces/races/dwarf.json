@@ -22,8 +22,7 @@
         ]
     },
     "starting_abilities": [
-        "creraces:unstoppable_charge",
-        "creraces:mini_build"
+        "creraces:unstoppable_charge"
     ],
     "traits": [
         {

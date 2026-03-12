@@ -91,8 +91,8 @@ public class CreRacesConfig {
     public static Supplier<Boolean> DISABLE_REMOTE_DOCS = () -> false;
     public static Supplier<String> WIKI_PAGE_PATH = () -> "wiki";
     public static Supplier<String> WIKI_ABILITY_NAMESPACE = () -> "abilities";
-    public static Supplier<String> WIKI_BASE_URL = () -> "https://wiki.saydagames.com";
-    public static Supplier<String> WIKI_API_BASE = () -> "https://api.wiki.saydagames.com";
+    public static Supplier<String> WIKI_BASE_URL = () -> "https://creraces.wiki.gg";
+    public static Supplier<String> WIKI_API_BASE = () -> "https://creraces.wiki.gg";
     public static Supplier<Boolean> HUMAN_SELECTION_ALLOWED = () -> true;
     public static Supplier<Integer> TEAM_INVITE_TIMEOUT_TICKS = () -> 600;
     public static Supplier<Boolean> COIN_DROP_ENABLED = () -> true;
@@ -117,6 +117,7 @@ public class CreRacesConfig {
     public static Supplier<Double> RACE_DEFAULT_HEIGHT_MOD = () -> 1.0;
     public static Supplier<Double> RACE_DEFAULT_WIDTH_MOD = () -> 1.0;
     public static Supplier<Double> UNDEAD_SUMMON_CAP = () -> 5.0;
+    public static Supplier<Double> REMAINS_HEALTH = () -> 10.0;
     public static Supplier<Integer> REMAINS_DECAY_TIME = () -> 1200;
     public static Supplier<Double> DRYAD_BLESSING_COST = () -> 50.0;
     public static Supplier<Double> SCALING_DEFAULT_FACTOR = () -> 1.0;

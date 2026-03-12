@@ -176,7 +176,8 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
 
             if (vars.getCoins() < currentCost) {
                 player.displayClientMessage(net.minecraft.network.chat.Component
-                        .literal("You don't have enough Coins to expand! (Required: " + (int) currentCost + ")"),
+                        .literal("You don't have enough Coins to expand! (Coins: "
+                                + (int) vars.getCoins() + " / " + (int) currentCost + ")"),
                         false);
                 return;
             }

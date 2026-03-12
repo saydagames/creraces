@@ -142,5 +142,6 @@ public class ActionRegistry {
         mc.sayda.creraces.engine.actions.StopSoundAction.register();
         mc.sayda.creraces.engine.actions.CancelAction.register();
         mc.sayda.creraces.engine.actions.GiveItemAction.register();
+        mc.sayda.creraces.engine.actions.MassSummonAction.register();
     }
 }

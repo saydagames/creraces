@@ -14,7 +14,7 @@
     "resource_type": "MANA",
     "max_resource": 120,
     "stacks_affect_resource": false,
-    "g_state": "FEMALE",
+    "gstate": "FEMALE",
     "passives": {
         "lava_vision": true,
         "unaffected_by_lava": true,

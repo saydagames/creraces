@@ -605,6 +605,10 @@ public class CreracesCommand {
                 }
 
                 return mc.sayda.creraces.capability.DataUtils.getVariables(player).map(vars -> {
+                        if (!vars.hasPocket()) {
+                                source.sendFailure(Component.literal("You do not have a pocket to manage."));
+                                return 0;
+                        }
                         vars.inviteToPocket(target.getUUID());
                         source.sendSuccess(() -> Component
                                         .literal("Invited " + target.getGameProfile().getName() + " to your pocket.")
@@ -623,6 +627,10 @@ public class CreracesCommand {
                         return 0;
 
                 return mc.sayda.creraces.capability.DataUtils.getVariables(player).map(vars -> {
+                        if (!vars.hasPocket()) {
+                                source.sendFailure(Component.literal("You do not have a pocket to manage."));
+                                return 0;
+                        }
                         vars.revokePocketInvitation(target.getUUID());
                         source.sendSuccess(() -> Component
                                         .literal("Revoked " + target.getGameProfile().getName() + "'s invitation.")
@@ -644,6 +652,10 @@ public class CreracesCommand {
                 }
 
                 return mc.sayda.creraces.capability.DataUtils.getVariables(player).map(vars -> {
+                        if (!vars.hasPocket()) {
+                                source.sendFailure(Component.literal("You do not have a pocket to manage."));
+                                return 0;
+                        }
                         double tx = vars.getPocketX();
                         double tz = vars.getPocketZ();
                         double range = 500; // Pocket boundary
@@ -683,6 +695,10 @@ public class CreracesCommand {
                         return 0;
 
                 return mc.sayda.creraces.capability.DataUtils.getVariables(player).map(vars -> {
+                        if (!vars.hasPocket()) {
+                                source.sendFailure(Component.literal("You do not have a pocket to manage."));
+                                return 0;
+                        }
                         java.util.Set<java.util.UUID> invites = vars.getPocketInvitations();
                         if (invites.isEmpty()) {
                                 source.sendSuccess(() -> Component.literal("No active invitations."), false);

@@ -1,5 +1,5 @@
 {
-  "parent": "creraces:custom/dryad_totem",
+  "parent": "minecraft:block/cube_all",
   "textures": {
     "all": "creraces:block/runic_altar_side_5",
     "particle": "creraces:block/runic_altar_side_5",

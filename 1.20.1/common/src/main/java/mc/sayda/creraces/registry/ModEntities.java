@@ -61,6 +61,28 @@ public class ModEntities {
                                                         .updateInterval(3)
                                                         .build("tornado"));
 
+        public static final RegistrySupplier<EntityType<mc.sayda.creraces.entity.RemainsEntity>> REMAINS = ENTITIES
+                        .register(
+                                        "remains",
+                                        () -> EntityType.Builder.<mc.sayda.creraces.entity.RemainsEntity>of(
+                                                        mc.sayda.creraces.entity.RemainsEntity::new,
+                                                        MobCategory.MISC)
+                                                        .sized(0.6F, 0.4F)
+                                                        .clientTrackingRange(8)
+                                                        .updateInterval(3)
+                                                        .build("remains"));
+
+        public static final RegistrySupplier<EntityType<mc.sayda.creraces.entity.UndeadRemainsEntity>> REMAINS_UNDEAD = ENTITIES
+                        .register(
+                                        "remains_undead",
+                                        () -> EntityType.Builder.<mc.sayda.creraces.entity.UndeadRemainsEntity>of(
+                                                        mc.sayda.creraces.entity.UndeadRemainsEntity::new,
+                                                        MobCategory.MISC)
+                                                        .sized(0.6F, 0.4F)
+                                                        .clientTrackingRange(8)
+                                                        .updateInterval(3)
+                                                        .build("remains_undead"));
+
         public static void registerAttributes() {
                 dev.architectury.registry.level.entity.EntityAttributeRegistry.register(TROLL_PILLAR,
                                 TrollPillarEntity::createAttributes);
@@ -70,6 +92,10 @@ public class ModEntities {
                                 PoisonEmitterMobileEntity::createAttributes);
                 dev.architectury.registry.level.entity.EntityAttributeRegistry.register(TORNADO,
                                 mc.sayda.creraces.entity.TornadoEntity::createAttributes);
+                dev.architectury.registry.level.entity.EntityAttributeRegistry.register(REMAINS,
+                                mc.sayda.creraces.entity.RemainsEntity::createAttributes);
+                dev.architectury.registry.level.entity.EntityAttributeRegistry.register(REMAINS_UNDEAD,
+                                mc.sayda.creraces.entity.RemainsEntity::createAttributes);
         }
 
         public static void register() {

@@ -161,8 +161,8 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
 
                 // gState
                 mc.sayda.creraces.engine.GState gState = mc.sayda.creraces.engine.GState.BOTH;
-                if (jsonObject.has("g_state")) {
-                    gState = mc.sayda.creraces.engine.GState.fromString(jsonObject.get("g_state").getAsString());
+                if (jsonObject.has("gstate")) {
+                    gState = mc.sayda.creraces.engine.GState.fromString(jsonObject.get("gstate").getAsString());
                 }
                 List<String> raceAddons = new ArrayList<>();
                 if (jsonObject.has("race_addons")) {
@@ -190,7 +190,10 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                     mc.sayda.creraces.util.RemoteDocConfig remoteConfig = mc.sayda.creraces.util.RemoteDocConfig
                             .fromJson(jsonObject.getAsJsonObject("remote_description"));
                     if (remoteConfig != null) {
-                        RaceRegistry.registerRemoteDoc(id, remoteConfig);
+                        RaceRegistry.registerRemoteDoc(id, new mc.sayda.creraces.util.RemoteDocConfig(
+                                mc.sayda.creraces.util.WikiUtils.getRaceUrl(net.minecraft.network.chat.Component.literal(nameStr)),
+                                mc.sayda.creraces.util.RemoteDocConfig.RACE_DESCRIPTION_SELECTOR,
+                                "race.creraces." + id.getPath() + ".description"));
                     }
                 }
 
@@ -395,6 +398,7 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                 defendedByEntities,
 
                 // Special Mechanics
-                spawnOnDeath);
+                spawnOnDeath,
+                GsonHelper.getAsBoolean(p, "can_command_socials", false));
     }
 }

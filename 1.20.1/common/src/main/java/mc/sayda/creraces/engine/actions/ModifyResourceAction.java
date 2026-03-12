@@ -14,13 +14,15 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
     private final String operation; // set, add
     private final mc.sayda.creraces.engine.ScalingValue value;
     private final boolean useTarget;
+    private final mc.sayda.creraces.engine.TargetFilter targets;
 
     public ModifyResourceAction(String resource, String operation, mc.sayda.creraces.engine.ScalingValue value,
-            boolean useTarget) {
+            boolean useTarget, mc.sayda.creraces.engine.TargetFilter targets) {
         this.resource = resource;
         this.operation = operation;
         this.value = value;
         this.useTarget = useTarget;
+        this.targets = targets;
     }
 
     @Override
@@ -30,7 +32,7 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
         // Targeting: use the explicit target if provided; otherwise fall back to player
         // unless use_target forces null
         LivingEntity entity = (target != null) ? target : (useTarget ? null : player);
-        if (entity == null)
+        if (entity == null || !targets.isValid(entity, player))
             return true;
 
         String res = resource.toLowerCase();
@@ -115,7 +117,9 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
             mc.sayda.creraces.engine.ScalingValue val = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "value",
                     0.0);
             boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
-            return new ModifyResourceAction(resource, op, val, useTarget);
+            mc.sayda.creraces.engine.TargetFilter targets = mc.sayda.creraces.engine.TargetFilter.fromJson(json,
+                    "targets");
+            return new ModifyResourceAction(resource, op, val, useTarget, targets);
         });
     }
 }

@@ -5,6 +5,9 @@
     "icon": "minecraft:feather",
     "cooldown": 200,
     "cost": 20,
+    "race": [
+        "creraces:aurai"
+    ],
     "actions": [
         {
             "type": "creraces:aoe",

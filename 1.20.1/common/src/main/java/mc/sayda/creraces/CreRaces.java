@@ -1,5 +1,7 @@
 package mc.sayda.creraces;
 
+import dev.architectury.registry.level.entity.EntityAttributeRegistry;
+
 import com.mojang.logging.LogUtils;
 import dev.architectury.registry.ReloadListenerRegistry;
 import mc.sayda.creraces.ability.AbilityManager;
@@ -77,6 +79,11 @@ public class CreRaces {
 
         // Entities
         mc.sayda.creraces.registry.ModEntities.register();
+        EntityAttributeRegistry.register(mc.sayda.creraces.registry.ModEntities.REMAINS, mc.sayda.creraces.entity.RemainsEntity::createAttributes);
+        EntityAttributeRegistry.register(mc.sayda.creraces.registry.ModEntities.REMAINS_UNDEAD, mc.sayda.creraces.entity.RemainsEntity::createAttributes);
+
+        // Particles
+        mc.sayda.creraces.registry.ModParticles.register();
 
         // Blocks
         mc.sayda.creraces.registry.ModBlocks.register();

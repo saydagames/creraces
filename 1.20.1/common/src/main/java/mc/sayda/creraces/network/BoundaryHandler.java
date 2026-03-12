@@ -21,8 +21,7 @@ public class BoundaryHandler {
 
     public static void init() {
         registerC2S();
-        registerS2C();
-        LOGGER.info("Yukari has established the world network boundaries.");
+        LOGGER.info("Yukari has established the server network boundaries.");
     }
 
     public static void registerC2S() {

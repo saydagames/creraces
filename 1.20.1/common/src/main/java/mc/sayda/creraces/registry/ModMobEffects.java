@@ -87,6 +87,30 @@ public class ModMobEffects {
         public static final RegistrySupplier<MobEffect> BLEEDING = MOB_EFFECTS.register("bleeding",
                         () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.HARMFUL, 0xCC0000));
 
+        // TODO: Missing Effects Audit, decide and implement these
+        public static final RegistrySupplier<MobEffect> AIR_ELEMENT = MOB_EFFECTS.register("air_element",
+                        () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.BENEFICIAL, 0x87CEEB));
+        public static final RegistrySupplier<MobEffect> EARTH_ELEMENT = MOB_EFFECTS.register("earth_element",
+                        () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.BENEFICIAL, 0x8B4513));
+        public static final RegistrySupplier<MobEffect> FIRE_ELEMENT = MOB_EFFECTS.register("fire_element",
+                        () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.BENEFICIAL, 0xFF4500));
+        public static final RegistrySupplier<MobEffect> WATER_ELEMENT = MOB_EFFECTS.register("water_element",
+                        () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.BENEFICIAL, 0x0000FF));
+        public static final RegistrySupplier<MobEffect> BLINDED = MOB_EFFECTS.register("blinded",
+                        () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.HARMFUL, 0x000000));
+        public static final RegistrySupplier<MobEffect> CAMOUFLAGE = MOB_EFFECTS.register("camouflage",
+                        () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.BENEFICIAL, 0x228B22));
+        public static final RegistrySupplier<MobEffect> FOUL_PLAY = MOB_EFFECTS.register("foul_play",
+                        () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.HARMFUL, 0x4B0082));
+        public static final RegistrySupplier<MobEffect> INVULNERABILITY = MOB_EFFECTS.register("invulnerability",
+                        () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.BENEFICIAL, 0xFFD700));
+        public static final RegistrySupplier<MobEffect> THORNS = MOB_EFFECTS.register("thorns",
+                        () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.BENEFICIAL, 0x006400));
+        public static final RegistrySupplier<MobEffect> WATER_RESISTANCE = MOB_EFFECTS.register("water_resistance",
+                        () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.BENEFICIAL, 0x1E90FF));
+        public static final RegistrySupplier<MobEffect> WILD_HUNT = MOB_EFFECTS.register("wild_hunt",
+                        () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.BENEFICIAL, 0x556B2F));
+
         public static void register() {
                 MOB_EFFECTS.register();
         }

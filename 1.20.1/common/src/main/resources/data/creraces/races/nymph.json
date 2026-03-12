@@ -17,7 +17,7 @@
     "tier": "creraces:common",
     "difficulty": 1,
     "stacks_affect_resource": false,
-    "g_state": "FEMALE",
+    "gstate": "FEMALE",
     "is_spirit": true,
     "passives": {
         "regeneration_multiplier": 1.1

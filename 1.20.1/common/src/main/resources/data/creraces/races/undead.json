@@ -30,7 +30,8 @@
         ],
         "defended_by_entities": [
             "#minecraft:undead"
-        ]
+        ],
+        "can_command_socials": true
     },
     "traits": [
         {
@@ -63,7 +64,9 @@
     ],
     "starting_abilities": [
         "creraces:fruitful_sacrifice",
-        "creraces:fruitful_harvest"
+        "creraces:fruitful_harvest",
+        "creraces:summon_undead",
+        "creraces:boost_morale"
     ],
     "wiki_page": "Undead"
 }

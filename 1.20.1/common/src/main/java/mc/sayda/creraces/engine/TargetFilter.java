@@ -79,28 +79,23 @@ public class TargetFilter {
             return false;
 
         // 2. Process ALLOW rules
-        if (allow.contains("all"))
-            return true;
-        if (allow.contains("self") && victim == caster)
+        // If it's an ally, it is ONLY valid if "allies" or "self" (if victim is caster)
+        // is explicitly allowed.
+        // Otherwise, it must pass the category filters (players/mobs/all/enemies).
+        if (isAlly) {
+            if (victim == caster && allow.contains("self"))
+                return true;
+            return allow.contains("allies");
+        }
+
+        // Not an ally - check category allows
+        if (allow.contains("all") || allow.contains("enemies"))
             return true;
 
         if (victim instanceof Player) {
-            if (allow.contains("players"))
-                return true;
+            return allow.contains("players");
         } else {
-            if (allow.contains("mobs"))
-                return true;
+            return allow.contains("mobs");
         }
-
-        if (isAlly) {
-            if (allow.contains("allies"))
-                return true;
-        } else {
-            if (allow.contains("enemies"))
-                return true;
-        }
-
-        // If it didn't match any allow rules, it's invalid.
-        return false;
     }
 }

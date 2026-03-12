@@ -12,9 +12,9 @@
     "max_resource": 100,
     "tier": "creraces:rare",
     "stacks_affect_resource": false,
-    "g_state": "FEMALE",
+    "gstate": "FEMALE",
     "difficulty": 2,
-    "passives": [
+    "traits": [
         {
             "type": "creraces:addon",
             "addon_id": "short_torso"
@@ -214,6 +214,9 @@
     "starting_abilities": [
         "creraces:dash",
         "creraces:talon_strike"
+    ],
+    "starting_items": [
+        "creraces:mirror"
     ],
     "customization": [
         {

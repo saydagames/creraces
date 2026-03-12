@@ -34,6 +34,12 @@ public class DamageAction implements ActionRegistry.RaceAction {
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
         net.minecraft.world.entity.LivingEntity actualTarget = target != null ? target : player;
+
+        // Safety Guard: Don't damage allies if FF is off
+        if (actualTarget != player && !mc.sayda.creraces.team.RaceTeamManager.canHurt(actualTarget, player)) {
+            return true;
+        }
+
         double dmg = amount.evaluate(player, actualTarget);
 
         if (damagePerStack != null && stackEffect != null && !stackEffect.isEmpty()) {

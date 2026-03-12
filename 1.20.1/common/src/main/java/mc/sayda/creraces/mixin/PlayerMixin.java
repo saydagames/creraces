@@ -14,6 +14,14 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import mc.sayda.creraces.item.CommandingStaffItem;
+import net.minecraft.server.level.ServerLevel;
 
 import java.util.Map;
 import java.util.Set;
@@ -31,8 +39,10 @@ public class PlayerMixin implements IPlayerVariables {
         // Calling it here caused double-ticking of cooldowns/resources every server
         // tick.
         // On the client, ticking is handled by CreRacesClient via ClientTickEvent.
-        if (!player.level().isClientSide())
+        if (!player.level().isClientSide()) {
+            creraces$handleStaffPreselection(player);
             return;
+        }
         mc.sayda.creraces.race.ResourceTicker.tick(player);
     }
 
@@ -691,5 +701,49 @@ public class PlayerMixin implements IPlayerVariables {
     @Override
     public void sync(Player player) {
         mc.sayda.creraces.network.BoundaryHandler.resyncVariables((Player) (Object) this, player);
+    }
+
+    @Unique
+    private void creraces$handleStaffPreselection(Player player) {
+        if (player.isShiftKeyDown()) return;
+
+        // Check both hands
+        creraces$checkAndActivateStaff(player, player.getMainHandItem());
+        creraces$checkAndActivateStaff(player, player.getOffhandItem());
+    }
+
+    @Unique
+    private void creraces$checkAndActivateStaff(Player player, ItemStack stack) {
+        if (!(stack.getItem() instanceof CommandingStaffItem)) return;
+        
+        CompoundTag tag = stack.getTag();
+        if (tag != null && tag.contains("PendingMode")) {
+            String activatedMode = tag.getString("PendingMode");
+            tag.putString("CommandMode", activatedMode);
+            tag.remove("PendingMode");
+
+            MutableComponent modeComp = switch (activatedMode) {
+                case "follow" -> Component.translatable("message.creraces.mode_follow").withStyle(ChatFormatting.GREEN);
+                case "move" -> Component.translatable("message.creraces.mode_move").withStyle(ChatFormatting.AQUA);
+                case "attack" -> Component.translatable("message.creraces.mode_attack").withStyle(ChatFormatting.RED);
+                case "free" -> Component.translatable("message.creraces.mode_free").withStyle(ChatFormatting.YELLOW);
+                default -> Component.translatable("message.creraces.mode_unknown");
+            };
+
+            player.displayClientMessage(Component.translatable("message.creraces.staff_activated", modeComp), true);
+            player.level().playSound(null, player.getX(), player.getY(), player.getZ(), 
+                SoundEvents.ARROW_HIT_PLAYER, SoundSource.PLAYERS, 0.5f, 0.5f);
+
+            if (player.level() instanceof ServerLevel serverLevel) {
+                net.minecraft.core.particles.SimpleParticleType pt = switch (activatedMode) {
+                    case "follow" -> mc.sayda.creraces.registry.ModParticles.MARKER.get();
+                    case "move" -> mc.sayda.creraces.registry.ModParticles.MARKER_MOVE.get();
+                    case "attack" -> mc.sayda.creraces.registry.ModParticles.MARKER_ATTACK.get();
+                    case "free" -> mc.sayda.creraces.registry.ModParticles.MARKER.get();
+                    default -> mc.sayda.creraces.registry.ModParticles.MARKER.get();
+                };
+                serverLevel.sendParticles(pt, player.getX(), player.getY() + 2.5, player.getZ(), 15, 0.4, 0.4, 0.4, 0.05);
+            }
+        }
     }
 }

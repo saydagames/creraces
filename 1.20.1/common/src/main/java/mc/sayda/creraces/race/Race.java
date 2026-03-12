@@ -1,9 +1,7 @@
 package mc.sayda.creraces.race;
 
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
 import mc.sayda.creraces.engine.TraitRegistry.RaceTrait;
@@ -275,6 +273,7 @@ public class Race {
                 private final List<String> respectedByEntities;
                 private final List<String> defendedByEntities;
                 private final EntitySpawnData spawnOnDeath;
+                private final boolean canCommandSocials;
 
                 public Passives(boolean canBreatheUnderwater, boolean canBreatheOnLand, boolean burnsInSunlight,
                                 List<String> immuneToDamageTypes, List<String> immuneToPotionEffects,
@@ -289,7 +288,8 @@ public class Race {
                                 boolean noHungerDrain, mc.sayda.creraces.engine.ScalingValue fixedHunger,
                                 boolean canEatMeat,
                                 boolean canEatWhenFull, List<String> hatedByEntities, List<String> respectedByEntities,
-                                List<String> defendedByEntities, @Nullable EntitySpawnData spawnOnDeath) {
+                                List<String> defendedByEntities, @Nullable EntitySpawnData spawnOnDeath,
+                                boolean canCommandSocials) {
                         this.canBreatheUnderwater = canBreatheUnderwater;
                         this.canBreatheOnLand = canBreatheOnLand;
                         this.burnsInSunlight = burnsInSunlight;
@@ -317,6 +317,7 @@ public class Race {
                         this.respectedByEntities = respectedByEntities;
                         this.defendedByEntities = defendedByEntities;
                         this.spawnOnDeath = spawnOnDeath;
+                        this.canCommandSocials = canCommandSocials;
                 }
 
                 public boolean canBreatheUnderwater() {
@@ -427,6 +428,10 @@ public class Race {
                         return spawnOnDeath;
                 }
 
+                public boolean canCommandSocials() {
+                        return canCommandSocials;
+                }
+
                 public static Passives DEFAULT = new Passives(
                                 false, true, false, List.of(), List.of(), // Breathing (+ effect immunity)
                                 false, false, false, // Vision
@@ -456,7 +461,8 @@ public class Race {
                                 // fixedHunger,
                                 // canEatMeat, canEatWhenFull)
                                 List.of(), List.of(), List.of(), // Social (empty lists)
-                                null // Special
+                                null, // Special
+                                false // canCommandSocials
                 );
         }
 

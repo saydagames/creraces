@@ -4,6 +4,9 @@
     "icon": "minecraft:textures/item/poisonous_potato.png",
     "category": "UTILITY",
     "cooldown": 600,
+    "race": [
+        "creraces:ratkin"
+    ],
     "actions": [
         {
             "type": "creraces:conditional",

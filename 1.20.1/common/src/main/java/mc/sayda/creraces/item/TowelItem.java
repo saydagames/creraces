@@ -51,9 +51,9 @@ public class TowelItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltipComponents,
+    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip,
             TooltipFlag isAdvanced) {
-        super.appendHoverText(stack, level, tooltipComponents, isAdvanced);
-        tooltipComponents.add(Component.translatable("item.creraces.towel.description_0"));
+        super.appendHoverText(stack, level, tooltip, isAdvanced);
+        // tooltip.add(Component.translatable("item.creraces.towel.description_0"));
     }
 }

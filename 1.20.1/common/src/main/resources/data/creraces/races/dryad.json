@@ -14,17 +14,20 @@
     "resource_type": "MANA",
     "max_resource": 120,
     "stacks_affect_resource": false,
-    "g_state": "FEMALE",
+    "gstate": "FEMALE",
     "tier": "creraces:common",
     "difficulty": 2,
     "passives": {
         "regeneration_multiplier": 1.15
     },
-    "abilities": [
+    "starting_abilities": [
         "creraces:camouflage",
         "creraces:rampant_growth",
         "creraces:entanglement",
         "creraces:quick_escape"
+    ],
+    "starting_items": [
+        "creraces:dryad_sapling"
     ],
     "traits": [
         {
@@ -36,7 +39,7 @@
             }
         },
         {
-            "type": "creraces:block_interaction",
+            "type": "creraces:block_place",
             "block": "creraces:dryad_sapling",
             "condition": {
                 "type": "not",
@@ -223,6 +226,12 @@
                             ]
                         },
                         {
+                            "type": "creraces:place_block",
+                            "block": "minecraft:coarse_dirt",
+                            "use_target_block": true,
+                            "overwrite": true
+                        },
+                        {
                             "type": "creraces:set_customization",
                             "key": "tx",
                             "mode": "REMOVE"
@@ -241,12 +250,6 @@
                             "type": "creraces:set_customization",
                             "key": "td",
                             "mode": "REMOVE"
-                        },
-                        {
-                            "type": "creraces:place_block",
-                            "block": "minecraft:coarse_dirt",
-                            "use_target_block": true,
-                            "overwrite": true
                         },
                         {
                             "type": "creraces:message",

@@ -32,7 +32,7 @@ public class DimeItem extends Item {
     public void appendHoverText(@Nonnull ItemStack stack, @Nullable Level level, @Nonnull List<Component> tooltip,
             @Nonnull TooltipFlag flag) {
         super.appendHoverText(stack, level, tooltip, flag);
-        tooltip.add(Component.translatable("item.creraces.dime.description_0"));
+        // tooltip.add(Component.translatable("item.creraces.dime.description_0"));
     }
 
     @Override

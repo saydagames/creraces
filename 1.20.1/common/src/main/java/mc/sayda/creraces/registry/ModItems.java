@@ -3,6 +3,7 @@ package mc.sayda.creraces.registry;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.item.CommandingStaffItem;
 import mc.sayda.creraces.item.ScrollItem;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.Item;
@@ -24,8 +25,15 @@ public class ModItems {
 
         public static final RegistrySupplier<Item> DIME = ITEMS.register("dime",
                         () -> new mc.sayda.creraces.item.currency.DimeItem(new Item.Properties()));
+
+        public static final RegistrySupplier<Item> PENNY = ITEMS.register("penny",
+                        () -> new mc.sayda.creraces.item.currency.PennyItem(new Item.Properties()));
+
         public static final RegistrySupplier<Item> DRYAD_APPLE = ITEMS.register("dryad_apple",
                         () -> new Item(new Item.Properties()));
+
+        public static final RegistrySupplier<Item> COMMANDING_STAFF = ITEMS.register("commanding_staff",
+                        () -> new CommandingStaffItem(new Item.Properties().stacksTo(1)));
 
         // Block Items
         public static final RegistrySupplier<Item> DRYAD_LOG_ITEM = registerBlockItem(ModBlocks.DRYAD_LOG);

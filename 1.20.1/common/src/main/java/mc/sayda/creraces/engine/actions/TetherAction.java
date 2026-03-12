@@ -32,10 +32,12 @@ public class TetherAction implements ActionRegistry.RaceAction {
     private final List<ActionRegistry.RaceAction> onBreakActions;
     private final ResourceLocation texture;
     private final ScalingValue width;
+    private final mc.sayda.creraces.engine.TargetFilter targets;
 
     public TetherAction(ScalingValue duration, ScalingValue maxDistance, ScalingValue interval,
             List<ActionRegistry.RaceAction> actions, List<ActionRegistry.RaceAction> onCompleteActions,
-            List<ActionRegistry.RaceAction> onBreakActions, ResourceLocation texture, ScalingValue width) {
+            List<ActionRegistry.RaceAction> onBreakActions, ResourceLocation texture, ScalingValue width,
+            mc.sayda.creraces.engine.TargetFilter targets) {
         this.duration = duration;
         this.maxDistance = maxDistance;
         this.interval = interval;
@@ -44,6 +46,7 @@ public class TetherAction implements ActionRegistry.RaceAction {
         this.onBreakActions = onBreakActions;
         this.texture = texture;
         this.width = width;
+        this.targets = targets;
     }
 
     @Override
@@ -53,7 +56,7 @@ public class TetherAction implements ActionRegistry.RaceAction {
         if (player.level().isClientSide() || target == null)
             return false;
 
-        if (target == player)
+        if (target == player || !targets.isValid(target, player))
             return false;
 
         UUID casterId = player.getUUID();
@@ -190,7 +193,10 @@ public class TetherAction implements ActionRegistry.RaceAction {
                 }
             }
 
-            return new TetherAction(dur, dist, inter, actions, onComplete, onBreak, tex, w);
+            mc.sayda.creraces.engine.TargetFilter targets = mc.sayda.creraces.engine.TargetFilter.fromJson(json,
+                    "targets");
+
+            return new TetherAction(dur, dist, inter, actions, onComplete, onBreak, tex, w, targets);
         });
     }
 

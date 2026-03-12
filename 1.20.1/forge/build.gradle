@@ -27,8 +27,8 @@ configurations {
 }
 
 dependencies {
-    forge "net.minecraftforge:forge:1.20.1-47.1.0"
-    modApi "dev.architectury:architectury-forge:9.2.14"
+    forge "net.minecraftforge:forge:${rootProject.property('1_20_1_minecraft_version')}-${rootProject.property('1_20_1_forge_version')}"
+    modApi "dev.architectury:architectury-forge:${rootProject.property('1_20_1_architectury_version')}"
 
     common(project(path: ":1.20.1:common", configuration: "namedElements")) { transitive = false }
     shadowCommon(project(path: ":1.20.1:common", configuration: "transformProductionForge")) { transitive = false }

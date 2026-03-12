@@ -21,6 +21,8 @@ public class FoodDataMixin implements mc.sayda.creraces.util.IFoodDataAccessor {
     private int foodLevel;
     @Shadow
     private float saturationLevel;
+    @Shadow
+    private float exhaustionLevel;
 
     // ─── Food multiplier helpers (called from PlayerFoodMixin) ─────────────────
 
@@ -69,10 +71,9 @@ public class FoodDataMixin implements mc.sayda.creraces.util.IFoodDataAccessor {
 
     /**
      * Cancels the hunger exhaustion/drain tick for races with no_hunger_drain.
-     * This prevents the food level from ever decreasing, while still allowing the
-     * player to eat.
+     * This prevents the food level from ever decreasing by resetting exhaustion.
      */
-    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/food/FoodData;addExhaustion(F)V"), cancellable = true)
+    @Inject(method = "tick", at = @At("HEAD"))
     private void creraces$cancelHungerDrain(Player player, CallbackInfo ci) {
         if (player.level().isClientSide())
             return;
@@ -81,7 +82,7 @@ public class FoodDataMixin implements mc.sayda.creraces.util.IFoodDataAccessor {
         if (varsOpt.isPresent()) {
             Race race = RaceRegistry.get(varsOpt.get().getRace());
             if (race != null && race.passives() != null && race.passives().noHungerDrain()) {
-                ci.cancel();
+                this.exhaustionLevel = 0.0f;
             }
         }
     }

@@ -15,6 +15,20 @@ public class CreRacesClient {
                 mc.sayda.creraces.network.BoundaryHandler.registerS2C();
                 mc.sayda.creraces.client.SpiritMobilityClient.init();
 
+                MenuRegistry.registerScreenFactory(mc.sayda.creraces.registry.ModMenuTypes.MENU_GUI.get(),
+                                mc.sayda.creraces.client.screen.MenuGUIScreen::new);
+
+                // Particles
+                dev.architectury.registry.client.particle.ParticleProviderRegistry.register(
+                                mc.sayda.creraces.registry.ModParticles.MARKER,
+                                mc.sayda.creraces.client.particle.MarkerParticle.Provider::new);
+                dev.architectury.registry.client.particle.ParticleProviderRegistry.register(
+                                mc.sayda.creraces.registry.ModParticles.MARKER_MOVE,
+                                mc.sayda.creraces.client.particle.MarkerMoveParticle.Provider::new);
+                dev.architectury.registry.client.particle.ParticleProviderRegistry.register(
+                                mc.sayda.creraces.registry.ModParticles.MARKER_ATTACK,
+                                mc.sayda.creraces.client.particle.MarkerAttackParticle.Provider::new);
+
                 // Register renderers early so Architectury can hook into Forge events
                 dev.architectury.registry.client.level.entity.EntityRendererRegistry.register(
                                 mc.sayda.creraces.registry.ModEntities.FEATHER_PROJECTILE,
@@ -47,19 +61,23 @@ public class CreRacesClient {
                                 mc.sayda.creraces.registry.ModEntities.TORNADO,
                                 mc.sayda.creraces.client.render.TornadoRenderer::new);
 
+                // Undead Remains
+                dev.architectury.registry.client.level.entity.EntityModelLayerRegistry.register(
+                                mc.sayda.creraces.client.model.RemainsModel.LAYER_LOCATION,
+                                mc.sayda.creraces.client.model.RemainsModel::createBodyLayer);
+                dev.architectury.registry.client.level.entity.EntityRendererRegistry.register(
+                                mc.sayda.creraces.registry.ModEntities.REMAINS,
+                                mc.sayda.creraces.client.render.RemainsRenderer::new);
+                dev.architectury.registry.client.level.entity.EntityRendererRegistry.register(
+                                mc.sayda.creraces.registry.ModEntities.REMAINS_UNDEAD,
+                                mc.sayda.creraces.client.render.RemainsRenderer::new);
+
                 // Torii Bell — custom model with per-face textures
                 dev.architectury.registry.client.level.entity.EntityModelLayerRegistry.register(
                                 mc.sayda.creraces.client.render.ToriBellRenderer.LAYER_LOCATION,
                                 mc.sayda.creraces.client.render.ToriBellRenderer::createBodyLayer);
 
                 dev.architectury.event.events.client.ClientLifecycleEvent.CLIENT_SETUP.register(instance -> {
-                        // Register screen factory here instead of main init because
-                        // ModMenuTypes.MENU_GUI.get()
-                        // throws NullPointerException on Forge if called before registry
-                        // initialization.
-                        MenuRegistry.registerScreenFactory(mc.sayda.creraces.registry.ModMenuTypes.MENU_GUI.get(),
-                                        mc.sayda.creraces.client.screen.MenuGUIScreen::new);
-
                         // Register microblock renderer
                         dev.architectury.registry.client.rendering.BlockEntityRendererRegistry.register(
                                         mc.sayda.creraces.registry.ModBlocks.MICRO_BLOCK_ENTITY.get(),

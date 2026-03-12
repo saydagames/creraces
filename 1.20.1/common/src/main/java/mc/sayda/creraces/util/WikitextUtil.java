@@ -72,6 +72,9 @@ public class WikitextUtil {
         // Strip remaining HTML tags
         cleaned = REMAINING_HTML.matcher(cleaned).replaceAll("");
 
+        if (cleaned == null)
+            return null;
+
         return cleaned.trim();
     }
 
