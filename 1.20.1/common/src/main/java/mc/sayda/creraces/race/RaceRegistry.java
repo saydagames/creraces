@@ -72,9 +72,9 @@ public class RaceRegistry {
         return RACES.containsKey(id);
     }
 
-    public static java.util.Optional<Race> getRaceByLegacyId(double legacyId) {
+    public static java.util.Optional<Race> getRaceByIndex(double index) {
         return RACES.values().stream()
-                .filter(r -> r.legacyId() == legacyId)
+                .filter(r -> r.index() == index)
                 .findFirst();
     }
 }

@@ -39,10 +39,8 @@ public class RaceIncidents {
                 // Clear cosmetic addons when resetting race
                 CosmeticIncidents.clearAllRacialAddons(player);
 
-                // gState: restore female model/chest after reset if gState == 1
-                if (vars.getGState() == 1) {
-                    CosmeticIncidents.applyGStateAddons(player);
-                }
+                // gState: restore forced aesthetics (model/chest) after reset
+                CosmeticIncidents.applyGStateAddons(player);
 
                 AttributeIncidents.eikiJudgment(player);
 
@@ -91,13 +89,16 @@ public class RaceIncidents {
             // Apply Default Customizations
             if (race.customization() != null) {
                 for (mc.sayda.creraces.race.RaceCustomization cust : race.customization()) {
-                    vars.setCustomization(cust.id(), cust.defaultValue());
+                    vars.setCustomization(cust.id(), cust.getDefaultValue(raceId));
                 }
-                CosmeticIncidents.applyCustomizations(player, vars.getCustomizations(), race);
             }
-
             // Apply female model and/or chest addon if this race forces a gState
+            // This MUST happen before applyCustomizations so trait-based addons see the
+            // correct gState if they depend on it.
             CosmeticIncidents.applyGStateCosmetics(player, race, vars);
+
+            CosmeticIncidents.applyCustomizations(player, vars.getCustomizations(), race);
+
 
             // Grant Starting Abilities
             if (race.startingAbilities() != null) {
@@ -116,16 +117,8 @@ public class RaceIncidents {
                 }
             }
 
-            // Sync to client
-            BoundaryHandler.resyncVariables(player, player);
-            // Sync to tracking players
-            if (player.level() != null) {
-                player.level().players().forEach(p -> {
-                    if (p instanceof ServerPlayer sp) {
-                        BoundaryHandler.resyncVariables(player, sp);
-                    }
-                });
-            }
+            // Final Sync - vars.sync handles both local and tracking players
+            vars.sync(player);
 
             // If the race has customizations, open the Mirror Screen
             if (race.customization() != null && !race.customization().isEmpty()) {
@@ -141,28 +134,28 @@ public class RaceIncidents {
         DataUtils.getVariables(player).ifPresent(vars -> {
             ResourceLocation raceId = vars.getRace();
             Race race = RaceRegistry.get(raceId);
-            if (race == null)
-                return;
 
-            // Re-apply Vanilla Attributes
+            // Re-apply Vanilla Attributes (Attributes may still depend on race even if
+            // null-checked inside)
             AttributeIncidents.eikiJudgment(player);
 
-            // Re-apply Scale
-            applyScale(player, race.scale());
+            if (race != null) {
+                // Re-apply Scale
+                applyScale(player, race.scale());
+            }
 
-            // Re-apply Cosmetics
-            CosmeticIncidents.applyCustomizations(player, vars.getCustomizations(), race);
-            CosmeticIncidents.applyGStateCosmetics(player, race, vars);
+            // Re-apply GState Cosmetics (Crucial: This must happen even for NONE race
+            // players)
+            if (race != null) {
+                CosmeticIncidents.applyGStateCosmetics(player, race, vars);
+                // Re-apply Customizations (already handles gstate logic if needed)
+                CosmeticIncidents.applyCustomizations(player, vars.getCustomizations(), race);
+            } else {
+                CosmeticIncidents.applyGStateAddons(player, true);
+            }
 
             // Full Sync to client and trackers
-            BoundaryHandler.resyncVariables(player, player);
-            if (player.level() != null) {
-                player.level().players().forEach(p -> {
-                    if (p instanceof ServerPlayer sp && sp != player) {
-                        BoundaryHandler.resyncVariables(player, sp);
-                    }
-                });
-            }
+            vars.sync(player);
         });
     }
 
@@ -192,7 +185,7 @@ public class RaceIncidents {
                     (float) scale.knockback().evaluate(player));
             applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.FALLING, (float) scale.fallSpeed().evaluate(player));
         } catch (Throwable e) {
-            // Pehkui may be absent or throw on unsupported scale types — not fatal, but log
+            // Pehkui may be absent or throw on unsupported scale types, not fatal, but log
             // it
             mc.sayda.creraces.CreRaces.LOGGER.warn("[CreRaces] Failed to apply scale for entity {}: {}",
                     entity.getName().getString(), e.getMessage());

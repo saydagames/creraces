@@ -1,36 +1,33 @@
 {
-    "name": "race.creraces.ratkin.name",
-    "legacy_id": 13.0,
-    "scale": {
+    "creraces:name": "race.creraces.ratkin.name",
+    "creraces:index": 13.0,
+    "creraces:scale": {
         "base": 1.0,
         "height": 0.65,
         "width": 0.65
     },
-    "description": "race.creraces.ratkin.description",
-    "icon": "creraces:textures/screens/ratkin_icon.png",
-    "splash": "creraces:textures/screens/ratkin_splash.png",
-    "base_ap": 10,
-    "base_ad": 5,
-    "base_ah": 10,
-    "base_cr": 5,
-    "resource_type": "ENERGY",
-    "max_resource": 100,
-    "tier": "creraces:common",
-    "difficulty": 2,
-    "portrait": "creraces:textures/screens/ratkin_portrait.png",
-    "name_texture": "creraces:textures/screens/ratkin_text.png",
-    "passives": {
-        "negate_effects": [
-            "creraces:rat_venom"
-        ]
-    },
-    "starting_abilities": [
+    "creraces:description": "race.creraces.ratkin.description",
+    "creraces:icon": "creraces:textures/screens/ratkin_icon.png",
+    "creraces:splash": "creraces:textures/screens/ratkin_splash.png",
+    "creraces:base_ap": 10,
+    "creraces:base_ad": 5,
+    "creraces:base_ah": 10,
+    "creraces:base_cr": 5,
+    "creraces:resource_type": "ENERGY",
+    "creraces:max_resource": 100,
+    "creraces:difficulty": 2,
+    "creraces:portrait": "creraces:textures/screens/ratkin_portrait.png",
+    "creraces:name_texture": "creraces:textures/screens/ratkin_text.png",
+    "creraces:negate_effects": [
+        "creraces:rat_venom"
+    ],
+    "creraces:starting_abilities": [
         "creraces:cowardly_skirmish",
         "creraces:deadly_venom",
         "creraces:poison_emitter",
         "creraces:rat_tunnels"
     ],
-    "traits": [
+    "venom_mechanics": [
         {
             "type": "creraces:on_hit",
             "condition": {
@@ -39,6 +36,7 @@
             "actions": [
                 {
                     "type": "creraces:apply_effect",
+                    "cooldown": 10,
                     "effect": "creraces:rat_venom",
                     "duration": {
                         "base": 100
@@ -70,5 +68,5 @@
             ]
         }
     ],
-    "wiki_page": "Ratkin"
+    "creraces:wiki_page": "Ratkin"
 }

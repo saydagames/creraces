@@ -1,31 +1,34 @@
 {
-    "name": "race.creraces.elves.name",
-    "scale": {
+    "creraces:name": "race.creraces.elves.name",
+    "creraces:scale": {
         "base": 1.0,
         "height": 1.1
     },
-    "legacy_id": 12.0,
-    "description": "race.creraces.elves.description",
-    "icon": "creraces:textures/screens/elves_icon.png",
-    "splash": "creraces:textures/screens/elves_splash.png",
-    "portrait": "creraces:textures/screens/elves_portrait.png",
-    "name_texture": "creraces:textures/screens/elves_text.png",
-    "tier": "creraces:common",
-    "difficulty": 1,
-    "resource_type": "ENERGY",
-    "traits": [
+    "creraces:index": 12.0,
+    "creraces:description": "race.creraces.elves.description",
+    "creraces:icon": "creraces:textures/screens/elves_icon.png",
+    "creraces:splash": "creraces:textures/screens/elves_splash.png",
+    "creraces:portrait": "creraces:textures/screens/elves_portrait.png",
+    "creraces:name_texture": "creraces:textures/screens/elves_text.png",
+    "creraces:difficulty": 1,
+    "creraces:resource_type": "ENERGY",
+    "combat_buffs": [
         {
+            "id": "elf_speed",
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.movement_speed",
             "value": 0.12,
             "operation": "addition"
         },
         {
+            "id": "elf_attack_speed",
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.attack_speed",
             "value": 4.5,
             "operation": "addition"
-        },
+        }
+    ],
+    "iron_weakness": [
         {
             "type": "creraces:on_tick",
             "interval": 20,
@@ -64,12 +67,5 @@
             ]
         }
     ],
-    "customization": [
-        {
-            "id": "color",
-            "type": "tint",
-            "defaultValue": "#AADDAA"
-        }
-    ],
-    "wiki_page": "Elves"
+    "creraces:wiki_page": "Elves"
 }

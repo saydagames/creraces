@@ -81,7 +81,7 @@ public class DomainTrait extends PeriodicTrait {
             }
             String traitName = json.has("name") ? json.get("name").getAsString()
                     : "domain_" + Math.abs(json.toString().hashCode());
-            ResourceLocation traitId = new ResourceLocation(CreRaces.MODID, "trait_" + traitName);
+            ResourceLocation traitId = new ResourceLocation(CreRaces.MODID, traitName);
 
             return new DomainTrait(traitId, radius, actions, condition, interval);
         });

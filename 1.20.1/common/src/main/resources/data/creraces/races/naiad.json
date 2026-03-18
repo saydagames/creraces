@@ -1,31 +1,37 @@
 {
-    "name": "race.creraces.naiad.name",
-    "parent_race": "creraces:nymph",
-    "legacy_id": 9.2,
-    "description": "race.creraces.naiad.description",
-    "icon": "creraces:textures/screens/naiad_icon.png",
-    "splash": "creraces:textures/screens/naiad_splash.png",
-    "portrait": "creraces:textures/screens/naiad_portrait.png",
-    "name_texture": "creraces:textures/screens/naiad_text.png",
-    "base_ap": 10,
-    "base_ad": 5,
-    "base_ah": 12,
-    "base_cr": 8,
-    "resource_type": "MANA",
-    "max_resource": 100,
-    "gstate": "FEMALE",
-    "tier": "creraces:common",
-    "difficulty": 1,
-    "passives": {
-        "regeneration_multiplier": 1.1
-    },
-    "starting_abilities": [
+    "creraces:name": "race.creraces.naiad.name",
+    "creraces:parent_race": "creraces:nymph",
+    "creraces:index": 9.2,
+    "creraces:description": "race.creraces.naiad.description",
+    "creraces:icon": "creraces:textures/screens/naiad_icon.png",
+    "creraces:splash": "creraces:textures/screens/naiad_splash.png",
+    "creraces:portrait": "creraces:textures/screens/naiad_portrait.png",
+    "creraces:name_texture": "creraces:textures/screens/naiad_text.png",
+    "creraces:base_ap": 10,
+    "creraces:base_ad": 5,
+    "creraces:base_ah": 12,
+    "creraces:base_cr": 8,
+    "creraces:resource_type": "MANA",
+    "creraces:max_resource": 100,
+    "creraces:gstate": "FEMALE",
+    "creraces:difficulty": 1,
+    "creraces:regeneration_multiplier": 1.1,
+    "creraces:starting_abilities": [
         "creraces:tidal_wave",
         "creraces:whirlpool",
         "creraces:quick_current",
         "creraces:camouflage"
     ],
-    "traits": [
+    "passive": [
+        {
+            "id": "mining_penalty",
+            "type": "creraces:attribute_modifier",
+            "attribute": "twilight_lib:mining_penalty",
+            "value": 0.0,
+            "operation": "multiply_total"
+        }
+    ],
+    "aquatic_buffs": [
         {
             "type": "creraces:on_tick",
             "interval": 100,
@@ -51,27 +57,92 @@
                     "relative": false
                 }
             ]
-        },
+        }
+    ],
+    "camouflage_logic": [
         {
             "type": "creraces:continuous_effect",
+            "name": "camouflage_invisibility",
             "effect": "creraces:true_invisibility",
             "resource": "MANA",
-            "duration": 2,
-            "drain_rate": 0.2,
+            "drain_rate": 2.0,
+            "duration": 20,
             "visible": false,
             "condition": {
                 "type": "creraces:ability_state",
                 "ability": "creraces:camouflage",
                 "value": 1.0
+            }
+        },
+        {
+            "type": "creraces:continuous_effect",
+            "name": "camouflage_speed",
+            "effect": "minecraft:speed",
+            "amplifier": 0,
+            "duration": 20,
+            "visible": true,
+            "condition": {
+                "type": "creraces:ability_state",
+                "ability": "creraces:camouflage",
+                "value": 1.0
+            }
+        },
+        {
+            "type": "creraces:on_hurt",
+            "name": "camouflage_interrupt",
+            "condition": {
+                "type": "creraces:ability_state",
+                "ability": "creraces:camouflage",
+                "value": 1.0
             },
-            "on_fail": [
+            "actions": [
                 {
                     "type": "creraces:set_state",
                     "ability": "creraces:camouflage",
                     "value": 0.0
+                },
+                {
+                    "type": "creraces:set_cooldown",
+                    "id": "creraces:camouflage",
+                    "value": 220
                 }
             ]
         },
+        {
+            "type": "creraces:on_tick",
+            "name": "camouflage_mana_expiry",
+            "interval": 1,
+            "condition": {
+                "type": "creraces:and",
+                "conditions": [
+                    {
+                        "type": "creraces:ability_state",
+                        "ability": "creraces:camouflage",
+                        "value": 1.0
+                    },
+                    {
+                        "type": "creraces:resource_level",
+                        "resource": "MANA",
+                        "operator": "==",
+                        "value": 0
+                    }
+                ]
+            },
+            "actions": [
+                {
+                    "type": "creraces:set_state",
+                    "ability": "creraces:camouflage",
+                    "value": 0.0
+                },
+                {
+                    "type": "creraces:set_cooldown",
+                    "id": "creraces:camouflage",
+                    "value": 220
+                }
+            ]
+        }
+    ],
+    "cosmetics": [
         {
             "type": "creraces:addon",
             "addon_id": "moss"
@@ -81,5 +152,5 @@
             "addon_id": "naiad_body"
         }
     ],
-    "wiki_page": "Naiad"
+    "creraces:wiki_page": "Naiad"
 }

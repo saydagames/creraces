@@ -16,18 +16,21 @@ public class RaceCustomization {
         private final String type;
         private final String addonId;
         private final JsonObject addonData;
-        private final List<String> options;
+        private final java.util.List<String> options;
         private final String defaultValue;
+        private final java.util.Map<String, String> raceDefaults;
         private final boolean hidden;
 
         public RaceCustomization(@Nonnull String id, @Nonnull String type, String addonId, JsonObject addonData,
-                        @Nonnull List<String> options, @Nonnull String defaultValue, boolean hidden) {
+                        @Nonnull java.util.List<String> options, @Nonnull String defaultValue,
+                        java.util.Map<String, String> raceDefaults, boolean hidden) {
                 this.id = id;
                 this.type = type;
                 this.addonId = addonId;
                 this.addonData = addonData;
                 this.options = options;
                 this.defaultValue = defaultValue;
+                this.raceDefaults = raceDefaults;
                 this.hidden = hidden;
         }
 
@@ -47,11 +50,18 @@ public class RaceCustomization {
                 return addonData;
         }
 
-        public List<String> options() {
+        public java.util.List<String> options() {
                 return options;
         }
 
         public String defaultValue() {
+                return defaultValue;
+        }
+
+        public String getDefaultValue(net.minecraft.resources.ResourceLocation raceId) {
+                if (raceId != null && raceDefaults.containsKey(raceId.toString())) {
+                        return raceDefaults.get(raceId.toString());
+                }
                 return defaultValue;
         }
 
@@ -60,15 +70,24 @@ public class RaceCustomization {
         }
 
         public static RaceCustomization fromJson(JsonObject json) {
-                List<String> options = new ArrayList<>();
+                java.util.List<String> options = new java.util.ArrayList<>();
                 if (json.has("options")) {
                         json.getAsJsonArray("options").forEach(e -> options.add(e.getAsString()));
+                }
+
+                java.util.Map<String, String> raceDefaults = new java.util.HashMap<>();
+                if (json.has("creraces:race_defaults") || json.has("race_defaults")) {
+                        JsonObject rdObj = json.has("creraces:race_defaults") ? json.getAsJsonObject("creraces:race_defaults")
+                                        : json.getAsJsonObject("race_defaults");
+                        for (java.util.Map.Entry<String, com.google.gson.JsonElement> entry : rdObj.entrySet()) {
+                                raceDefaults.put(entry.getKey(), entry.getValue().getAsString());
+                        }
                 }
 
                 return new RaceCustomization(
                                 GsonHelper.getAsString(json, "id", "unknown"),
                                 GsonHelper.getAsString(json, "type", "property"),
-                                GsonHelper.getAsString(json, "addonId", null),
+                                GsonHelper.getNullableString(json, "addonId", null),
                                 json.has("addon_data") ? json.getAsJsonObject("addon_data")
                                                 : (json.has("addons") ? json.getAsJsonObject("addons") : null), // support
                                                                                                                 // both
@@ -76,6 +95,8 @@ public class RaceCustomization {
                                 options,
                                 json.has("defaultValue") ? json.get("defaultValue").getAsString()
                                                 : (json.has("default") ? json.get("default").getAsString() : ""),
+                                raceDefaults,
                                 GsonHelper.getAsBoolean(json, "hidden", false));
         }
+
 }

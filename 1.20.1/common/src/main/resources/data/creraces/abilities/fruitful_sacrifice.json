@@ -10,38 +10,62 @@
     ],
     "actions": [
         {
-            "type": "creraces:apply_effect",
-            "effect": "creraces:life_drain",
-            "duration": 200,
-            "amplifier": 0,
-            "visible": true,
-            "radius": 16.0
-        },
-        {
-            "type": "creraces:apply_effect",
-            "effect": "minecraft:slowness",
-            "duration": 160,
-            "amplifier": 0,
-            "visible": true,
-            "radius": 16.0
+            "type": "creraces:aoe",
+            "radius": 16.0,
+            "targets": [
+                "enemies"
+            ],
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "creraces:life_drain",
+                    "duration": 200,
+                    "amplifier": 0,
+                    "visible": true,
+                    "use_target": true
+                },
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:slowness",
+                    "duration": 160,
+                    "amplifier": 0,
+                    "visible": true,
+                    "use_target": true
+                },
+                {
+                    "type": "creraces:spawn_particles",
+                    "particle": "minecraft:soul",
+                    "count": 15,
+                    "spread": 0.5,
+                    "speed": 0.05,
+                    "targets": [
+                        "enemies"
+                    ]
+                }
+            ]
         },
         {
             "type": "creraces:apply_effect",
             "effect": "minecraft:speed",
             "duration": 160,
             "amplifier": 0,
+            "targets": ["self"],
             "visible": true
         },
         {
             "type": "creraces:damage",
             "amount": {
                 "base": 0.0,
-                "scales_with": "hp",
+                "scales_with": "max_hp",
                 "factor": 0.25
             },
-            "damage_type": "minecraft:wither",
+            "damage_type": "minecraft:starve",
             "knockback": 0.0,
-            "source": "self"
+            "source": "self",
+            "targets": [
+                "self"
+            ],
+            "disable_knockback": true
         },
         {
             "type": "creraces:play_sound",

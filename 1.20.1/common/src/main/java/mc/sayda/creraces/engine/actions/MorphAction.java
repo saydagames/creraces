@@ -81,7 +81,7 @@ public class MorphAction implements ActionRegistry.RaceAction {
 
     public static void register() {
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "morph"), json -> {
-            String entityType = GsonHelper.getAsString(json, "entity_type", null);
+            @javax.annotation.Nullable String entityType = GsonHelper.getNullableString(json, "entity_type", null);
             ScalingValue scale = ScalingValue.fromJson(json, "scale", 1.0);
             return new MorphAction(entityType, scale);
         });

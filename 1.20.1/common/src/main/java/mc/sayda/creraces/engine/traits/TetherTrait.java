@@ -90,7 +90,7 @@ public class TetherTrait extends PeriodicTrait {
         TraitRegistry.register(new ResourceLocation(CreRaces.MODID, "tether"), json -> {
             String traitName = json.has("name") ? json.get("name").getAsString()
                     : "tether_" + Math.abs(json.toString().hashCode());
-            ResourceLocation traitId = new ResourceLocation(CreRaces.MODID, "trait_" + traitName);
+            ResourceLocation traitId = new ResourceLocation(CreRaces.MODID, traitName);
 
             String target = json.has("target") ? json.get("target").getAsString() : "minecraft:player";
 

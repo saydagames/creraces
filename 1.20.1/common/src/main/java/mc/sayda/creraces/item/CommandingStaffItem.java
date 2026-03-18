@@ -53,7 +53,7 @@ public class CommandingStaffItem extends Item {
                 CompoundTag nbt = ((IPersistentDataAccessor) mob).creraces$getPersistentData();
                 if (!nbt.contains("creraces:servant_of")) {
                     if (!player.level().isClientSide) {
-                        nbt.putString("creraces:servant_of", player.getUUID().toString());
+                        nbt.putUUID("creraces:servant_of", player.getUUID());
                         player.level().playSound(null, mob.getX(), mob.getY(), mob.getZ(),
                                 SoundEvents.ZOMBIE_VILLAGER_CONVERTED, SoundSource.PLAYERS, 1.0f, 1.0f);
                         if (player.level() instanceof ServerLevel serverLevel) {

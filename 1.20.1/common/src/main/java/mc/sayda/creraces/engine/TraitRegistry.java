@@ -11,6 +11,13 @@ import mc.sayda.creraces.CreRaces;
 public class TraitRegistry {
 
     public interface RaceTrait {
+        default void setTraitId(String id) {
+        }
+
+        default String getTraitId() {
+            return "";
+        }
+
         default void tick(Player player) {
         }
 
@@ -73,19 +80,34 @@ public class TraitRegistry {
     }
 
     public static RaceTrait fromJson(JsonObject json) {
+        return fromJson(json, "");
+    }
+
+    public static RaceTrait fromJson(JsonObject json, String defaultId) {
         if (!json.has("type")) {
             return new RaceTrait() {
             };
         }
         String typeStr = json.get("type").getAsString();
-        ResourceLocation type = new ResourceLocation(typeStr);
+        ResourceLocation type = ResourceLocation.tryParse(typeStr);
+        if (type == null) {
+            CreRaces.LOGGER.error("Malformed trait type '{}' - skipping.", typeStr);
+            return new RaceTrait() {
+            };
+        }
         TraitFactory factory = REGISTRY.get(type);
         if (factory == null) {
             CreRaces.LOGGER.error("Unknown trait type: {}", type);
             return new RaceTrait() {
             };
         }
-        return factory.create(json);
+
+        RaceTrait trait = factory.create(json);
+        if (trait != null) {
+            String id = json.has("id") ? json.get("id").getAsString() : defaultId;
+            trait.setTraitId(id);
+        }
+        return trait;
     }
 
     public static void init() {

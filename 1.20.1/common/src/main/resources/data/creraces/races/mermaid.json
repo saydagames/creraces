@@ -1,36 +1,47 @@
 {
-    "name": "race.creraces.mermaid.name",
-    "legacy_id": 6.0,
-    "description": "race.creraces.mermaid.description",
-    "icon": "creraces:textures/screens/mermaid_icon.png",
-    "splash": "creraces:textures/screens/mermaid_splash.png",
-    "base_ap": 10,
-    "base_ad": 5,
-    "base_ah": 10,
-    "base_cr": 5,
-    "resource_type": "MANA",
-    "max_resource": 100,
-    "tier": "creraces:rare",
-    "difficulty": 2,
-    "gstate": "FEMALE",
-    "passives": {
-        "can_breathe_underwater": true,
-        "can_breathe_on_land": false,
-        "water_vision": true,
-        "liquid_speed_multiplier": 1.5,
-        "negate_effects": [
-            "minecraft:poison"
-        ]
-    },
-    "starting_abilities": [
+    "creraces:name": "race.creraces.mermaid.name",
+    "creraces:index": 6.0,
+    "creraces:description": "race.creraces.mermaid.description",
+    "creraces:icon": "creraces:textures/screens/mermaid_icon.png",
+    "creraces:splash": "creraces:textures/screens/mermaid_splash.png",
+    "creraces:base_ap": 10,
+    "creraces:base_ad": 5,
+    "creraces:base_ah": 10,
+    "creraces:base_cr": 5,
+    "creraces:resource_type": "MANA",
+    "creraces:max_resource": 100,
+    "creraces:difficulty": 2,
+    "creraces:gstate": "FEMALE",
+    "creraces:can_breathe_underwater": true,
+    "creraces:can_breathe_on_land": false,
+    "creraces:water_vision": true,
+    "creraces:liquid_speed_multiplier": 1.5,
+    "creraces:allowed_food_types": [
+        "#minecraft:fishes"
+    ],
+    "creraces:negate_effects": [
+        "minecraft:poison"
+    ],
+    "creraces:starting_abilities": [
         "creraces:tidal_wave",
         "creraces:spicy_whirlpool"
     ],
-    "traits": [
+    "passive": [
+        {
+            "id": "aquatic_mining",
+            "type": "creraces:attribute_modifier",
+            "attribute": "twilight_lib:mining_penalty",
+            "value": 0.0,
+            "operation": "multiply_total"
+        }
+    ],
+    "aquatic": [
         {
             "type": "creraces:aquatic_movement",
             "neutral_buoyancy": true
-        },
+        }
+    ],
+    "land_penalties": [
         {
             "type": "creraces:on_tick",
             "interval": 100,
@@ -51,7 +62,7 @@
             ]
         }
     ],
-    "portrait": "creraces:textures/screens/mermaid_portrait.png",
-    "name_texture": "creraces:textures/screens/mermaid_text.png",
-    "wiki_page": "Mermaid"
+    "creraces:portrait": "creraces:textures/screens/mermaid_portrait.png",
+    "creraces:name_texture": "creraces:textures/screens/mermaid_text.png",
+    "creraces:wiki_page": "Mermaid"
 }

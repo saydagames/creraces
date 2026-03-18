@@ -37,11 +37,17 @@ public class SetRacePacket {
                 DataUtils.getVariables(sp).ifPresent(vars -> {
                     // Logic check: only allow if player hasn't chosen yet or has permission
                     if (!vars.hasChosenRace() || sp.hasPermissions(2)) {
+                        if (!RaceRegistry.exists(raceId)) {
+                            CreRaces.LOGGER.warn("Player {} attempted to set unregistered race: {}",
+                                    sp.getName().getString(), raceId);
+                            return;
+                        }
+
                         if (RaceRegistry.get(raceId) != null) {
                             RaceIncidents.transformPlayer(sp, raceId);
                             CreRaces.LOGGER.info("Player {} chose race: {}", sp.getName().getString(), raceId);
                         } else {
-                            CreRaces.LOGGER.error("Player {} attempted to set invalid race: {}",
+                            CreRaces.LOGGER.error("Player {} attempted to set invalid race (get null): {}",
                                     sp.getName().getString(), raceId);
                         }
                     }

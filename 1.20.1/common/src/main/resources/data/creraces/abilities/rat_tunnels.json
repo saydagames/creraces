@@ -9,112 +9,109 @@
         "creraces:ratkin"
     ],
     "actions": [
-        {
-            "type": "creraces:conditional",
-            "condition": {
-                "type": "creraces:and",
-                "conditions": [
-                    {
-                        "type": "creraces:state_equals",
-                        "state": "creraces:rat_tunnels",
-                        "value": 2
-                    },
-                    {
-                        "type": "creraces:has_customization",
-                        "id": "tunnel_ax"
-                    }
-                ]
-            },
-            "if_true": [
-                {
-                    "type": "creraces:teleport",
-                    "x": "custom:tunnel_ax",
-                    "y": "custom:tunnel_ay",
-                    "z": "custom:tunnel_az"
-                },
-                {
-                    "type": "creraces:set_customization",
-                    "key": "tunnel_ax",
-                    "value": "0"
-                },
-                {
-                    "type": "creraces:set_customization",
-                    "key": "tunnel_ay",
-                    "value": "0"
-                },
-                {
-                    "type": "creraces:set_customization",
-                    "key": "tunnel_az",
-                    "value": "0"
-                },
-                {
-                    "type": "creraces:set_state",
-                    "ability": "creraces:rat_tunnels",
-                    "value": 0
-                },
-                {
-                    "type": "creraces:play_sound",
-                    "sound": "minecraft:entity.enderman.teleport",
-                    "volume": 0.8,
-                    "pitch": 1.5
-                }
-            ],
-            "if_false": [
                 {
                     "type": "creraces:conditional",
                     "condition": {
                         "type": "creraces:state_equals",
                         "state": "creraces:rat_tunnels",
-                        "value": 0
+                        "value": 2
                     },
                     "if_true": [
                         {
-                            "type": "creraces:place_block",
-                            "block": "creraces:rat_hole",
-                            "use_target_block": true
+                            "type": "creraces:remove_block",
+                            "x": "custom:tunnel_ax",
+                            "y": "custom:tunnel_ay",
+                            "z": "custom:tunnel_az"
                         },
                         {
-                            "type": "creraces:set_customization",
-                            "key": "tunnel_ax",
-                            "mode": "POS_X"
-                        },
-                        {
-                            "type": "creraces:set_customization",
-                            "key": "tunnel_ay",
-                            "mode": "POS_Y"
-                        },
-                        {
-                            "type": "creraces:set_customization",
-                            "key": "tunnel_az",
-                            "mode": "POS_Z"
+                            "type": "creraces:remove_block",
+                            "x": "custom:tunnel_bx",
+                            "y": "custom:tunnel_by",
+                            "z": "custom:tunnel_bz"
                         },
                         {
                             "type": "creraces:set_state",
                             "ability": "creraces:rat_tunnels",
-                            "value": 1
+                            "value": 0
+                        },
+                        {
+                            "type": "creraces:play_sound",
+                            "sound": "minecraft:block.gravel.break",
+                            "volume": 0.8,
+                            "pitch": 0.5
                         }
                     ],
                     "if_false": [
                         {
-                            "type": "creraces:place_block",
-                            "block": "creraces:rat_hole",
-                            "use_target_block": true
+                            "type": "creraces:conditional",
+                            "condition": {
+                                "type": "creraces:state_equals",
+                                "state": "creraces:rat_tunnels",
+                                "value": 0
+                            },
+                            "if_true": [
+                                {
+                                    "type": "creraces:place_block",
+                                    "block": "creraces:rat_hole",
+                                    "use_target_block": true
+                                },
+                                {
+                                    "type": "creraces:set_customization",
+                                    "key": "tunnel_ax",
+                                    "mode": "POS_X"
+                                },
+                                {
+                                    "type": "creraces:set_customization",
+                                    "key": "tunnel_ay",
+                                    "mode": "POS_Y"
+                                },
+                                {
+                                    "type": "creraces:set_customization",
+                                    "key": "tunnel_az",
+                                    "mode": "POS_Z"
+                                },
+                                {
+                                    "type": "creraces:set_state",
+                                    "ability": "creraces:rat_tunnels",
+                                    "value": 1
+                                }
+                            ],
+                            "if_false": [
+                                {
+                                    "type": "creraces:place_block",
+                                    "block": "creraces:rat_hole",
+                                    "use_target_block": true
+                                },
+                                {
+                                    "type": "creraces:set_customization",
+                                    "key": "tunnel_bx",
+                                    "mode": "POS_X"
+                                },
+                                {
+                                    "type": "creraces:set_customization",
+                                    "key": "tunnel_by",
+                                    "mode": "POS_Y"
+                                },
+                                {
+                                    "type": "creraces:set_customization",
+                                    "key": "tunnel_bz",
+                                    "mode": "POS_Z"
+                                },
+                                {
+                                    "type": "creraces:set_state",
+                                    "ability": "creraces:rat_tunnels",
+                                    "value": 2
+                                }
+                            ]
                         },
                         {
-                            "type": "creraces:set_state",
-                            "ability": "creraces:rat_tunnels",
-                            "value": 2
+                            "type": "creraces:play_sound",
+                            "sound": "minecraft:block.gravel.place",
+                            "volume": 1.0,
+                            "pitch": 1.2
                         }
                     ]
-                },
-                {
-                    "type": "creraces:play_sound",
-                    "sound": "minecraft:block.gravel.place",
-                    "volume": 1.0,
-                    "pitch": 1.2
                 }
-            ]
-        }
     ],
     "wiki_page": "Ability:Rat_Tunnels"
 }

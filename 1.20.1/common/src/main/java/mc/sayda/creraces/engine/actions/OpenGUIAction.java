@@ -69,7 +69,7 @@ public class OpenGUIAction implements ActionRegistry.RaceAction {
                 yield true;
             }
             default -> {
-                CreRaces.LOGGER.warn("[OpenGUIAction] Unknown gui id '{}' — no screen opened.", guiId);
+                CreRaces.LOGGER.warn("[OpenGUIAction] Unknown gui id '{}' - no screen opened.", guiId);
                 yield false;
             }
         };
@@ -80,7 +80,7 @@ public class OpenGUIAction implements ActionRegistry.RaceAction {
     /**
      * Opens the player's personal ender chest inventory without requiring a nearby
      * ender chest block. Each player has their own private 27-slot inventory stored
-     * server-side — equivalent to right-clicking an ender chest.
+     * server-side - equivalent to right-clicking an ender chest.
      */
     private boolean openEnderChest(ServerPlayer player) {
         net.minecraft.world.inventory.PlayerEnderChestContainer enderInv = player.getEnderChestInventory();
@@ -103,7 +103,7 @@ public class OpenGUIAction implements ActionRegistry.RaceAction {
 
     /**
      * Opens a full 3×3 crafting grid for the player without requiring a nearby
-     * CraftingTable block — equivalent to right-clicking a crafting table but
+     * CraftingTable block - equivalent to right-clicking a crafting table but
      * available anywhere.
      */
     private boolean openNearestCraftingTable(ServerPlayer player) {

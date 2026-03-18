@@ -34,11 +34,12 @@ public class PermanentEffectTrait implements TraitRegistry.RaceTrait {
     @Override
     public void tick(Player player) {
         if (effect != null && (condition == null || condition.evaluate(player, null, null, null))) {
-            // Apply for moderate duration to avoid flickering, but short enough to clear if
-            // race changes
-            player.addEffect(
-                    new MobEffectInstance(effect, 200,
-                            (int) amplifier.evaluate(player), ambient, showParticles));
+            if (!player.level().isClientSide()) {
+                // Apply for moderate duration to avoid flickering, but short enough to clear if race changes
+                player.addEffect(
+                        new MobEffectInstance(effect, 200,
+                                (int) amplifier.evaluate(player), ambient, showParticles));
+            }
         }
     }
 

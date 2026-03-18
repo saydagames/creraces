@@ -1,31 +1,29 @@
 {
-    "name": "race.creraces.dwarf.name",
-    "legacy_id": 2.0,
-    "scale": {
+    "creraces:name": "race.creraces.dwarf.name",
+    "creraces:index": 2.0,
+    "creraces:scale": {
         "base": 1.0,
         "height": 0.86,
         "width": 0.86
     },
-    "description": "race.creraces.dwarf.description",
-    "icon": "creraces:textures/screens/dwarf_icon.png",
-    "splash": "creraces:textures/screens/dwarf_splash.png",
-    "portrait": "creraces:textures/screens/dwarf_portrait.png",
-    "name_texture": "creraces:textures/screens/dwarf_text.png",
-    "resource_type": "ENERGY",
-    "max_resource": 100,
-    "tier": "creraces:common",
-    "difficulty": 1,
-    "passives": {
-        "negate_effects": [
-            "minecraft:mining_fatigue",
-            "minecraft:levitation"
-        ]
-    },
-    "starting_abilities": [
+    "creraces:description": "race.creraces.dwarf.description",
+    "creraces:icon": "creraces:textures/screens/dwarf_icon.png",
+    "creraces:splash": "creraces:textures/screens/dwarf_splash.png",
+    "creraces:portrait": "creraces:textures/screens/dwarf_portrait.png",
+    "creraces:name_texture": "creraces:textures/screens/dwarf_text.png",
+    "creraces:resource_type": "ENERGY",
+    "creraces:max_resource": 100,
+    "creraces:difficulty": 1,
+    "creraces:negate_effects": [
+        "minecraft:mining_fatigue",
+        "minecraft:levitation"
+    ],
+    "creraces:starting_abilities": [
         "creraces:unstoppable_charge"
     ],
-    "traits": [
+    "dwarf_attributes": [
         {
+            "id": "dwarf_armor",
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.armor",
             "value": {
@@ -36,13 +34,16 @@
             "operation": "addition"
         },
         {
+            "id": "dwarf_knockback",
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.attack_knockback",
             "value": {
                 "base": 2.0
             },
             "operation": "addition"
-        },
+        }
+    ],
+    "utility": [
         {
             "type": "creraces:on_item_pickup",
             "condition": {
@@ -56,5 +57,5 @@
             ]
         }
     ],
-    "wiki_page": "Dwarf"
+    "creraces:wiki_page": "Dwarf"
 }

@@ -65,8 +65,13 @@ public class BeamAction implements ActionRegistry.RaceAction {
 
                 // Sync start of beam
                 float rVal = (float) radius.evaluate(player, null);
+                float lVal = (float) length.evaluate(player, null);
+                int maxLen = mc.sayda.creraces.config.CreRacesConfig.BEAM_MAX_LENGTH.get();
+                if (maxLen > 0)
+                    lVal = Math.min(lVal, (float) maxLen);
+
                 mc.sayda.creraces.network.SyncBeamPacket pkt = new mc.sayda.creraces.network.SyncBeamPacket(
-                        player.getUUID(), true, color[0], color[1], color[2], color[3], rVal);
+                        player.getUUID(), true, color[0], color[1], color[2], color[3], rVal, lVal);
                 mc.sayda.creraces.network.BoundaryHandler.resyncForAllTrackers(player); // Fallback for general state
                 // We should probably broadcast this specific packet
                 broadcastBeamSync(player, pkt);
@@ -132,23 +137,27 @@ public class BeamAction implements ActionRegistry.RaceAction {
                     action.performBeamLogic(player);
 
                     // Periodically re-sync to ensure trackers see it
-                    if (player.tickCount % 2 == 0) {
+                    if (player.tickCount % Math.max(1, action.syncInterval) == 0) {
                         float rVal = (float) action.radius.evaluate(player, null);
-                        // Clamp radius by configuring max
+                        float lVal = (float) action.length.evaluate(player, null);
+                        // Clamp radius/length by configuring max
                         int maxRadius = 100;
                         if (maxRadius > 0)
                             rVal = Math.min(rVal, (float) maxRadius);
+                        int maxLen = mc.sayda.creraces.config.CreRacesConfig.BEAM_MAX_LENGTH.get();
+                        if (maxLen > 0)
+                            lVal = Math.min(lVal, (float) maxLen);
 
                         var pkt = new mc.sayda.creraces.network.SyncBeamPacket(
                                 player.getUUID(), true, action.color[0], action.color[1], action.color[2],
                                 action.color[3],
-                                rVal);
+                                rVal, lVal);
                         action.broadcastBeamSync(player, pkt);
                     }
                 } else {
-                    // Stop visuals and animations — then clear the cache so this fires only once
+                    // Stop visuals and animations - then clear the cache so this fires only once
                     var stopPkt = new mc.sayda.creraces.network.SyncBeamPacket(
-                            player.getUUID(), false, 0, 0, 0, 0, 0);
+                            player.getUUID(), false, 0, 0, 0, 0, 0, 0);
                     action.broadcastBeamSync(player, stopPkt);
 
                     var animPkt = new mc.sayda.creraces.network.SyncAnimationPacket(player.getUUID(), "beam_casting",
@@ -201,7 +210,7 @@ public class BeamAction implements ActionRegistry.RaceAction {
             ScalingValue length = ScalingValue.fromJson(json, "length", 16.0);
             ScalingValue radius = ScalingValue.fromJson(json, "radius", 0.25);
             mc.sayda.creraces.engine.TargetFilter targets = mc.sayda.creraces.engine.TargetFilter.fromJson(json,
-                    "targets");
+                    "targets", java.util.Set.of("enemies"));
             ScalingValue duration = ScalingValue.fromJson(json, "duration", 0.0);
             ScalingValue drainRate = ScalingValue.fromJson(json, "drain_rate", 0.0);
             int syncInterval = json.has("sync_interval") ? json.get("sync_interval").getAsInt() : 2;

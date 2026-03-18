@@ -71,4 +71,25 @@ public class DataUtils {
     public static double getAttackDamage(Player player) {
         return player.getAttributeValue(ModAttributes.ATTACK_DAMAGE.get());
     }
+ 
+    /**
+     * Robustly load a UUID from NBT, handling both modern INT[] and legacy/incorrect STRING formats.
+     */
+    public static java.util.UUID loadUUID(net.minecraft.nbt.CompoundTag nbt, String key) {
+        if (!nbt.contains(key)) return null;
+        
+        // Check tag type (8 = String, 11 = IntArray)
+        byte type = nbt.getTagType(key);
+        if (type == 8) { // String
+            try {
+                return java.util.UUID.fromString(nbt.getString(key));
+            } catch (Exception ignored) {
+                return null;
+            }
+        } else if (type == 11) { // IntArray (Standard UUID storage)
+            return nbt.getUUID(key);
+        }
+        
+        return null;
+    }
 }

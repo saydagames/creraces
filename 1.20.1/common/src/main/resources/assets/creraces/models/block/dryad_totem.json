@@ -1,9 +1,0 @@
-{
-  "parent": "minecraft:block/cube_all",
-  "textures": {
-    "all": "creraces:block/runic_altar_side_5",
-    "particle": "creraces:block/runic_altar_side_5",
-    "0": "creraces:block/dryad_totem"
-  },
-  "render_type": "solid"
-}

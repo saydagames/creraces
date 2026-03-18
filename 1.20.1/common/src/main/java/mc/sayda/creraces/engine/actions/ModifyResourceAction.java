@@ -68,6 +68,26 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
         if (entity instanceof Player p) {
             DataUtils.getVariables(p).ifPresent(vars -> {
                 double current = 0;
+                if (res.startsWith("custom:")) {
+                    String key = resource.substring(7); // Use original 'resource' to maintain case
+                    String valStr = vars.getCustomization(key);
+                    try {
+                        current = (valStr != null && !valStr.isEmpty()) ? Double.parseDouble(valStr) : 0.0;
+                    } catch (NumberFormatException e) {
+                        current = 0.0;
+                    }
+
+                    double newValue = current;
+                    if (operation.equalsIgnoreCase("add"))
+                        newValue += evaluatedValue;
+                    else if (operation.equalsIgnoreCase("set"))
+                        newValue = evaluatedValue;
+
+                    vars.setCustomization(key, String.valueOf(newValue));
+                    mc.sayda.creraces.network.BoundaryHandler.resyncVariables(p, p);
+                    return;
+                }
+
                 if (res.equals("energy"))
                     current = vars.getEnergy();
                 else if (res.equals("mana"))
@@ -106,6 +126,7 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
 
                 mc.sayda.creraces.network.BoundaryHandler.resyncVariables(p, p);
             });
+
         }
         return true;
     }
@@ -118,7 +139,7 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
                     0.0);
             boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
             mc.sayda.creraces.engine.TargetFilter targets = mc.sayda.creraces.engine.TargetFilter.fromJson(json,
-                    "targets");
+                    "targets", java.util.Set.of("enemies", "self"));
             return new ModifyResourceAction(resource, op, val, useTarget, targets);
         });
     }

@@ -1,36 +1,35 @@
 {
-    "name": "race.creraces.aurai.name",
-    "parent_race": "creraces:nymph",
-    "legacy_id": 9.4,
-    "description": "race.creraces.aurai.description",
-    "icon": "creraces:textures/screens/aurai_icon.png",
-    "splash": "creraces:textures/screens/aurai_splash.png",
-    "portrait": "creraces:textures/screens/aurai_portrait.png",
-    "name_texture": "creraces:textures/screens/aurai_text.png",
-    "base_ap": 12,
-    "base_ad": 4,
-    "base_ah": 8,
-    "base_cr": 15,
-    "resource_type": "MANA",
-    "max_resource": 150,
-    "tier": "creraces:rare",
-    "difficulty": 2,
-    "passives": {
-        "regeneration_multiplier": 1.1,
-        "negate_effects": [
-            "creraces:dizziness"
-        ]
-    },
-    "starting_abilities": [
+    "creraces:name": "race.creraces.aurai.name",
+    "creraces:parent_race": "creraces:nymph",
+    "creraces:index": 9.4,
+    "creraces:description": "race.creraces.aurai.description",
+    "creraces:icon": "creraces:textures/screens/aurai_icon.png",
+    "creraces:splash": "creraces:textures/screens/aurai_splash.png",
+    "creraces:portrait": "creraces:textures/screens/aurai_portrait.png",
+    "creraces:name_texture": "creraces:textures/screens/aurai_text.png",
+    "creraces:base_ap": 12,
+    "creraces:base_ad": 4,
+    "creraces:base_ah": 8,
+    "creraces:base_cr": 15,
+    "creraces:resource_type": "MANA",
+    "creraces:max_resource": 150,
+    "creraces:difficulty": 2,
+    "creraces:regeneration_multiplier": 1.1,
+    "creraces:negate_effects": [
+        "creraces:dizziness"
+    ],
+    "creraces:starting_abilities": [
         "creraces:dash",
         "creraces:tornado",
         "creraces:smackdown",
         "creraces:low_pressure_area"
     ],
-    "traits": [
+    "passive": [
         {
             "type": "creraces:flight"
-        },
+        }
+    ],
+    "altitude_debuffs": [
         {
             "type": "creraces:on_tick",
             "interval": 200,
@@ -81,7 +80,7 @@
                     "type": "creraces:apply_effect",
                     "effect": "minecraft:weakness",
                     "duration": 400,
-                    "amplifier": 254
+                    "amplifier": 255
                 },
                 {
                     "type": "creraces:apply_effect",
@@ -92,5 +91,5 @@
             ]
         }
     ],
-    "wiki_page": "Aurai"
+    "creraces:wiki_page": "Aurai"
 }

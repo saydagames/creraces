@@ -50,7 +50,7 @@ public class DelayAction implements ActionRegistry.RaceAction {
         mc.sayda.creraces.util.Scheduler.delay(t, () -> {
             ServerPlayer delayedPlayer = server.getPlayerList().getPlayer(Objects.requireNonNull(playerUUID));
             if (delayedPlayer == null)
-                return; // Player left — skip silently
+                return; // Player left - skip silently
 
             LivingEntity delayedTarget = null;
             if (targetUUID != null

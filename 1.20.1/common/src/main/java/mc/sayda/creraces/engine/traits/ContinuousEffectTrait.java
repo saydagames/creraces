@@ -23,6 +23,7 @@ import java.util.List;
  */
 public class ContinuousEffectTrait implements TraitRegistry.RaceTrait {
     private final ResourceLocation traitId;
+    @Nullable
     private final ResourceLocation effectId;
     private final ScalingValue amplifier;
     private final boolean visible;
@@ -30,13 +31,18 @@ public class ContinuousEffectTrait implements TraitRegistry.RaceTrait {
     private final ScalingValue drainRate;
     private final ScalingValue duration;
     @Nullable
+    private final ResourceLocation exhaustionCooldownId;
+    @Nullable
+    private final ScalingValue exhaustionCooldownDuration;
+    @Nullable
     private final Condition condition;
     private final List<ActionRegistry.RaceAction> onFail;
 
-    public ContinuousEffectTrait(ResourceLocation traitId, ResourceLocation effectId,
+    public ContinuousEffectTrait(ResourceLocation traitId, @Nullable ResourceLocation effectId,
             ScalingValue amplifier, boolean visible, ResourceType resource,
-            ScalingValue drainRate, ScalingValue duration, @Nullable Condition condition,
-            List<ActionRegistry.RaceAction> onFail) {
+            ScalingValue drainRate, ScalingValue duration,
+            @Nullable ResourceLocation exhaustionCooldownId, @Nullable ScalingValue exhaustionCooldownDuration,
+            @Nullable Condition condition, List<ActionRegistry.RaceAction> onFail) {
         this.traitId = traitId;
         this.effectId = effectId;
         this.amplifier = amplifier;
@@ -44,6 +50,8 @@ public class ContinuousEffectTrait implements TraitRegistry.RaceTrait {
         this.resource = resource;
         this.drainRate = drainRate;
         this.duration = duration;
+        this.exhaustionCooldownId = exhaustionCooldownId;
+        this.exhaustionCooldownDuration = exhaustionCooldownDuration;
         this.condition = condition;
         this.onFail = onFail;
     }
@@ -59,7 +67,7 @@ public class ContinuousEffectTrait implements TraitRegistry.RaceTrait {
                 case GRIT -> vars.getGrit();
                 case RAGE -> vars.getRage();
                 case SOULS -> vars.getSouls();
-                case STACKS -> vars.getAbilityState(new ResourceLocation(CreRaces.MODID, "stacks"));
+                case STACKS -> vars.getPersistentState(new ResourceLocation(CreRaces.MODID, "stacks"));
                 case NONE -> 0.0;
                 default -> 100.0;
             };
@@ -68,58 +76,94 @@ public class ContinuousEffectTrait implements TraitRegistry.RaceTrait {
             boolean canApply = conditionMet && (resource == ResourceType.NONE || currentResource >= evaluatedDrain);
 
             if (canApply) {
-                MobEffect effect = BuiltInRegistries.MOB_EFFECT.get(effectId);
-                if (effect != null) {
-                    player.addEffect(new MobEffectInstance(effect, (int) duration.evaluate(player),
-                            (int) amplifier.evaluate(player), false, visible, true));
+                ResourceLocation effectLoc = effectId;
+                if (effectLoc != null) {
+                    MobEffect effect = BuiltInRegistries.MOB_EFFECT.get(effectLoc);
+                    if (effect != null) {
+                        if (!player.level().isClientSide()) {
+                            player.addEffect(new MobEffectInstance(effect, (int) duration.evaluate(player),
+                                    (int) amplifier.evaluate(player), false, visible, true));
+                        }
+                    }
+                }
 
-                    // Drain resource
-                    if (resource != ResourceType.NONE) {
-                        switch (resource) {
-                            case MANA -> vars.setMana(Math.max(0, vars.getMana() - evaluatedDrain));
-                            case ENERGY -> vars.setEnergy(Math.max(0, vars.getEnergy() - evaluatedDrain));
-                            case GRIT -> vars.setGrit(Math.max(0, vars.getGrit() - evaluatedDrain));
-                            case RAGE -> vars.setRage(Math.max(0, vars.getRage() - evaluatedDrain));
-                            case SOULS -> vars.setSouls(Math.max(0, vars.getSouls() - evaluatedDrain));
-                            case STACKS -> vars.setAbilityState(new ResourceLocation(CreRaces.MODID, "stacks"),
-                                    Math.max(0, vars.getAbilityState(new ResourceLocation(CreRaces.MODID, "stacks"))
-                                            - evaluatedDrain));
-                            case NONE -> {
-                            }
+                // Drain resource
+                if (resource != ResourceType.NONE) {
+                    switch (resource) {
+                        case MANA -> vars.setMana(Math.max(0, vars.getMana() - evaluatedDrain));
+                        case ENERGY -> vars.setEnergy(Math.max(0, vars.getEnergy() - evaluatedDrain));
+                        case GRIT -> vars.setGrit(Math.max(0, vars.getGrit() - evaluatedDrain));
+                        case RAGE -> vars.setRage(Math.max(0, vars.getRage() - evaluatedDrain));
+                        case SOULS -> vars.setSouls(Math.max(0, vars.getSouls() - evaluatedDrain));
+                        case STACKS -> vars.setPersistentState(new ResourceLocation(CreRaces.MODID, "stacks"),
+                                Math.max(0, vars.getPersistentState(new ResourceLocation(CreRaces.MODID, "stacks"))
+                                        - evaluatedDrain));
+                        case NONE -> {
                         }
                     }
                 }
             } else {
-                // Handle failure
-                ResourceLocation failId = new ResourceLocation(traitId.getNamespace(), traitId.getPath() + "_failed");
-                boolean alreadyFailed = vars.getAbilityState(failId) > 0;
-                if (conditionMet && resource != ResourceType.NONE && currentResource < evaluatedDrain
-                        && !alreadyFailed) {
-                    vars.setAbilityState(failId, 1.0);
-                    for (ActionRegistry.RaceAction action : onFail) {
-                        action.execute(player, null, null, null);
+                // Handle failure (Server only)
+                if (!player.level().isClientSide()) {
+                    ResourceLocation failId = new ResourceLocation(traitId.getNamespace(),
+                            traitId.getPath() + "_failed");
+                    boolean alreadyFailed = vars.getPersistentState(failId) > 0;
+                    if (conditionMet && resource != ResourceType.NONE && currentResource < evaluatedDrain
+                            && !alreadyFailed) {
+                        vars.setPersistentState(failId, 1.0);
+
+                        // Native exhaustion cooldown
+                        ResourceLocation cooldownId = exhaustionCooldownId;
+                        ScalingValue cooldownDur = exhaustionCooldownDuration;
+                        if (cooldownId != null && cooldownDur != null) {
+                            vars.setCooldown(cooldownId, (int) cooldownDur.evaluate(player));
+                        }
+
+                        for (ActionRegistry.RaceAction action : onFail) {
+                            action.execute(player, null, null, null);
+                        }
                     }
                 }
             }
 
             if (conditionMet && (resource == ResourceType.NONE || currentResource >= evaluatedDrain)) {
                 ResourceLocation failId = new ResourceLocation(traitId.getNamespace(), traitId.getPath() + "_failed");
-                vars.setAbilityState(failId, 0.0);
+                vars.setPersistentState(failId, 0.0);
             }
         });
     }
 
+    @SuppressWarnings("null")
     public static void register() {
         TraitRegistry.register(new ResourceLocation(CreRaces.MODID, "continuous_effect"), json -> {
-            ResourceLocation effectId = new ResourceLocation(GsonHelper.getAsString(json, "effect"));
+            ResourceLocation effectId = null;
+            if (json.has("effect")) {
+                String effectIdStr = json.get("effect").getAsString();
+                effectId = ResourceLocation.tryParse(effectIdStr);
+            }
+
             ScalingValue amplifier = ScalingValue.fromJson(json, "amplifier", 0);
             boolean visible = GsonHelper.getAsBoolean(json, "visible", true);
             String resStr = GsonHelper.getAsString(json, "resource", "NONE");
             if (resStr.contains(":"))
                 resStr = resStr.substring(resStr.indexOf(':') + 1);
-            ResourceType resource = ResourceType.valueOf(resStr.toUpperCase());
+
+            ResourceType resource = ResourceType.NONE;
+            try {
+                resource = ResourceType.valueOf(resStr.toUpperCase());
+            } catch (Exception e) {
+                CreRaces.LOGGER.warn("ContinuousEffectTrait has unknown resource type: {}", resStr);
+            }
             ScalingValue drainRate = ScalingValue.fromJson(json, "drain_rate", 0.0);
             ScalingValue duration = ScalingValue.fromJson(json, "duration", 20);
+
+            ResourceLocation cooldownId = null;
+            if (json.has("exhaustion_cooldown")) {
+                cooldownId = ResourceLocation.tryParse(json.get("exhaustion_cooldown").getAsString());
+            }
+            ScalingValue cooldownDuration = json.has("exhaustion_duration")
+                    ? ScalingValue.fromJson(json, "exhaustion_duration", 0.0)
+                    : null;
 
             Condition condition = null;
             if (json.has("condition")) {
@@ -140,10 +184,10 @@ public class ContinuousEffectTrait implements TraitRegistry.RaceTrait {
 
             String traitName = json.has("name") ? json.get("name").getAsString()
                     : "continuous_" + Math.abs(json.toString().hashCode());
-            ResourceLocation traitId = new ResourceLocation(CreRaces.MODID, "trait_" + traitName);
+            ResourceLocation traitId = new ResourceLocation(CreRaces.MODID, traitName);
 
             return new ContinuousEffectTrait(traitId, effectId, amplifier, visible, resource, drainRate, duration,
-                    condition, onFail);
+                    cooldownId, cooldownDuration, condition, onFail);
         });
     }
 }

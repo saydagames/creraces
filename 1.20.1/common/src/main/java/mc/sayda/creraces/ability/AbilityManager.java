@@ -54,25 +54,11 @@ public class AbilityManager extends SimplePreparableReloadListener<Map<ResourceL
             try {
                 JsonObject jsonObject = element.getAsJsonObject();
 
-                String nameStr = java.util.Objects
-                        .requireNonNull(GsonHelper.getAsString(jsonObject, "name", id.getPath()));
-                @SuppressWarnings("null")
-                @Nonnull
-                String nameStrFixed = nameStr;
-                String descStr = java.util.Objects
-                        .requireNonNull(GsonHelper.getAsString(jsonObject, "description", ""));
-                @SuppressWarnings("null")
-                @Nonnull
-                String descStrFixed = descStr;
-                String typeStr = java.util.Objects.requireNonNull(GsonHelper.getAsString(jsonObject, "type", "ACTIVE"));
-                @SuppressWarnings("null")
-                @Nonnull
-                String typeStrFixed = typeStr;
-                String iconStr = java.util.Objects.requireNonNull(
-                        GsonHelper.getAsString(jsonObject, "icon", "minecraft:textures/item/barrier.png"));
-                @SuppressWarnings("null")
-                @Nonnull
-                String iconStrFixed = iconStr;
+                String nameStr = GsonHelper.getAsString(jsonObject, "name", id.getPath());
+                String descStr = GsonHelper.getAsString(jsonObject, "description", "");
+                String typeStr = GsonHelper.getAsString(jsonObject, "type", "ACTIVE");
+                String iconStr = GsonHelper.getAsString(jsonObject, "icon", "minecraft:textures/item/barrier.png");
+                
                 int cooldown = GsonHelper.getAsInt(jsonObject, "cooldown", 0);
                 int cost = GsonHelper.getAsInt(jsonObject, "cost", 0);
                 boolean persistent = GsonHelper.getAsBoolean(jsonObject, "persistent", false);
@@ -117,10 +103,10 @@ public class AbilityManager extends SimplePreparableReloadListener<Map<ResourceL
                 if (jsonObject.has("wiki_page")) {
                     String wikiPage = jsonObject.get("wiki_page").getAsString();
                     AbilityRegistry.registerRemoteDoc(id, mc.sayda.creraces.util.RemoteDocConfig.fromWikiPage(wikiPage,
-                            mc.sayda.creraces.util.RemoteDocConfig.INFODOC_SELECTOR, descStrFixed));
+                            mc.sayda.creraces.util.RemoteDocConfig.INFODOC_SELECTOR, descStr));
                     AbilityRegistry.registerRemoteFullDoc(id,
                             mc.sayda.creraces.util.RemoteDocConfig.fromWikiPage(wikiPage,
-                                    mc.sayda.creraces.util.RemoteDocConfig.HEADERDOC_SELECTOR, descStrFixed));
+                                    mc.sayda.creraces.util.RemoteDocConfig.HEADERDOC_SELECTOR, descStr));
                 }
 
                 if (jsonObject.has("remote_description")) {
@@ -139,18 +125,25 @@ public class AbilityManager extends SimplePreparableReloadListener<Map<ResourceL
                     }
                 }
 
-                ResourceLocation iconRl = ResourceLocation.tryParse(iconStrFixed);
+                ResourceLocation iconRl = ResourceLocation.tryParse(iconStr);
                 if (iconRl == null) {
                     CreRaces.LOGGER.warn("Ability {} has malformed icon: {}. Falling back to barrier.", id,
-                            iconStrFixed);
+                            iconStr);
                     iconRl = new ResourceLocation("minecraft", "textures/item/barrier.png");
+                }
+
+                AbilityType type = AbilityType.ACTIVE;
+                try {
+                    type = AbilityType.valueOf(typeStr.toUpperCase());
+                } catch (Exception e) {
+                    CreRaces.LOGGER.warn("Ability {} has unknown type: {}", id, typeStr);
                 }
 
                 Ability ability = new Ability(
                         id,
-                        Component.translatable(nameStrFixed),
-                        Component.translatable(descStrFixed),
-                        AbilityType.valueOf(typeStrFixed.toUpperCase()),
+                        Component.translatable(nameStr),
+                        Component.translatable(descStr),
+                        type,
                         iconRl,
                         cooldown,
                         cost,

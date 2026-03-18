@@ -1,0 +1,27 @@
+{
+  "replace": false,
+  "values": [
+    "#minecraft:is_projectile",
+    "#minecraft:is_explosion",
+    "#minecraft:is_fall",
+    "minecraft:player_attack",
+    "minecraft:mob_attack",
+    "minecraft:arrow",
+    "minecraft:mob_projectile",
+    "minecraft:trident",
+    "minecraft:thrown",
+    "minecraft:cactus",
+    "minecraft:falling_block",
+    "minecraft:falling_anvil",
+    "minecraft:falling_stalactite",
+    "minecraft:sting",
+    "minecraft:fly_into_wall",
+    "minecraft:explosion",
+    "minecraft:player_explosion",
+    "minecraft:fireworks",
+    "minecraft:bad_respawn_point",
+    "minecraft:sweet_berry_bush",
+    "minecraft:stalagmite",
+    "minecraft:anvil"
+  ]
+}

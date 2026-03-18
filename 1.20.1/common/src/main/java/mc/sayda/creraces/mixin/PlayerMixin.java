@@ -67,14 +67,26 @@ public class PlayerMixin implements IPlayerVariables {
     @Inject(method = "canEat", at = @At("HEAD"), cancellable = true)
     private void creraces$canEatWhenFull(boolean ignoreHunger, CallbackInfoReturnable<Boolean> cir) {
         Player player = (Player) (Object) this;
-        if (!player.level().isClientSide()) {
-            mc.sayda.creraces.capability.DataUtils.getVariables(player).ifPresent(vars -> {
-                mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
-                if (race != null && race.passives() != null && race.passives().canEatWhenFull()) {
+        mc.sayda.creraces.capability.DataUtils.getVariables(player).ifPresent(vars -> {
+            mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
+            if (race != null && race.passives() != null) {
+                // Food restriction check
+                net.minecraft.world.item.ItemStack stack = player.getUseItem();
+                if (stack.isEmpty()) {
+                    stack = player.getMainHandItem();
+                    if (!stack.isEdible()) stack = player.getOffhandItem();
+                }
+                
+                if (mc.sayda.creraces.util.RaceUtils.isFoodBlocked(player, stack)) {
+                    cir.setReturnValue(false);
+                    return;
+                }
+
+                if (race.passives().canEatWhenFull()) {
                     cir.setReturnValue(true);
                 }
-            });
-        }
+            }
+        });
     }
 
     @Inject(method = "interactOn", at = @At("HEAD"), cancellable = true)
@@ -141,6 +153,20 @@ public class PlayerMixin implements IPlayerVariables {
             var doubleJump = ModAttributes.DOUBLE_JUMP.get();
             if (doubleJump != null)
                 cir.getReturnValue().add(doubleJump);
+            
+            // Advanced Combat Attributes
+            var healRec = ModAttributes.HEALING_RECEIVED.get();
+            if (healRec != null) cir.getReturnValue().add(healRec);
+            var armP = ModAttributes.ARMOR_PIERCE.get();
+            if (armP != null) cir.getReturnValue().add(armP);
+            var armS = ModAttributes.ARMOR_SHRED.get();
+            if (armS != null) cir.getReturnValue().add(armS);
+            var magR = ModAttributes.MAGIC_RESIST.get();
+            if (magR != null) cir.getReturnValue().add(magR);
+            var magP = ModAttributes.MAGIC_PIERCE.get();
+            if (magP != null) cir.getReturnValue().add(magP);
+            var magS = ModAttributes.MAGIC_SHRED.get();
+            if (magS != null) cir.getReturnValue().add(magS);
         } catch (Exception e) {
             // Attribute registration failed - this usually means ModAttributes.init()
             // hasn't run yet (a Fabric bootstrap ordering issue). BootstrapMixin should
@@ -413,13 +439,13 @@ public class PlayerMixin implements IPlayerVariables {
     }
 
     @Override
-    public double getAbilityState(ResourceLocation abilityId) {
-        return creraces$variables.getAbilityState(abilityId);
+    public double getPersistentState(ResourceLocation id) {
+        return creraces$variables.getPersistentState(id);
     }
 
     @Override
-    public void setAbilityState(ResourceLocation abilityId, double value) {
-        creraces$variables.setAbilityState(abilityId, value);
+    public void setPersistentState(ResourceLocation id, double value) {
+        creraces$variables.setPersistentState(id, value);
     }
 
     @Override
@@ -736,13 +762,13 @@ public class PlayerMixin implements IPlayerVariables {
 
             if (player.level() instanceof ServerLevel serverLevel) {
                 net.minecraft.core.particles.SimpleParticleType pt = switch (activatedMode) {
-                    case "follow" -> mc.sayda.creraces.registry.ModParticles.MARKER.get();
-                    case "move" -> mc.sayda.creraces.registry.ModParticles.MARKER_MOVE.get();
-                    case "attack" -> mc.sayda.creraces.registry.ModParticles.MARKER_ATTACK.get();
-                    case "free" -> mc.sayda.creraces.registry.ModParticles.MARKER.get();
-                    default -> mc.sayda.creraces.registry.ModParticles.MARKER.get();
+                    case "follow" -> net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER;
+                    case "move" -> net.minecraft.core.particles.ParticleTypes.SOUL;
+                    case "attack" -> net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME;
+                    case "free" -> net.minecraft.core.particles.ParticleTypes.GLOW;
+                    default -> net.minecraft.core.particles.ParticleTypes.SOUL;
                 };
-                serverLevel.sendParticles(pt, player.getX(), player.getY() + 2.5, player.getZ(), 15, 0.4, 0.4, 0.4, 0.05);
+                serverLevel.sendParticles(pt, player.getX(), player.getY() + 2.5, player.getZ(), 10, 0.4, 0.4, 0.4, 0.05);
             }
         }
     }

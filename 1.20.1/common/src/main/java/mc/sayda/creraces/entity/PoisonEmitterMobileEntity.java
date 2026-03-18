@@ -31,7 +31,7 @@ import javax.annotation.Nullable;
 import java.util.List;
 
 /**
- * Poison Emitter Mobile — a mobile version of the emitter that follows the
+ * Poison Emitter Mobile - a mobile version of the emitter that follows the
  * owner.
  * Pulshes Ratvenom to enemies within 5.5 blocks.
  * Stacks increase every 120 ticks (0.2 of lifetime).
@@ -76,9 +76,27 @@ public class PoisonEmitterMobileEntity extends TamableAnimal {
             return;
 
         ticksAlive++;
+        double lifetime = CreRacesConfig.ENTITY_POISON_EMITTER_LIFETIME_TICKS.get();
+        double progress = (double) ticksAlive / lifetime;
 
-        // Stacks logic
-        int amplifier = (int) (ticksAlive / CreRacesConfig.ENTITY_POISON_EMITTER_PULSE_INTERVAL.get());
+        // Legacy Stacks logic (0 to 4 based on lifetime progress)
+        int stacks = 0;
+        if (progress >= 0.8) stacks = 4;
+        else if (progress >= 0.6) stacks = 3;
+        else if (progress >= 0.4) stacks = 2;
+        else if (progress >= 0.2) stacks = 1;
+
+        // Sky visibility bonus (+1 amplifier)
+        if (this.level().canSeeSky(this.blockPosition())) {
+            stacks += 1;
+        }
+
+        // Particle VFX every tick (server side send to all)
+        if (this.level() instanceof ServerLevel serverLevel) {
+            serverLevel.sendParticles(mc.sayda.creraces.registry.ModParticles.POISON_EMITTER.get(),
+                    this.getX(), this.getY(), this.getZ(),
+                    15, 3.0, 3.0, 3.0, 0.0);
+        }
 
         // Pulse Ratvenom to nearby entities
         var venomEffect = ModMobEffects.RAT_VENOM.get();
@@ -86,8 +104,7 @@ public class PoisonEmitterMobileEntity extends TamableAnimal {
             Vec3 center = this.position();
             LivingEntity owner = getOwner();
 
-            // Cleanup: if owner IS a player but is no longer online/valid, discard the
-            // emitter
+            // Cleanup: if owner IS a player but is no longer online/valid, discard the emitter
             if (owner instanceof Player p && (!p.isAlive() || !this.level().players().contains(p))) {
                 this.discard();
                 return;
@@ -98,8 +115,7 @@ public class PoisonEmitterMobileEntity extends TamableAnimal {
             List<LivingEntity> nearby = this.level().getEntitiesOfClass(
                     LivingEntity.class,
                     new AABB(center, center).inflate(CreRacesConfig.ENTITY_POISON_EMITTER_RADIUS.get()),
-                    e -> e != this && (owner == null
-                            || mc.sayda.creraces.team.RaceTeamManager.canHurt(e, owner))
+                    e -> e != this && (owner == null || mc.sayda.creraces.team.RaceTeamManager.canHurt(e, owner))
                             && !mc.sayda.creraces.util.RaceUtils.isImmuneToEffect(e, venomId));
 
             for (LivingEntity target : nearby) {
@@ -109,17 +125,15 @@ public class PoisonEmitterMobileEntity extends TamableAnimal {
                     data.putString("creraces:venom_source", owner.getUUID().toString());
                 }
 
-                target.addEffect(
-                        new MobEffectInstance(venomEffect, CreRacesConfig.ENTITY_POISON_EMITTER_VENOM_DURATION.get(),
-                                amplifier, true, true));
+                target.addEffect(new MobEffectInstance(venomEffect, 102, stacks, true, true));
             }
         }
 
         // Self-destruct after lifetime expires
-        if (ticksAlive >= CreRacesConfig.ENTITY_POISON_EMITTER_LIFETIME_TICKS.get()) {
+        if (ticksAlive >= lifetime) {
             this.level().playSound(null, this.blockPosition(),
                     net.minecraft.sounds.SoundEvents.STONE_BREAK,
-                    net.minecraft.sounds.SoundSource.NEUTRAL, 1.0f, 1.3f);
+                    net.minecraft.sounds.SoundSource.NEUTRAL, 1.0f, 1.0f);
             this.discard();
         }
     }

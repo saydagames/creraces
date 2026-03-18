@@ -65,8 +65,6 @@ public class ModBlocks {
         public static final RegistrySupplier<Block> DRYAD_LANTERN = BLOCKS.register("dryad_lantern",
                         () -> new Block(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_GREEN).strength(3.5f)
                                         .sound(SoundType.WOOD).lightLevel(state -> 15)));
-        public static final RegistrySupplier<Block> DRYAD_TOTEM = BLOCKS.register("dryad_totem",
-                        () -> new Block(BlockBehaviour.Properties.of().strength(2.5f).sound(SoundType.WOOD)));
         public static final RegistrySupplier<Block> DRYAD_EXPANSION_PANEL = BLOCKS.register("dryad_expansion_panel",
                         () -> new mc.sayda.creraces.block.DryadExpansionPanelBlock());
 

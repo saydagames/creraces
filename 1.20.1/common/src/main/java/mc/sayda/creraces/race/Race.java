@@ -19,7 +19,7 @@ public class Race {
         private final ResourceLocation splash;
         private final ResourceLocation nameTexture;
         private final ResourceLocation parentRace;
-        private final double legacyId;
+        private final double index;
         private final int baseAp;
         private final int baseAd;
         private final int baseAh;
@@ -28,7 +28,6 @@ public class Race {
         private final int maxResource;
         private final ResourceType resourceType;
         private final ResourceLocation bgTexture;
-        private final ResourceLocation tier;
         private final int difficulty;
         private final int splashX, splashY, splashW, splashH;
         private final int nameTexX, nameTexY, nameTexW, nameTexH;
@@ -42,57 +41,138 @@ public class Race {
         private final boolean stacksAffectResource;
         private final mc.sayda.creraces.engine.GState gState;
 
-        public Race(ResourceLocation id, net.minecraft.network.chat.Component name,
-                        net.minecraft.network.chat.Component description, ResourceLocation icon,
-                        ResourceLocation portrait,
-                        ResourceLocation splash, @Nullable ResourceLocation nameTexture,
-                        @Nullable ResourceLocation parentRace,
-                        double legacyId, int baseAp, int baseAd, int baseAh, int baseCr, RaceScale scale,
-                        int maxResource,
-                        ResourceType resourceType, ResourceLocation bgTexture, ResourceLocation tier, int difficulty,
-                        int splashX,
-                        int splashY, int splashW, int splashH, int nameTexX, int nameTexY, int nameTexW, int nameTexH,
-                        List<RaceCustomization> customization, List<ResourceLocation> startingAbilities,
-                        List<ResourceLocation> startingItems, @Nullable Passives passives, List<RaceTrait> traits,
-                        boolean isSpirit,
-                        boolean isTiny, boolean stacksAffectResource,
-                        mc.sayda.creraces.engine.GState gState) {
-                this.id = id;
-                this.name = name;
-                this.description = description;
-                this.icon = icon;
-                this.portrait = portrait;
-                this.splash = splash;
-                this.nameTexture = nameTexture;
-                this.parentRace = parentRace;
-                this.legacyId = legacyId;
-                this.baseAp = baseAp;
-                this.baseAd = baseAd;
-                this.baseAh = baseAh;
-                this.baseCr = baseCr;
-                this.scale = scale;
-                this.maxResource = maxResource;
-                this.resourceType = resourceType;
-                this.bgTexture = bgTexture;
-                this.tier = tier;
-                this.difficulty = difficulty;
-                this.splashX = splashX;
-                this.splashY = splashY;
-                this.splashW = splashW;
-                this.splashH = splashH;
-                this.nameTexX = nameTexX;
-                this.nameTexY = nameTexY;
-                this.nameTexW = nameTexW;
-                this.nameTexH = nameTexH;
-                this.customization = customization;
-                this.startingAbilities = startingAbilities;
-                this.startingItems = startingItems;
-                this.passives = passives;
-                this.traits = traits;
-                this.isSpirit = isSpirit;
-                this.isTiny = isTiny;
-                this.stacksAffectResource = stacksAffectResource;
-                this.gState = gState;
+        private Race(Builder builder) {
+                this.id = builder.id;
+                this.name = builder.name;
+                this.description = builder.description;
+                this.icon = builder.icon;
+                this.portrait = builder.portrait;
+                this.splash = builder.splash;
+                this.nameTexture = builder.nameTexture;
+                this.parentRace = builder.parentRace;
+                this.index = builder.index;
+                this.baseAp = builder.baseAp;
+                this.baseAd = builder.baseAd;
+                this.baseAh = builder.baseAh;
+                this.baseCr = builder.baseCr;
+                this.scale = builder.scale;
+                this.maxResource = builder.maxResource;
+                this.resourceType = builder.resourceType;
+                this.bgTexture = builder.bgTexture;
+                this.difficulty = builder.difficulty;
+                this.splashX = builder.splashX;
+                this.splashY = builder.splashY;
+                this.splashW = builder.splashW;
+                this.splashH = builder.splashH;
+                this.nameTexX = builder.nameTexX;
+                this.nameTexY = builder.nameTexY;
+                this.nameTexW = builder.nameTexW;
+                this.nameTexH = builder.nameTexH;
+                this.customization = builder.customization;
+                this.startingAbilities = builder.startingAbilities;
+                this.startingItems = builder.startingItems;
+                this.passives = builder.passives;
+                this.traits = builder.traits;
+                this.isSpirit = builder.isSpirit;
+                this.isTiny = builder.isTiny;
+                this.stacksAffectResource = builder.stacksAffectResource;
+                this.gState = builder.gState;
+        }
+
+        public static class Builder {
+                private final ResourceLocation id;
+                private final net.minecraft.network.chat.Component name;
+                
+                private net.minecraft.network.chat.Component description = net.minecraft.network.chat.Component.empty();
+                private ResourceLocation icon = new ResourceLocation("minecraft", "textures/item/barrier.png");
+                private ResourceLocation portrait = new ResourceLocation("creraces", "textures/screens/race.png");
+                private ResourceLocation splash = new ResourceLocation("creraces", "textures/screens/unknown_splash.png");
+                private ResourceLocation nameTexture = null;
+                private ResourceLocation parentRace = null;
+                private double index = Double.MAX_VALUE;
+                private int baseAp = 0, baseAd = 0, baseAh = 0, baseCr = 0;
+                private RaceScale scale = null;
+                private int maxResource = 100;
+                private ResourceType resourceType = ResourceType.NONE;
+                private ResourceLocation bgTexture = new ResourceLocation("creraces", "textures/screens/selection_bg.png");
+                private int difficulty = 0;
+                private int splashX = 15, splashY = -10, splashW = 141, splashH = 199;
+                private int nameTexX = 44, nameTexY = -35, nameTexW = 86, nameTexH = 20;
+                private List<RaceCustomization> customization = new java.util.ArrayList<>();
+                private List<ResourceLocation> startingAbilities = new java.util.ArrayList<>();
+                private List<ResourceLocation> startingItems = new java.util.ArrayList<>();
+                private Passives passives = null;
+                private List<RaceTrait> traits = new java.util.ArrayList<>();
+                private boolean isSpirit = false;
+                private boolean isTiny = false;
+                private boolean stacksAffectResource = false;
+                private mc.sayda.creraces.engine.GState gState = mc.sayda.creraces.engine.GState.BOTH;
+
+                public Builder(ResourceLocation id, net.minecraft.network.chat.Component name) {
+                        this.id = id;
+                        this.name = name;
+                }
+
+                public Builder description(net.minecraft.network.chat.Component description) { this.description = description; return this; }
+                public Builder icon(ResourceLocation icon) { if (icon != null) this.icon = icon; return this; }
+                public Builder portrait(ResourceLocation portrait) { if (portrait != null) this.portrait = portrait; return this; }
+                public Builder splash(ResourceLocation splash) { if (splash != null) this.splash = splash; return this; }
+                public Builder nameTexture(@Nullable ResourceLocation nameTexture) { this.nameTexture = nameTexture; return this; }
+                public Builder parentRace(@Nullable ResourceLocation parentRace) { this.parentRace = parentRace; return this; }
+                public Builder index(double index) { this.index = index; return this; }
+                
+                public Builder stats(int baseAp, int baseAd, int baseAh, int baseCr) {
+                        this.baseAp = baseAp;
+                        this.baseAd = baseAd;
+                        this.baseAh = baseAh;
+                        this.baseCr = baseCr;
+                        return this;
+                }
+
+                public Builder scale(RaceScale scale) { this.scale = scale; return this; }
+                
+                public Builder resource(ResourceType type, int maxResource) {
+                        this.resourceType = type;
+                        this.maxResource = maxResource;
+                        return this;
+                }
+
+                public Builder bgTexture(ResourceLocation bgTexture) { if (bgTexture != null) this.bgTexture = bgTexture; return this; }
+                public Builder difficulty(int difficulty) { this.difficulty = difficulty; return this; }
+
+                public Builder splashDimensions(int x, int y, int w, int h) {
+                        this.splashX = x;
+                        this.splashY = y;
+                        this.splashW = w;
+                        this.splashH = h;
+                        return this;
+                }
+
+                public Builder nameBoxDimensions(int x, int y, int w, int h) {
+                        this.nameTexX = x;
+                        this.nameTexY = y;
+                        this.nameTexW = w;
+                        this.nameTexH = h;
+                        return this;
+                }
+
+                public Builder customizations(List<RaceCustomization> customization) { if (customization != null) this.customization = customization; return this; }
+                public Builder startingAbilities(List<ResourceLocation> abilities) { if (abilities != null) this.startingAbilities = abilities; return this; }
+                public Builder startingItems(List<ResourceLocation> items) { if (items != null) this.startingItems = items; return this; }
+                public Builder passives(@Nullable Passives passives) { this.passives = passives; return this; }
+                public Builder traits(List<RaceTrait> traits) { if (traits != null) this.traits = traits; return this; }
+                
+                public Builder isSpirit(boolean isSpirit) { this.isSpirit = isSpirit; return this; }
+                public Builder isTiny(boolean isTiny) { this.isTiny = isTiny; return this; }
+                public Builder stacksAffectResource(boolean stacksAffectResource) { this.stacksAffectResource = stacksAffectResource; return this; }
+                public Builder gState(mc.sayda.creraces.engine.GState gState) { if (gState != null) this.gState = gState; return this; }
+
+                public Race build() {
+                        if (this.id == null) throw new IllegalStateException("Race ID cannot be null");
+                        if (this.name == null) throw new IllegalStateException("Race Name cannot be null");
+                        if (this.scale == null) throw new IllegalStateException("Race Scale cannot be null for race " + this.id);
+                        return new Race(this);
+                }
         }
 
         public ResourceLocation id() {
@@ -127,8 +207,8 @@ public class Race {
                 return parentRace;
         }
 
-        public double legacyId() {
-                return legacyId;
+        public double index() {
+                return index;
         }
 
         public int baseAp() {
@@ -161,10 +241,6 @@ public class Race {
 
         public ResourceLocation bgTexture() {
                 return bgTexture;
-        }
-
-        public ResourceLocation tier() {
-                return tier;
         }
 
         public int difficulty() {
@@ -254,7 +330,6 @@ public class Race {
                 private final boolean nightVision;
                 private final boolean waterVision;
                 private final boolean lavaVision;
-                private final mc.sayda.creraces.engine.ScalingValue fallDamageMultiplier;
                 private final boolean canFly;
                 private final mc.sayda.creraces.engine.ScalingValue liquidSpeedMultiplier;
                 private final boolean unaffectedByWater;
@@ -267,7 +342,8 @@ public class Race {
                 private final boolean noHunger;
                 private final boolean noHungerDrain;
                 private final mc.sayda.creraces.engine.ScalingValue fixedHunger;
-                private final boolean canEatMeat;
+                private final List<String> blockedFoodTypes;
+                private final List<String> allowedFoodTypes;
                 private final boolean canEatWhenFull;
                 private final List<String> hatedByEntities;
                 private final List<String> respectedByEntities;
@@ -279,14 +355,14 @@ public class Race {
                                 List<String> immuneToDamageTypes, List<String> immuneToPotionEffects,
                                 boolean nightVision,
                                 boolean waterVision, boolean lavaVision,
-                                mc.sayda.creraces.engine.ScalingValue fallDamageMultiplier,
                                 boolean canFly, mc.sayda.creraces.engine.ScalingValue liquidSpeedMultiplier,
                                 boolean unaffectedByWater,
                                 boolean unaffectedByLava, boolean cannotSprint, boolean noNaturalRegeneration,
                                 mc.sayda.creraces.engine.ScalingValue regenerationMultiplier, boolean immuneToKnockback,
                                 mc.sayda.creraces.engine.ScalingValue invulnerabilityTicksMultiplier, boolean noHunger,
                                 boolean noHungerDrain, mc.sayda.creraces.engine.ScalingValue fixedHunger,
-                                boolean canEatMeat,
+                                List<String> blockedFoodTypes,
+                                List<String> allowedFoodTypes,
                                 boolean canEatWhenFull, List<String> hatedByEntities, List<String> respectedByEntities,
                                 List<String> defendedByEntities, @Nullable EntitySpawnData spawnOnDeath,
                                 boolean canCommandSocials) {
@@ -298,7 +374,6 @@ public class Race {
                         this.nightVision = nightVision;
                         this.waterVision = waterVision;
                         this.lavaVision = lavaVision;
-                        this.fallDamageMultiplier = fallDamageMultiplier;
                         this.canFly = canFly;
                         this.liquidSpeedMultiplier = liquidSpeedMultiplier;
                         this.unaffectedByWater = unaffectedByWater;
@@ -311,7 +386,8 @@ public class Race {
                         this.noHunger = noHunger;
                         this.noHungerDrain = noHungerDrain;
                         this.fixedHunger = fixedHunger;
-                        this.canEatMeat = canEatMeat;
+                        this.blockedFoodTypes = blockedFoodTypes != null ? blockedFoodTypes : new java.util.ArrayList<>();
+                        this.allowedFoodTypes = allowedFoodTypes != null ? allowedFoodTypes : new java.util.ArrayList<>();
                         this.canEatWhenFull = canEatWhenFull;
                         this.hatedByEntities = hatedByEntities;
                         this.respectedByEntities = respectedByEntities;
@@ -352,9 +428,6 @@ public class Race {
                         return lavaVision;
                 }
 
-                public mc.sayda.creraces.engine.ScalingValue fallDamageMultiplier() {
-                        return fallDamageMultiplier;
-                }
 
                 public boolean canFly() {
                         return canFly;
@@ -404,8 +477,12 @@ public class Race {
                         return fixedHunger;
                 }
 
-                public boolean canEatMeat() {
-                        return canEatMeat;
+                public List<String> blockedFoodTypes() {
+                        return blockedFoodTypes;
+                }
+
+                public List<String> allowedFoodTypes() {
+                        return allowedFoodTypes;
                 }
 
                 public boolean canEatWhenFull() {
@@ -433,35 +510,20 @@ public class Race {
                 }
 
                 public static Passives DEFAULT = new Passives(
-                                false, true, false, List.of(), List.of(), // Breathing (+ effect immunity)
+                                false, true, false, new java.util.ArrayList<>(), new java.util.ArrayList<>(), // Breathing (+ effect immunity)
                                 false, false, false, // Vision
-                                new mc.sayda.creraces.engine.ScalingValue(1.0, null, 0, new java.util.ArrayList<>()),
-                                false,
-                                new mc.sayda.creraces.engine.ScalingValue(1.0, null, 0, new java.util.ArrayList<>()),
-                                false, false, false, // Movement
-                                // (1.0 =
-                                // normal)
-                                false,
-                                new mc.sayda.creraces.engine.ScalingValue(1.0, null, 0, new java.util.ArrayList<>()), // Health
-                                                                                                                      // (1.0
-                                                                                                                      // =
-                                                                                                                      // normal
-                                // regen)
-                                false,
-                                new mc.sayda.creraces.engine.ScalingValue(1.0, null, 0, new java.util.ArrayList<>()), // Combat
-                                                                                                                      // (1.0
-                                                                                                                      // =
-                                                                                                                      // normal
-                                // invuln)
-                                false, false,
-                                new mc.sayda.creraces.engine.ScalingValue(0.0, null, 0, new java.util.ArrayList<>()),
-                                true, false, // Food
-                                // (noHunger,
-                                // noHungerDrain,
-                                // fixedHunger,
-                                // canEatMeat, canEatWhenFull)
-                                List.of(), List.of(), List.of(), // Social (empty lists)
-                                null, // Special
+                                false, // canFly
+                                new mc.sayda.creraces.engine.ScalingValue(1.0, null, 0, new java.util.ArrayList<>()), // liquidSpeedMultiplier
+                                false, false, false, // Environmental (unaffected by water/lava, cannot sprint)
+                                false, // noNaturalRegeneration
+                                new mc.sayda.creraces.engine.ScalingValue(1.0, null, 0, new java.util.ArrayList<>()), // regenerationMultiplier
+                                false, // immuneToKnockback
+                                new mc.sayda.creraces.engine.ScalingValue(1.0, null, 0, new java.util.ArrayList<>()), // invulnerabilityTicksMultiplier
+                                false, false, // noHunger, noHungerDrain
+                                new mc.sayda.creraces.engine.ScalingValue(0.0, null, 0, new java.util.ArrayList<>()), // fixedHunger
+                                new java.util.ArrayList<>(), new java.util.ArrayList<>(), false, // Food (blocked, allowed, canEatWhenFull)
+                                new java.util.ArrayList<>(), new java.util.ArrayList<>(), new java.util.ArrayList<>(), // Social (hated, respected, defended)
+                                null, // spawnOnDeath
                                 false // canCommandSocials
                 );
         }

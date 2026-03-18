@@ -127,48 +127,53 @@ public class RaceDetailsScreen extends Screen {
                                         }
                                 }));
 
-                // Dynamic Wiki Button
-                this.addRenderableWidget(new ImageButton(
-                                this.leftPos + 2, this.topPos - 2, 16, 16,
-                                0, 0, 16, INFO_ICON, 16, 32,
-                                btn -> {
-                                        String url;
-                                        if (infoPage < 2) {
-                                                url = mc.sayda.creraces.util.WikiUtils.getRaceUrl(race.name());
-                                        } else {
-                                                int abilityIdx = infoPage - 2;
-                                                ResourceLocation abilityId = race.startingAbilities().get(abilityIdx);
-                                                mc.sayda.creraces.ability.Ability ability = mc.sayda.creraces.ability.AbilityRegistry
-                                                                .get(abilityId);
-                                                if (ability != null) {
-                                                        url = mc.sayda.creraces.util.WikiUtils
-                                                                        .getAbilityUrl(ability.name());
+                // Dynamic Wiki and Refresh Buttons- Visible only if WikiPage is linked
+                if (race != null && mc.sayda.creraces.race.RaceRegistry.getRemoteDoc(race.id()) != null) {
+                        // Dynamic Wiki Button
+                        this.addRenderableWidget(new ImageButton(
+                                        this.leftPos + 2, this.topPos - 2, 16, 16,
+                                        0, 0, 16, INFO_ICON, 16, 32,
+                                        btn -> {
+                                                String url;
+                                                if (infoPage < 2) {
+                                                        url = mc.sayda.creraces.util.WikiUtils.getRaceUrl(race.name());
                                                 } else {
-                                                        url = mc.sayda.creraces.util.WikiUtils.getBaseWikiUrl();
+                                                        int abilityIdx = infoPage - 2;
+                                                        ResourceLocation abilityId = race.startingAbilities()
+                                                                        .get(abilityIdx);
+                                                        mc.sayda.creraces.ability.Ability ability = mc.sayda.creraces.ability.AbilityRegistry
+                                                                        .get(abilityId);
+                                                        if (ability != null) {
+                                                                url = mc.sayda.creraces.util.WikiUtils
+                                                                                .getAbilityUrl(ability.name());
+                                                        } else {
+                                                                url = mc.sayda.creraces.util.WikiUtils.getBaseWikiUrl();
+                                                        }
                                                 }
-                                        }
-                                        if (this.minecraft != null) {
-                                                this.minecraft.setScreen(
-                                                                new net.minecraft.client.gui.screens.ConfirmLinkScreen(
-                                                                                confirmed -> {
-                                                                                        if (confirmed) {
-                                                                                                net.minecraft.Util
-                                                                                                                .getPlatform()
-                                                                                                                .openUri(url);
-                                                                                        }
-                                                                                        this.minecraft.setScreen(this);
-                                                                                }, url, true));
-                                        }
-                                }));
+                                                if (this.minecraft != null) {
+                                                        this.minecraft.setScreen(
+                                                                        new net.minecraft.client.gui.screens.ConfirmLinkScreen(
+                                                                                        confirmed -> {
+                                                                                                if (confirmed) {
+                                                                                                        net.minecraft.Util
+                                                                                                                        .getPlatform()
+                                                                                                                        .openUri(url);
+                                                                                                }
+                                                                                                this.minecraft.setScreen(
+                                                                                                                this);
+                                                                                        }, url, true));
+                                                }
+                                        }));
 
-                // Doc Refresh Button
-                this.addRenderableWidget(new ImageButton(
-                                this.leftPos + 2, this.topPos + 16, 16, 16,
-                                16, 0, 16, INFO_ICON, 16, 32,
-                                btn -> {
-                                        mc.sayda.creraces.util.DocCache.clear();
-                                        mc.sayda.creraces.util.RemoteDocFetcher.clearCache();
-                                }));
+                        // Doc Refresh Button
+                        this.addRenderableWidget(new ImageButton(
+                                        this.leftPos + 2, this.topPos + 16, 16, 16,
+                                        16, 0, 16, INFO_ICON, 16, 32,
+                                        btn -> {
+                                                mc.sayda.creraces.util.DocCache.clear();
+                                                mc.sayda.creraces.util.RemoteDocFetcher.clearCache();
+                                        }));
+                }
         }
 
         private void updateMaxInfoPages() {
@@ -198,13 +203,17 @@ public class RaceDetailsScreen extends Screen {
                 RenderSystem.defaultBlendFunc();
 
                 // 1. BG and Border
-                graphics.blit(race.bgTexture(), this.leftPos + -4, this.topPos + -26, 0, 0, 181, 220, 181, 220);
+                if (race.bgTexture() != null) {
+                        graphics.blit(race.bgTexture(), this.leftPos + -4, this.topPos + -26, 0, 0, 181, 220, 181, 220);
+                }
                 graphics.blit(SELECTION_BORDER, this.leftPos + -25, this.topPos + -47, 0, 0, 225, 264, 225, 264);
 
                 // 2. Splash Art
-                graphics.blit(race.splash(), this.leftPos + race.splashX(), this.topPos + race.splashY(), 0, 0,
-                                race.splashW(),
-                                race.splashH(), race.splashW(), race.splashH());
+                if (race.splash() != null) {
+                        graphics.blit(race.splash(), this.leftPos + race.splashX(), this.topPos + race.splashY(), 0, 0,
+                                        race.splashW(),
+                                        race.splashH(), race.splashW(), race.splashH());
+                }
 
                 // 3. Selection Title and Name Texture
                 graphics.blit(SELECTION_TITLE, this.leftPos + -7, this.topPos + -54, 0, 0, 188, 60, 188, 60);
@@ -235,7 +244,7 @@ public class RaceDetailsScreen extends Screen {
                 }
 
                 // 7. Gender Indicator
-                if (mc.sayda.creraces.config.CreRacesConfig.GENDER_SYSTEM_ENABLED.get()) {
+                if (mc.sayda.creraces.config.CreRacesConfig.GSTATE_ENABLED.get()) {
                         if (race.getGState() == mc.sayda.creraces.engine.GState.MALE) {
                                 graphics.blit(M_ICON, this.leftPos - 142, this.topPos - 35, 0, 0, 16, 16, 16, 16);
                         } else if (race.getGState() == mc.sayda.creraces.engine.GState.FEMALE) {

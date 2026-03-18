@@ -58,7 +58,7 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
         /**
          * Optional: block type to check at a specific offset from the panel.
          * If set and the block at (checkX, checkY, checkZ) is NOT this type, the room
-         * already exists — only the door is removed, no cost, no counter increment.
+         * already exists - only the door is removed, no cost, no counter increment.
          */
         @Nullable
         final ResourceLocation checkBlock;
@@ -216,7 +216,8 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
                             facing, doorWidth, doorHeight, doorDepth);
                 }
 
-                BlockPos targetPos = interactionPos.offset(dx, dy, dz);
+                @SuppressWarnings("null")
+                BlockPos targetPos = java.util.Objects.requireNonNull(interactionPos.offset(dx, dy, dz));
                 StructureTemplate template = world.getStructureManager().getOrCreate(rule.structure);
                 if (template != null) {
                     template.placeInWorld(world, targetPos, targetPos, new StructurePlaceSettings(), world.random, 3);
@@ -278,7 +279,7 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
                                 GsonHelper.getAsString(faceJson, "shell_block", "creraces:dryad_petrified_wood"));
                         int shellRadius = GsonHelper.getAsInt(faceJson, "shell_radius", 14);
                         int shellHeight = GsonHelper.getAsInt(faceJson, "shell_height", 7);
-                        String checkBlockStr = GsonHelper.getAsString(faceJson, "check_block", null);
+                        @javax.annotation.Nullable String checkBlockStr = GsonHelper.getNullableString(faceJson, "check_block", null);
                         ResourceLocation checkBlock = checkBlockStr != null ? new ResourceLocation(checkBlockStr)
                                 : null;
                         Integer checkX = faceJson.has("check_x") ? faceJson.get("check_x").getAsInt()

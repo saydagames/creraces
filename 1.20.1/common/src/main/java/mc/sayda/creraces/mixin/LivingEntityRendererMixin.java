@@ -8,6 +8,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.renderer.MultiBufferSource;
 
@@ -46,6 +47,13 @@ public abstract class LivingEntityRendererMixin {
 
         if (targetInSpirit) {
             ci.cancel();
+        }
+    }
+
+    @Inject(method = "shouldShowName(Lnet/minecraft/world/entity/LivingEntity;)Z", at = @At("HEAD"), cancellable = true)
+    private void creraces$hideNameTag(LivingEntity entity, CallbackInfoReturnable<Boolean> cir) {
+        if (entity.hasEffect(ModMobEffects.TRUE_INVISIBILITY.get())) {
+            cir.setReturnValue(false);
         }
     }
 }

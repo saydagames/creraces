@@ -159,13 +159,14 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
     private final ScalingValue speed;
     private final ScalingValue dx, dy, dz;
     private final ScalingValue spin;
+    private final mc.sayda.creraces.engine.TargetFilter targets;
     @javax.annotation.Nullable
     private final ParticlePattern pattern;
 
     public SpawnParticlesAction(ParticleOptions particle, ScalingValue count, ScalingValue speed, ScalingValue dx,
             ScalingValue dy,
             ScalingValue dz,
-            ScalingValue spin, @javax.annotation.Nullable ParticlePattern pattern) {
+            ScalingValue spin, mc.sayda.creraces.engine.TargetFilter targets, @javax.annotation.Nullable ParticlePattern pattern) {
         this.particle = particle;
         this.count = count;
         this.speed = speed;
@@ -173,6 +174,7 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
         this.dy = dy;
         this.dz = dz;
         this.spin = spin;
+        this.targets = targets;
         this.pattern = pattern;
     }
 
@@ -185,22 +187,38 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
             if (pCount <= 0)
                 return true;
 
-            if (pattern != null) {
-                pattern.spawn(sl, player, target, particle, pCount, speed.evaluate(player, target),
-                        spin.evaluate(player, target));
+            CreRaces.LOGGER.info("SpawnParticlesAction: Spawning {} particles for {}", pCount, player.getName().getString());
+
+            if (target != null) {
+                // AoE Context: apply to valid target
+                if (targets.isValid(target, player)) {
+                    spawnOnTarget(sl, player, target, pCount);
+                }
             } else {
-                sl.sendParticles(particle, player.getX(), player.getY() + 1.0, player.getZ(), pCount,
-                        dx.evaluate(player, target), dy.evaluate(player, target), dz.evaluate(player, target),
-                        speed.evaluate(player, target));
+                // Non-AoE Context: apply to player if valid (e.g. self)
+                if (targets.isValid(player, player)) {
+                    spawnOnTarget(sl, player, player, pCount);
+                }
             }
         }
         return true;
     }
 
+    private void spawnOnTarget(ServerLevel sl, Player player, net.minecraft.world.entity.LivingEntity actualTarget, int pCount) {
+        if (pattern != null) {
+            pattern.spawn(sl, player, actualTarget, particle, pCount, speed.evaluate(player, actualTarget),
+                    spin.evaluate(player, actualTarget));
+        } else {
+            sl.sendParticles(particle, actualTarget.getX(), actualTarget.getY() + 1.0, actualTarget.getZ(), pCount,
+                    dx.evaluate(player, actualTarget), dy.evaluate(player, actualTarget), dz.evaluate(player, actualTarget),
+                    speed.evaluate(player, actualTarget));
+        }
+    }
+
     public static void register() {
         ActionRegistry.ActionFactory factory = json -> {
             String particleId = GsonHelper.getAsString(json, "particle");
-            if (particleId == null)
+            if (particleId.isEmpty())
                 return null;
 
             ResourceLocation loc = new ResourceLocation(particleId);
@@ -242,17 +260,20 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
 
             ScalingValue count = ScalingValue.fromJson(json, "count", 10.0);
             ScalingValue speed = ScalingValue.fromJson(json, "speed", 0.0);
-            ScalingValue dx = ScalingValue.fromJson(json, "dx", 0.0);
-            ScalingValue dy = ScalingValue.fromJson(json, "dy", 0.0);
-            ScalingValue dz = ScalingValue.fromJson(json, "dz", 0.0);
+            ScalingValue spread = ScalingValue.fromJson(json, "spread", 0.0);
+            ScalingValue dx = json.has("dx") ? ScalingValue.fromJson(json, "dx", 0.0) : spread;
+            ScalingValue dy = json.has("dy") ? ScalingValue.fromJson(json, "dy", 0.0) : spread;
+            ScalingValue dz = json.has("dz") ? ScalingValue.fromJson(json, "dz", 0.0) : spread;
             ScalingValue spin = ScalingValue.fromJson(json, "spin", 0.0);
+            mc.sayda.creraces.engine.TargetFilter targets = mc.sayda.creraces.engine.TargetFilter.fromJson(json,
+                    "targets", java.util.Set.of("enemies", "self"));
 
             ParticlePattern pattern = null;
             if (json.has("pattern") && json.get("pattern").isJsonObject()) {
                 pattern = ParticlePattern.fromJson(json.getAsJsonObject("pattern"));
             }
 
-            return new SpawnParticlesAction(options, count, speed, dx, dy, dz, spin, pattern);
+            return new SpawnParticlesAction(options, count, speed, dx, dy, dz, spin, targets, pattern);
         };
 
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "spawn_particles"), factory);

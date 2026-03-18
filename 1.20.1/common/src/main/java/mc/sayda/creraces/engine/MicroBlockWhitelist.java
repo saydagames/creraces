@@ -51,7 +51,7 @@ public class MicroBlockWhitelist {
             return true;
 
         // Piston family: pistons have a block entity so already blocked above,
-        // but MovingPistonBlock does not — exclude it explicitly.
+        // but MovingPistonBlock does not - exclude it explicitly.
         // Note: class names vary by mapping; we use a property-based check instead.
         if (block.getDescriptionId().contains("piston"))
             return false;

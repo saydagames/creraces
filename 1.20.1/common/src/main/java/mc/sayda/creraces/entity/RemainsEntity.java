@@ -69,6 +69,11 @@ public class RemainsEntity extends Mob {
     }
 
     @Override
+    public boolean canBeAffected(net.minecraft.world.effect.MobEffectInstance effect) {
+        return false;
+    }
+
+    @Override
     public boolean canBeCollidedWith() {
         return false;
     }

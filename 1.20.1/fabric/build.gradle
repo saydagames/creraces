@@ -41,6 +41,7 @@ dependencies {
     modImplementation "curse.maven:pehkui-319596:4684391"
     modImplementation "com.github.Virtuoel:KanosConfig:0.4.1"
     modRuntimeOnly "io.github.llamalad7:mixinextras-fabric:0.5.3"
+    modRuntimeOnly "mezz.jei:jei-1.20.1-fabric:15.2.0.27"
 }
 
 processResources {

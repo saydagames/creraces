@@ -65,7 +65,7 @@ public abstract class EntityMixin implements IPersistentDataAccessor {
     }
 
     /**
-     * Suppress fire-ticks for unaffectedByLava races — they cannot be set on fire
+     * Suppress fire-ticks for unaffectedByLava races - they cannot be set on fire
      * by lava or fire blocks.
      */
     @Inject(method = "setRemainingFireTicks", at = @At("HEAD"), cancellable = true)

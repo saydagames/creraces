@@ -22,6 +22,12 @@
             "amplifier": 1
         },
         {
+            "type": "creraces:apply_effect",
+            "effect": "creraces:thorns",
+            "duration": 200,
+            "amplifier": 0
+        },
+        {
             "type": "creraces:apply_particles",
             "particle": "minecraft:happy_villager",
             "count": 15,

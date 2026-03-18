@@ -36,8 +36,7 @@
                     "speed": 0.05,
                     "targets": [
                         "enemies"
-                    ],
-                    "use_target": true
+                    ]
                 },
                 {
                     "type": "creraces:remove_effect",

@@ -48,7 +48,7 @@ public class ModMobEffects {
                                                         net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.MULTIPLY_TOTAL));
 
         /**
-         * Frozen — Troll sunlight effect. Roots (speed ×-1) and disarms the entity.
+         * Frozen - Troll sunlight effect. Roots (speed ×-1) and disarms the entity.
          * PlayerMixin checks FROZEN alongside DISARMED to block attacking and
          * interactions.
          */
@@ -56,7 +56,7 @@ public class ModMobEffects {
                         () -> new FrozenEffect(MobEffectCategory.HARMFUL, 0xADD8E6));
 
         /**
-         * Troll's Curse — applied by the Troll Pillar to nearby entities.
+         * Troll's Curse - applied by the Troll Pillar to nearby entities.
          * Buffs Troll-race allies (Speed I), debuffs others (Slowness I + Weakness I).
          */
         public static final RegistrySupplier<MobEffect> TROLL_CURSE = MOB_EFFECTS.register("troll_curse",
@@ -66,14 +66,14 @@ public class ModMobEffects {
                         () -> new mc.sayda.creraces.effect.DizzinessEffect(MobEffectCategory.HARMFUL, 0x87CEEB));
 
         /**
-         * Applied by Harpy on a fully-charged hit — marks the target with a
-         * featherstorm.
+         * Featherstorm - Harpy beneficial effect.
+         * Granted to the player on hit.
          */
         public static final RegistrySupplier<MobEffect> FEATHERSTORM = MOB_EFFECTS.register("featherstorm",
-                        () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.HARMFUL, 0xFFD700));
+                        () -> new mc.sayda.creraces.effect.FeatherstormEffect());
 
         /**
-         * Applied by Troll to "maul-mark" a target — reduces defenses for the follow-up
+         * Applied by Troll to "maul-mark" a target - reduces defenses for the follow-up
          * hit.
          */
         public static final RegistrySupplier<MobEffect> MAUL = MOB_EFFECTS.register("maul",
@@ -87,7 +87,7 @@ public class ModMobEffects {
         public static final RegistrySupplier<MobEffect> BLEEDING = MOB_EFFECTS.register("bleeding",
                         () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.HARMFUL, 0xCC0000));
 
-        // TODO: Missing Effects Audit, decide and implement these
+        // Element effects function as simple markers/beneficial states
         public static final RegistrySupplier<MobEffect> AIR_ELEMENT = MOB_EFFECTS.register("air_element",
                         () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.BENEFICIAL, 0x87CEEB));
         public static final RegistrySupplier<MobEffect> EARTH_ELEMENT = MOB_EFFECTS.register("earth_element",
@@ -96,20 +96,29 @@ public class ModMobEffects {
                         () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.BENEFICIAL, 0xFF4500));
         public static final RegistrySupplier<MobEffect> WATER_ELEMENT = MOB_EFFECTS.register("water_element",
                         () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.BENEFICIAL, 0x0000FF));
+
         public static final RegistrySupplier<MobEffect> BLINDED = MOB_EFFECTS.register("blinded",
-                        () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.HARMFUL, 0x000000));
-        public static final RegistrySupplier<MobEffect> CAMOUFLAGE = MOB_EFFECTS.register("camouflage",
-                        () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.BENEFICIAL, 0x228B22));
+                        () -> new mc.sayda.creraces.effect.BlindedEffect());
         public static final RegistrySupplier<MobEffect> FOUL_PLAY = MOB_EFFECTS.register("foul_play",
                         () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.HARMFUL, 0x4B0082));
         public static final RegistrySupplier<MobEffect> INVULNERABILITY = MOB_EFFECTS.register("invulnerability",
-                        () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.BENEFICIAL, 0xFFD700));
+                        () -> new mc.sayda.creraces.effect.InvulnerabilityEffect());
         public static final RegistrySupplier<MobEffect> THORNS = MOB_EFFECTS.register("thorns",
-                        () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.BENEFICIAL, 0x006400));
-        public static final RegistrySupplier<MobEffect> WATER_RESISTANCE = MOB_EFFECTS.register("water_resistance",
-                        () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.BENEFICIAL, 0x1E90FF));
-        public static final RegistrySupplier<MobEffect> WILD_HUNT = MOB_EFFECTS.register("wild_hunt",
-                        () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.BENEFICIAL, 0x556B2F));
+                        () -> new mc.sayda.creraces.effect.ThornsEffect());
+        public static final RegistrySupplier<MobEffect> SHIELD = MOB_EFFECTS.register("shield",
+                        () -> new mc.sayda.creraces.effect.ShieldEffect(MobEffectCategory.BENEFICIAL, 0xFFFF00));
+        public static final RegistrySupplier<MobEffect> AP_SHIELD = MOB_EFFECTS.register("ap_shield",
+                        () -> new mc.sayda.creraces.effect.ShieldEffect(MobEffectCategory.BENEFICIAL, 0x00FFFF));
+        public static final RegistrySupplier<MobEffect> AD_SHIELD = MOB_EFFECTS.register("ad_shield",
+                        () -> new mc.sayda.creraces.effect.ShieldEffect(MobEffectCategory.BENEFICIAL, 0xFF00FF));
+
+        /** Grievous Wounds - reduces healing received by 40% (multiplier 0.6). */
+        public static final RegistrySupplier<MobEffect> GRIEVOUS_WOUNDS = MOB_EFFECTS.register("grievous_wounds",
+                        () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.HARMFUL, 0x8B0000)
+                                        .addAttributeModifier(
+                                                        mc.sayda.creraces.registry.ModAttributes.HEALING_RECEIVED.get(),
+                                                        "a0f3d95c-9c9e-4e8a-b1f3-d9d7a2d5d361", -0.4D,
+                                                        net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADDITION));
 
         public static void register() {
                 MOB_EFFECTS.register();

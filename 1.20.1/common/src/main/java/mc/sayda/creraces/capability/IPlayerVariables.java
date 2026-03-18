@@ -118,9 +118,9 @@ public interface IPlayerVariables extends ISerializableData {
 
     String getCustomization(String key);
 
-    double getAbilityState(ResourceLocation abilityId);
+    double getPersistentState(ResourceLocation id);
 
-    void setAbilityState(ResourceLocation abilityId, double value);
+    void setPersistentState(ResourceLocation id, double value);
 
     AbilitySlot getSlotForAbility(ResourceLocation abilityId);
 

@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "creraces:dryad_log"
+    }
+  ],
+  "result": {
+    "item": "creraces:dryad_planks",
+    "count": 4
+  }
+}

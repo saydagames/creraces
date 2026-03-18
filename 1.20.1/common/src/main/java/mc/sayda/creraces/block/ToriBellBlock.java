@@ -105,6 +105,7 @@ public class ToriBellBlock extends BellBlock {
         });
     }
 
+    @SuppressWarnings("null")
     private boolean checkAndPlaceStructure(ServerLevel level, BlockPos pos, Player player, IPlayerVariables vars) {
         int x = pos.getX();
         int y = pos.getY();

@@ -4,7 +4,6 @@ import dev.architectury.event.events.common.PlayerEvent;
 import dev.architectury.event.events.common.TickEvent;
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.network.BoundaryHandler;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import java.util.concurrent.atomic.AtomicLong;
@@ -60,8 +59,9 @@ public class IncidentResolver {
 
         // Entity Events
         dev.architectury.event.events.common.EntityEvent.LIVING_DEATH.register((entity, source) -> {
-            if (source.getEntity() instanceof ServerPlayer killer) {
-                onIncidentVictory(killer, entity);
+            net.minecraft.world.entity.player.Player killer = mc.sayda.creraces.util.CombatUtils.getRootOwner(source.getEntity());
+            if (killer instanceof ServerPlayer sp) {
+                onIncidentVictory(sp, entity);
             }
             return dev.architectury.event.EventResult.pass();
         });
@@ -141,7 +141,7 @@ public class IncidentResolver {
             if (race != null && race.traits() != null) {
                 for (mc.sayda.creraces.engine.TraitRegistry.RaceTrait trait : race.traits()) {
                     if (trait.onBlockPlace(player, pos, state)) {
-                        return dev.architectury.event.EventResult.interruptTrue(); // Was always pass() — bug: trait
+                        return dev.architectury.event.EventResult.interruptTrue(); // Was always pass() - bug: trait
                                                                                    // result was ignored
                     }
                 }
@@ -181,6 +181,24 @@ public class IncidentResolver {
             }
         });
 
+        // 7. Coin Drop Logic
+        if (mc.sayda.creraces.config.CreRacesConfig.COIN_DROP_ENABLED.get()
+                && victim instanceof net.minecraft.world.entity.monster.AbstractIllager) {
+            var taxingEnchant = mc.sayda.creraces.registry.ModEnchantments.TAXING.get();
+            int taxingLevel = taxingEnchant != null
+                    ? net.minecraft.world.item.enchantment.EnchantmentHelper.getEnchantmentLevel(taxingEnchant, killer)
+                    : 0;
+
+            float chance = 0.2f + (0.2f * taxingLevel);
+            if (killer.getRandom().nextFloat() < chance) {
+                // 20% chance for a Dime, 80% for a Penny (within the successful drop)
+                net.minecraft.world.item.Item coin = killer.getRandom().nextFloat() < 0.2f
+                        ? mc.sayda.creraces.registry.ModItems.DIME.get()
+                        : mc.sayda.creraces.registry.ModItems.PENNY.get();
+
+                victim.spawnAtLocation(new net.minecraft.world.item.ItemStack(coin));
+            }
+        }
     }
 
     private static void onIncidentPickup(ServerPlayer player, net.minecraft.world.item.ItemStack stack) {
@@ -195,8 +213,10 @@ public class IncidentResolver {
     }
 
     private static void onIncidentBegin(ServerPlayer player) {
-        // Attributes need setup before client sync
         mc.sayda.creraces.race.AttributeIncidents.eikiJudgment(player);
+
+        // Re-apply race elements on login (Persistence Fix)
+        mc.sayda.creraces.race.RaceIncidents.refreshPlayer(player);
 
         // Sync the joining player's data to all currently online players,
         // and sync all online players' data to the joining player.
@@ -238,18 +258,8 @@ public class IncidentResolver {
                 LOGGER.info("IncidentResolver: Copied oldVars to newVars. New Race: {}", newVars.getRace());
 
                 if (wasDeath) {
-                    // resetOnDeath clears resources, cooldowns, channeled state, AND all
-                    // non-persistent ability states (not just equipped ones — fixes the
-                    // previous incomplete manual loop over slots).
                     newVars.resetOnDeath();
-
-                    // Re-apply Scale and Cosmetics after death/respawn
-                    mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(newVars.getRace());
-                    if (race != null) {
-                        mc.sayda.creraces.race.RaceIncidents.applyScale(newPlayer, race.scale());
-                        mc.sayda.creraces.race.CosmeticIncidents.applyCustomizations(newPlayer,
-                                newVars.getCustomizations(), race);
-                    }
+                    mc.sayda.creraces.race.RaceIncidents.refreshPlayer(newPlayer);
                 }
 
                 // After cloning, sync to the new player
@@ -290,18 +300,9 @@ public class IncidentResolver {
     }
 
     public static void onRespawn(ServerPlayer player) {
-        LOGGER.info("IncidentResolver: onRespawn triggered for {}", player.getName().getString());
+        LOGGER.debug("IncidentResolver: onRespawn triggered for {}", player.getName().getString());
 
-        // Re-apply race elements that Pehkui/Vanilla might have cleared
-        DataUtils.getVariables(player).ifPresent(vars -> {
-            mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
-            if (race != null) {
-                mc.sayda.creraces.race.RaceIncidents.applyScale(player, race.scale());
-            }
-        });
-
-        BoundaryHandler.resyncVariables(player, player);
-        mc.sayda.creraces.race.AttributeIncidents.eikiJudgment(player);
+        mc.sayda.creraces.race.RaceIncidents.refreshPlayer(player);
 
         // Set default respawn states for resources
         DataUtils.getVariables(player).ifPresent(vars -> {
@@ -311,10 +312,8 @@ public class IncidentResolver {
                     java.util.Objects.requireNonNull(mc.sayda.creraces.registry.ModAttributes.MAX_ENERGY.get())));
             vars.setRage(0);
             vars.setGrit(0);
-        });
 
-        // Trigger on_respawn traits
-        DataUtils.getVariables(player).ifPresent(vars -> {
+            // Trigger on_respawn traits
             mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
             if (race != null && race.traits() != null) {
                 for (mc.sayda.creraces.engine.TraitRegistry.RaceTrait trait : race.traits()) {

@@ -10,7 +10,8 @@
     ],
     "actions": [
         {
-            "type": "creraces:toggle_state"
+            "type": "creraces:toggle_state",
+            "state": "slot"
         },
         {
             "type": "creraces:play_sound",

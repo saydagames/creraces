@@ -1,14 +1,13 @@
 {
-    "name": "race.creraces.elf.name",
-    "parent_race": "creraces:elves",
-    "legacy_id": 12.1,
-    "description": "race.creraces.elf.description",
-    "icon": "creraces:textures/screens/elf_icon.png",
-    "splash": "creraces:textures/screens/elf_splash.png",
-    "portrait": "creraces:textures/screens/elf_portrait.png",
-    "name_texture": "creraces:textures/screens/elf_text.png",
-    "tier": "creraces:common",
-    "difficulty": 1,
-    "resource_type": "ENERGY",
-    "wiki_page": "Elf"
+    "creraces:name": "race.creraces.elf.name",
+    "creraces:parent_race": "creraces:elves",
+    "creraces:index": 12.1,
+    "creraces:description": "race.creraces.elf.description",
+    "creraces:icon": "creraces:textures/screens/elf_icon.png",
+    "creraces:splash": "creraces:textures/screens/elf_splash.png",
+    "creraces:portrait": "creraces:textures/screens/elf_portrait.png",
+    "creraces:name_texture": "creraces:textures/screens/elf_text.png",
+    "creraces:difficulty": 1,
+    "creraces:resource_type": "ENERGY",
+    "creraces:wiki_page": "Elf"
 }

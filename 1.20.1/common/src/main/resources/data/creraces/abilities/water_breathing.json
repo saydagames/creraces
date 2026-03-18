@@ -11,6 +11,7 @@
             "effect": "minecraft:water_breathing",
             "amplifier": 0,
             "duration": -1,
+            "targets": ["self"],
             "visible": false
         }
     ],

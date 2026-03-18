@@ -1,0 +1,15 @@
+{
+  "replace": false,
+  "values": [
+    "#minecraft:is_fire",
+    "minecraft:magic",
+    "minecraft:indirect_magic",
+    "minecraft:thorns",
+    "minecraft:dragon_breath",
+    "minecraft:fireball",
+    "minecraft:unattributed_fireball",
+    "minecraft:wither_skull",
+    "minecraft:lightning_bolt",
+    "minecraft:campfire"
+  ]
+}

@@ -132,7 +132,8 @@ public class RaceTeamManager {
     public static boolean canHurt(net.minecraft.world.entity.LivingEntity victim,
             net.minecraft.world.entity.LivingEntity attacker) {
         if (victim == attacker) {
-            return false;
+            return true; // Note: Changed from false to true to allow fruitful sacrifice to target the
+                         // user themselves
         }
 
         // Tame check

@@ -11,8 +11,16 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.BlockHitResult;
+import mc.sayda.creraces.capability.DataUtils;
+import net.minecraft.resources.ResourceLocation;
+
 /**
- * Rat Hole — a flat, nearly invisible block placed by Ratkin's Rat Tunnels
+ * Rat Hole - a flat, nearly invisible block placed by Ratkin's Rat Tunnels
  * ability.
  * <ul>
  * <li>No collision (entities walk through it).</li>
@@ -21,10 +29,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  * <li>Indestructible by normal means (unbreakable, explosion-immune).</li>
  * </ul>
  *
- * Teleportation logic is handled entirely by the engine via
- * {@code creraces:teleport}
- * and {@code creraces:set_customization} actions in {@code rat_tunnels.json}.
- * This block is purely a visual marker placed on the ground.
+ * Teleportation logic is handled on block use (click).
  */
 public class RatHoleBlock extends Block {
 
@@ -39,6 +44,57 @@ public class RatHoleBlock extends Block {
                 .noOcclusion()
                 .pushReaction(PushReaction.BLOCK)
                 .isRedstoneConductor((bs, bl, bp) -> false));
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand,
+            BlockHitResult hit) {
+        if (level.isClientSide())
+            return InteractionResult.SUCCESS;
+
+        DataUtils.getVariables(player).ifPresent(vars -> {
+            if (vars.getPersistentState(new ResourceLocation("creraces:rat_tunnels")) == 2) {
+                // Check if we are clicking Hole A or Hole B
+                String axS = vars.getCustomization("tunnel_ax");
+                String ayS = vars.getCustomization("tunnel_ay");
+                String azS = vars.getCustomization("tunnel_az");
+                String bxS = vars.getCustomization("tunnel_bx");
+                String byS = vars.getCustomization("tunnel_by");
+                String bzS = vars.getCustomization("tunnel_bz");
+
+                if (axS != null && ayS != null && azS != null && bxS != null && byS != null && bzS != null) {
+                    try {
+                        double ax = Double.parseDouble(axS);
+                        double ay = Double.parseDouble(ayS);
+                        double az = Double.parseDouble(azS);
+                        double bx = Double.parseDouble(bxS);
+                        double by = Double.parseDouble(byS);
+                        double bz = Double.parseDouble(bzS);
+
+                        // If at A, go to B. If at B, go to A.
+                        // We use a small epsilon for coordinate matching
+                        boolean isAtA = Math.abs(pos.getX() - ax) < 1.1 && Math.abs(pos.getY() - ay) < 1.1
+                                && Math.abs(pos.getZ() - az) < 1.1;
+                        boolean isAtB = Math.abs(pos.getX() - bx) < 1.1 && Math.abs(pos.getY() - by) < 1.1
+                                && Math.abs(pos.getZ() - bz) < 1.1;
+
+                        if (isAtA) {
+                            player.teleportTo(bx + 0.5, by + 0.1, bz + 0.5);
+                            level.playSound(player, pos, net.minecraft.sounds.SoundEvents.ENDERMAN_TELEPORT,
+                                    net.minecraft.sounds.SoundSource.PLAYERS, 0.8f, 1.5f);
+                        } else if (isAtB) {
+                            player.teleportTo(ax + 0.5, ay + 0.1, az + 0.5);
+                            level.playSound(player, pos, net.minecraft.sounds.SoundEvents.ENDERMAN_TELEPORT,
+                                    net.minecraft.sounds.SoundSource.PLAYERS, 0.8f, 1.5f);
+                        }
+                    } catch (Exception ignored) {
+                    }
+                }
+            }
+        });
+
+        return InteractionResult.SUCCESS;
     }
 
     @Override

@@ -80,11 +80,13 @@ public class DocFetcher {
                                 if (wikitext.has("*")) {
                                     content = wikitext.get("*").getAsString();
                                 } else {
-                                    CreRaces.LOGGER.warn("DocFetcher: parse wikitext object missing '*' field for {}", url);
+                                    CreRaces.LOGGER.warn("DocFetcher: parse wikitext object missing '*' field for {}",
+                                            url);
                                     return null;
                                 }
                             } else {
-                                CreRaces.LOGGER.warn("DocFetcher: parse action returned no wikitext object for {}", url);
+                                CreRaces.LOGGER.warn("DocFetcher: parse action returned no wikitext object for {}",
+                                        url);
                                 return null;
                             }
                         } else {
@@ -103,7 +105,8 @@ public class DocFetcher {
                         if (array.size() > 0) {
                             var titleObj = array.get(0).getAsJsonObject().getAsJsonObject("title");
 
-                            if (currentSelector != null && !currentSelector.isEmpty() && titleObj.has(currentSelector)) {
+                            if (currentSelector != null && !currentSelector.isEmpty()
+                                    && titleObj.has(currentSelector)) {
                                 content = titleObj.get(currentSelector).getAsString();
                                 currentSelector = null; // Field found, skip regex processing
                             } else {
@@ -111,7 +114,8 @@ public class DocFetcher {
                                 if (!entries.isEmpty()) {
                                     content = entries.iterator().next().getValue().getAsString();
                                 } else {
-                                    CreRaces.LOGGER.warn("DocFetcher: cargoquery returned empty title object for {}", url);
+                                    CreRaces.LOGGER.warn("DocFetcher: cargoquery returned empty title object for {}",
+                                            url);
                                     return null; // Field not found
                                 }
                             }
@@ -134,7 +138,7 @@ public class DocFetcher {
                         String result = matcher.groupCount() > 0 ? matcher.group(1).trim() : matcher.group().trim();
                         CreRaces.LOGGER.debug("DocFetcher: Regex matched group for {}", url);
                         return WikitextUtil.clean(result);
-                    } else if (url.contains("action=parse")) {
+                    } else if (url.contains("action=parse") && (currentSelector == null || currentSelector.isEmpty())) {
                         // Fallback: try to grab the lead section (before first header)
                         Pattern leadPattern = Pattern.compile("(?i)^(.*?)(?===|$)", Pattern.DOTALL);
                         Matcher leadMatcher = leadPattern.matcher(content);
@@ -157,7 +161,8 @@ public class DocFetcher {
                 }
                 return WikitextUtil.clean(content != null ? content.trim() : null);
             } catch (Exception e) {
-                CreRaces.LOGGER.error("DocFetcher failed for {}: {} ({})", url, e.getMessage(), e.getClass().getSimpleName());
+                CreRaces.LOGGER.error("DocFetcher failed for {}: {} ({})", url, e.getMessage(),
+                        e.getClass().getSimpleName());
                 if (CreRaces.LOGGER.isDebugEnabled()) {
                     e.printStackTrace();
                 }

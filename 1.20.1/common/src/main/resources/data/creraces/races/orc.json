@@ -1,27 +1,24 @@
 {
-    "name": "race.creraces.orc.name",
-    "legacy_id": 16.0,
-    "description": "race.creraces.orc.description",
-    "icon": "creraces:textures/screens/orc_icon.png",
-    "splash": "creraces:textures/screens/orc_splash.png",
-    "resource_type": "RAGE",
-    "max_resource": 100,
-    "tier": "creraces:common",
-    "difficulty": 1,
-    "traits": [
+    "creraces:name": "race.creraces.orc.name",
+    "creraces:index": 16.0,
+    "creraces:description": "race.creraces.orc.description",
+    "creraces:icon": "creraces:textures/screens/orc_icon.png",
+    "creraces:splash": "creraces:textures/screens/orc_splash.png",
+    "creraces:resource_type": "RAGE",
+    "creraces:max_resource": 100,
+    "creraces:difficulty": 1,
+    "orc_attributes": [
         {
+            "id": "orc_damage",
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.attack_damage",
             "value": 5.0,
             "operation": "addition"
-        },
+        }
+    ],
+    "rage_mechanics": [
         {
-            "type": "creraces:attribute_modifier",
-            "attribute": "creraces:ability_power",
-            "value": 10.0,
-            "operation": "addition"
-        },
-        {
+            "id": "rage_damage",
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.attack_damage",
             "value": {
@@ -32,6 +29,7 @@
             "operation": "addition"
         },
         {
+            "id": "rage_armor_penalty",
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.armor",
             "value": {
@@ -42,11 +40,11 @@
             "operation": "addition"
         }
     ],
-    "starting_abilities": [
+    "creraces:starting_abilities": [
         "creraces:bloodrage",
         "creraces:rageful_bloodlust"
     ],
-    "portrait": "creraces:textures/screens/orc_portrait.png",
-    "name_texture": "creraces:textures/screens/orc_text.png",
-    "wiki_page": "Orc"
+    "creraces:portrait": "creraces:textures/screens/orc_portrait.png",
+    "creraces:name_texture": "creraces:textures/screens/orc_text.png",
+    "creraces:wiki_page": "Orc"
 }

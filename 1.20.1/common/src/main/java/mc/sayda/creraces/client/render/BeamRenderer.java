@@ -47,9 +47,9 @@ public class BeamRenderer {
     // -------------------------------------------------------------------------
 
     public static void handleSync(UUID playerId, boolean active,
-            float r, float g, float b, float a, float radius) {
+            float r, float g, float b, float a, float radius, float length) {
         if (active) {
-            ACTIVE_BEAMS.put(playerId, new BeamData(r, g, b, a, radius));
+            ACTIVE_BEAMS.put(playerId, new BeamData(r, g, b, a, radius, length));
         } else {
             ACTIVE_BEAMS.remove(playerId);
         }
@@ -63,7 +63,7 @@ public class BeamRenderer {
      * Render all active beams. Called from LevelRendererMixin at TAIL of
      * renderLevel.
      *
-     * @param poseStack        PoseStack at renderLevel TAIL — top matrix = camera
+     * @param poseStack        PoseStack at renderLevel TAIL - top matrix = camera
      *                         rotation (world→view)
      * @param projectionMatrix the projection matrix from renderLevel
      * @param partialTick      interpolation factor [0,1]
@@ -119,7 +119,7 @@ public class BeamRenderer {
         Vec3 look = player.getViewVector(partialTick);
         Vec3 eye = player.getEyePosition(partialTick);
         Vec3 origin = eye.add(look.scale(0.8));
-        Vec3 end = origin.add(look.scale(64.0));
+        Vec3 end = origin.add(look.scale(data.length));
 
         // Orthonormal basis perpendicular to look
         Vector3f lookV = new Vector3f((float) look.x, (float) look.y, (float) look.z);
@@ -147,13 +147,13 @@ public class BeamRenderer {
         // Inner beam
         buf.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR_TEX);
         emitSquareTube(buf, origin, end, right, up, innerR,
-                data.r, data.g, data.b, data.a, anim, anim + 64f, cam);
+                data.r, data.g, data.b, data.a, anim, anim + data.length, cam);
         tess.end();
 
         // Outer beam
         buf.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR_TEX);
         emitSquareTube(buf, origin, end, right, up, outerR,
-                data.r, data.g, data.b, data.a * 0.35f, anim, anim + 64f, cam);
+                data.r, data.g, data.b, data.a * 0.35f, anim, anim + data.length, cam);
         tess.end();
 
         // Restore
@@ -215,13 +215,15 @@ public class BeamRenderer {
         public final float b;
         public final float a;
         public final float radius;
+        public final float length;
 
-        public BeamData(float r, float g, float b, float a, float radius) {
+        public BeamData(float r, float g, float b, float a, float radius, float length) {
             this.r = r;
             this.g = g;
             this.b = b;
             this.a = a;
             this.radius = radius;
+            this.length = length;
         }
     }
 }

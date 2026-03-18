@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "minecraft:bell"
+    }
+  ],
+  "result": {
+    "item": "creraces:old_bell",
+    "count": 1
+  }
+}

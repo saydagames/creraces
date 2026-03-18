@@ -1,34 +1,33 @@
 {
-    "name": "race.creraces.giant.name",
-    "legacy_id": 11.0,
-    "scale": 2.0,
-    "description": "race.creraces.giant.description",
-    "icon": "creraces:textures/screens/giant_icon.png",
-    "splash": "creraces:textures/screens/giant_splash.png",
-    "base_ap": 10,
-    "base_ad": 15,
-    "base_ah": 25,
-    "base_cr": 5,
-    "resource_type": "GRIT",
-    "max_resource": 100,
-    "tier": "creraces:uncommon",
-    "difficulty": 3,
-    "passives": {
-        "immune_to_knockback": true,
-        "negate_effects": [
-            "minecraft:levitation"
-        ],
-        "step_height": 1.0
-    },
-    "traits": [
+    "creraces:name": "race.creraces.giant.name",
+    "creraces:index": 11.0,
+    "creraces:scale": 2.0,
+    "creraces:description": "race.creraces.giant.description",
+    "creraces:icon": "creraces:textures/screens/giant_icon.png",
+    "creraces:splash": "creraces:textures/screens/giant_splash.png",
+    "creraces:base_ap": 10,
+    "creraces:base_ad": 15,
+    "creraces:base_ah": 25,
+    "creraces:base_cr": 5,
+    "creraces:resource_type": "GRIT",
+    "creraces:max_resource": 100,
+    "creraces:difficulty": 3,
+    "creraces:immune_to_knockback": true,
+    "creraces:negate_effects": [
+        "minecraft:levitation"
+    ],
+    "giant_attributes": [
         {
+            "id": "giant_damage",
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.attack_damage",
             "value": {
                 "base": 5.0
             },
             "operation": "addition"
-        },
+        }
+    ],
+    "grit_mechanics": [
         {
             "type": "creraces:on_hurt",
             "condition": {
@@ -42,7 +41,9 @@
                     "value": 5.0
                 }
             ]
-        },
+        }
+    ],
+    "final_stand": [
         {
             "type": "creraces:on_death",
             "condition": {
@@ -54,19 +55,19 @@
             "actions": [
                 {
                     "type": "creraces:apply_effect",
-                    "effect": "minecraft:absorption",
-                    "duration": 100,
-                    "amplifier": 0,
+                    "effect": "creraces:shield",
+                    "duration": -1,
+                    "amplifier": 3,
                     "visible": true
                 }
             ]
         }
     ],
-    "starting_abilities": [
+    "creraces:starting_abilities": [
         "creraces:unstoppable_force",
         "creraces:tectonic_smash"
     ],
-    "portrait": "creraces:textures/screens/giant_portrait.png",
-    "name_texture": "creraces:textures/screens/giant_text.png",
-    "wiki_page": "Giant"
+    "creraces:portrait": "creraces:textures/screens/giant_portrait.png",
+    "creraces:name_texture": "creraces:textures/screens/giant_text.png",
+    "creraces:wiki_page": "Giant"
 }

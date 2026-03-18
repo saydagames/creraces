@@ -22,12 +22,12 @@
                     "amount": {
                         "base": 1.0,
                         "scales_with": "ap",
-                        "factor": 1.0
+                        "factor": 0.01
                     },
                     "damage_per_stack": {
                         "base": 1.0,
                         "scales_with": "ap",
-                        "factor": 0.1
+                        "factor": 0.01
                     },
                     "stack_effect": "creraces:rat_venom",
                     "damage_type": "minecraft:magic",

@@ -16,9 +16,11 @@ public class DamageAction implements ActionRegistry.RaceAction {
     private final ScalingValue healAmount;
     private final ScalingValue damagePerStack;
     private final String stackEffect;
+    private final mc.sayda.creraces.engine.TargetFilter targets;
+    private final boolean disableKnockback;
 
     public DamageAction(ScalingValue amount, String damageTypeId, ScalingValue knockback, String sourceEntity,
-            ScalingValue fireDuration, ScalingValue healAmount, ScalingValue damagePerStack, String stackEffect) {
+            ScalingValue fireDuration, ScalingValue healAmount, ScalingValue damagePerStack, String stackEffect, mc.sayda.creraces.engine.TargetFilter targets, boolean disableKnockback) {
         this.amount = amount;
         this.damageTypeId = damageTypeId;
         this.knockback = knockback;
@@ -27,17 +29,32 @@ public class DamageAction implements ActionRegistry.RaceAction {
         this.healAmount = healAmount;
         this.damagePerStack = damagePerStack;
         this.stackEffect = stackEffect;
+        this.targets = targets;
+        this.disableKnockback = disableKnockback;
     }
 
     @Override
     public boolean execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
-        net.minecraft.world.entity.LivingEntity actualTarget = target != null ? target : player;
+        
+        // Single Target Mode logic: Check both player and target if they exist
+        if (target != null) {
+            if (targets.isValid(target, player)) {
+                applyDamage(player, target);
+            }
+        } else {
+            if (targets.isValid(player, player)) {
+                applyDamage(player, player);
+            }
+        }
+        return true;
+    }
 
+    private void applyDamage(Player player, net.minecraft.world.entity.LivingEntity actualTarget) {
         // Safety Guard: Don't damage allies if FF is off
         if (actualTarget != player && !mc.sayda.creraces.team.RaceTeamManager.canHurt(actualTarget, player)) {
-            return true;
+            return;
         }
 
         double dmg = amount.evaluate(player, actualTarget);
@@ -58,7 +75,7 @@ public class DamageAction implements ActionRegistry.RaceAction {
         if (dmg > 0 || fireSecs > 0) {
             net.minecraft.world.damagesource.DamageSource source;
             net.minecraft.world.entity.Entity damageSourceEntity = "self".equalsIgnoreCase(sourceEntity) ? player
-                    : ("target".equalsIgnoreCase(sourceEntity) ? target : null);
+                    : ("target".equalsIgnoreCase(sourceEntity) ? actualTarget : null);
 
             if (damageTypeId != null && !damageTypeId.isEmpty()) {
                 if (damageTypeId.contains(":")) {
@@ -84,7 +101,14 @@ public class DamageAction implements ActionRegistry.RaceAction {
             }
 
             if (dmg > 0) {
-                actualTarget.hurt(source, (float) dmg);
+                if (disableKnockback) {
+                    net.minecraft.world.phys.Vec3 motion = actualTarget.getDeltaMovement();
+                    actualTarget.hurt(source, (float) dmg);
+                    actualTarget.setDeltaMovement(motion);
+                    actualTarget.hurtMarked = true; // Force sync for players
+                } else {
+                    actualTarget.hurt(source, (float) dmg);
+                }
             }
 
             if (knockback != null) {
@@ -102,7 +126,6 @@ public class DamageAction implements ActionRegistry.RaceAction {
                 }
             }
         }
-        return true;
     }
 
     public static void register() {
@@ -122,8 +145,11 @@ public class DamageAction implements ActionRegistry.RaceAction {
                     .containsKey(new ResourceLocation(effect))) {
                 CreRaces.LOGGER.error("DamageAction: Unknown mob effect ID '{}' in stack_effect field.", effect);
             }
+            mc.sayda.creraces.engine.TargetFilter targets = mc.sayda.creraces.engine.TargetFilter.fromJson(json,
+                    "targets", java.util.Set.of("enemies"));
+            boolean disableKnockback = net.minecraft.util.GsonHelper.getAsBoolean(json, "disable_knockback", false);
 
-            return new DamageAction(amount, damageType, knockback, source, fire, heal, dmgPerStack, effect);
+            return new DamageAction(amount, damageType, knockback, source, fire, heal, dmgPerStack, effect, targets, disableKnockback);
         });
     }
 }

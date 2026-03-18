@@ -35,10 +35,11 @@ public class SetCooldownAction implements ActionRegistry.RaceAction {
 
     public static void register() {
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "set_cooldown"), json -> {
-            ResourceLocation ability = new ResourceLocation(GsonHelper.getAsString(json, "ability"));
+            String idStr = json.has("id") ? GsonHelper.getAsString(json, "id") : GsonHelper.getAsString(json, "ability");
+            ResourceLocation id = new ResourceLocation(idStr);
             mc.sayda.creraces.engine.ScalingValue value = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "value",
                     100.0);
-            return new SetCooldownAction(ability, value);
+            return new SetCooldownAction(id, value);
         });
     }
 }

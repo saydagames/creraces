@@ -14,6 +14,9 @@ public class ModEnchantments {
     public static final RegistrySupplier<Enchantment> SUN_PROTECTION = ENCHANTMENTS.register("sun_protection",
             SunProtectionEnchantment::new);
 
+    public static final RegistrySupplier<Enchantment> TAXING = ENCHANTMENTS.register("taxing",
+            mc.sayda.creraces.enchantment.TaxingEnchantment::new);
+
     public static void register() {
         ENCHANTMENTS.register();
     }

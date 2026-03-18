@@ -1,0 +1,6 @@
+{
+  "parent": "item/generated",
+  "textures": {
+    "layer0": "creraces:item/yellow_mermaid_leggings"
+  }
+}

@@ -27,6 +27,10 @@ public class TargetFilter {
     private final Set<String> deny = new HashSet<>();
 
     public TargetFilter(Set<String> allow, Set<String> deny) {
+        this(allow, deny, Set.of("enemies"));
+    }
+
+    public TargetFilter(Set<String> allow, Set<String> deny, Set<String> defaultAllow) {
         this.allow.addAll(allow);
         this.deny.addAll(deny);
         // Standardize: if no positive includes are specified but there are denies,
@@ -34,13 +38,17 @@ public class TargetFilter {
         if (this.allow.isEmpty() && !this.deny.isEmpty()) {
             this.allow.add("all");
         }
-        // Default: If entirely empty, target enemies.
+        // Default: If entirely empty, use the provided defaultAllow.
         if (this.allow.isEmpty() && this.deny.isEmpty()) {
-            this.allow.add("enemies");
+            this.allow.addAll(defaultAllow);
         }
     }
 
     public static TargetFilter fromJson(JsonObject json, String key) {
+        return fromJson(json, key, Set.of("enemies"));
+    }
+
+    public static TargetFilter fromJson(JsonObject json, String key, Set<String> defaultAllow) {
         Set<String> allow = new HashSet<>();
         Set<String> deny = new HashSet<>();
 
@@ -54,8 +62,11 @@ public class TargetFilter {
                     allow.add(rule);
                 }
             }
+        } else {
+            // If the key is missing, return a filter with the default allows
+            return new TargetFilter(defaultAllow, Set.of());
         }
-        return new TargetFilter(allow, deny);
+        return new TargetFilter(allow, deny, defaultAllow);
     }
 
     /**
@@ -65,14 +76,14 @@ public class TargetFilter {
         // 1. Process explicit DENY rules first (they override allow rules)
         if (deny.contains("all"))
             return false;
-        if (deny.contains("self") && victim == caster)
+        if (deny.contains("self") && victim.equals(caster))
             return false;
         if (deny.contains("players") && victim instanceof Player)
             return false;
         if (deny.contains("mobs") && !(victim instanceof Player))
             return false;
 
-        boolean isAlly = victim == caster || !RaceTeamManager.canHurt(victim, caster);
+        boolean isAlly = victim.equals(caster) || !RaceTeamManager.canHurt(victim, caster);
         if (deny.contains("allies") && isAlly)
             return false;
         if (deny.contains("enemies") && !isAlly)
@@ -83,7 +94,7 @@ public class TargetFilter {
         // is explicitly allowed.
         // Otherwise, it must pass the category filters (players/mobs/all/enemies).
         if (isAlly) {
-            if (victim == caster && allow.contains("self"))
+            if (victim.equals(caster) && allow.contains("self"))
                 return true;
             return allow.contains("allies");
         }

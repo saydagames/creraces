@@ -12,7 +12,7 @@ import net.minecraft.resources.ResourceLocation;
 import javax.annotation.Nonnull;
 
 /**
- * Troll's Curse — applied by the Troll Pillar entity to nearby entities.
+ * Troll's Curse - applied by the Troll Pillar entity to nearby entities.
  * <ul>
  * <li>Troll-race players receive Speed I (friendly pulse).</li>
  * <li>All other entities receive Slowness I + Weakness I.</li>

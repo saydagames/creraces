@@ -50,14 +50,18 @@ public class ActionRegistry {
 
     public static RaceAction fromJson(JsonObject json) {
         if (!json.has("type")) {
-            CreRaces.LOGGER.error("Action missing 'type' field — skipping. JSON: {}", json);
+            CreRaces.LOGGER.error("Action missing 'type' field - skipping. JSON: {}", json);
             return (player, target, slot, interactionPos) -> true;
         }
         String typeStr = json.get("type").getAsString();
-        ResourceLocation type = new ResourceLocation(typeStr);
+        ResourceLocation type = ResourceLocation.tryParse(typeStr);
+        if (type == null) {
+            CreRaces.LOGGER.error("Malformed action type '{}' - skipping.", typeStr);
+            return (player, target, slot, interactionPos) -> true;
+        }
         ActionFactory factory = REGISTRY.get(type);
         if (factory == null) {
-            CreRaces.LOGGER.error("Unknown action type '{}' — skipping. Did you forget to register it?", type);
+            CreRaces.LOGGER.error("Unknown action type '{}' - skipping. Did you forget to register it?", type);
             return (player, target, slot, interactionPos) -> true;
         }
         try {
@@ -86,7 +90,7 @@ public class ActionRegistry {
             };
         } catch (Exception e) {
             CreRaces.LOGGER.error(
-                    "Failed to parse action '{}': {} — action will be skipped at runtime. JSON: {}",
+                    "Failed to parse action '{}': {} - action will be skipped at runtime. JSON: {}",
                     type, e.getMessage(), json);
             return (player, target, slot, interactionPos) -> true;
         }

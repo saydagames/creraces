@@ -17,7 +17,8 @@
         "LivingEntitySleepMixin",
         "PlayerRespawnMixin",
         "BlockEntityAccessor",
-        "LivingEntityAccessor"
+        "LivingEntityAccessor",
+        "PackRepositoryMixin"
     ],
     "client": [
         "LivingEntityRendererMixin",

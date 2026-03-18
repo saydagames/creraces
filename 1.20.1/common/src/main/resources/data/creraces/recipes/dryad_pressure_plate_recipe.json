@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "aa"
+  ],
+  "key": {
+    "a": {
+      "item": "creraces:dryad_planks"
+    }
+  },
+  "result": {
+    "item": "creraces:dryad_pressure_plate",
+    "count": 1
+  }
+}

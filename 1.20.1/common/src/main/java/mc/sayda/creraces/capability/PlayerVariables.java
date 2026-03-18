@@ -315,6 +315,7 @@ public class PlayerVariables implements IPlayerVariables {
         this.equippedAbilities.clear();
         this.customizations.clear();
         this.abilityStates.clear();
+        this.traitTimers.clear();
         this.morphed = false;
         this.teamId = null;
         this.teamName = "";
@@ -343,8 +344,10 @@ public class PlayerVariables implements IPlayerVariables {
 
     @Override
     public void sync(net.minecraft.world.entity.player.Player player) {
-        // Data container itself doesn't know how to sync,
-        // delegated to Mixed-in player or platform-specific handler.
+        if (player instanceof net.minecraft.server.level.ServerPlayer) {
+            mc.sayda.creraces.network.BoundaryHandler.resyncVariables(player, player);
+            mc.sayda.creraces.network.BoundaryHandler.resyncForAllTrackers(player);
+        }
     }
 
     @Override
@@ -368,6 +371,9 @@ public class PlayerVariables implements IPlayerVariables {
             mc.sayda.creraces.ability.Ability ability = mc.sayda.creraces.ability.AbilityRegistry.get(entry.getKey());
             return ability == null || !ability.persistent();
         });
+
+        // Clear trait timers on death (transient state)
+        this.traitTimers.clear();
 
         this.abilityActive = false;
         this.activeAbility = null;
@@ -396,20 +402,18 @@ public class PlayerVariables implements IPlayerVariables {
     }
 
     @Override
-    public double getAbilityState(ResourceLocation abilityId) {
-        if (abilityId == null)
-            return 0.0;
-        return abilityStates.getOrDefault(abilityId, 0.0);
+    public double getPersistentState(ResourceLocation id) {
+        return abilityStates.getOrDefault(id, 0.0);
     }
 
     @Override
-    public void setAbilityState(ResourceLocation abilityId, double value) {
-        if (abilityId == null)
+    public void setPersistentState(ResourceLocation id, double value) {
+        if (id == null)
             return;
         if (value == 0)
-            abilityStates.remove(abilityId);
+            abilityStates.remove(id);
         else
-            abilityStates.put(abilityId, value);
+            abilityStates.put(id, value);
     }
 
     @Override
@@ -765,7 +769,26 @@ public class PlayerVariables implements IPlayerVariables {
 
     @Override
     public CompoundTag serialize(boolean fullSync) {
-        return serialize();
+        if (fullSync) {
+            return serialize();
+        }
+
+        // TODO: This feels cheep? What if others are added in the future, it would be
+        // better if it can obtain them from a list or similar?
+
+        // Delta sync: omit resources (mana, rage, energy, grit, souls, stacks,
+        // passiveCooldown).
+        // The client predicts these every tick; a full sync fires on all discrete
+        // events.
+        CompoundTag tag = serialize();
+        tag.remove("mana");
+        tag.remove("rage");
+        tag.remove("energy");
+        tag.remove("grit");
+        tag.remove("souls");
+        tag.remove("stacks");
+        tag.remove("passiveCooldown");
+        return tag;
     }
 
     @Override
@@ -787,7 +810,7 @@ public class PlayerVariables implements IPlayerVariables {
             this.cr = tag.getDouble("cr");
         if (tag.contains("coins"))
             this.coins = tag.getDouble("coins");
-        // Resources — directly assign server-authoritative values.
+        // Resources - directly assign server-authoritative values.
         // They are only sent on full syncs (join, respawn, cast).
         if (tag.contains("mana"))
             this.mana = tag.getDouble("mana");
@@ -888,7 +911,6 @@ public class PlayerVariables implements IPlayerVariables {
                 }
             }
         }
-        this.pocketZ = tag.getDouble("pocketZ");
         if (tag.contains("returnX"))
             this.returnX = tag.getDouble("returnX");
         if (tag.contains("returnY"))

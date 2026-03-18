@@ -43,6 +43,14 @@ public class ScalingValue {
         return additionalScales;
     }
 
+    public boolean isZero() {
+        return base == 0 && evaluator == null && additionalScales.isEmpty();
+    }
+
+    public boolean isConstant() {
+        return evaluator == null && additionalScales.isEmpty();
+    }
+
     public static class ScalingComponent {
         private final Evaluator evaluator;
         private final double factor;
@@ -187,18 +195,27 @@ public class ScalingValue {
             };
         }
 
-        if (finalKey.startsWith("ability:")) {
-            final String subKey = finalKey.substring(8);
-            final ResourceLocation abilityId = new ResourceLocation(Objects.requireNonNull(subKey));
+        if (finalKey.startsWith("ability:") || finalKey.startsWith("state:")) {
+            final String subKey = finalKey.startsWith("ability:") ? finalKey.substring(8) : finalKey.substring(6);
+            final ResourceLocation abilityId = ResourceLocation.tryParse(subKey);
+            if (abilityId == null) {
+                mc.sayda.creraces.CreRaces.LOGGER.error("[CreRaces] Invalid state ID in ScalingValue: {}", subKey);
+                return (p, t) -> 0.0;
+            }
             return (p, t) -> {
                 mc.sayda.creraces.capability.IPlayerVariables vars = DataUtils.getVariables(p).orElse(null);
-                return vars != null ? vars.getAbilityState(abilityId) : 0.0;
+                return vars != null ? vars.getPersistentState(abilityId) : 0.0;
             };
         }
 
         // Generic fallback
-        final ResourceLocation attrId = new ResourceLocation(
-                finalKey.contains(":") ? finalKey : "minecraft:" + finalKey);
+        final String resLocStr = finalKey.contains(":") ? finalKey : "minecraft:" + finalKey;
+        final ResourceLocation attrId = ResourceLocation.tryParse(resLocStr);
+        if (attrId == null) {
+            mc.sayda.creraces.CreRaces.LOGGER.error("[CreRaces] Invalid attribute/stat ID in ScalingValue: {}", resLocStr);
+            return (p, t) -> 0.0;
+        }
+
         return (p, t) -> {
             Attribute attr = BuiltInRegistries.ATTRIBUTE.get(attrId);
             if (attr != null && p.getAttributes().hasAttribute(attr)) {
@@ -216,7 +233,7 @@ public class ScalingValue {
         if (json.get(key).isJsonObject()) {
             JsonObject obj = json.getAsJsonObject(key);
             double base = GsonHelper.getAsDouble(obj, "base", defaultBase);
-            String stat = GsonHelper.getAsString(obj, "scales_with", null);
+            String stat = GsonHelper.getNullableString(obj, "scales_with", null);
             double factor = GsonHelper.getAsDouble(obj, "factor", 1.0);
 
             List<ScalingComponent> additional = new ArrayList<>();
@@ -225,7 +242,7 @@ public class ScalingValue {
                 com.google.gson.JsonArray array = obj.getAsJsonArray("scales");
                 for (int i = 0; i < array.size(); i++) {
                     JsonObject scaleObj = array.get(i).getAsJsonObject();
-                    String s = GsonHelper.getAsString(scaleObj, "stat", null);
+                    String s = GsonHelper.getNullableString(scaleObj, "stat", null);
                     double f = GsonHelper.getAsDouble(scaleObj, "factor", 1.0);
                     if (s != null) {
                         additional.add(new ScalingComponent(parseEvaluator(s), f));

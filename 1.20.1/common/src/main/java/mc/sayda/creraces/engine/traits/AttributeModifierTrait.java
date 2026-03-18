@@ -20,6 +20,7 @@ public class AttributeModifierTrait implements TraitRegistry.RaceTrait {
     private final AttributeModifier.Operation operation;
     @Nullable
     private final Condition condition;
+    private String traitId = "";
 
     public AttributeModifierTrait(Attribute attribute, ScalingValue value, AttributeModifier.Operation operation,
             @Nullable Condition condition) {
@@ -49,6 +50,16 @@ public class AttributeModifierTrait implements TraitRegistry.RaceTrait {
     @Nullable
     public Condition getCondition() {
         return condition;
+    }
+
+    @Override
+    public void setTraitId(String id) {
+        this.traitId = id;
+    }
+
+    @Override
+    public String getTraitId() {
+        return traitId;
     }
 
     public static void register() {

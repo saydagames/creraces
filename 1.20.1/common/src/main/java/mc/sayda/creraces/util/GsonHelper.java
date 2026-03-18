@@ -6,18 +6,28 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import java.util.HashMap;
 import java.util.Map;
+import javax.annotation.Nonnull;
 
 public class GsonHelper {
-    public static String getAsString(JsonObject json, String memberName, String fallback) {
+    @Nonnull
+    public static String getAsString(JsonObject json, String memberName, @Nonnull String fallback) {
+        if (!json.has(memberName) || json.get(memberName).isJsonNull())
+            return fallback;
+        return java.util.Objects.requireNonNull(json.get(memberName).getAsString());
+    }
+
+    @Nonnull
+    public static String getAsString(JsonObject json, String memberName) {
+        if (json.has(memberName))
+            return java.util.Objects.requireNonNull(json.get(memberName).getAsString());
+        throw new com.google.gson.JsonSyntaxException("Missing " + memberName);
+    }
+
+    @javax.annotation.Nullable
+    public static String getNullableString(JsonObject json, String memberName, @javax.annotation.Nullable String fallback) {
         if (!json.has(memberName) || json.get(memberName).isJsonNull())
             return fallback;
         return json.get(memberName).getAsString();
-    }
-
-    public static String getAsString(JsonObject json, String memberName) {
-        if (json.has(memberName))
-            return json.get(memberName).getAsString();
-        throw new com.google.gson.JsonSyntaxException("Missing " + memberName);
     }
 
     public static int getAsInt(JsonObject json, String memberName, int fallback) {
@@ -36,6 +46,7 @@ public class GsonHelper {
         return json.has(memberName) ? json.get(memberName).getAsBoolean() : fallback;
     }
 
+    @Nonnull
     public static Map<ResourceLocation, JsonElement> getJsonFiles(ResourceManager resourceManager, String folder) {
         Map<ResourceLocation, JsonElement> map = new HashMap<>();
         resourceManager.listResources(folder, path -> path.getPath().endsWith(".json")).forEach((id, resource) -> {

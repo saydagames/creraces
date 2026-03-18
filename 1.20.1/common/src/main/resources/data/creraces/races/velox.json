@@ -1,15 +1,14 @@
 {
-    "parent_race": "creraces:elves",
-    "legacy_id": 12.2,
-    "name": "race.creraces.velox.name",
-    "description": "race.creraces.velox.description",
-    "icon": "creraces:textures/screens/velox_icon.png",
-    "splash": "creraces:textures/screens/velox_splash.png",
-    "portrait": "creraces:textures/screens/velox_portrait.png",
-    "name_texture": "creraces:textures/screens/velox_text.png",
-    "tier": "creraces:rare",
-    "difficulty": 3,
-    "traits": [
+    "creraces:parent_race": "creraces:elves",
+    "creraces:index": 12.2,
+    "creraces:name": "race.creraces.velox.name",
+    "creraces:description": "race.creraces.velox.description",
+    "creraces:icon": "creraces:textures/screens/velox_icon.png",
+    "creraces:splash": "creraces:textures/screens/velox_splash.png",
+    "creraces:portrait": "creraces:textures/screens/velox_portrait.png",
+    "creraces:name_texture": "creraces:textures/screens/velox_text.png",
+    "creraces:difficulty": 3,
+    "stealth_mechanics": [
         {
             "type": "creraces:on_tick",
             "interval": 5,
@@ -37,7 +36,9 @@
                     ]
                 }
             ]
-        },
+        }
+    ],
+    "foul_play_logic": [
         {
             "type": "creraces:on_hit",
             "condition": {
@@ -89,7 +90,9 @@
                     ]
                 }
             ]
-        },
+        }
+    ],
+    "energy_management": [
         {
             "type": "creraces:on_kill",
             "actions": [
@@ -102,9 +105,9 @@
             ]
         }
     ],
-    "starting_abilities": [
+    "creraces:starting_abilities": [
         "creraces:slash_n_dash",
         "creraces:crescent_swivel"
     ],
-    "wiki_page": "Velox"
+    "creraces:wiki_page": "Velox"
 }

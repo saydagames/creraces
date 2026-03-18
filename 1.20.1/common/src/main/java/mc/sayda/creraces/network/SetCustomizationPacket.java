@@ -85,8 +85,10 @@ public class SetCustomizationPacket {
                     var addons = mc.sayda.twilight_lib.capabilities.DataUtils.getAddonsData(player);
                     if (addons != null) {
                         mc.sayda.twilight_lib.network.NetworkHandler.sendAddonsToAll(
-                                new mc.sayda.twilight_lib.network.SyncAddonsPacket(
-                                        player.getUUID(), addons.getActiveAddons(), addons.getAllAddonTints()));
+                                mc.sayda.creraces.race.CosmeticIncidents.createSyncPacket(
+                                        player.getUUID(), addons.getActiveAddons(), 
+                                        mc.sayda.creraces.race.CosmeticIncidents.getExternalGrantsRobust(addons),
+                                        addons.getAllAddonTints()));
                     }
 
                     // Sync back to tracking players

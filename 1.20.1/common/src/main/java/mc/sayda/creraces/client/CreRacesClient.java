@@ -8,15 +8,13 @@ import dev.architectury.registry.menu.MenuRegistry;
 import mc.sayda.creraces.capability.DataUtils;
 
 public class CreRacesClient {
+        private static net.minecraft.world.entity.player.Player lastPlayerInstance = null;
         private static long lastSelectionScreenTime = 0;
 
         public static void init() {
                 ModKeyMappings.register();
                 mc.sayda.creraces.network.BoundaryHandler.registerS2C();
                 mc.sayda.creraces.client.SpiritMobilityClient.init();
-
-                MenuRegistry.registerScreenFactory(mc.sayda.creraces.registry.ModMenuTypes.MENU_GUI.get(),
-                                mc.sayda.creraces.client.screen.MenuGUIScreen::new);
 
                 // Particles
                 dev.architectury.registry.client.particle.ParticleProviderRegistry.register(
@@ -29,12 +27,16 @@ public class CreRacesClient {
                                 mc.sayda.creraces.registry.ModParticles.MARKER_ATTACK,
                                 mc.sayda.creraces.client.particle.MarkerAttackParticle.Provider::new);
 
+                // Menu Registration (Directly in init for Fabric stability)
+                MenuRegistry.registerScreenFactory(mc.sayda.creraces.registry.ModMenuTypes.MENU_GUI.get(),
+                                mc.sayda.creraces.client.screen.MenuGUIScreen::new);
+
                 // Register renderers early so Architectury can hook into Forge events
                 dev.architectury.registry.client.level.entity.EntityRendererRegistry.register(
                                 mc.sayda.creraces.registry.ModEntities.FEATHER_PROJECTILE,
                                 net.minecraft.client.renderer.entity.ThrownItemRenderer::new);
 
-                // TrollPillarEntity — stone pillar with custom Blockbench model
+                // TrollPillarEntity - stone pillar with custom Blockbench model
                 dev.architectury.registry.client.level.entity.EntityModelLayerRegistry.register(
                                 mc.sayda.creraces.client.model.TrollPillarModel.LAYER_LOCATION,
                                 mc.sayda.creraces.client.model.TrollPillarModel::createBodyLayer);
@@ -42,7 +44,7 @@ public class CreRacesClient {
                                 mc.sayda.creraces.registry.ModEntities.TROLL_PILLAR,
                                 mc.sayda.creraces.client.render.TrollPillarRenderer::new);
 
-                // PoisonEmitter — custom ratkin totem model
+                // PoisonEmitter - custom ratkin totem model
                 dev.architectury.registry.client.level.entity.EntityModelLayerRegistry.register(
                                 mc.sayda.creraces.client.model.PoisonEmitterModel.LAYER_LOCATION,
                                 mc.sayda.creraces.client.model.PoisonEmitterModel::createBodyLayer);
@@ -53,7 +55,7 @@ public class CreRacesClient {
                                 mc.sayda.creraces.registry.ModEntities.POISON_EMITTER_MOBILE,
                                 mc.sayda.creraces.client.render.PoisonEmitterRenderer::new);
 
-                // Tornado — aria legacy entity
+                // Tornado - aria legacy entity
                 dev.architectury.registry.client.level.entity.EntityModelLayerRegistry.register(
                                 mc.sayda.creraces.client.model.TornadoModel.LAYER_LOCATION,
                                 mc.sayda.creraces.client.model.TornadoModel::createBodyLayer);
@@ -72,7 +74,7 @@ public class CreRacesClient {
                                 mc.sayda.creraces.registry.ModEntities.REMAINS_UNDEAD,
                                 mc.sayda.creraces.client.render.RemainsRenderer::new);
 
-                // Torii Bell — custom model with per-face textures
+                // Torii Bell - custom model with per-face textures
                 dev.architectury.registry.client.level.entity.EntityModelLayerRegistry.register(
                                 mc.sayda.creraces.client.render.ToriBellRenderer.LAYER_LOCATION,
                                 mc.sayda.creraces.client.render.ToriBellRenderer::createBodyLayer);
@@ -137,28 +139,36 @@ public class CreRacesClient {
 
                 ClientTickEvent.CLIENT_POST.register(minecraft -> {
                         if (minecraft.player != null && !minecraft.player.isRemoved()) {
+                                // Detect player change (respawn/join)
+                                if (minecraft.player != lastPlayerInstance) {
+                                        lastPlayerInstance = minecraft.player;
+                                        mc.sayda.creraces.client.ClientAccess.hasReceivedInitialSync = false;
+                                        mc.sayda.creraces.client.ClientAccess.isWaitingForRaceSelection = false;
+                                        lastSelectionScreenTime = System.currentTimeMillis();
+                                }
+
                                 DataUtils.getVariables(minecraft.player).ifPresent(vars -> {
                                         // Forced selection logic
-                                        if (false && !vars.hasChosenRace() // FORCED_SELECTION default is false
+                                        if (mc.sayda.creraces.config.CreRacesConfig.FORCED_SELECTION.get()
+                                                        && minecraft.player.isAlive()
+                                                        && !vars.hasChosenRace()
                                                         && mc.sayda.creraces.client.ClientAccess.hasReceivedInitialSync) {
 
-                                                // If already waiting or screen is open, update timer
-                                                if (minecraft.screen != null
-                                                                || mc.sayda.creraces.client.ClientAccess.isWaitingForRaceSelection) {
-                                                        lastSelectionScreenTime = System.currentTimeMillis();
-                                                        mc.sayda.creraces.client.ClientAccess.isWaitingForRaceSelection = false;
-                                                } else {
-                                                        // Enforce menu after a short delay (2 seconds) to avoid flicker
-                                                        // if they just
-                                                        // closed it
-                                                        long now = System.currentTimeMillis();
-                                                        if (now - lastSelectionScreenTime > 2000) {
-                                                                mc.sayda.creraces.client.ClientAccess.isWaitingForRaceSelection = true;
-                                                                mc.sayda.creraces.network.BoundaryHandler
-                                                                                .sendOpenMenu();
-                                                                lastSelectionScreenTime = now;
-                                                        }
+                                                boolean isCreScreen = minecraft.screen instanceof mc.sayda.creraces.client.screen.RaceSelectionScreen
+                                                                || minecraft.screen instanceof mc.sayda.creraces.client.screen.RaceDetailsScreen
+                                                                || minecraft.screen instanceof mc.sayda.creraces.client.screen.SubRaceScreen
+                                                                || minecraft.screen instanceof mc.sayda.creraces.client.screen.MenuGUIScreen
+                                                                || minecraft.screen instanceof mc.sayda.creraces.client.screen.DebugScreen
+                                                                || minecraft.screen instanceof mc.sayda.creraces.client.screen.DynamicMirrorScreen;
+
+                                                long now = System.currentTimeMillis();
+                                                if (!isCreScreen && now - lastSelectionScreenTime > 1000) {
+                                                        // Direct open selection screen instead of menu for reliability
+                                                        mc.sayda.creraces.network.BoundaryHandler.sendOpenMenu();
+                                                        lastSelectionScreenTime = now;
                                                 }
+                                        } else {
+                                                mc.sayda.creraces.client.ClientAccess.isWaitingForRaceSelection = false;
                                         }
                                 });
                         }

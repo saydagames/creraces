@@ -31,8 +31,7 @@ public class ServantGoal extends Goal {
         CompoundTag nbt = ((IPersistentDataAccessor) mob).creraces$getPersistentData();
         if (nbt.contains("creraces:servant_of")) {
             try {
-                String uuidStr = nbt.getString("creraces:servant_of");
-                UUID ownerUUID = UUID.fromString(uuidStr);
+                UUID ownerUUID = mc.sayda.creraces.capability.DataUtils.loadUUID(nbt, "creraces:servant_of");
                 Player p = mob.level().getPlayerByUUID(ownerUUID);
                 if (p != null) {
                     ItemStack staff = p.getMainHandItem().is(mc.sayda.creraces.registry.ModItems.COMMANDING_STAFF.get()) ? p.getMainHandItem() : p.getOffhandItem();

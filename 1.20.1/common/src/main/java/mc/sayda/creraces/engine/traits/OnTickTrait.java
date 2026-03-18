@@ -43,8 +43,8 @@ public class OnTickTrait extends PeriodicTrait {
 
         if (!success) {
             // Run onFail only once when transition from success to fail happens
-            if (vars.getAbilityState(failId) == 0.0) {
-                vars.setAbilityState(failId, 1.0);
+            if (vars.getPersistentState(failId) == 0.0) {
+                vars.setPersistentState(failId, 1.0);
                 for (ActionRegistry.RaceAction action : onFail) {
                     action.execute(player, null, null, null);
                 }
@@ -52,7 +52,7 @@ public class OnTickTrait extends PeriodicTrait {
             return false;
         }
 
-        vars.setAbilityState(failId, 0.0);
+        vars.setPersistentState(failId, 0.0);
         return true;
     }
 
@@ -95,7 +95,7 @@ public class OnTickTrait extends PeriodicTrait {
 
             String traitName = json.has("name") ? json.get("name").getAsString()
                     : "ontick_" + Math.abs(json.toString().hashCode());
-            ResourceLocation traitId = new ResourceLocation(CreRaces.MODID, "trait_" + traitName);
+            ResourceLocation traitId = new ResourceLocation(CreRaces.MODID, traitName);
 
             return new OnTickTrait(traitId, actions, onFail, interval, condition);
         });

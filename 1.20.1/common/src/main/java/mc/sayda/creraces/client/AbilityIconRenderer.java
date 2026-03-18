@@ -53,10 +53,10 @@ public final class AbilityIconRenderer {
             return;
 
         if (isTexturePath(icon)) {
-            // Direct texture blit — used for custom PNGs not tied to an item model
+            // Direct texture blit - used for custom PNGs not tied to an item model
             graphics.blit(icon, x, y, 0, 0, size, size, size, size);
         } else {
-            // Item ID path — let MC's item renderer pick the right model/foil/animation.
+            // Item ID path - let MC's item renderer pick the right model/foil/animation.
             // renderItem() always draws at 16×16, so we scale the PoseStack so the icon
             // fills the requested size slot (e.g. 24px on the skill wheel).
             Item item = BuiltInRegistries.ITEM.get(icon);

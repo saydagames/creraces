@@ -138,7 +138,7 @@ public class MicroBlockEntity extends BlockEntity {
         }
 
         if (prev != null && !prevAir && (newAir || !prev.getBlock().equals(state.getBlock()))) {
-            // Block type changed or removed — clear stale data
+            // Block type changed or removed - clear stale data
             inventories.remove(idx);
             furnaceStates.remove(idx);
             inventoryHolders.remove(idx);

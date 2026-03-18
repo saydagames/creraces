@@ -67,7 +67,7 @@ public class DocCache {
         try (FileReader reader = new FileReader(cacheFile)) {
             JsonObject json = JsonParser.parseReader(reader).getAsJsonObject();
             json.entrySet().forEach(entry -> {
-                String val = entry.getValue() != null ? entry.getValue().getAsString() : null;
+                @javax.annotation.Nullable String val = entry.getValue() != null && !entry.getValue().isJsonNull() ? entry.getValue().getAsString() : null;
                 if (val != null) {
                     CACHE.put(new ResourceLocation(entry.getKey()), val);
                 }

@@ -58,16 +58,16 @@ public interface Condition {
                     yield new OnGroundCondition(expected);
                 }
                 case "wearing_armor" -> {
-                    String item = GsonHelper.getAsString(json, "item", null);
-                    String tag = GsonHelper.getAsString(json, "tag", null);
+                    @javax.annotation.Nullable String item = GsonHelper.getNullableString(json, "item", null);
+                    @javax.annotation.Nullable String tag = GsonHelper.getNullableString(json, "tag", null);
                     String slot = GsonHelper.getAsString(json, "slot", "0");
                     if (tag != null && !tag.startsWith("#"))
                         tag = "#" + tag;
                     yield new WearingArmorCondition(item != null ? item : tag, slot);
                 }
                 case "holding_item" -> {
-                    String item = GsonHelper.getAsString(json, "item", null);
-                    String tag = GsonHelper.getAsString(json, "tag", null);
+                    @javax.annotation.Nullable String item = GsonHelper.getNullableString(json, "item", null);
+                    @javax.annotation.Nullable String tag = GsonHelper.getNullableString(json, "tag", null);
                     boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
                     if (tag != null && !tag.startsWith("#"))
                         tag = "#" + tag;
@@ -98,8 +98,8 @@ public interface Condition {
                     yield new NotCondition(condition);
                 }
                 case "biome" -> {
-                    String biomeId = GsonHelper.getAsString(json, "biome", null);
-                    String tag = GsonHelper.getAsString(json, "tag", null);
+                    @javax.annotation.Nullable String biomeId = GsonHelper.getNullableString(json, "biome", null);
+                    @javax.annotation.Nullable String tag = GsonHelper.getNullableString(json, "tag", null);
                     yield new BiomeCondition(biomeId, tag);
                 }
                 case "weather" -> {
@@ -258,7 +258,7 @@ public interface Condition {
                 case "has_entities" -> {
                     mc.sayda.creraces.engine.ScalingValue radius = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
                             "radius", 5.0);
-                    TargetFilter targets = TargetFilter.fromJson(json, "targets");
+                    TargetFilter targets = TargetFilter.fromJson(json, "targets", java.util.Set.of("enemies"));
                     yield new HasEntitiesCondition(radius, targets);
                 }
                 case "is_block" -> {
@@ -270,12 +270,18 @@ public interface Condition {
                     boolean absolute = GsonHelper.getAsBoolean(json, "absolute", false);
                     yield new IsBlockCondition(blockStr, ox, oy, oz, useInteractionPos, absolute);
                 }
+                case "cooldown" -> {
+                    String id = json.has("id") ? GsonHelper.getAsString(json, "id") : GsonHelper.getAsString(json, "ability");
+                    String operator = GsonHelper.getAsString(json, "operator", ">=");
+                    ScalingValue value = ScalingValue.fromJson(json, "value", 0.0);
+                    yield new CooldownCondition(id, operator, value);
+                }
                 default ->
-                    throw new IllegalArgumentException("Unknown condition type '" + typeStr + "' — check your JSON");
+                    throw new IllegalArgumentException("Unknown condition type '" + typeStr + "' - check your JSON");
             };
         } catch (Exception e) {
             mc.sayda.creraces.CreRaces.LOGGER.error(
-                    "Failed to parse condition '{}': {} — condition will always return false. JSON: {}",
+                    "Failed to parse condition '{}': {} - condition will always return false. JSON: {}",
                     typeStr, e.getMessage(), json);
             return (player, target, slot, interactionPos) -> false;
         }
@@ -389,7 +395,8 @@ class StateEqualsCondition implements Condition {
                 targetId = vars.getAbilityInSlot(slot);
             } else if (state != null && !state.isEmpty()) {
                 try {
-                    targetId = new ResourceLocation(state);
+                    String sub = state.startsWith("ability:") ? state.substring(8) : (state.startsWith("state:") ? state.substring(6) : state);
+                    targetId = ResourceLocation.tryParse(sub);
                 } catch (Exception e) {
                     return false;
                 }
@@ -398,7 +405,7 @@ class StateEqualsCondition implements Condition {
             if (targetId == null)
                 return false;
 
-            double current = vars.getAbilityState(targetId);
+            double current = vars.getPersistentState(targetId);
             double val = value.evaluate(player, target);
             return Math.abs(current - val) < 0.001;
         }).orElse(false);
@@ -761,21 +768,33 @@ class ResourceLevelCondition implements Condition {
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
         return DataUtils.getVariables(player).map(vars -> {
-            double current = switch (resource.toLowerCase()) {
-                case "mana" -> vars.getMana();
-                case "energy" -> vars.getEnergy();
-                case "grit" -> vars.getGrit();
-                case "rage" -> vars.getRage();
-                case "karma" -> vars.getKarma();
-                case "souls" -> vars.getSouls();
-                case "coins" -> vars.getCoins();
-                case "stacks" -> vars.getStacks();
-                case "ap" -> vars.getAp();
-                case "ad" -> vars.getAd();
-                case "ah" -> vars.getAh();
-                case "cr" -> vars.getCr();
-                default -> 0.0;
-            };
+            double current = 0.0;
+            String res = resource.toLowerCase();
+            if (res.startsWith("custom:")) {
+                String key = resource.substring(7);
+                String valStr = vars.getCustomization(key);
+                try {
+                    current = (valStr != null && !valStr.isEmpty()) ? Double.parseDouble(valStr) : 0.0;
+                } catch (NumberFormatException e) {
+                    current = 0.0;
+                }
+            } else {
+                current = switch (res) {
+                    case "mana" -> vars.getMana();
+                    case "energy" -> vars.getEnergy();
+                    case "grit" -> vars.getGrit();
+                    case "rage" -> vars.getRage();
+                    case "karma" -> vars.getKarma();
+                    case "souls" -> vars.getSouls();
+                    case "coins" -> vars.getCoins();
+                    case "stacks" -> vars.getStacks();
+                    case "ap" -> vars.getAp();
+                    case "ad" -> vars.getAd();
+                    case "ah" -> vars.getAh();
+                    case "cr" -> vars.getCr();
+                    default -> 0.0;
+                };
+            }
 
             double val = value.evaluate(player, target);
             return switch (operator) {
@@ -1050,5 +1069,44 @@ class IsBlockCondition implements Condition {
             return net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString()
                     .equals(blockDefinition);
         }
+    }
+}
+
+class CooldownCondition implements Condition {
+    private final String id;
+    private final String operator;
+    private final ScalingValue value;
+
+    public CooldownCondition(String id, String operator, ScalingValue value) {
+        this.id = id;
+        this.operator = operator;
+        this.value = value;
+    }
+
+    @Override
+    public boolean evaluate(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+        return DataUtils.getVariables(player).map(vars -> {
+            ResourceLocation fullId;
+            try {
+                fullId = new ResourceLocation(id);
+            } catch (Exception e) {
+                return false;
+            }
+
+            double current = vars.getCooldown(fullId);
+            double val = value.evaluate(player, target);
+
+            return switch (operator) {
+                case ">=" -> current >= val;
+                case "<=" -> current <= val;
+                case ">" -> current > val;
+                case "<" -> current < val;
+                case "==" -> Math.abs(current - val) < 0.001;
+                case "!=" -> Math.abs(current - val) >= 0.001;
+                default -> false;
+            };
+        }).orElse(false);
     }
 }

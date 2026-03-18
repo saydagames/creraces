@@ -76,6 +76,39 @@ public class ModAttributes {
                         () -> new RangedAttribute("attribute.creraces.double_jump", 0.0, 0.0, 10.0)
                                         .setSyncable(true));
 
+        // LoL-Style Combat Stats (Fallback when Apothic Attributes is absent)
+        // On Forge with Apothic, CombatAttributes.java will redirect these to attributeslib equivalents.
+
+        /** Modifier for all incoming healing (1.0 = 100%). Grievous Wounds sets this to 0.6. */
+        public static final RegistrySupplier<Attribute> HEALING_RECEIVED = ATTRIBUTES.register("healing_received",
+                        () -> new RangedAttribute("attribute.creraces.healing_received", 1.0, 0.0, 100.0)
+                                        .setSyncable(true));
+
+        /** Flat armor reduction (bypasses target's armor by this amount). */
+        public static final RegistrySupplier<Attribute> ARMOR_PIERCE = ATTRIBUTES.register("armor_pierce",
+                        () -> new RangedAttribute("attribute.creraces.armor_pierce", 0.0, 0.0, 1000.0)
+                                        .setSyncable(true));
+
+        /** Percentage armor reduction (0.3 = shreds 30% of target's armor before reduction). */
+        public static final RegistrySupplier<Attribute> ARMOR_SHRED = ATTRIBUTES.register("armor_shred",
+                        () -> new RangedAttribute("attribute.creraces.armor_shred", 0.0, 0.0, 1.0)
+                                        .setSyncable(true));
+
+        /** Flat magic resistance — reduces incoming magical damage via LoL formula. */
+        public static final RegistrySupplier<Attribute> MAGIC_RESIST = ATTRIBUTES.register("magic_resist",
+                        () -> new RangedAttribute("attribute.creraces.magic_resist", 0.0, 0.0, 1000.0)
+                                        .setSyncable(true));
+
+        /** Flat magic penetration — reduces target's MR by this amount. */
+        public static final RegistrySupplier<Attribute> MAGIC_PIERCE = ATTRIBUTES.register("magic_pierce",
+                        () -> new RangedAttribute("attribute.creraces.magic_pierce", 0.0, 0.0, 1000.0)
+                                        .setSyncable(true));
+
+        /** Percentage magic penetration (0.3 = ignores 30% of target's MR). */
+        public static final RegistrySupplier<Attribute> MAGIC_SHRED = ATTRIBUTES.register("magic_shred",
+                        () -> new RangedAttribute("attribute.creraces.magic_shred", 0.0, 0.0, 1.0)
+                                        .setSyncable(true));
+
         private static boolean initialized = false;
 
         public static void init() {

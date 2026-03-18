@@ -194,7 +194,7 @@ public class TetherAction implements ActionRegistry.RaceAction {
             }
 
             mc.sayda.creraces.engine.TargetFilter targets = mc.sayda.creraces.engine.TargetFilter.fromJson(json,
-                    "targets");
+                    "targets", java.util.Set.of("enemies"));
 
             return new TetherAction(dur, dist, inter, actions, onComplete, onBreak, tex, w, targets);
         });

@@ -44,6 +44,7 @@ public class DebugScreen extends Screen {
                 refreshDebugInfo();
         }
 
+        @SuppressWarnings("null")
         private void refreshDebugInfo() {
                 debugLines.clear();
                 Player player = Minecraft.getInstance().player;
@@ -62,6 +63,9 @@ public class DebugScreen extends Screen {
                         debugLines.add(Component.literal("  Race ID: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component.literal(vars.getRace().toString())
                                                         .withStyle(ChatFormatting.AQUA)));
+                        debugLines.add(Component.literal("  Chosen: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(String.valueOf(vars.hasChosenRace()))
+                                                        .withStyle(vars.hasChosenRace() ? ChatFormatting.GREEN : ChatFormatting.RED)));
 
                         Race race = RaceRegistry.get(vars.getRace());
                         String raceName = race != null ? race.name().getString() : "None";
@@ -133,7 +137,7 @@ public class DebugScreen extends Screen {
                                         .append(Component.literal(String.format("%.2f", vars.getKarma()))
                                                         .withStyle(ChatFormatting.GOLD))
                                         .append(Component.literal(" | Coins: ").withStyle(ChatFormatting.GRAY))
-                                        .append(Component.literal(String.format("%.0f", vars.getCoins()))
+                                        .append(Component.literal(java.util.Objects.requireNonNull(String.format("%.0f", vars.getCoins())))
                                                         .withStyle(ChatFormatting.GOLD)));
 
                         debugLines.add(Component.literal("  Stacks: ").withStyle(ChatFormatting.GRAY)
@@ -222,10 +226,10 @@ public class DebugScreen extends Screen {
                         }
 
                         // --- TRAIT TIMERS ---
+                        addHeader("TRAIT TIMERS");
                         Map<ResourceLocation, Integer> timers = vars.getTraitTimers();
                         boolean hasActiveTimers = timers.values().stream().anyMatch(t -> t > 0);
                         if (hasActiveTimers) {
-                                addHeader("TRAIT TIMERS");
                                 timers.forEach((id, time) -> {
                                         if (time > 0) {
                                                 debugLines.add(Component.literal("  " + id.getPath() + ": ")
@@ -234,7 +238,28 @@ public class DebugScreen extends Screen {
                                                                                 .withStyle(ChatFormatting.WHITE)));
                                         }
                                 });
+                        } else {
+                                debugLines.add(Component.literal("  - None").withStyle(ChatFormatting.DARK_GRAY));
                         }
+
+                        // --- COOLDOWNS ---
+                        addHeader("COOLDOWNS");
+                        Map<ResourceLocation, Integer> cooldowns = vars.getCooldowns();
+                        boolean hasActiveCooldowns = cooldowns.values().stream().anyMatch(t -> t > 0);
+                        if (hasActiveCooldowns) {
+                                cooldowns.forEach((id, time) -> {
+                                        if (time > 0) {
+                                                debugLines.add(Component.literal("  " + id.toString() + ": ")
+                                                                .withStyle(ChatFormatting.GRAY)
+                                                                .append(Component.literal(String.valueOf(time))
+                                                                                .withStyle(ChatFormatting.WHITE)));
+                                        }
+                                });
+                        } else {
+                                debugLines.add(Component.literal("  - None").withStyle(ChatFormatting.DARK_GRAY));
+                        }
+
+                        addHeader("DIMENSION RETURN");
 
                         debugLines.add(Component.literal("  Return Dim: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component.literal(vars.getReturnDim())
@@ -263,6 +288,31 @@ public class DebugScreen extends Screen {
                                                         .append(Component.literal(v)
                                                                         .withStyle(ChatFormatting.LIGHT_PURPLE)));
                                 });
+                        }
+
+                        // --- INTERNAL STATES ---
+                        addHeader("ABILITY STATES");
+                        boolean hasStates = false;
+                        // Since IPlayerVariables doesn't provide a list of all states, we'll check equipped/unlocked 
+                        // and their dependencies. This is better than nothing.
+                        Set<ResourceLocation> allRelevant = new java.util.HashSet<>(vars.getUnlockedAbilities());
+                        for(mc.sayda.creraces.ability.AbilitySlot s : mc.sayda.creraces.ability.AbilitySlot.values()) {
+                            ResourceLocation id = vars.getAbilityInSlot(s);
+                            if(id != null) allRelevant.add(id);
+                        }
+                        
+                        for (ResourceLocation id : allRelevant) {
+                            double state = vars.getPersistentState(id);
+                            if (state != 0) {
+                                hasStates = true;
+                                debugLines.add(Component.literal("  " + id.toString() + ": ")
+                                        .withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(String.format("%.2f", state))
+                                                .withStyle(ChatFormatting.AQUA)));
+                            }
+                        }
+                        if (!hasStates) {
+                            debugLines.add(Component.literal("  - None").withStyle(ChatFormatting.DARK_GRAY));
                         }
 
                         // --- ABILITIES & SLOTS ---
@@ -306,12 +356,13 @@ public class DebugScreen extends Screen {
 
         private Component formatSlot(IPlayerVariables vars, mc.sayda.creraces.ability.AbilitySlot slot) {
                 ResourceLocation abilityId = vars.getAbilityInSlot(slot);
-                double state = abilityId != null ? vars.getAbilityState(abilityId) : 0.0;
+                double state = abilityId != null ? vars.getPersistentState(abilityId) : 0.0;
                 return Component.literal(slot.name() + "(" + String.format("%.0f", state) + ")")
                                 .withStyle(state > 0 ? ChatFormatting.WHITE : ChatFormatting.DARK_GRAY);
         }
 
         @Override
+        @SuppressWarnings("null")
         public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
                 refreshDebugInfo();
                 this.renderBackground(graphics);

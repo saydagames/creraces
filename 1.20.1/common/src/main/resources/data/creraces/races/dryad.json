@@ -1,35 +1,32 @@
 {
-    "name": "race.creraces.dryad.name",
-    "parent_race": "creraces:nymph",
-    "legacy_id": 9.3,
-    "description": "race.creraces.dryad.description",
-    "icon": "creraces:textures/screens/dryad_icon.png",
-    "splash": "creraces:textures/screens/dryad_splash.png",
-    "portrait": "creraces:textures/screens/dryad_portrait.png",
-    "name_texture": "creraces:textures/screens/dryad_text.png",
-    "base_ap": 8,
-    "base_ad": 6,
-    "base_ah": 15,
-    "base_cr": 12,
-    "resource_type": "MANA",
-    "max_resource": 120,
-    "stacks_affect_resource": false,
-    "gstate": "FEMALE",
-    "tier": "creraces:common",
-    "difficulty": 2,
-    "passives": {
-        "regeneration_multiplier": 1.15
-    },
-    "starting_abilities": [
+    "creraces:name": "race.creraces.dryad.name",
+    "creraces:parent_race": "creraces:nymph",
+    "creraces:index": 9.3,
+    "creraces:description": "race.creraces.dryad.description",
+    "creraces:icon": "creraces:textures/screens/dryad_icon.png",
+    "creraces:splash": "creraces:textures/screens/dryad_splash.png",
+    "creraces:portrait": "creraces:textures/screens/dryad_portrait.png",
+    "creraces:name_texture": "creraces:textures/screens/dryad_text.png",
+    "creraces:base_ap": 8,
+    "creraces:base_ad": 6,
+    "creraces:base_ah": 15,
+    "creraces:base_cr": 12,
+    "creraces:resource_type": "MANA",
+    "creraces:max_resource": 120,
+    "creraces:stacks_affect_resource": false,
+    "creraces:gstate": "FEMALE",
+    "creraces:difficulty": 2,
+    "creraces:regeneration_multiplier": 1.15,
+    "creraces:starting_abilities": [
         "creraces:camouflage",
         "creraces:rampant_growth",
         "creraces:entanglement",
         "creraces:quick_escape"
     ],
-    "starting_items": [
+    "creraces:starting_items": [
         "creraces:dryad_sapling"
     ],
-    "traits": [
+    "nature_passive": [
         {
             "type": "creraces:damage_multiplier",
             "multiplier": 0.0,
@@ -39,13 +36,122 @@
             }
         },
         {
+            "type": "creraces:continuous_effect",
+            "effect": "creraces:nymph_call",
+            "visible": false,
+            "duration": 18000,
+            "condition": {
+                "type": "or",
+                "conditions": [
+                    {
+                        "type": "distance",
+                        "x": "state:dryad:tx",
+                        "y": "state:dryad:ty",
+                        "z": "state:dryad:tz",
+                        "range": 64.0
+                    },
+                    {
+                        "type": "dimension",
+                        "value": "creraces:pocket"
+                    }
+                ]
+            }
+        }
+    ],
+    "camouflage_logic": [
+        {
+            "type": "creraces:continuous_effect",
+            "name": "camouflage_invisibility",
+            "effect": "creraces:true_invisibility",
+            "resource": "MANA",
+            "drain_rate": 2.0,
+            "duration": 20,
+            "visible": false,
+            "condition": {
+                "type": "creraces:ability_state",
+                "ability": "creraces:camouflage",
+                "value": 1.0
+            }
+        },
+        {
+            "type": "creraces:continuous_effect",
+            "name": "camouflage_speed",
+            "effect": "minecraft:speed",
+            "amplifier": 0,
+            "duration": 20,
+            "visible": true,
+            "condition": {
+                "type": "creraces:ability_state",
+                "ability": "creraces:camouflage",
+                "value": 1.0
+            }
+        },
+        {
+            "type": "creraces:on_hurt",
+            "name": "camouflage_interrupt",
+            "condition": {
+                "type": "creraces:ability_state",
+                "ability": "creraces:camouflage",
+                "value": 1.0
+            },
+            "actions": [
+                {
+                    "type": "creraces:set_state",
+                    "ability": "creraces:camouflage",
+                    "value": 0.0
+                },
+                {
+                    "type": "creraces:set_cooldown",
+                    "id": "creraces:camouflage",
+                    "value": 220
+                }
+            ]
+        },
+        {
+            "type": "creraces:on_tick",
+            "name": "camouflage_mana_expiry",
+            "interval": 1,
+            "condition": {
+                "type": "creraces:and",
+                "conditions": [
+                    {
+                        "type": "creraces:ability_state",
+                        "ability": "creraces:camouflage",
+                        "value": 1.0
+                    },
+                    {
+                        "type": "creraces:resource_level",
+                        "resource": "MANA",
+                        "operator": "==",
+                        "value": 0
+                    }
+                ]
+            },
+            "actions": [
+                {
+                    "type": "creraces:set_state",
+                    "ability": "creraces:camouflage",
+                    "value": 0.0
+                },
+                {
+                    "type": "creraces:set_cooldown",
+                    "id": "creraces:camouflage",
+                    "value": 220
+                }
+            ]
+        }
+    ],
+    "sapling_mechanics": [
+        {
             "type": "creraces:block_place",
             "block": "creraces:dryad_sapling",
             "condition": {
                 "type": "not",
                 "condition": {
-                    "type": "creraces:has_customization",
-                    "id": "tx"
+                    "type": "creraces:ability_state",
+                    "ability": "state:dryad:tx",
+                    "operator": "!=",
+                    "value": 0.0
                 }
             },
             "actions": [
@@ -65,24 +171,24 @@
                     ],
                     "if_false": [
                         {
-                            "type": "creraces:set_customization",
-                            "key": "tx",
+                            "type": "creraces:set_state",
+                            "ability": "state:dryad:tx",
                             "mode": "TARGET_BLOCK_X"
                         },
                         {
-                            "type": "creraces:set_customization",
-                            "key": "ty",
+                            "type": "creraces:set_state",
+                            "ability": "state:dryad:ty",
                             "mode": "TARGET_BLOCK_Y",
                             "offset_y": -1
                         },
                         {
-                            "type": "creraces:set_customization",
-                            "key": "tz",
+                            "type": "creraces:set_state",
+                            "ability": "state:dryad:tz",
                             "mode": "TARGET_BLOCK_Z"
                         },
                         {
-                            "type": "creraces:set_customization",
-                            "key": "td",
+                            "type": "creraces:set_state",
+                            "ability": "state:dryad:td",
                             "mode": "POS_DIM"
                         },
                         {
@@ -119,77 +225,6 @@
         },
         {
             "type": "creraces:block_interaction",
-            "block": "creraces:dryad_log",
-            "condition": {
-                "type": "creraces:sneaking"
-            },
-            "actions": [
-                {
-                    "type": "creraces:enter_pocket",
-                    "structure": "creraces:dryad_box_1",
-                    "return_offset_z": -1.0
-                }
-            ]
-        },
-        {
-            "type": "creraces:continuous_effect",
-            "effect": "creraces:nymph_call",
-            "visible": false,
-            "duration": 18000,
-            "condition": {
-                "type": "or",
-                "conditions": [
-                    {
-                        "type": "distance",
-                        "x": "custom:tx",
-                        "y": "custom:ty",
-                        "z": "custom:tz",
-                        "range": 64.0
-                    },
-                    {
-                        "type": "dimension",
-                        "value": "creraces:pocket"
-                    }
-                ]
-            }
-        },
-        {
-            "type": "creraces:continuous_effect",
-            "effect": "creraces:true_invisibility",
-            "resource": "MANA",
-            "drain_rate": 0.2,
-            "duration": 2,
-            "visible": false,
-            "condition": {
-                "type": "creraces:ability_state",
-                "ability": "creraces:camouflage",
-                "value": 1.0
-            },
-            "on_fail": [
-                {
-                    "type": "creraces:set_state",
-                    "ability": "creraces:camouflage",
-                    "value": 0.0
-                }
-            ]
-        },
-        {
-            "type": "creraces:on_hurt",
-            "condition": {
-                "type": "creraces:ability_state",
-                "ability": "creraces:camouflage",
-                "value": 1.0
-            },
-            "actions": [
-                {
-                    "type": "creraces:set_state",
-                    "ability": "creraces:camouflage",
-                    "value": 0.0
-                }
-            ]
-        },
-        {
-            "type": "creraces:block_interaction",
             "block": "creraces:dryad_root",
             "actions": [
                 {
@@ -203,9 +238,9 @@
                             },
                             {
                                 "type": "creraces:is_position",
-                                "x": "custom:tx",
-                                "y": "custom:ty",
-                                "z": "custom:tz"
+                                "x": "state:dryad:tx",
+                                "y": "state:dryad:ty",
+                                "z": "state:dryad:tz"
                             }
                         ]
                     },
@@ -232,24 +267,24 @@
                             "overwrite": true
                         },
                         {
-                            "type": "creraces:set_customization",
-                            "key": "tx",
-                            "mode": "REMOVE"
+                            "type": "creraces:set_state",
+                            "ability": "state:dryad:tx",
+                            "value": 0.0
                         },
                         {
-                            "type": "creraces:set_customization",
-                            "key": "ty",
-                            "mode": "REMOVE"
+                            "type": "creraces:set_state",
+                            "ability": "state:dryad:ty",
+                            "value": 0.0
                         },
                         {
-                            "type": "creraces:set_customization",
-                            "key": "tz",
-                            "mode": "REMOVE"
+                            "type": "creraces:set_state",
+                            "ability": "state:dryad:tz",
+                            "value": 0.0
                         },
                         {
-                            "type": "creraces:set_customization",
-                            "key": "td",
-                            "mode": "REMOVE"
+                            "type": "creraces:set_state",
+                            "ability": "state:dryad:td",
+                            "value": 0.0
                         },
                         {
                             "type": "creraces:message",
@@ -268,10 +303,10 @@
                                         "value": false
                                     },
                                     {
-                                        "type": "creraces:is_position",
-                                        "x": "custom:tx",
-                                        "y": "custom:ty",
-                                        "z": "custom:tz"
+                                "type": "creraces:is_position",
+                                "x": "state:dryad:tx",
+                                "y": "state:dryad:ty",
+                                "z": "state:dryad:tz"
                                     }
                                 ]
                             },
@@ -284,6 +319,22 @@
                             ]
                         }
                     ]
+                }
+            ]
+        }
+    ],
+    "pocket_dimension": [
+        {
+            "type": "creraces:block_interaction",
+            "block": "creraces:dryad_log",
+            "condition": {
+                "type": "creraces:sneaking"
+            },
+            "actions": [
+                {
+                    "type": "creraces:enter_pocket",
+                    "structure": "creraces:dryad_box_1",
+                    "return_offset_z": -1.0
                 }
             ]
         },
@@ -349,11 +400,13 @@
                     }
                 }
             ]
-        },
+        }
+    ],
+    "cosmetics": [
         {
             "type": "creraces:addon",
             "addon_id": "dryad_body"
         }
     ],
-    "wiki_page": "Dryad"
+    "creraces:wiki_page": "Dryad"
 }

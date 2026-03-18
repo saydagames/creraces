@@ -51,4 +51,62 @@ public class RaceUtils {
             return false;
         }).orElse(false);
     }
+
+    /**
+     * Checks if the specified food item is blocked for the player's race.
+     */
+    public static boolean isFoodBlocked(Player player, net.minecraft.world.item.ItemStack stack) {
+        if (stack.isEmpty() || !stack.isEdible())
+            return false;
+
+        return DataUtils.getVariables(player).map(vars -> {
+            Race race = RaceRegistry.get(vars.getRace());
+            if (race == null || race.passives() == null)
+                return false;
+
+            java.util.List<String> blocked = race.passives().blockedFoodTypes();
+            java.util.List<String> allowed = race.passives().allowedFoodTypes();
+            
+            // 1. If allowlist is not empty, everything is blocked unless allowed
+            if (allowed != null && !allowed.isEmpty()) {
+                boolean isAllowed = false;
+                for (String filter : allowed) {
+                    if (stackMatchesFilter(stack, filter)) {
+                        isAllowed = true;
+                        break;
+                    }
+                }
+                if (!isAllowed) return true;
+            }
+
+            // 2. Blacklist check
+            if (blocked != null) {
+                for (String filter : blocked) {
+                    if (stackMatchesFilter(stack, filter)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }).orElse(false);
+    }
+
+    private static boolean stackMatchesFilter(net.minecraft.world.item.ItemStack stack, String filter) {
+        if (stack.isEmpty()) return false;
+        net.minecraft.world.item.Item item = stack.getItem();
+        net.minecraft.resources.ResourceLocation itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item);
+
+        if (filter.equalsIgnoreCase("meat")) {
+            return item.getFoodProperties() != null && item.getFoodProperties().isMeat();
+        } else if (filter.startsWith("#")) {
+            net.minecraft.resources.ResourceLocation tagId = net.minecraft.resources.ResourceLocation.tryParse(filter.substring(1));
+            if (tagId != null) {
+                net.minecraft.tags.TagKey<net.minecraft.world.item.Item> tag = net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, tagId);
+                return stack.is(tag);
+            }
+        } else {
+            return filter.equals(itemId.toString()) || filter.equals(itemId.getPath());
+        }
+        return false;
+    }
 }

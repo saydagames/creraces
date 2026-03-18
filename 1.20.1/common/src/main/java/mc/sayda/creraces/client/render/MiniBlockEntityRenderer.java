@@ -217,7 +217,7 @@ public class MiniBlockEntityRenderer implements BlockEntityRenderer<MicroBlockEn
      * <p>
      * On Fabric/Indigo, chunk render types ({@code RenderType.solid()},
      * {@code cutout()}, etc.) are tied to the chunk tessellator and cannot be used
-     * directly from a BER buffer source — they produce invisible geometry. Using
+     * directly from a BER buffer source - they produce invisible geometry. Using
      * the
      * standard BER render types ({@code RenderType.solid()}, {@code cutout()},
      * {@code translucent()}) works correctly on both Forge and Fabric.
@@ -248,7 +248,7 @@ public class MiniBlockEntityRenderer implements BlockEntityRenderer<MicroBlockEn
         final Map<RenderType, List<BakedQuad>> quadsByRenderType = new HashMap<>();
     }
 
-    /** Renderer is visible from any distance — matches host block visibility. */
+    /** Renderer is visible from any distance - matches host block visibility. */
     @Override
     public boolean shouldRenderOffScreen(@Nonnull MicroBlockEntity blockEntity) {
         return false;

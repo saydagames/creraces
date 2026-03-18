@@ -25,7 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SocialPassivesHelper {
     private static final Map<String, TagKey<EntityType<?>>> TAG_CACHE = new ConcurrentHashMap<>();
 
-    private static TagKey<EntityType<?>> getOrCreateTag(String path) {
+    @SuppressWarnings("null")
+    private static TagKey<EntityType<?>> getOrCreateTag(@javax.annotation.Nonnull String path) {
         return TAG_CACHE.computeIfAbsent(path, p -> TagKey.create(Registries.ENTITY_TYPE, new ResourceLocation(p)));
     }
 
@@ -106,7 +107,7 @@ public class SocialPassivesHelper {
             if (entry.startsWith("#")) {
                 // Tag reference
                 String tagPath = entry.substring(1); // Remove #
-                TagKey<EntityType<?>> tag = getOrCreateTag(tagPath);
+                TagKey<EntityType<?>> tag = getOrCreateTag(java.util.Objects.requireNonNull(tagPath));
 
                 if (entityType.is(tag)) {
                     matched = true;
@@ -142,7 +143,7 @@ public class SocialPassivesHelper {
             if (exclusion.startsWith("#")) {
                 // Tag exclusion
                 String tagPath = exclusion.substring(1); // Remove # after !
-                TagKey<EntityType<?>> tag = getOrCreateTag(tagPath);
+                TagKey<EntityType<?>> tag = getOrCreateTag(java.util.Objects.requireNonNull(tagPath));
 
                 if (entityType.is(tag)) {
                     return false; // Excluded by tag

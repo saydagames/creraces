@@ -436,7 +436,7 @@ public class CreracesCommand {
 
                 List<String> ids = new ArrayList<>(source.getServer().getPackRepository().getSelectedIds());
 
-                // reloadResources() is async — chain on the server thread so we push fresh data
+                // reloadResources() is async - chain on the server thread so we push fresh data
                 // to clients only AFTER the reload has fully completed.
                 source.getServer().reloadResources(ids).thenRunAsync(() -> {
                         mc.sayda.creraces.network.SyncRacesPacket racePacket = mc.sayda.creraces.race.RaceManager
@@ -509,31 +509,31 @@ public class CreracesCommand {
                                                 ResourceLocation id = vars.getAbilityInSlot(
                                                                 mc.sayda.creraces.ability.AbilitySlot.A1);
                                                 if (id != null)
-                                                        vars.setAbilityState(id, Double.parseDouble(finalValue));
+                                                        vars.setPersistentState(id, Double.parseDouble(finalValue));
                                         }
                                         case "a2" -> {
                                                 ResourceLocation id = vars.getAbilityInSlot(
                                                                 mc.sayda.creraces.ability.AbilitySlot.A2);
                                                 if (id != null)
-                                                        vars.setAbilityState(id, Double.parseDouble(finalValue));
+                                                        vars.setPersistentState(id, Double.parseDouble(finalValue));
                                         }
                                         case "a3" -> {
                                                 ResourceLocation id = vars.getAbilityInSlot(
                                                                 mc.sayda.creraces.ability.AbilitySlot.A3);
                                                 if (id != null)
-                                                        vars.setAbilityState(id, Double.parseDouble(finalValue));
+                                                        vars.setPersistentState(id, Double.parseDouble(finalValue));
                                         }
                                         case "a4" -> {
                                                 ResourceLocation id = vars.getAbilityInSlot(
                                                                 mc.sayda.creraces.ability.AbilitySlot.A4);
                                                 if (id != null)
-                                                        vars.setAbilityState(id, Double.parseDouble(finalValue));
+                                                        vars.setPersistentState(id, Double.parseDouble(finalValue));
                                         }
                                         case "a5" -> {
                                                 ResourceLocation id = vars.getAbilityInSlot(
                                                                 mc.sayda.creraces.ability.AbilitySlot.A5);
                                                 if (id != null)
-                                                        vars.setAbilityState(id, Double.parseDouble(finalValue));
+                                                        vars.setPersistentState(id, Double.parseDouble(finalValue));
                                         }
                                         case "c1" -> {
                                                 ResourceLocation id = vars.getAbilityInSlot(

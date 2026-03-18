@@ -51,7 +51,7 @@ public class PlaceBlockAction implements ActionRegistry.RaceAction {
         net.minecraft.world.level.block.Block resolvedBlock = net.minecraft.core.registries.BuiltInRegistries.BLOCK
                 .get(block);
 
-        // Respect the micro-block whitelist — prevents race JSONs from placing
+        // Respect the micro-block whitelist - prevents race JSONs from placing
         // bedrock, command blocks, or other restricted blocks via this action
         if (!mc.sayda.creraces.engine.MicroBlockWhitelist.isAllowed(resolvedBlock)) {
             mc.sayda.creraces.CreRaces.LOGGER.warn("[CreRaces] PlaceBlockAction blocked: {} is not whitelisted", block);

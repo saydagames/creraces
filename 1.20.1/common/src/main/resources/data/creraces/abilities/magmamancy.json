@@ -42,7 +42,7 @@
                         "conditions": [
                             {
                                 "type": "creraces:resource_level",
-                                "resource": "grit",
+                                "resource": "custom:stored_material",
                                 "operator": ">=",
                                 "value": 1
                             },
@@ -57,7 +57,7 @@
                     "if_true": [
                         {
                             "type": "creraces:modify_resource",
-                            "resource": "grit",
+                            "resource": "custom:stored_material",
                             "operation": "add",
                             "value": -1
                         },

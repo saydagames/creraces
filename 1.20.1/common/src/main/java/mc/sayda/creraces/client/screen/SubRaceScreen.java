@@ -42,7 +42,10 @@ public class SubRaceScreen extends Screen {
     public SubRaceScreen(Screen parent, Component groupName, List<Race> subRaces) {
         super(groupName);
         this.parent = parent;
-        this.subRaces = subRaces.stream().sorted(java.util.Comparator.comparingDouble(Race::legacyId)).toList();
+        this.subRaces = subRaces.stream()
+            .sorted(java.util.Comparator.comparing(Race::index)
+                .thenComparing(r -> r.name().getString()))
+            .toList();
     }
 
     @Override
@@ -98,8 +101,14 @@ public class SubRaceScreen extends Screen {
             int portraitY = this.topPos + PORTRAIT_ROWS[rowIdx];
 
             if (i < subRaces.size()) {
-                graphics.blit(subRaces.get(i).portrait(), portraitX, portraitY, 0, 0, PORTRAIT_SIZE, PORTRAIT_SIZE,
-                        PORTRAIT_SIZE, PORTRAIT_SIZE);
+                Race race = subRaces.get(i);
+                if (race.portrait() != null) {
+                    graphics.blit(race.portrait(), portraitX, portraitY, 0, 0, PORTRAIT_SIZE, PORTRAIT_SIZE,
+                            PORTRAIT_SIZE, PORTRAIT_SIZE);
+                } else {
+                    graphics.blit(RACE_SLOT, portraitX, portraitY, 0, 0, PORTRAIT_SIZE, PORTRAIT_SIZE, PORTRAIT_SIZE,
+                            PORTRAIT_SIZE);
+                }
             } else {
                 graphics.blit(RACE_SLOT, portraitX, portraitY, 0, 0, PORTRAIT_SIZE, PORTRAIT_SIZE, PORTRAIT_SIZE,
                         PORTRAIT_SIZE);

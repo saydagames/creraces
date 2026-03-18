@@ -1,38 +1,36 @@
 {
-    "name": "race.creraces.oread.name",
-    "parent_race": "creraces:nymph",
-    "legacy_id": 9.1,
-    "description": "race.creraces.oread.description",
-    "icon": "creraces:textures/screens/oread_icon.png",
-    "splash": "creraces:textures/screens/oread_splash.png",
-    "portrait": "creraces:textures/screens/oread_portrait.png",
-    "name_texture": "creraces:textures/screens/oread_text.png",
-    "base_ap": 12,
-    "base_ad": 6,
-    "base_ah": 8,
-    "base_cr": 10,
-    "resource_type": "MANA",
-    "max_resource": 120,
-    "stacks_affect_resource": false,
-    "gstate": "FEMALE",
-    "passives": {
-        "lava_vision": true,
-        "unaffected_by_lava": true,
-        "regeneration_multiplier": 1.1,
-        "immune_to_damage_types": [
-            "fire",
-            "lava",
-            "in_fire",
-            "on_fire"
-        ]
-    },
-    "starting_abilities": [
+    "creraces:name": "race.creraces.oread.name",
+    "creraces:parent_race": "creraces:nymph",
+    "creraces:index": 9.1,
+    "creraces:description": "race.creraces.oread.description",
+    "creraces:icon": "creraces:textures/screens/oread_icon.png",
+    "creraces:splash": "creraces:textures/screens/oread_splash.png",
+    "creraces:portrait": "creraces:textures/screens/oread_portrait.png",
+    "creraces:name_texture": "creraces:textures/screens/oread_text.png",
+    "creraces:base_ap": 12,
+    "creraces:base_ad": 6,
+    "creraces:base_ah": 8,
+    "creraces:base_cr": 10,
+    "creraces:resource_type": "MANA",
+    "creraces:max_resource": 120,
+    "creraces:stacks_affect_resource": false,
+    "creraces:gstate": "FEMALE",
+    "creraces:lava_vision": true,
+    "creraces:unaffected_by_lava": true,
+    "creraces:regeneration_multiplier": 1.1,
+    "creraces:immune_to_damage": [
+        "minecraft:fire",
+        "minecraft:lava",
+        "minecraft:in_fire",
+        "minecraft:on_fire"
+    ],
+    "creraces:starting_abilities": [
         "creraces:searing_charge",
         "creraces:mountains_fury",
         "creraces:magmamancy",
         "creraces:hot_headed"
     ],
-    "traits": [
+    "magmatic_metabolism": [
         {
             "type": "creraces:on_tick",
             "interval": 1,
@@ -95,7 +93,7 @@
                 },
                 {
                     "type": "creraces:modify_resource",
-                    "resource": "grit",
+                    "resource": "custom:stored_material",
                     "operation": "add",
                     "value": 1
                 },
@@ -106,7 +104,10 @@
                     "pitch": 1.5
                 }
             ]
-        },
+        }
+    ],
+
+    "hot_headed_logic": [
         {
             "type": "creraces:permanent_effect",
             "effect": "minecraft:resistance",
@@ -162,11 +163,13 @@
                     "use_target": true
                 }
             ]
-        },
+        }
+    ],
+    "cosmetics": [
         {
             "type": "creraces:addon",
             "addon_id": "oread_body"
         }
     ],
-    "wiki_page": "Oread"
+    "creraces:wiki_page": "Oread"
 }

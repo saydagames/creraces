@@ -43,17 +43,28 @@ public class ToggleStateAction implements ActionRegistry.RaceAction {
 
             if (targetAbilityId == null && "slot".equalsIgnoreCase(stateVariable) && slot != null) {
                 targetAbilityId = vars.getAbilityInSlot(slot);
+            } else if (targetAbilityId == null) {
+                // Handle stateVariable as a potential ResourceLocation string with prefixes
+                String parsedStateVariable = stateVariable;
+                if (stateVariable.startsWith("ability:")) {
+                    parsedStateVariable = stateVariable.substring(8);
+                } else if (stateVariable.startsWith("state:")) { // New alias for ability:
+                    parsedStateVariable = stateVariable.substring(6);
+                } else if (stateVariable.startsWith("custom:")) {
+                    parsedStateVariable = stateVariable.substring(7);
+                }
+                targetAbilityId = ResourceLocation.tryParse(parsedStateVariable);
             }
 
             if (targetAbilityId == null)
                 return;
 
-            double current = vars.getAbilityState(targetAbilityId);
+            double current = vars.getPersistentState(targetAbilityId);
             double on = onValue.evaluate(player, target);
             double off = offValue.evaluate(player, target);
 
             if (Math.abs(current - off) < 0.001) {
-                vars.setAbilityState(targetAbilityId, on);
+                vars.setPersistentState(targetAbilityId, on);
                 for (ActionRegistry.RaceAction a : onEnable) {
                     if (!a.execute(player, target, slot, interactionPos)) {
                         success[0] = false;
@@ -61,7 +72,7 @@ public class ToggleStateAction implements ActionRegistry.RaceAction {
                     }
                 }
             } else {
-                vars.setAbilityState(targetAbilityId, off);
+                vars.setPersistentState(targetAbilityId, off);
                 for (ActionRegistry.RaceAction a : onDisable) {
                     if (!a.execute(player, target, slot, interactionPos)) {
                         success[0] = false;
@@ -95,8 +106,13 @@ public class ToggleStateAction implements ActionRegistry.RaceAction {
                 }
             }
 
-            String ability = GsonHelper.getAsString(json, "ability", null);
-            ResourceLocation abilityLoc = ability != null ? new ResourceLocation(ability) : null;
+            @javax.annotation.Nullable String ability = GsonHelper.getNullableString(json, "ability", null);
+            
+            ResourceLocation abilityLoc = null;
+            if (ability != null) {
+                String sub = ability.startsWith("ability:") ? ability.substring(8) : (ability.startsWith("state:") ? ability.substring(6) : ability);
+                abilityLoc = ResourceLocation.tryParse(sub);
+            }
 
             return new ToggleStateAction(state, abilityLoc, on, off, onEnable, onDisable);
         });

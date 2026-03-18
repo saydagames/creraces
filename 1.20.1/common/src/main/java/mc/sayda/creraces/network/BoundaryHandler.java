@@ -173,7 +173,7 @@ public class BoundaryHandler {
     }
 
     public static void sendSetRace(SetRacePacket pkt) {
-        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        FriendlyByteBuf buf = new FriendlyByteBuf(java.util.Objects.requireNonNull(Unpooled.buffer()));
         pkt.toBytes(buf);
         NetworkManager.sendToServer(SetRacePacket.ID, buf);
     }
@@ -208,7 +208,7 @@ public class BoundaryHandler {
     }
 
     public static void sendTeamRequest(TeamRequestPacket pkt) {
-        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        FriendlyByteBuf buf = new FriendlyByteBuf(java.util.Objects.requireNonNull(Unpooled.buffer()));
         pkt.encode(buf);
         NetworkManager.sendToServer(TeamRequestPacket.ID, buf);
     }
@@ -223,7 +223,7 @@ public class BoundaryHandler {
     }
 
     public static void sendSyncRequest() {
-        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        FriendlyByteBuf buf = new FriendlyByteBuf(java.util.Objects.requireNonNull(Unpooled.buffer()));
         new RequestSyncPacket().encode(buf);
         NetworkManager.sendToServer(RequestSyncPacket.ID, buf);
     }
@@ -243,7 +243,7 @@ public class BoundaryHandler {
     }
 
     public static void sendItemAnimation(ServerPlayer player, ResourceLocation itemId) {
-        send(player, ShowItemAnimationPacket.ID, buf -> buf.writeResourceLocation(itemId));
+        send(player, ShowItemAnimationPacket.ID, buf -> buf.writeResourceLocation(java.util.Objects.requireNonNull(itemId)));
     }
 
     public static void broadcastClearCache() {
@@ -257,13 +257,13 @@ public class BoundaryHandler {
     }
 
     public static void sendEquipAbility(EquipAbilityPacket pkt) {
-        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        FriendlyByteBuf buf = new FriendlyByteBuf(java.util.Objects.requireNonNull(Unpooled.buffer()));
         pkt.encode(buf);
         NetworkManager.sendToServer(EquipAbilityPacket.ID, buf);
     }
 
     public static void sendCastAbility(CastAbilityPacket pkt) {
-        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        FriendlyByteBuf buf = new FriendlyByteBuf(java.util.Objects.requireNonNull(Unpooled.buffer()));
         pkt.encode(buf);
         NetworkManager.sendToServer(CastAbilityPacket.ID, buf);
     }
@@ -293,37 +293,37 @@ public class BoundaryHandler {
     }
 
     public static void sendSetCustomization(SetCustomizationPacket pkt) {
-        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        FriendlyByteBuf buf = new FriendlyByteBuf(java.util.Objects.requireNonNull(Unpooled.buffer()));
         pkt.encode(buf);
         NetworkManager.sendToServer(SetCustomizationPacket.ID, buf);
     }
 
     public static void sendOpenMenu() {
-        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        FriendlyByteBuf buf = new FriendlyByteBuf(java.util.Objects.requireNonNull(Unpooled.buffer()));
         new OpenMenuPacket().encode(buf);
         NetworkManager.sendToServer(OpenMenuPacket.ID, buf);
     }
 
     public static void sendGStateUpdate(int gState) {
-        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        FriendlyByteBuf buf = new FriendlyByteBuf(java.util.Objects.requireNonNull(Unpooled.buffer()));
         new UpdateGStatePacket(gState).toBytes(buf);
         NetworkManager.sendToServer(UpdateGStatePacket.ID, buf);
     }
 
     public static void sendMiniPlace(mc.sayda.creraces.network.MiniPlacePacket pkt) {
-        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        FriendlyByteBuf buf = new FriendlyByteBuf(java.util.Objects.requireNonNull(Unpooled.buffer()));
         pkt.encode(buf);
         NetworkManager.sendToServer(MiniPlacePacket.ID, buf);
     }
 
     public static void sendMiniRemove(mc.sayda.creraces.network.MiniRemovePacket pkt) {
-        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        FriendlyByteBuf buf = new FriendlyByteBuf(java.util.Objects.requireNonNull(Unpooled.buffer()));
         pkt.encode(buf);
         NetworkManager.sendToServer(MiniRemovePacket.ID, buf);
     }
 
     public static void sendMiniUse(mc.sayda.creraces.network.MiniUsePacket pkt) {
-        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        FriendlyByteBuf buf = new FriendlyByteBuf(java.util.Objects.requireNonNull(Unpooled.buffer()));
         pkt.encode(buf);
         NetworkManager.sendToServer(mc.sayda.creraces.network.MiniUsePacket.ID, buf);
     }
@@ -331,7 +331,7 @@ public class BoundaryHandler {
     /**
      * Resyncs all variables for a target player to a specific recipient.
      * fullSync = true includes resources (use for joins, respawn, casts).
-     * fullSync = false excludes resources (use for periodic ticks — client
+     * fullSync = false excludes resources (use for periodic ticks - client
      * predicts).
      */
     public static void resyncVariables(Player target, Player recipient, boolean fullSync) {
@@ -342,7 +342,7 @@ public class BoundaryHandler {
             if (target instanceof IPersistentDataAccessor accessor) {
                 CompoundTag persistentData = accessor.creraces$getPersistentData();
                 if (!persistentData.isEmpty()) {
-                    tag.put("creraces:persistent_data", persistentData.copy());
+                    tag.put("creraces:persistent_data", java.util.Objects.requireNonNull(persistentData.copy()));
                 }
             }
 
@@ -352,7 +352,7 @@ public class BoundaryHandler {
     }
 
     /**
-     * Convenience overload — defaults to full sync (safe for all explicit events).
+     * Convenience overload - defaults to full sync (safe for all explicit events).
      */
     public static void resyncVariables(Player target, Player recipient) {
         resyncVariables(target, recipient, true);
@@ -366,8 +366,6 @@ public class BoundaryHandler {
     }
 
     public static void resyncForAllTrackers(Player player, boolean fullSync) {
-        mc.sayda.creraces.CreRaces.LOGGER.info("BoundaryHandler: resyncForAllTrackers called for {} (fullSync={})",
-                player.getName().getString(), fullSync);
         DataUtils.getVariables(player).ifPresent(vars -> {
             var pkt = new SyncIncidentPacket(player.getUUID(), vars.serialize(fullSync));
             sendToTrackers(player, SyncIncidentPacket.ID, pkt::encode);
@@ -383,21 +381,17 @@ public class BoundaryHandler {
         int syncDist = mc.sayda.creraces.config.CreRacesConfig.VISUAL_SYNC_DISTANCE.get();
         double syncDistSqr = syncDist * syncDist;
 
-        int count = 0;
         for (net.minecraft.server.level.ServerPlayer p : players) {
             if (p.level().dimension() == entity.level().dimension() && p.distanceToSqr(entity) < syncDistSqr) {
                 send(p, id, encoder);
-                count++;
             }
         }
-        mc.sayda.creraces.CreRaces.LOGGER.info("BoundaryHandler: Sent packet {} to {} trackers for {}", id, count,
-                entity.getName().getString());
     }
 
     private static void send(ServerPlayer player, net.minecraft.resources.ResourceLocation id,
             java.util.function.Consumer<net.minecraft.network.FriendlyByteBuf> encoder) {
         net.minecraft.network.FriendlyByteBuf buf = new net.minecraft.network.FriendlyByteBuf(
-                io.netty.buffer.Unpooled.buffer());
+                java.util.Objects.requireNonNull(io.netty.buffer.Unpooled.buffer()));
         encoder.accept(buf);
         NetworkManager.sendToPlayer(player, id, buf);
     }

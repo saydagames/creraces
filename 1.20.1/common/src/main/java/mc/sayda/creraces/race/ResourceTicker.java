@@ -117,20 +117,19 @@ public class ResourceTicker {
         mc.sayda.creraces.engine.actions.TetherAction.tickTethers(player);
 
         if (!player.level().isClientSide()
-                && player.tickCount
-                        % mc.sayda.creraces.config.CreRacesConfig.TICK_AUTHORITATIVE_SYNC_INTERVAL.get() == 0
+                && player.tickCount % 20 == 0
                 && player instanceof net.minecraft.server.level.ServerPlayer sp) {
 
-            if (mc.sayda.creraces.config.CreRacesConfig.ATTRIBUTE_RECHECK_ENABLED.get()) {
-                AttributeIncidents.eikiJudgment(sp);
-            }
+            // Attribute recheck always runs - confirmed necessary for keeping modifier
+            // state correct.
+            AttributeIncidents.eikiJudgment(sp);
 
-            // Delta sync only — resources excluded. Client predicts resources.
+            // Delta sync only - resources excluded. Client predicts resources.
             // Full sync only happens on join, respawn, cast, and combat resource events.
             BoundaryHandler.resyncVariables(player, player, false);
         }
 
-        // 4. Tick Race Traits (Moved up for client-side prediction)
+        // 4. Tick Race Traits (Client handles resource prediction, server handles state logic)
         List<mc.sayda.creraces.engine.TraitRegistry.RaceTrait> traits = race.traits();
         if (traits != null) {
             for (int i = 0; i < traits.size(); i++) {
@@ -164,14 +163,14 @@ public class ResourceTicker {
         if (player.level().isClientSide())
             return;
 
-        // 6. Sunlight Burning Logic
+        // 6. Sunlight Burning Logic (Every 20 ticks)
         Race.Passives passives = race.passives();
-        if (passives != null && passives.burnsInSunlight() && player.level().isDay()
-                && !player.level().isRaining() // isRaining covers both rain and thunder; isThundering() missed light
-                                               // rain
+        if (passives != null && passives.burnsInSunlight() && player.tickCount % 20 == 0 && player.level().isDay()
+                && !player.level().isRaining() 
                 && player.level().canSeeSky(player.blockPosition())) {
 
-            boolean immune = passives.immuneToDamageTypes().contains("fire") || player.isInvulnerable();
+            boolean immune = passives.immuneToDamageTypes().contains("minecraft:fire")
+                    || player.isInvulnerable();
 
             if (!immune) {
                 net.minecraft.world.item.ItemStack headItem = player
@@ -223,12 +222,11 @@ public class ResourceTicker {
             if (passives.cannotSprint() && player.isSprinting()) {
                 player.setSprinting(false);
             }
-
         }
-
     }
 
-    private static void deactivateAbility(Player player, IPlayerVariables vars, ResourceLocation abilityId,
+    private static void deactivateAbility(Player player, mc.sayda.creraces.capability.IPlayerVariables vars,
+            net.minecraft.resources.ResourceLocation abilityId,
             mc.sayda.creraces.ability.Ability ability) {
         vars.setAbilityActive(false);
         if (ability != null) {

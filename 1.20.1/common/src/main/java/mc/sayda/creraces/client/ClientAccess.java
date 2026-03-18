@@ -60,11 +60,9 @@ public class ClientAccess {
             boolean isInMirror = finalTarget == minecraft.player
                     && minecraft.screen instanceof mc.sayda.creraces.client.screen.DynamicMirrorScreen;
 
-            if (race != null && !isInMirror) {
-                mc.sayda.creraces.race.CosmeticIncidents.applyCustomizations(finalTarget,
-                        vars.getCustomizations(),
-                        race);
-            }
+            // We skip client-side application here.
+            // Authority resides on the server, which sends SyncAddonsPacket.
+            // Local player preview is handled by screens (DynamicMirrorScreen) separately.
 
             // Sync persistent data tag directly to the Entity for client-side tag checks
             if (data.contains("creraces:persistent_data")
@@ -99,12 +97,7 @@ public class ClientAccess {
         net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
         if (minecraft.player != null) {
             mc.sayda.creraces.capability.DataUtils.getVariables(minecraft.player).ifPresent(vars -> {
-                mc.sayda.creraces.race.Race currentRace = mc.sayda.creraces.race.RaceRegistry
-                        .get(vars.getRace());
-                if (currentRace != null) {
-                    mc.sayda.creraces.race.CosmeticIncidents.applyCustomizations(minecraft.player,
-                            vars.getCustomizations(), currentRace);
-                }
+                // Server will send SyncAddonsPacket for the new race
             });
         }
     }

@@ -158,7 +158,7 @@ public class RaceOverlay {
 
                 // Draw "Unusable" or "Off" indication (Borders)
                 boolean usable = isUsable(Minecraft.getInstance().player, vars, ability);
-                boolean active = vars.getAbilityState(abilityId) > 0;
+                boolean active = vars.getPersistentState(abilityId) > 0;
 
                 if (!usable) {
                     drawBorder(graphics, x - 1, y - 1, 20, 20, 0x88FF0000); // Translucent Red

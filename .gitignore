@@ -109,3 +109,5 @@ local.properties
 /1.20.1/fabric/bin
 *.py
 /.minecraft
+/.attributes
+/TestPack

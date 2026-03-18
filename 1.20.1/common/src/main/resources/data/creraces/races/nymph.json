@@ -1,29 +1,33 @@
 {
-    "name": "race.creraces.nymph.name",
-    "scale": {
+    "creraces:name": "race.creraces.nymph.name",
+    "creraces:scale": {
         "base": 1.0,
         "height": 1.1
     },
-    "legacy_id": 9.0,
-    "description": "race.creraces.nymph.description",
-    "name_texture": "creraces:textures/screens/nymphs_text.png",
-    "portrait": "creraces:textures/screens/nymphs_portrait.png",
-    "base_ap": 10,
-    "base_ad": 5,
-    "base_ah": 10,
-    "base_cr": 5,
-    "resource_type": "MANA",
-    "max_resource": 100,
-    "tier": "creraces:common",
-    "difficulty": 1,
-    "stacks_affect_resource": false,
-    "gstate": "FEMALE",
-    "is_spirit": true,
-    "passives": {
-        "regeneration_multiplier": 1.1
-    },
-    "traits": [
+    "creraces:index": 9.0,
+    "creraces:description": "race.creraces.nymph.description",
+    "creraces:name_texture": "creraces:textures/screens/nymphs_text.png",
+    "creraces:portrait": "creraces:textures/screens/nymphs_portrait.png",
+    "creraces:base_ap": 10,
+    "creraces:base_ad": 5,
+    "creraces:base_ah": 10,
+    "creraces:base_cr": 5,
+    "creraces:resource_type": "MANA",
+    "creraces:max_resource": 100,
+    "creraces:difficulty": 1,
+    "creraces:stacks_affect_resource": false,
+    "creraces:gstate": "FEMALE",
+    "creraces:is_spirit": true,
+    "creraces:regeneration_multiplier": 1.1,
+    "creraces:blocked_food_types": [
+        "meat",
+        "#minecraft:fishes",
+        "#creraces:crafted_foods",
+        "#creraces:neutral_foods"
+    ],
+    "passive": [
         {
+            "id": "nymph_health",
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.max_health",
             "value": -4.0,
@@ -38,12 +42,7 @@
                 "type": "creraces:race_equals",
                 "race": "creraces:nymph"
             }
-        },
-        {
-            "type": "creraces:addon",
-            "addon_id": "body",
-            "config": "lore_addons"
         }
     ],
-    "wiki_page": "Nymph"
+    "creraces:wiki_page": "Nymph"
 }

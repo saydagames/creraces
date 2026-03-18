@@ -18,6 +18,9 @@
                 {
                     "type": "creraces:aoe",
                     "radius": 5,
+                    "targets": [
+                        "enemies"
+                    ],
                     "actions": [
                         {
                             "type": "creraces:apply_velocity",

@@ -38,7 +38,7 @@ public class DryadLeavesFruitBlock extends LeavesBlock {
         if (isDryad) {
             // Drop apple
             ItemStack apple = new ItemStack(ModItems.DRYAD_APPLE.get());
-            ItemEntity entity = new ItemEntity(level, pos.getX() + 0.5, pos.getY() + 0.3, pos.getZ() + 0.5, apple);
+            ItemEntity entity = new ItemEntity(level, pos.getX() + 0.5, pos.getY() - 0.5, pos.getZ() + 0.5, apple);
             entity.setPickUpDelay(10);
             level.addFreshEntity(entity);
 

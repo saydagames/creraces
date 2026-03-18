@@ -16,8 +16,9 @@ public class SyncBeamPacket {
     private final boolean active;
     private final float r, g, b, a;
     private final float radius;
+    private final float length;
 
-    public SyncBeamPacket(UUID playerId, boolean active, float r, float g, float b, float a, float radius) {
+    public SyncBeamPacket(UUID playerId, boolean active, float r, float g, float b, float a, float radius, float length) {
         this.playerId = playerId;
         this.active = active;
         this.r = r;
@@ -25,6 +26,7 @@ public class SyncBeamPacket {
         this.b = b;
         this.a = a;
         this.radius = radius;
+        this.length = length;
     }
 
     public SyncBeamPacket(FriendlyByteBuf buf) {
@@ -36,12 +38,14 @@ public class SyncBeamPacket {
             this.b = buf.readFloat();
             this.a = buf.readFloat();
             this.radius = buf.readFloat();
+            this.length = buf.readFloat();
         } else {
             this.r = 0;
             this.g = 0;
             this.b = 0;
             this.a = 0;
             this.radius = 0;
+            this.length = 0;
         }
     }
 
@@ -54,6 +58,7 @@ public class SyncBeamPacket {
             buf.writeFloat(this.b);
             buf.writeFloat(this.a);
             buf.writeFloat(this.radius);
+            buf.writeFloat(this.length);
         }
     }
 
@@ -63,7 +68,7 @@ public class SyncBeamPacket {
             dev.architectury.utils.EnvExecutor.runInEnv(dev.architectury.utils.Env.CLIENT,
                     () -> () -> {
                         mc.sayda.creraces.client.render.BeamRenderer.handleSync(this.playerId, this.active, r, g, b, a,
-                                radius);
+                                radius, length);
                         mc.sayda.creraces.client.render.AnimationHandler.setBeamCasting(this.playerId, this.active);
                     });
         });

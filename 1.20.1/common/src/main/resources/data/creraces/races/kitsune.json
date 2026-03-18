@@ -1,17 +1,19 @@
 {
-    "name": "race.creraces.kitsune.name",
-    "legacy_id": 17.0,
-    "description": "race.creraces.kitsune.description",
-    "icon": "creraces:textures/screens/kitsune_icon.png",
-    "splash": "creraces:textures/screens/kitsune_splash.png",
-    "resource_type": "MANA",
-    "base_ah": 15,
-    "base_cr": 12,
-    "max_resource": 100,
-    "difficulty": 4,
-    "is_spirit": true,
-    "traits": [
+    "creraces:name": "race.creraces.kitsune.name",
+    "creraces:index": 17.0,
+    "creraces:description": "race.creraces.kitsune.description",
+    "creraces:icon": "creraces:textures/screens/kitsune_icon.png",
+    "creraces:splash": "creraces:textures/screens/kitsune_splash.png",
+    "creraces:resource_type": "MANA",
+    "creraces:base_ah": 15,
+    "creraces:base_cr": 12,
+    "creraces:max_resource": 100,
+    "creraces:difficulty": 4,
+    "creraces:is_spirit": true,
+    "creraces:gstate": "FEMALE",
+    "kitsune_attributes": [
         {
+            "id": "kitsune_health",
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.max_health",
             "value": {
@@ -22,6 +24,7 @@
             "operation": "addition"
         },
         {
+            "id": "kitsune_luck",
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.luck",
             "value": {
@@ -30,6 +33,7 @@
             "operation": "addition"
         },
         {
+            "id": "kitsune_ap",
             "type": "creraces:attribute_modifier",
             "attribute": "creraces:ability_power",
             "value": {
@@ -38,14 +42,18 @@
             "operation": "addition"
         },
         {
+            "id": "kitsune_damage",
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.attack_damage",
             "value": {
                 "base": 8.0
             },
             "operation": "addition"
-        },
+        }
+    ],
+    "fox_form_modifiers": [
         {
+            "id": "fox_form_speed",
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.movement_speed",
             "value": {
@@ -59,6 +67,7 @@
             }
         },
         {
+            "id": "fox_form_no_damage",
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.attack_damage",
             "value": {
@@ -70,14 +79,17 @@
                 "ability": "creraces:fox_form",
                 "value": 1.0
             }
-        },
+        }
+    ],
+    "foxfire_logic": [
         {
+            "name": "foxfire_flight",
             "type": "creraces:flight",
             "resource": "MANA",
             "drain_rate": {
-                "base": 10.0,
+                "base": 1.0,
                 "scales_with": "custom:tail_count",
-                "factor": -1.0
+                "factor": -0.1
             },
             "force_fly": true,
             "condition": {
@@ -143,15 +155,15 @@
             ]
         }
     ],
-    "starting_abilities": [
+    "creraces:starting_abilities": [
         "creraces:foxfire",
         "creraces:fox_form",
         "creraces:kitsune_sleep"
     ],
-    "starting_items": [
+    "creraces:starting_items": [
         "creraces:mirror"
     ],
-    "customization": [
+    "creraces:customization": [
         {
             "id": "tail_count",
             "type": "property",
@@ -235,7 +247,7 @@
             "defaultValue": "orange"
         }
     ],
-    "portrait": "creraces:textures/screens/kitsune_portrait.png",
-    "name_texture": "creraces:textures/screens/kitsune_text.png",
-    "wiki_page": "Kitsune"
+    "creraces:portrait": "creraces:textures/screens/kitsune_portrait.png",
+    "creraces:name_texture": "creraces:textures/screens/kitsune_text.png",
+    "creraces:wiki_page": "Kitsune"
 }

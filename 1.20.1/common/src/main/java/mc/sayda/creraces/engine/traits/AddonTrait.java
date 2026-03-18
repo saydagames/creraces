@@ -73,7 +73,7 @@ public class AddonTrait implements TraitRegistry.RaceTrait {
     public static void register() {
         TraitRegistry.register(new ResourceLocation(CreRaces.MODID, "addon"), json -> {
             String addonId = GsonHelper.getAsString(json, "addon_id");
-            String tint = GsonHelper.getAsString(json, "tint", null);
+            @javax.annotation.Nullable String tint = GsonHelper.getNullableString(json, "tint", null);
             boolean permanent = GsonHelper.getAsBoolean(json, "permanent", false);
             String configGroup = GsonHelper.getAsString(json, "config", "race_addons");
             Condition condition = json.has("condition") ? Condition.fromJson(json.getAsJsonObject("condition")) : null;

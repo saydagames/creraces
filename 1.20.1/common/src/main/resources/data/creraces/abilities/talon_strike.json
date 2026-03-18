@@ -18,11 +18,7 @@
             "if_true": [
                 {
                     "type": "creraces:dash",
-                    "power": {
-                        "base": 1.5,
-                        "scales_with": "ad",
-                        "factor": 0.5
-                    },
+                    "power": 2.0,
                     "direction": "down",
                     "reset_fall": true
                 },

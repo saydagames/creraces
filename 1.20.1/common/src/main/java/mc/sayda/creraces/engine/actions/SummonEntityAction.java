@@ -26,18 +26,18 @@ import javax.annotation.Nullable;
  * Spawns a registered entity at a resolved position and optionally tames it to
  * the casting player.
  * <ul>
- * <li>{@code entity} — Entity type ID (e.g.
+ * <li>{@code entity} - Entity type ID (e.g.
  * {@code "creraces:troll_pillar"}).</li>
- * <li>{@code use_raycast} — (Optional, default {@code false}) If true, places
+ * <li>{@code use_raycast} - (Optional, default {@code false}) If true, places
  * the entity
  * at the block surface the player is looking at, within {@code ray_range}
  * blocks.</li>
- * <li>{@code ray_range} — (Optional ScalingValue, default {@code 10.0}) Max
+ * <li>{@code ray_range} - (Optional ScalingValue, default {@code 10.0}) Max
  * raycast distance.</li>
- * <li>{@code tame} — (Optional, default {@code false}) If true and the entity
+ * <li>{@code tame} - (Optional, default {@code false}) If true and the entity
  * is a
  * {@link TamableAnimal}, the entity is tamed to the casting player.</li>
- * <li>{@code offset_y} — (Optional ScalingValue, default {@code 0}) Additional
+ * <li>{@code offset_y} - (Optional ScalingValue, default {@code 0}) Additional
  * Y offset
  * applied to the spawn position.</li>
  * </ul>
@@ -46,14 +46,16 @@ public class SummonEntityAction implements ActionRegistry.RaceAction {
 
     private final ResourceLocation entityId;
     private final boolean useRaycast;
+    private final boolean useTarget;
     private final ScalingValue rayRange;
     private final boolean tame;
     private final ScalingValue offsetY;
 
-    public SummonEntityAction(ResourceLocation entityId, boolean useRaycast, ScalingValue rayRange,
-            boolean tame, ScalingValue offsetY) {
+    public SummonEntityAction(ResourceLocation entityId, boolean useRaycast, boolean useTarget,
+            ScalingValue rayRange, boolean tame, ScalingValue offsetY) {
         this.entityId = entityId;
         this.useRaycast = useRaycast;
+        this.useTarget = useTarget;
         this.rayRange = rayRange;
         this.tame = tame;
         this.offsetY = offsetY;
@@ -83,6 +85,8 @@ public class SummonEntityAction implements ActionRegistry.RaceAction {
                 return false;
             }
             spawnPos = hit.getBlockPos().above();
+        } else if (useTarget && target != null) {
+            spawnPos = target.blockPosition();
         } else {
             spawnPos = player.blockPosition();
         }
@@ -130,10 +134,11 @@ public class SummonEntityAction implements ActionRegistry.RaceAction {
             String entityIdStr = GsonHelper.getAsString(json, "entity", "minecraft:pig");
             ResourceLocation entityId = new ResourceLocation(entityIdStr);
             boolean useRaycast = GsonHelper.getAsBoolean(json, "use_raycast", false);
+            boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
             ScalingValue rayRange = ScalingValue.fromJson(json, "ray_range", 10.0);
             boolean tame = GsonHelper.getAsBoolean(json, "tame", false);
             ScalingValue offsetY = ScalingValue.fromJson(json, "offset_y", 0.0);
-            return new SummonEntityAction(entityId, useRaycast, rayRange, tame, offsetY);
+            return new SummonEntityAction(entityId, useRaycast, useTarget, rayRange, tame, offsetY);
         });
     }
 }

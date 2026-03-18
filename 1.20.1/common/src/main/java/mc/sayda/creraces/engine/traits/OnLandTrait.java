@@ -36,18 +36,20 @@ public class OnLandTrait implements TraitRegistry.RaceTrait {
 
             // wasOnGround will be true if we haven't tracked this player yet (to avoid
             // firing on first spawn)
-            boolean wasOnGround = vars.getAbilityState(stateId) > 0.5 || !vars.getTraitTimers().containsKey(traitId);
+            boolean wasOnGround = vars.getPersistentState(stateId) > 0.5 || !vars.getTraitTimers().containsKey(traitId);
 
             if (onGround && !wasOnGround) {
                 BlockPos pos = player.blockPosition();
                 if (condition == null || condition.evaluate(player, null, null, pos)) {
+                    CreRaces.LOGGER.info("OnLandTrait: Firing {} actions for player {}", actions.size(),
+                            player.getName().getString());
                     for (ActionRegistry.RaceAction action : actions) {
                         action.execute(player, null, null, pos);
                     }
                 }
             }
 
-            vars.setAbilityState(stateId, onGround ? 1.0 : 0.0);
+            vars.setPersistentState(stateId, onGround ? 1.0 : 0.0);
             // Mark that we've seen this player
             vars.setTraitTimer(traitId, 1);
         });
@@ -71,7 +73,7 @@ public class OnLandTrait implements TraitRegistry.RaceTrait {
 
             String traitName = json.has("name") ? json.get("name").getAsString()
                     : "on_land_" + Math.abs(json.toString().hashCode());
-            ResourceLocation traitId = new ResourceLocation(CreRaces.MODID, "trait_" + traitName);
+            ResourceLocation traitId = new ResourceLocation(CreRaces.MODID, traitName);
 
             return new OnLandTrait(traitId, actions, condition);
         });

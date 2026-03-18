@@ -22,21 +22,19 @@ public class ApplyEffectAction implements ActionRegistry.RaceAction {
     private final ScalingValue amplifier;
     private final boolean ambient;
     private final boolean visible;
-    private final boolean useTarget;
     private final ScalingValue radius;
     private final mc.sayda.creraces.engine.TargetFilter targets;
     private final boolean incrementAmplifier;
 
     public ApplyEffectAction(ResourceLocation effectId, ScalingValue duration,
             ScalingValue amplifier, boolean ambient, boolean visible,
-            boolean useTarget, ScalingValue radius, mc.sayda.creraces.engine.TargetFilter targets,
+            ScalingValue radius, mc.sayda.creraces.engine.TargetFilter targets,
             boolean incrementAmplifier) {
         this.cachedEffect = Objects.requireNonNull(BuiltInRegistries.MOB_EFFECT.get(Objects.requireNonNull(effectId)));
         this.duration = duration;
         this.amplifier = amplifier;
         this.ambient = ambient;
         this.visible = visible;
-        this.useTarget = useTarget;
         this.radius = radius;
         this.targets = targets;
         this.incrementAmplifier = incrementAmplifier;
@@ -53,14 +51,14 @@ public class ApplyEffectAction implements ActionRegistry.RaceAction {
             ScalingValue amplifier = ScalingValue.fromJson(json, "amplifier", 0.0);
             boolean ambient = GsonHelper.getAsBoolean(json, "ambient", true);
             boolean visible = GsonHelper.getAsBoolean(json, "visible", true);
-            boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
-
             ScalingValue radius = ScalingValue.fromJson(json, "radius", 0.0);
+            java.util.Set<String> defaultAllow = radius.isZero() ? java.util.Set.of("enemies", "self")
+                    : java.util.Set.of("enemies");
             mc.sayda.creraces.engine.TargetFilter targets = mc.sayda.creraces.engine.TargetFilter.fromJson(json,
-                    "targets");
+                    "targets", defaultAllow);
             boolean incrementAmplifier = GsonHelper.getAsBoolean(json, "increment_amplifier", false);
 
-            return new ApplyEffectAction(effectId, duration, amplifier, ambient, visible, useTarget,
+            return new ApplyEffectAction(effectId, duration, amplifier, ambient, visible,
                     radius, targets, incrementAmplifier);
         });
     }
@@ -83,10 +81,15 @@ public class ApplyEffectAction implements ActionRegistry.RaceAction {
             player.level().getEntitiesOfClass(LivingEntity.class, area, e -> targets.isValid(e, player))
                     .forEach(e -> applyToEntity(player, e, cachedEffect));
         } else {
-            // Single Target Mode
-            LivingEntity entity = (target != null) ? target : (useTarget ? null : player);
-            if (entity != null && targets.isValid(entity, player)) {
-                applyToEntity(player, entity, cachedEffect);
+            // Single Target Mode logic: Check both player and target if they exist
+            if (target != null) {
+                if (targets.isValid(target, player)) {
+                    applyToEntity(player, target, cachedEffect);
+                }
+            } else {
+                if (targets.isValid(player, player)) {
+                    applyToEntity(player, player, cachedEffect);
+                }
             }
         }
         return true;
@@ -98,6 +101,14 @@ public class ApplyEffectAction implements ActionRegistry.RaceAction {
 
         if (incrementAmplifier && entity.hasEffect(effect)) {
             finalAmplifier += entity.getEffect(effect).getAmplifier() + 1;
+        }
+
+        // Attribution: Link player to target for effects that require a source (e.g. Rat Venom)
+        if (player != null && entity instanceof mc.sayda.creraces.util.IPersistentDataAccessor accessor) {
+            ResourceLocation effectId = BuiltInRegistries.MOB_EFFECT.getKey(effect);
+            if (effectId != null && effectId.toString().equals("creraces:rat_venom")) {
+                accessor.creraces$getPersistentData().putString("creraces:venom_source", player.getUUID().toString());
+            }
         }
 
         // Vanilla MobEffectInstance treats -1 as infinite duration

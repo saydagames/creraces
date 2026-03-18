@@ -91,7 +91,7 @@ public class AOEAction implements ActionRegistry.RaceAction {
             mc.sayda.creraces.engine.ScalingValue radius = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
                     "radius", 5.0);
             mc.sayda.creraces.engine.TargetFilter targets = mc.sayda.creraces.engine.TargetFilter.fromJson(json,
-                    "targets");
+                    "targets", java.util.Set.of("enemies"));
             String requiredEffect = GsonHelper.getAsString(json, "required_effect", "");
             String notEffect = GsonHelper.getAsString(json, "not_effect", "");
             List<ActionRegistry.RaceAction> actions = new ArrayList<>();

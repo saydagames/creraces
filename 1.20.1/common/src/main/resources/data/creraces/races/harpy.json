@@ -1,30 +1,26 @@
 {
-    "name": "race.creraces.harpy.name",
-    "legacy_id": 4.0,
-    "scale": {
+    "creraces:name": "race.creraces.harpy.name",
+    "creraces:index": 4.0,
+    "creraces:scale": {
         "base": 1.0,
         "height": 0.92
     },
-    "description": "race.creraces.harpy.description",
-    "icon": "creraces:textures/screens/harpy_icon.png",
-    "splash": "creraces:textures/screens/harpy_splash.png",
-    "resource_type": "ENERGY",
-    "max_resource": 100,
-    "tier": "creraces:rare",
-    "stacks_affect_resource": false,
-    "gstate": "FEMALE",
-    "difficulty": 2,
-    "traits": [
+    "creraces:description": "race.creraces.harpy.description",
+    "creraces:icon": "creraces:textures/screens/harpy_icon.png",
+    "creraces:splash": "creraces:textures/screens/harpy_splash.png",
+    "creraces:portrait": "creraces:textures/screens/harpy_portrait.png",
+    "creraces:name_texture": "creraces:textures/screens/harpy_text.png",
+    "creraces:resource_type": "ENERGY",
+    "creraces:max_resource": 100,
+    "creraces:stacks_affect_resource": false,
+    "creraces:gstate": "FEMALE",
+    "creraces:difficulty": 2,
+    "creraces:immune_to_damage": [
+        "minecraft:fall"
+    ],
+    "core_stats": [
         {
-            "type": "creraces:addon",
-            "addon_id": "short_torso"
-        },
-        {
-            "type": "creraces:addon",
-            "addon_id": "chest",
-            "config": "lore_addons"
-        },
-        {
+            "id": "harpy_ap",
             "type": "creraces:attribute_modifier",
             "attribute": "creraces:ability_power",
             "value": {
@@ -33,34 +29,35 @@
             "operation": "addition"
         },
         {
+            "id": "harpy_damage",
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.attack_damage",
             "value": {
                 "base": 5.0
             },
             "operation": "addition"
-        },
+        }
+    ],
+    "armor_restrictions": [
         {
+            "id": "no_leggings",
             "type": "creraces:attribute_modifier",
             "attribute": "twilight_lib:allow_leggings",
-            "value": {
-                "base": 0.0
-            },
+            "value": 0.0,
             "operation": "multiply_total"
         },
         {
+            "id": "no_boots",
             "type": "creraces:attribute_modifier",
             "attribute": "twilight_lib:allow_boots",
-            "value": {
-                "base": 0.0
-            },
+            "value": 0.0,
             "operation": "multiply_total"
-        },
+        }
+    ],
+    "talon_strike_logic": [
         {
             "type": "creraces:on_hit",
-            "condition": {
-                "type": "creraces:attack_charged"
-            },
+            "name": "featherstorm_on_hit",
             "actions": [
                 {
                     "type": "creraces:apply_effect",
@@ -68,10 +65,114 @@
                     "duration": 60,
                     "amplifier": 0,
                     "visible": true,
-                    "use_target": true
+                    "targets": [
+                        "self"
+                    ]
                 }
             ]
         },
+        {
+            "type": "creraces:on_land",
+            "name": "talon_strike_landing",
+            "condition": {
+                "type": "creraces:ability_state",
+                "ability": "creraces:talon_strike",
+                "value": 1.0
+            },
+            "actions": [
+                {
+                    "type": "creraces:aoe",
+                    "radius": 4.0,
+                    "targets": [
+                        "enemies"
+                    ],
+                    "actions": [
+                        {
+                            "type": "creraces:damage",
+                            "amount": 10.0,
+                            "damage_type": "minecraft:player_attack"
+                        }
+                    ]
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:entity.player.attack.sweep",
+                    "volume": 1.0,
+                    "pitch": 0.8
+                },
+                {
+                    "type": "creraces:spawn_particles",
+                    "particle": "minecraft:cloud",
+                    "count": 10,
+                    "speed": 0.1
+                },
+                {
+                    "type": "creraces:spawn_particles",
+                    "particle": "minecraft:crit",
+                    "count": 8,
+                    "speed": 0.2
+                },
+                {
+                    "type": "creraces:set_state",
+                    "ability": "creraces:talon_strike",
+                    "value": 0.0
+                }
+            ]
+        },
+        {
+            "type": "creraces:on_tick",
+            "name": "talon_strike_ground_reset",
+            "condition": {
+                "type": "creraces:and",
+                "conditions": [
+                    {
+                        "type": "creraces:on_ground",
+                        "value": true
+                    },
+                    {
+                        "type": "creraces:ability_state",
+                        "ability": "creraces:talon_strike",
+                        "value": 1.0
+                    }
+                ]
+            },
+            "actions": [
+                {
+                    "type": "creraces:set_state",
+                    "ability": "creraces:talon_strike",
+                    "value": 0.0
+                }
+            ]
+        }
+    ],
+    "flight_mechanics": [
+        {
+            "type": "creraces:flight",
+            "resource": "ENERGY",
+            "drain_rate": {
+                "base": 0.1
+            },
+            "exhaustion_cooldown": "creraces:flight_exhaustion",
+            "exhaustion_duration": 400,
+            "condition": {
+                "type": "creraces:and",
+                "conditions": [
+                    {
+                        "type": "creraces:ability_state",
+                        "ability": "creraces:talon_strike",
+                        "value": 0.0
+                    },
+                    {
+                        "type": "creraces:cooldown",
+                        "id": "creraces:flight_exhaustion",
+                        "operator": "<=",
+                        "value": 0
+                    }
+                ]
+            }
+        }
+    ],
+    "utility": [
         {
             "type": "creraces:on_kill",
             "actions": [
@@ -132,72 +233,6 @@
             ]
         },
         {
-            "type": "creraces:flight",
-            "resource": "ENERGY",
-            "drain_rate": {
-                "base": 0.1
-            },
-            "condition": {
-                "type": "creraces:ability_state",
-                "ability": "creraces:talon_strike",
-                "value": 0.0
-            }
-        },
-        {
-            "type": "creraces:on_land",
-            "condition": {
-                "type": "creraces:ability_state",
-                "ability": "creraces:talon_strike",
-                "value": {
-                    "base": 1.0
-                }
-            },
-            "actions": [
-                {
-                    "type": "creraces:aoe",
-                    "radius": {
-                        "base": 4.0
-                    },
-                    "actions": [
-                        {
-                            "type": "creraces:damage",
-                            "amount": {
-                                "base": 10.0
-                            },
-                            "damage_type": "minecraft:player_attack"
-                        }
-                    ]
-                },
-                {
-                    "type": "creraces:play_sound",
-                    "sound": "minecraft:entity.generic.explode",
-                    "volume": {
-                        "base": 0.8
-                    },
-                    "pitch": {
-                        "base": 1.2
-                    }
-                },
-                {
-                    "type": "creraces:spawn_particles",
-                    "particle": "minecraft:explosion",
-                    "count": {
-                        "base": 5.0
-                    },
-                    "speed": {
-                        "base": 0.1
-                    }
-                },
-                {
-                    "type": "creraces:set_state",
-                    "ability": "creraces:talon_strike",
-                    "value": {
-                        "base": 0.0
-                    }
-                }
-            ]
-        },
-        {
             "type": "creraces:on_ability_use",
             "actions": [
                 {
@@ -211,14 +246,14 @@
             ]
         }
     ],
-    "starting_abilities": [
+    "creraces:starting_abilities": [
         "creraces:dash",
         "creraces:talon_strike"
     ],
-    "starting_items": [
+    "creraces:starting_items": [
         "creraces:mirror"
     ],
-    "customization": [
+    "creraces:customization": [
         {
             "id": "torso",
             "type": "property",
@@ -269,7 +304,5 @@
             }
         }
     ],
-    "portrait": "creraces:textures/screens/harpy_portrait.png",
-    "name_texture": "creraces:textures/screens/harpy_text.png",
-    "wiki_page": "Harpy"
+    "creraces:wiki_page": "Harpy"
 }

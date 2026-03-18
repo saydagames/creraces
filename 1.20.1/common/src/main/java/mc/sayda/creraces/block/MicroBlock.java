@@ -93,6 +93,20 @@ public class MicroBlock extends BaseEntityBlock {
 
     }
 
+    @Override
+    public float getDestroyProgress(BlockState state, Player player, BlockGetter level, BlockPos pos) {
+        boolean isSmallBuild = mc.sayda.creraces.capability.DataUtils.getVariables(player)
+                .map(mc.sayda.creraces.capability.IPlayerVariables::isSmallBuild)
+                .orElse(false);
+
+        if (isSmallBuild) {
+            return 0.0f;
+        } else if (!player.isShiftKeyDown()) {
+            return 0.0f;
+        }
+        return super.getDestroyProgress(state, player, level, pos);
+    }
+
     // ─── Solidity & Occlusion ───────────────────────────────────────────────────
 
     @Override

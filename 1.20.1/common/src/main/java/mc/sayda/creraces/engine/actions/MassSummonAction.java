@@ -77,7 +77,7 @@ public class MassSummonAction implements ActionRegistry.RaceAction {
             if (summoned instanceof Mob mob) {
                 if (markAsServant) {
                     CompoundTag nbt = ((IPersistentDataAccessor) mob).creraces$getPersistentData();
-                    nbt.putString("creraces:servant_of", player.getUUID().toString());
+                    nbt.putUUID("creraces:servant_of", player.getUUID());
                     mob.setPersistenceRequired();
                 }
                 level.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL, mob.getX(), mob.getY() + 1, mob.getZ(), 10, 0.5, 0.5, 0.5, 0.05);

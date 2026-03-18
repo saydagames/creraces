@@ -3,9 +3,7 @@ package mc.sayda.creraces.client.screen;
 import com.mojang.blaze3d.systems.RenderSystem;
 import mc.sayda.creraces.network.BoundaryHandler;
 import mc.sayda.creraces.race.Race;
-import mc.sayda.creraces.race.RaceManager;
 import mc.sayda.creraces.race.RaceRegistry;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.screens.Screen;
@@ -68,7 +66,8 @@ public class RaceSelectionScreen extends Screen {
 
                 raceEntries = RaceRegistry.getRaces().stream()
                                 .filter(r -> r.parentRace() == null)
-                                .sorted(java.util.Comparator.comparingDouble(Race::legacyId))
+                                .sorted(java.util.Comparator.comparing(Race::index)
+                                                .thenComparing(r -> r.name().getString()))
                                 .map(r -> new RaceEntry(r.id(), r.name(), r.portrait(), RaceRegistry.isParent(r.id())))
                                 .collect(Collectors.toList());
 
@@ -218,8 +217,7 @@ public class RaceSelectionScreen extends Screen {
                 public final ResourceLocation portrait;
                 public final boolean isParentGroup;
 
-                public RaceEntry(ResourceLocation id, Component name, ResourceLocation portrait,
-                                boolean isParentGroup) {
+                public RaceEntry(ResourceLocation id, Component name, ResourceLocation portrait, boolean isParentGroup) {
                         this.id = id;
                         this.name = name;
                         this.portrait = portrait;

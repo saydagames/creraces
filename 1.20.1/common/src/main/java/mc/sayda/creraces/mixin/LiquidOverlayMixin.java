@@ -20,7 +20,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
  *
  * {@link ScreenEffectRenderer#renderScreenEffect} draws both the water overlay
  * (when submerged) and the fire overlay (when on fire). We only cancel the
- * liquid ones — fire from combat remains visible.
+ * liquid ones - fire from combat remains visible.
  */
 @Mixin(ScreenEffectRenderer.class)
 public class LiquidOverlayMixin {
@@ -42,7 +42,7 @@ public class LiquidOverlayMixin {
 
             if ((inWater && (passives.waterVision() || passives.unaffectedByWater())) ||
                     (inLava && (passives.lavaVision() || passives.unaffectedByLava()))) {
-                // Cancel the whole overlay pass — only for liquid.
+                // Cancel the whole overlay pass - only for liquid.
                 // Fire overlay (isOnFire) is handled in the same method; we only intercept
                 // here if the player is actually submerged, so fire still shows for combat.
                 ci.cancel();
