@@ -3,7 +3,7 @@
     "description": "ability.creraces.low_pressure_area.description",
     "type": "ACTIVE",
     "icon": "minecraft:feather",
-    "cooldown": 200,
+    "cooldown": 1200,
     "cost": 20,
     "race": [
         "creraces:aurai"
@@ -36,5 +36,7 @@
             ]
         }
     ],
-    "wiki_page": "Ability:Low_Pressure_Area"
+    "wiki_page": "state:Low_Pressure_Area"
 }
+
+

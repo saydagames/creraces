@@ -104,7 +104,7 @@ public class PoisonEmitterEntity extends TamableAnimal {
             List<LivingEntity> nearby = this.level().getEntitiesOfClass(
                     LivingEntity.class,
                     new AABB(center, center).inflate(CreRacesConfig.ENTITY_POISON_EMITTER_RADIUS.get()),
-                    e -> e != this && (owner == null || mc.sayda.creraces.team.RaceTeamManager.canHurt(e, owner))
+                    e -> e != this && e != owner && (owner == null || mc.sayda.creraces.team.RaceTeamManager.canHurt(e, owner))
                             && !mc.sayda.creraces.util.RaceUtils.isImmuneToEffect(e, venomId));
 
             for (LivingEntity target : nearby) {

@@ -3,50 +3,49 @@
     "description": "ability.creraces.crescent_swivel.description",
     "type": "ACTIVE",
     "icon": "minecraft:netherite_sword",
-    "cooldown": 160,
-    "cost": 25,
+    "cost": 80,
     "race": [
         "creraces:velox"
     ],
     "actions": [
         {
-            "type": "creraces:conditional",
-            "condition": {
-                "type": "creraces:entity_data",
-                "key": "creraces:foul_play_stacks",
-                "operator": ">=",
-                "value": 2
-            },
-            "if_true": [
+            "type": "creraces:aoe",
+            "radius": 2.5,
+            "targets": [
+                "enemies"
+            ],
+            "source": "caster",
+            "actions": [
                 {
-                    "type": "creraces:aoe",
-                    "radius": 2.5,
-                    "targets": [
-                        "enemies"
-                    ],
-                    "source": "caster",
-                    "actions": [
+                    "type": "creraces:conditional",
+                    "condition": {
+                        "type": "creraces:has_effect",
+                        "effect": "creraces:foul_play",
+                        "use_target": true
+                    },
+                    "if_true": [
                         {
                             "type": "creraces:damage",
                             "amount": {
                                 "base": 4,
                                 "scales_with": "ad",
-                                "factor": 0.04
+                                "factor": 0.04,
+                                "scales": [
+                                    {
+                                        "stat": "target_max_hp",
+                                        "factor": 0.1
+                                    }
+                                ]
                             },
                             "damage_type": "minecraft:player_attack"
+                        },
+                        {
+                            "type": "creraces:remove_effect",
+                            "effect": "creraces:foul_play",
+                            "use_target": true
                         }
-                    ]
-                }
-            ],
-            "if_false": [
-                {
-                    "type": "creraces:aoe",
-                    "radius": 2.5,
-                    "targets": [
-                        "enemies"
                     ],
-                    "source": "caster",
-                    "actions": [
+                    "if_false": [
                         {
                             "type": "creraces:damage",
                             "amount": {
@@ -77,5 +76,5 @@
             "count": 5
         }
     ],
-    "wiki_page": "Ability:Crescent_Swivel"
+    "wiki_page": "state:Crescent_Swivel"
 }

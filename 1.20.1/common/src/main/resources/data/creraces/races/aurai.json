@@ -27,69 +27,49 @@
     "passive": [
         {
             "type": "creraces:flight"
-        }
-    ],
-    "altitude_debuffs": [
+        },
         {
-            "type": "creraces:on_tick",
-            "interval": 200,
+            "type": "creraces:continuous_effect",
+            "effect": "creraces:nymph_call",
+            "amplifier": 0,
+            "visible": false,
             "condition": {
                 "type": "creraces:altitude",
-                "max": 120.0
-            },
-            "actions": [
-                {
-                    "type": "creraces:apply_effect",
-                    "effect": "minecraft:weakness",
-                    "duration": 400,
-                    "amplifier": 0
-                }
-            ]
+                "min": 120.0
+            }
         },
         {
             "type": "creraces:on_tick",
-            "interval": 200,
+            "interval": 5,
             "condition": {
-                "type": "creraces:altitude",
-                "max": 62.0
-            },
-            "actions": [
-                {
-                    "type": "creraces:apply_effect",
-                    "effect": "minecraft:weakness",
-                    "duration": 400,
-                    "amplifier": 1
-                },
-                {
-                    "type": "creraces:apply_effect",
-                    "effect": "minecraft:slowness",
-                    "duration": 400,
-                    "amplifier": 0
+                "type": "creraces:not",
+                "condition": {
+                    "type": "creraces:has_effect",
+                    "effect": "creraces:nymph_call"
                 }
-            ]
-        },
-        {
-            "type": "creraces:on_tick",
-            "interval": 200,
-            "condition": {
-                "type": "creraces:altitude",
-                "max": 0.0
             },
             "actions": [
                 {
-                    "type": "creraces:apply_effect",
-                    "effect": "minecraft:weakness",
-                    "duration": 400,
-                    "amplifier": 255
-                },
-                {
-                    "type": "creraces:apply_effect",
-                    "effect": "minecraft:slowness",
-                    "duration": 400,
-                    "amplifier": 1
+                    "type": "creraces:apply_velocity",
+                    "y": 0.5
                 }
             ]
         }
     ],
-    "creraces:wiki_page": "Aurai"
+    "cosmetics": [
+        {
+            "type": "creraces:addon",
+            "addon_id": "aurai_body"
+        }
+    ],
+    "creraces:wiki_page": "Aurai",
+    "creraces:splash_x": -7,
+    "creraces:splash_y": -2,
+    "creraces:splash_w": 200,
+    "creraces:splash_h": 179,
+    "creraces:name_tex_x": 50,
+    "creraces:name_tex_y": -39,
+    "creraces:name_tex_w": 73,
+    "creraces:name_tex_h": 26,
+    "creraces:bg_texture": "creraces:textures/screens/selection_air_bg.png"
 }

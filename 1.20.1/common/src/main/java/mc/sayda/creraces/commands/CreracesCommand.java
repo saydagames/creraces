@@ -748,36 +748,60 @@ public class CreracesCommand {
                 if (player == null)
                         return 0;
 
-                return mc.sayda.creraces.capability.DataUtils.getVariables(host).map(hostVars -> {
-                        if (!hostVars.getPocketInvitations().contains(player.getUUID()) && !source.hasPermission(2)) {
-                                source.sendFailure(Component.literal("You have not been invited to "
-                                                + host.getGameProfile().getName() + "'s pocket."));
+                java.util.Optional<mc.sayda.creraces.capability.IPlayerVariables> optVars = mc.sayda.creraces.capability.DataUtils
+                                .getVariables(host);
+                if (!optVars.isPresent())
+                        return 0;
+
+                mc.sayda.creraces.capability.IPlayerVariables hostVars = optVars.get();
+
+                // Ensure pocket exists
+                if (!hostVars.hasPocket()) {
+                        source.sendFailure(Component.literal(
+                                        host.getGameProfile().getName() + " does not have an initialized pocket."));
+                        return 0;
+                }
+
+                // Check permissions: always allow if self, if invited, or if OP
+                if (player != host && !hostVars.getPocketInvitations().contains(player.getUUID())
+                                && !source.hasPermission(2)) {
+                        source.sendFailure(Component.literal("You have not been invited to "
+                                        + host.getGameProfile().getName() + "'s pocket."));
+                        return 0;
+                }
+
+                // Dryad Restriction: block entry to own pocket if tree is not set
+                if (player == host && hostVars.getRace().toString().equals("creraces:dryad")) {
+                        double dryadTx = hostVars.getPersistentState(new ResourceLocation("dryad:tx"));
+                        if (dryadTx == 0.0) {
+                                source.sendFailure(Component.literal(
+                                                "You must set your soul tree before you can enter your pocket."));
                                 return 0;
                         }
+                }
 
-                        // Teleport to host's pocket
-                        String pocketDimName = "creraces:pocket";
-                        net.minecraft.server.level.ServerLevel pocketWorld = player.server.getLevel(
-                                        net.minecraft.resources.ResourceKey.create(
-                                                        net.minecraft.core.registries.Registries.DIMENSION,
-                                                        new ResourceLocation(pocketDimName)));
+                // Teleport to host's pocket
+                String pocketDimName = "creraces:pocket";
+                net.minecraft.server.level.ServerLevel pocketWorld = player.server.getLevel(
+                                net.minecraft.resources.ResourceKey.create(
+                                                net.minecraft.core.registries.Registries.DIMENSION,
+                                                new ResourceLocation(pocketDimName)));
 
-                        if (pocketWorld == null) {
-                                source.sendFailure(Component.literal("Pocket dimension not found."));
-                                return 0;
-                        }
+                if (pocketWorld == null) {
+                        source.sendFailure(Component.literal("Pocket dimension not found."));
+                        return 0;
+                }
 
-                        double tx = hostVars.getPocketSpawnX();
-                        double ty = hostVars.getPocketSpawnY();
-                        double tz = hostVars.getPocketSpawnZ();
+                double tx = hostVars.getPocketSpawnX();
+                double ty = hostVars.getPocketSpawnY();
+                double tz = hostVars.getPocketSpawnZ();
 
-                        player.teleportTo(pocketWorld, tx, ty, tz, 0, 0);
+                player.teleportTo(pocketWorld, tx, ty, tz, 0.0f, 0.0f);
 
-                        source.sendSuccess(() -> Component
-                                        .literal("Joined " + host.getGameProfile().getName() + "'s pocket.")
-                                        .withStyle(ChatFormatting.GREEN), false);
-                        return 1;
-                }).orElse(0);
+                source.sendSuccess(() -> Component
+                                .literal("Joined " + host.getGameProfile().getName() + "'s pocket.")
+                                .withStyle(ChatFormatting.GREEN), false);
+                return 1;
         }
 
         private static CompletableFuture<Suggestions> suggestRaces(CommandContext<CommandSourceStack> context,

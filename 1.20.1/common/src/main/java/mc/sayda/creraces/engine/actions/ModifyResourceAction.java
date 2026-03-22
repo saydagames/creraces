@@ -15,14 +15,16 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
     private final mc.sayda.creraces.engine.ScalingValue value;
     private final boolean useTarget;
     private final mc.sayda.creraces.engine.TargetFilter targets;
+    private final boolean failIfInsufficient;
 
     public ModifyResourceAction(String resource, String operation, mc.sayda.creraces.engine.ScalingValue value,
-            boolean useTarget, mc.sayda.creraces.engine.TargetFilter targets) {
+            boolean useTarget, mc.sayda.creraces.engine.TargetFilter targets, boolean failIfInsufficient) {
         this.resource = resource;
         this.operation = operation;
         this.value = value;
         this.useTarget = useTarget;
         this.targets = targets;
+        this.failIfInsufficient = failIfInsufficient;
     }
 
     @Override
@@ -54,6 +56,10 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
             else if (operation.equalsIgnoreCase("set"))
                 newValue = evaluatedValue;
 
+            if (failIfInsufficient && newValue < 0) {
+                return false;
+            }
+
             if (res.equals("air"))
                 entity.setAirSupply((int) Math.max(0, Math.min(newValue, entity.getMaxAirSupply())));
             else if (res.equals("health"))
@@ -66,7 +72,9 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
 
         // Handle Custom Variables (only for Players)
         if (entity instanceof Player p) {
-            DataUtils.getVariables(p).ifPresent(vars -> {
+            var varsOpt = DataUtils.getVariables(p);
+            if (varsOpt.isPresent()) {
+                var vars = varsOpt.get();
                 double current = 0;
                 if (res.startsWith("custom:")) {
                     String key = resource.substring(7); // Use original 'resource' to maintain case
@@ -83,9 +91,13 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
                     else if (operation.equalsIgnoreCase("set"))
                         newValue = evaluatedValue;
 
+                    if (failIfInsufficient && newValue < 0) {
+                        return false;
+                    }
+
                     vars.setCustomization(key, String.valueOf(newValue));
                     mc.sayda.creraces.network.BoundaryHandler.resyncVariables(p, p);
-                    return;
+                    return true;
                 }
 
                 if (res.equals("energy"))
@@ -107,6 +119,10 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
                 else if (operation.equalsIgnoreCase("set"))
                     newValue = evaluatedValue;
 
+                if (failIfInsufficient && newValue < 0) {
+                    return false;
+                }
+
                 if (res.equals("energy"))
                     vars.setEnergy(newValue);
                 else if (res.equals("mana"))
@@ -125,8 +141,7 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
                 }
 
                 mc.sayda.creraces.network.BoundaryHandler.resyncVariables(p, p);
-            });
-
+            }
         }
         return true;
     }
@@ -140,7 +155,8 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
             boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
             mc.sayda.creraces.engine.TargetFilter targets = mc.sayda.creraces.engine.TargetFilter.fromJson(json,
                     "targets", java.util.Set.of("enemies", "self"));
-            return new ModifyResourceAction(resource, op, val, useTarget, targets);
+            boolean failIfInsufficient = GsonHelper.getAsBoolean(json, "fail_if_insufficient", false);
+            return new ModifyResourceAction(resource, op, val, useTarget, targets, failIfInsufficient);
         });
     }
 }

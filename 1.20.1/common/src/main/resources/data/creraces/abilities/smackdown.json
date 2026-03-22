@@ -3,7 +3,7 @@
     "description": "ability.creraces.smackdown.description",
     "type": "ACTIVE",
     "icon": "minecraft:anvil",
-    "cooldown": 300,
+    "cooldown": 480,
     "cost": 30,
     "race": [
         "creraces:aurai"
@@ -28,7 +28,8 @@
                     "actions": [
                         {
                             "type": "creraces:apply_velocity",
-                            "y": -4
+                            "y": -4,
+                            "absolute": true
                         },
                         {
                             "type": "creraces:damage",
@@ -50,5 +51,5 @@
             "pitch": 1.5
         }
     ],
-    "wiki_page": "Ability:Smackdown"
+    "wiki_page": "state:Smackdown"
 }

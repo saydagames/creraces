@@ -25,12 +25,22 @@ public class MirrorItem extends Item {
             // Open the Mirror screen on the client
             BoundaryHandler.sendOpenMirror(serverPlayer);
 
-            // Consume the item
-            if (!player.getAbilities().instabuild) {
-                itemStack.shrink(1);
-            }
             return InteractionResultHolder.consume(itemStack);
         }
         return InteractionResultHolder.sidedSuccess(itemStack, level.isClientSide());
     }
+
+    @Override
+    public void inventoryTick(ItemStack stack, Level level, net.minecraft.world.entity.Entity entity, int slot,
+            boolean selected) {
+        if (!level.isClientSide && entity instanceof ServerPlayer player) {
+            if (!player.isCreative() && !player.isSpectator()) {
+                if (!(player.containerMenu instanceof mc.sayda.creraces.world.inventory.MirrorMenu)) {
+                    BoundaryHandler.sendOpenMirror(player);
+                }
+            }
+        }
+    }
 }
+
+            

@@ -3,7 +3,7 @@
     "description": "ability.creraces.boost_morale.description",
     "type": "ACTIVE",
     "icon": "minecraft:textures/item/golden_sword.png",
-    "cooldown": 600,
+    "cooldown": 2400,
     "cost": 15,
     "race": [
         "creraces:undead"
@@ -58,5 +58,7 @@
             ]
         }
     ],
-    "wiki_page": "Ability:Boost_Morale"
+    "wiki_page": "state:Boost_Morale"
 }
+
+

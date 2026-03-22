@@ -3,7 +3,7 @@
     "description": "ability.creraces.tornado.description",
     "type": "ACTIVE",
     "icon": "minecraft:cobweb",
-    "cooldown": 400,
+    "cooldown": 320,
     "cost": 35,
     "race": [
         "creraces:aurai"
@@ -43,5 +43,7 @@
             "pitch": 0.5
         }
     ],
-    "wiki_page": "Ability:Tornado"
+    "wiki_page": "state:Tornado"
 }
+
+

@@ -1,6 +1,7 @@
 package mc.sayda.creraces.race;
 
 import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.registry.ModAttributes;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.ai.attributes.Attribute;
@@ -54,16 +55,19 @@ public class AttributeIncidents {
                     
                     if (conditionMet) {
                         Attribute attr = amt.getAttribute();
-                        ResourceLocation attrKey = net.minecraft.core.registries.BuiltInRegistries.ATTRIBUTE.getKey(attr);
+                        Attribute resolvedAttr = ModAttributes.resolve(attr);
+                        ResourceLocation attrKey = net.minecraft.core.registries.BuiltInRegistries.ATTRIBUTE.getKey(resolvedAttr);
                         if (attrKey != null) {
                             String traitId = trait.getTraitId();
                             // Deterministic UUID based on trait ID (managed by user in JSON)
                             UUID uuid = UUID.nameUUIDFromBytes(("creraces:" + traitId).getBytes());
                             activeTraits.add(uuid);
                             
-                            AttributeInstance instance = player.getAttribute(attr);
+                            AttributeInstance instance = player.getAttribute(resolvedAttr);
                             if (instance != null) {
                                 double newValue = amt.getValue().evaluate(player);
+                                if (ModAttributes.isPercentAttribute(resolvedAttr)) newValue /= 100.0;
+                                
                                 AttributeModifier.Operation newOp = amt.getOperation();
                                 AttributeModifier existing = instance.getModifier(uuid);
 
@@ -156,11 +160,11 @@ public class AttributeIncidents {
             }
         });
 
-        clearModifier(player, mc.sayda.creraces.registry.ModAttributes.MAX_MANA.get(), RESOURCE_MODIFIER);
-        clearModifier(player, mc.sayda.creraces.registry.ModAttributes.MAX_RAGE.get(), RESOURCE_MODIFIER);
-        clearModifier(player, mc.sayda.creraces.registry.ModAttributes.MAX_ENERGY.get(), RESOURCE_MODIFIER);
-        clearModifier(player, mc.sayda.creraces.registry.ModAttributes.MAX_GRIT.get(), RESOURCE_MODIFIER);
-        clearModifier(player, mc.sayda.creraces.registry.ModAttributes.DOUBLE_JUMP.get(),
+        clearModifier(player, ModAttributes.resolve(ModAttributes.MAX_MANA), RESOURCE_MODIFIER);
+        clearModifier(player, ModAttributes.resolve(ModAttributes.MAX_RAGE), RESOURCE_MODIFIER);
+        clearModifier(player, ModAttributes.resolve(ModAttributes.MAX_ENERGY), RESOURCE_MODIFIER);
+        clearModifier(player, ModAttributes.resolve(ModAttributes.MAX_GRIT), RESOURCE_MODIFIER);
+        clearModifier(player, ModAttributes.resolve(ModAttributes.DOUBLE_JUMP),
                 EQUIP_DOUBLE_JUMP_MODIFIER);
     }
 
@@ -171,23 +175,28 @@ public class AttributeIncidents {
             double amount = race.maxResource();
 
             switch (race.resourceType()) {
-                case MANA -> { targetAttr = mc.sayda.creraces.registry.ModAttributes.MAX_MANA.get(); name = "Race Mana"; }
-                case RAGE -> { targetAttr = mc.sayda.creraces.registry.ModAttributes.MAX_RAGE.get(); name = "Race Rage"; }
+                case MANA -> {
+                    targetAttr = ModAttributes.resolve(ModAttributes.MAX_MANA);
+                    name = "Race Mana";
+                    // Mana scaling: json_base + (ap * scaling)
+                    amount += vars.getAp() * mc.sayda.creraces.config.CreRacesConfig.MANA_AP_SCALING.get();
+                }
+                case RAGE -> { targetAttr = ModAttributes.resolve(ModAttributes.MAX_RAGE); name = "Race Rage"; }
                 case ENERGY -> { 
-                    targetAttr = mc.sayda.creraces.registry.ModAttributes.MAX_ENERGY.get(); name = "Race Energy";
+                    targetAttr = ModAttributes.resolve(ModAttributes.MAX_ENERGY); name = "Race Energy";
                     if (race.stacksAffectResource()) amount -= vars.getStacks();
                     amount = Math.max(mc.sayda.creraces.config.CreRacesConfig.RESOURCE_MIN_CAPACITY.get(), amount);
                 }
-                case GRIT -> { targetAttr = mc.sayda.creraces.registry.ModAttributes.MAX_GRIT.get(); name = "Race Grit"; }
+                case GRIT -> { targetAttr = ModAttributes.resolve(ModAttributes.MAX_GRIT); name = "Race Grit"; }
                 default -> { targetAttr = null; name = ""; }
             }
 
             // Clear from all resource attributes first
             for (var attr : new net.minecraft.world.entity.ai.attributes.Attribute[]{
-                mc.sayda.creraces.registry.ModAttributes.MAX_MANA.get(),
-                mc.sayda.creraces.registry.ModAttributes.MAX_RAGE.get(),
-                mc.sayda.creraces.registry.ModAttributes.MAX_ENERGY.get(),
-                mc.sayda.creraces.registry.ModAttributes.MAX_GRIT.get()
+                ModAttributes.resolve(ModAttributes.MAX_MANA),
+                ModAttributes.resolve(ModAttributes.MAX_RAGE),
+                ModAttributes.resolve(ModAttributes.MAX_ENERGY),
+                ModAttributes.resolve(ModAttributes.MAX_GRIT)
             }) {
                 if (attr != targetAttr) clearModifier(player, attr, RESOURCE_MODIFIER);
             }

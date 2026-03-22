@@ -3,7 +3,7 @@
     "description": "ability.creraces.unstoppable_force.description",
     "type": "ACTIVE",
     "icon": "minecraft:textures/item/iron_chestplate.png",
-    "cooldown": 0,
+    "cooldown": 880,
     "cost": 0,
     "race": [
         "creraces:giant"
@@ -36,5 +36,7 @@
             "count": 15
         }
     ],
-    "wiki_page": "Ability:Unstoppable_Force"
+    "wiki_page": "state:Unstoppable_Force"
 }
+
+

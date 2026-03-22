@@ -3,7 +3,7 @@
     "description": "ability.creraces.talon_strike.description",
     "type": "ACTIVE",
     "icon": "creraces:textures/item/harpy_feather.png",
-    "cooldown": 60,
+    "cooldown": 500,
     "cost": 5,
     "race": [
         "creraces:harpy"
@@ -30,12 +30,14 @@
                 },
                 {
                     "type": "creraces:set_state",
-                    "ability": "creraces:talon_strike",
+                    "state": "talon_strike",
                     "value": 1.0
                 }
             ],
             "if_false": []
         }
     ],
-    "wiki_page": "Ability:Talon_Strike"
+    "wiki_page": "state:Talon_Strike"
 }
+
+

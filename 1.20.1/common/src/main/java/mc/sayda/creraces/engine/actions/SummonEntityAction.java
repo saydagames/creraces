@@ -34,6 +34,8 @@ import javax.annotation.Nullable;
  * blocks.</li>
  * <li>{@code ray_range} - (Optional ScalingValue, default {@code 10.0}) Max
  * raycast distance.</li>
+ * <li>{@code range} - (Optional ScalingValue, default {@code 0.0}) Random
+ * horizontal offset radius applied when not raycasting.</li>
  * <li>{@code tame} - (Optional, default {@code false}) If true and the entity
  * is a
  * {@link TamableAnimal}, the entity is tamed to the casting player.</li>
@@ -48,15 +50,17 @@ public class SummonEntityAction implements ActionRegistry.RaceAction {
     private final boolean useRaycast;
     private final boolean useTarget;
     private final ScalingValue rayRange;
+    private final ScalingValue range;
     private final boolean tame;
     private final ScalingValue offsetY;
 
     public SummonEntityAction(ResourceLocation entityId, boolean useRaycast, boolean useTarget,
-            ScalingValue rayRange, boolean tame, ScalingValue offsetY) {
+            ScalingValue rayRange, ScalingValue range, boolean tame, ScalingValue offsetY) {
         this.entityId = entityId;
         this.useRaycast = useRaycast;
         this.useTarget = useTarget;
         this.rayRange = rayRange;
+        this.range = range;
         this.tame = tame;
         this.offsetY = offsetY;
     }
@@ -74,10 +78,10 @@ public class SummonEntityAction implements ActionRegistry.RaceAction {
         // Resolve spawn position
         BlockPos spawnPos;
         if (useRaycast) {
-            double range = rayRange.evaluate(player, target);
+            double rRange = rayRange.evaluate(player, target);
             BlockHitResult hit = serverLevel.clip(new ClipContext(
                     player.getEyePosition(1f),
-                    player.getEyePosition(1f).add(player.getViewVector(1f).scale(range)),
+                    player.getEyePosition(1f).add(player.getViewVector(1f).scale(rRange)),
                     ClipContext.Block.OUTLINE,
                     ClipContext.Fluid.NONE,
                     player));
@@ -85,10 +89,29 @@ public class SummonEntityAction implements ActionRegistry.RaceAction {
                 return false;
             }
             spawnPos = hit.getBlockPos().above();
-        } else if (useTarget && target != null) {
-            spawnPos = target.blockPosition();
         } else {
-            spawnPos = player.blockPosition();
+            BlockPos base = (useTarget && target != null) ? target.blockPosition() : player.blockPosition();
+            double r = range.evaluate(player, target);
+            if (r > 0) {
+                double dx = (player.getRandom().nextDouble() - 0.5) * r * 2.0;
+                double dz = (player.getRandom().nextDouble() - 0.5) * r * 2.0;
+                spawnPos = base.offset((int) dx, 0, (int) dz);
+
+                // Ground check
+                int attempts = 0;
+                while (!serverLevel.getBlockState(spawnPos).isAir() && attempts < 5
+                        && spawnPos.getY() < serverLevel.getMaxBuildHeight()) {
+                    spawnPos = spawnPos.above();
+                    attempts++;
+                }
+                while (serverLevel.getBlockState(spawnPos.below()).isAir() && attempts < 10
+                        && spawnPos.getY() > serverLevel.getMinBuildHeight()) {
+                    spawnPos = spawnPos.below();
+                    attempts++;
+                }
+            } else {
+                spawnPos = base;
+            }
         }
 
         // Apply Y offset
@@ -136,9 +159,10 @@ public class SummonEntityAction implements ActionRegistry.RaceAction {
             boolean useRaycast = GsonHelper.getAsBoolean(json, "use_raycast", false);
             boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
             ScalingValue rayRange = ScalingValue.fromJson(json, "ray_range", 10.0);
+            ScalingValue range = ScalingValue.fromJson(json, "range", 0.0);
             boolean tame = GsonHelper.getAsBoolean(json, "tame", false);
             ScalingValue offsetY = ScalingValue.fromJson(json, "offset_y", 0.0);
-            return new SummonEntityAction(entityId, useRaycast, useTarget, rayRange, tame, offsetY);
+            return new SummonEntityAction(entityId, useRaycast, useTarget, rayRange, range, tame, offsetY);
         });
     }
 }

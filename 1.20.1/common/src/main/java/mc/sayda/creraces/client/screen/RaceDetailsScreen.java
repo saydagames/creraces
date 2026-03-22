@@ -93,6 +93,7 @@ public class RaceDetailsScreen extends Screen {
                                                 Component.translatable("gui.creraces.button.select"),
                                                 btn -> {
                                                         mc.sayda.creraces.client.ClientAccess.isWaitingForRaceSelection = true;
+                                                        vars.setHasChosenRace(true); // Optimistic update
                                                         BoundaryHandler.sendSetRace(new SetRacePacket(race.id()));
                                                         if (this.minecraft != null && this.minecraft.player != null) {
                                                                 this.minecraft.player.closeContainer();

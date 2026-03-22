@@ -59,7 +59,9 @@ public class OnTickTrait extends PeriodicTrait {
     @Override
     protected void execute(Player player, IPlayerVariables vars) {
         for (ActionRegistry.RaceAction action : actions) {
-            action.execute(player, null, null, null);
+            if (!action.execute(player, null, null, null)) {
+                break;
+            }
         }
     }
 

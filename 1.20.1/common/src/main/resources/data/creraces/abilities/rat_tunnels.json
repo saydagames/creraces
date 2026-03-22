@@ -12,8 +12,8 @@
                 {
                     "type": "creraces:conditional",
                     "condition": {
-                        "type": "creraces:state_equals",
-                        "state": "creraces:rat_tunnels",
+                        "type": "creraces:state",
+                        "state": "rat_tunnels",
                         "value": 2
                     },
                     "if_true": [
@@ -31,7 +31,7 @@
                         },
                         {
                             "type": "creraces:set_state",
-                            "ability": "creraces:rat_tunnels",
+                            "state": "rat_tunnels",
                             "value": 0
                         },
                         {
@@ -45,8 +45,8 @@
                         {
                             "type": "creraces:conditional",
                             "condition": {
-                                "type": "creraces:state_equals",
-                                "state": "creraces:rat_tunnels",
+                                "type": "creraces:state",
+                                "state": "rat_tunnels",
                                 "value": 0
                             },
                             "if_true": [
@@ -72,7 +72,7 @@
                                 },
                                 {
                                     "type": "creraces:set_state",
-                                    "ability": "creraces:rat_tunnels",
+                                    "state": "rat_tunnels",
                                     "value": 1
                                 }
                             ],
@@ -99,7 +99,7 @@
                                 },
                                 {
                                     "type": "creraces:set_state",
-                                    "ability": "creraces:rat_tunnels",
+                                    "state": "rat_tunnels",
                                     "value": 2
                                 }
                             ]
@@ -113,5 +113,7 @@
                     ]
                 }
     ],
-    "wiki_page": "Ability:Rat_Tunnels"
+    "wiki_page": "state:Rat_Tunnels"
 }
+
+

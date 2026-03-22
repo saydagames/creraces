@@ -3,6 +3,7 @@ package mc.sayda.creraces.race;
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.capability.IPlayerVariables;
 import mc.sayda.creraces.network.BoundaryHandler;
+import mc.sayda.creraces.registry.ModAttributes;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 
@@ -33,12 +34,12 @@ public class ResourceTicker {
         vars.sakuyaTimeLeap();
 
         // 2. Resource Regeneration Logic (Every tick)
-        double maxMana = player.getAttributeValue(mc.sayda.creraces.registry.ModAttributes.MAX_MANA.get());
-        double maxEnergy = player.getAttributeValue(mc.sayda.creraces.registry.ModAttributes.MAX_ENERGY.get());
+        double maxMana = player.getAttributeValue(ModAttributes.resolve(ModAttributes.MAX_MANA));
+        double maxEnergy = player.getAttributeValue(ModAttributes.resolve(ModAttributes.MAX_ENERGY));
 
         // Regeneration (absolute per tick)
-        double manaRegen = player.getAttributeValue(mc.sayda.creraces.registry.ModAttributes.MANA_REGEN.get());
-        double energyRegen = player.getAttributeValue(mc.sayda.creraces.registry.ModAttributes.ENERGY_REGEN.get());
+        double manaRegen = player.getAttributeValue(ModAttributes.resolve(ModAttributes.MANA_REGEN));
+        double energyRegen = player.getAttributeValue(ModAttributes.resolve(ModAttributes.ENERGY_REGEN));
 
         if (vars.getMana() < maxMana) {
             vars.setMana(Math.min(maxMana, vars.getMana() + manaRegen));
@@ -47,15 +48,20 @@ public class ResourceTicker {
             vars.setEnergy(Math.min(maxEnergy, vars.getEnergy() + energyRegen));
         }
 
-        // Decay (absolute per tick)
-        double gritDecay = player.getAttributeValue(mc.sayda.creraces.registry.ModAttributes.GRIT_DECAY.get());
-        double rageDecay = player.getAttributeValue(mc.sayda.creraces.registry.ModAttributes.RAGE_DECAY.get());
+        // Decay (absolute per tick) - Apply universal grace period (20s)
+        long graceThreshold = mc.sayda.creraces.config.CreRacesConfig.RESOURCE_DECAY_GRACE_PERIOD.get();
+        boolean inGracePeriod = (player.level().getGameTime() - vars.getResourceTimer()) < graceThreshold;
 
-        if (vars.getGrit() > 0) {
-            vars.setGrit(Math.max(0, vars.getGrit() - gritDecay));
-        }
-        if (vars.getRage() > 0) {
-            vars.setRage(Math.max(0, vars.getRage() - rageDecay));
+        double gritDecay = player.getAttributeValue(ModAttributes.resolve(ModAttributes.GRIT_DECAY));
+        double rageDecay = player.getAttributeValue(ModAttributes.resolve(ModAttributes.RAGE_DECAY));
+
+        if (!inGracePeriod) {
+            if (vars.getGrit() > 0) {
+                vars.setGrit(Math.max(0, vars.getGrit() - gritDecay));
+            }
+            if (vars.getRage() > 0) {
+                vars.setRage(Math.max(0, vars.getRage() - rageDecay));
+            }
         }
 
         // Channeled Ability Logic
@@ -117,16 +123,17 @@ public class ResourceTicker {
         mc.sayda.creraces.engine.actions.TetherAction.tickTethers(player);
 
         if (!player.level().isClientSide()
-                && player.tickCount % 20 == 0
                 && player instanceof net.minecraft.server.level.ServerPlayer sp) {
 
-            // Attribute recheck always runs - confirmed necessary for keeping modifier
-            // state correct.
-            AttributeIncidents.eikiJudgment(sp);
+            if (player.tickCount % 20 == 0) {
+                // Attribute recheck always runs - confirmed necessary for keeping modifier
+                // state correct.
+                AttributeIncidents.eikiJudgment(sp);
 
-            // Delta sync only - resources excluded. Client predicts resources.
-            // Full sync only happens on join, respawn, cast, and combat resource events.
-            BoundaryHandler.resyncVariables(player, player, false);
+                // Delta sync only - resources excluded. Client predicts resources.
+                // Full sync only happens on join, respawn, cast, and combat resource events.
+                BoundaryHandler.resyncVariables(player, player, false);
+            }
         }
 
         // 4. Tick Race Traits (Client handles resource prediction, server handles state logic)

@@ -3,7 +3,7 @@
     "description": "ability.creraces.summon_undead.description",
     "type": "ACTIVE",
     "icon": "minecraft:textures/item/bone.png",
-    "cooldown": 800,
+    "cooldown": 420,
     "cost": 30,
     "race": [
         "creraces:undead"
@@ -29,5 +29,8 @@
             "pitch": 0.8
         }
     ],
-    "wiki_page": "Ability:Summon_Undead"
+    "wiki_page": "state:Summon_Undead"
 }
+
+
+

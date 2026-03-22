@@ -3,7 +3,7 @@
     "description": "ability.creraces.fox_form.description",
     "type": "ACTIVE",
     "icon": "creraces:textures/screens/kitsune_icon.png",
-    "cooldown": 200,
+    "cooldown": 60,
     "cost": 20,
     "persistent": false,
     "race": [
@@ -22,8 +22,14 @@
                     "entity_type": "twilight_lib:{color}_fox"
                 },
                 {
+                    "type": "creraces:bind",
+                    "slot": "a1",
+                    "ability": "creraces:dash",
+                    "save_to": "human_a1"
+                },
+                {
                     "type": "creraces:set_state",
-                    "ability": "creraces:fox_form",
+                    "state": "fox_form",
                     "value": 1.0
                 },
                 {
@@ -39,8 +45,13 @@
                     "entity_type": ""
                 },
                 {
+                    "type": "creraces:unbind",
+                    "slot": "a1",
+                    "restore_from": "human_a1"
+                },
+                {
                     "type": "creraces:set_state",
-                    "ability": "creraces:fox_form",
+                    "state": "fox_form",
                     "value": 0.0
                 },
                 {
@@ -52,5 +63,5 @@
             ]
         }
     ],
-    "wiki_page": "Ability:Fox_Form"
+    "wiki_page": "state:Fox_Form"
 }

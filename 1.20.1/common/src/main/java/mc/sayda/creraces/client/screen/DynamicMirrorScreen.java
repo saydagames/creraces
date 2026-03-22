@@ -10,7 +10,6 @@ import mc.sayda.creraces.network.SetCustomizationPacket;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.network.chat.Component;
 import org.joml.Quaternionf;
@@ -22,32 +21,67 @@ import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.Map;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import mc.sayda.creraces.world.inventory.MirrorMenu;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.client.Minecraft;
 
 /**
  * A dynamic screen for customizing racial cosmetics.
  */
-public class DynamicMirrorScreen extends Screen {
+public class DynamicMirrorScreen extends AbstractContainerScreen<MirrorMenu> {
     private static final ResourceLocation MIRROR_TEXTURE = new ResourceLocation("creraces",
             "textures/screens/mirror.png");
     private final Map<String, String> originalCustomizations = new HashMap<>();
     private final Map<String, String> tempCustomizations = new HashMap<>();
-    private Race race;
+    private final Player player;
+    private Race race; // Changed to non-final as it's set in setupRaceWidgets
     private float previewRotation = 0;
     private boolean saved = false;
+    private boolean initializedRaceWidgets = false;
 
-    public DynamicMirrorScreen() {
-        super(Component.translatable("creraces.screen.mirror"));
+    public DynamicMirrorScreen(MirrorMenu menu, Inventory inventory, Component title) {
+        super(menu, inventory, title);
+        this.player = inventory.player;
+        // this.race = DataUtils.getVariables(player).map(IPlayerVariables::getRace).orElse(null); // Initialized in setupRaceWidgets
+        this.imageWidth = 256;
+        this.imageHeight = 256;
     }
 
     @Override
-    @SuppressWarnings("null")
     protected void init() {
-        if (minecraft == null || minecraft.player == null)
+        super.init();
+        if (this.minecraft == null || this.minecraft.player == null)
+            return;
+
+        this.initializedRaceWidgets = false;
+        setupRaceWidgets();
+
+        // Rotation Buttons - static
+        int mirrorCenterX = this.width / 2 + 60;
+        int arrowY = (this.height / 2 - 95) + 160;
+
+        addRenderableWidget(Button.builder(Component.literal("<-"), b -> previewRotation -= 90)
+                .bounds(mirrorCenterX - 45, arrowY, 20, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("->"), b -> previewRotation += 90)
+                .bounds(mirrorCenterX + 25, arrowY, 20, 20).build());
+
+        int controlsY = this.height - 30;
+        addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> save())
+                .bounds(this.width / 2 - 100, controlsY, 90, 20).build());
+        addRenderableWidget(Button.builder(Component.translatable("gui.cancel"), b -> onClose())
+                .bounds(this.width / 2 + 10, controlsY, 90, 20).build());
+    }
+
+    private void setupRaceWidgets() {
+        if (this.initializedRaceWidgets || minecraft == null || minecraft.player == null)
             return;
 
         DataUtils.getVariables(minecraft.player).ifPresent(vars -> {
             this.race = RaceRegistry.get(vars.getRace());
-            if (this.race != null && this.race.customization() != null) {
+            if (this.race != null && this.race.customization() != null && !this.race.id().equals(RaceRegistry.NONE)) {
+                this.initializedRaceWidgets = true;
+                
                 // Populate original state ONLY if empty (avoids revert on window resize)
                 if (this.originalCustomizations.isEmpty()) {
                     this.originalCustomizations.putAll(vars.getCustomizations());
@@ -100,7 +134,7 @@ public class DynamicMirrorScreen extends Screen {
                                         Component.empty(), (button, value) -> {
                                             tempCustomizations.put(cust.id(), value);
                                             vars.setCustomization(cust.id(), value);
-                                            updatePreviewAddons(minecraft.player, vars);
+                                            updatePreviewAddons(this.minecraft.player, vars);
                                         }));
                     }
                     yOffset += 40; // Spacing for title + widget
@@ -109,21 +143,6 @@ public class DynamicMirrorScreen extends Screen {
                 updatePreviewAddons(minecraft.player, vars);
             }
         });
-
-        // Rotation Buttons
-        int mirrorCenterX = this.width / 2 + 60;
-        int arrowY = (this.height / 2 - 95) + 160;
-
-        addRenderableWidget(Button.builder(Component.literal("<-"), b -> previewRotation -= 90)
-                .bounds(mirrorCenterX - 45, arrowY, 20, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("->"), b -> previewRotation += 90)
-                .bounds(mirrorCenterX + 25, arrowY, 20, 20).build());
-
-        int controlsY = this.height - 30;
-        addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> save())
-                .bounds(this.width / 2 - 100, controlsY, 90, 20).build());
-        addRenderableWidget(Button.builder(Component.translatable("gui.cancel"), b -> onClose())
-                .bounds(this.width / 2 + 10, controlsY, 90, 20).build());
     }
 
     private void save() {
@@ -149,8 +168,22 @@ public class DynamicMirrorScreen extends Screen {
     }
 
     @Override
+    protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
+        // No default background needed, we draw ours in render()
+    }
+
+    @Override
+    protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+        // No labels needed
+    }
+
+    @Override
     @SuppressWarnings("null")
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        if (!this.initializedRaceWidgets) {
+            setupRaceWidgets();
+        }
+
         this.renderBackground(graphics);
 
         int mirrorWidth = 128;

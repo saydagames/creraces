@@ -3,15 +3,20 @@
     "description": "ability.creraces.slash_n_dash.description",
     "type": "ACTIVE",
     "icon": "minecraft:iron_sword",
-    "cooldown": 100,
-    "cost": 15,
+    "cost": 100,
     "race": [
         "creraces:velox"
     ],
     "actions": [
         {
             "type": "creraces:dash",
-            "power": 2
+            "power": 2,
+            "y_multiplier": 1.0,
+            "y_boost": 0.2
+        },
+        {
+            "type": "creraces:delay",
+            "ticks": 10
         },
         {
             "type": "creraces:aoe",
@@ -41,8 +46,8 @@
         {
             "type": "creraces:spawn_particles",
             "particle": "minecraft:witch",
-            "count": 5
+            "count": 10
         }
     ],
-    "wiki_page": "Ability:Slash_N_Dash"
+    "wiki_page": "state:Slash_N_Dash"
 }

@@ -3,7 +3,7 @@
     "description": "ability.creraces.unstoppable_charge.description",
     "type": "ACTIVE",
     "icon": "minecraft:textures/item/iron_chestplate.png",
-    "cooldown": 120,
+    "cooldown": 420,
     "cost": 20,
     "race": [
         "creraces:dwarf"
@@ -31,5 +31,7 @@
             "pitch": 0.7
         }
     ],
-    "wiki_page": "Ability:Unstoppable_Charge"
+    "wiki_page": "state:Unstoppable_Charge"
 }
+
+

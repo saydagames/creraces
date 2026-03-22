@@ -82,4 +82,13 @@ public abstract class EntityMixin implements IPersistentDataAccessor {
             });
         }
     }
+
+    @Inject(method = "isInvisible", at = @At("HEAD"), cancellable = true)
+    private void creraces$trueInvisibilityFlag(CallbackInfoReturnable<Boolean> cir) {
+        if ((Object) this instanceof net.minecraft.world.entity.LivingEntity living) {
+            if (mc.sayda.creraces.registry.ModMobEffects.isInvisible(living)) {
+                cir.setReturnValue(true);
+            }
+        }
+    }
 }

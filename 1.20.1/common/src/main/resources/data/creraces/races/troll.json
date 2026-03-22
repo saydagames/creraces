@@ -8,6 +8,10 @@
     "creraces:resource_type": "RAGE",
     "creraces:max_resource": 100,
     "creraces:difficulty": 1,
+    "creraces:allowed_food_types": [
+        "meat",
+        "#minecraft:fishes"
+    ],
     "base_stats": [
         {
             "id": "troll_health",
@@ -103,14 +107,15 @@
                         "type": "creraces:attack_charged"
                     },
                     {
-                        "type": "creraces:target_has_effect",
-                        "effect": "creraces:maul"
+                        "type": "creraces:has_effect",
+                        "effect": "creraces:maul",
+                        "use_target": true
                     },
                     {
                         "type": "creraces:not",
                         "condition": {
                             "type": "creraces:cooldown",
-                            "ability": "maul_passive"
+                            "state": "maul_passive"
                         }
                     }
                 ]
@@ -140,7 +145,7 @@
                 },
                 {
                     "type": "creraces:set_cooldown",
-                    "ability": "maul_passive",
+                    "state": "maul_passive",
                     "value": 240
                 },
                 {
@@ -161,8 +166,9 @@
                     {
                         "type": "creraces:not",
                         "condition": {
-                            "type": "creraces:target_has_effect",
-                            "effect": "creraces:maul"
+                            "type": "creraces:has_effect",
+                            "effect": "creraces:maul",
+                            "use_target": true
                         }
                     }
                 ]
@@ -189,8 +195,8 @@
                         "type": "creraces:attack_charged"
                     },
                     {
-                        "type": "creraces:ability_state",
-                        "ability": "creraces:adrenaline_rush",
+                        "type": "creraces:state",
+                        "state": "adrenaline_rush",
                         "value": 1.0
                     }
                 ]
@@ -206,7 +212,7 @@
                 },
                 {
                     "type": "creraces:set_state",
-                    "ability": "creraces:adrenaline_rush",
+                    "state": "adrenaline_rush",
                     "value": 0
                 }
             ]
@@ -218,5 +224,12 @@
     ],
     "creraces:portrait": "creraces:textures/screens/troll_portrait.png",
     "creraces:name_texture": "creraces:textures/screens/troll_text.png",
-    "creraces:wiki_page": "Troll"
+    "creraces:wiki_page": "Troll",
+    "creraces:splash_x": -2,
+    "creraces:splash_y": -14,
+    "creraces:splash_w": 200,
+    "creraces:splash_h": 200,
+    "creraces:name_tex_x": 54,
+    "creraces:name_tex_w": 68,
+    "creraces:name_tex_h": 21
 }

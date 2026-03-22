@@ -44,7 +44,9 @@ public class OnLandTrait implements TraitRegistry.RaceTrait {
                     CreRaces.LOGGER.info("OnLandTrait: Firing {} actions for player {}", actions.size(),
                             player.getName().getString());
                     for (ActionRegistry.RaceAction action : actions) {
-                        action.execute(player, null, null, pos);
+                        if (!action.execute(player, null, null, pos)) {
+                            break;
+                        }
                     }
                 }
             }

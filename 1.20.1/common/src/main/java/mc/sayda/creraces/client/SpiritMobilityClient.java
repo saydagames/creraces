@@ -30,10 +30,13 @@ public class SpiritMobilityClient {
                 } else if (maxAirJumps > 0 && isJumpKeyDown && !wasJumpKeyDown && airJumps < maxAirJumps
                         && !wasOnGround) {
                     // Manual upward velocity for air jump
-                    Vec3 vel = player.getDeltaMovement();
+                    net.minecraft.world.phys.Vec3 vel = player.getDeltaMovement();
                     player.setDeltaMovement(vel.x, 0.42, vel.z);
 
-                    // Client-side feedback
+                    // Sound and particle syncing
+                    mc.sayda.creraces.network.BoundaryHandler.sendDoubleJump();
+
+                    // Client-side feedback (instant)
                     player.playSound(net.minecraft.sounds.SoundEvents.ENDER_DRAGON_FLAP, 0.5f, 1.5f);
 
                     // Add cloud particles for 'completed' feel

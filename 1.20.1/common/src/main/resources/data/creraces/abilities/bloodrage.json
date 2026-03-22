@@ -3,7 +3,7 @@
     "description": "ability.creraces.bloodrage.description",
     "type": "ACTIVE",
     "icon": "minecraft:textures/item/diamond_sword.png",
-    "cooldown": 600,
+    "cooldown": 1800,
     "cost": 30,
     "race": [
         "creraces:orc"
@@ -30,5 +30,7 @@
             "pitch": 0.8
         }
     ],
-    "wiki_page": "Ability:Bloodrage"
+    "wiki_page": "state:Bloodrage"
 }
+
+

@@ -3,7 +3,7 @@
     "description": "ability.creraces.fruitful_sacrifice.description",
     "type": "ACTIVE",
     "icon": "minecraft:textures/item/ghast_tear.png",
-    "cooldown": 200,
+    "cooldown": 420,
     "cost": 15,
     "race": [
         "creraces:undead"
@@ -90,5 +90,7 @@
             ]
         }
     ],
-    "wiki_page": "Ability:Fruitful_Sacrifice"
+    "wiki_page": "state:Fruitful_Sacrifice"
 }
+
+

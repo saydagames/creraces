@@ -46,6 +46,7 @@ public class TornadoEntity extends TamableAnimal {
         this.xpReward = 0;
         this.setNoAi(false);
         this.moveControl = new FlyingMoveControl(this, 10, true);
+        this.setInvulnerable(true);
     }
 
     @Override
@@ -127,9 +128,26 @@ public class TornadoEntity extends TamableAnimal {
         net.minecraft.resources.ResourceLocation dizzinessId = new net.minecraft.resources.ResourceLocation("creraces",
                 "dizziness");
 
-        List<LivingEntity> targets = this.level().getEntitiesOfClass(LivingEntity.class,
-                new AABB(center, center).inflate(radius),
-                entity -> entity != this && (owner == null || RaceTeamManager.canHurt(entity, owner))
+        AABB area = new AABB(center, center).inflate(radius);
+
+        // Reflect Projectiles
+        List<net.minecraft.world.entity.projectile.Projectile> projectiles = this.level().getEntitiesOfClass(
+                net.minecraft.world.entity.projectile.Projectile.class, area,
+                p -> {
+                    if (p.getDeltaMovement().lengthSqr() <= 0)
+                        return false;
+                    net.minecraft.world.entity.Entity pOwner = p.getOwner();
+                    return owner == null || (pOwner instanceof LivingEntity le && RaceTeamManager.canHurt(le, owner))
+                            || pOwner == null;
+                });
+        for (net.minecraft.world.entity.projectile.Projectile p : projectiles) {
+            Vec3 away = p.position().subtract(center).normalize().scale(0.5);
+            p.setDeltaMovement(p.getDeltaMovement().add(away));
+            p.hasImpulse = true;
+        }
+
+        List<LivingEntity> targets = level().getEntitiesOfClass(LivingEntity.class, getBoundingBox().inflate(radius),
+                entity -> entity != this && entity != owner && (owner == null || RaceTeamManager.canHurt(entity, owner))
                         && !mc.sayda.creraces.util.RaceUtils.isImmuneToEffect(entity, dizzinessId));
 
         for (LivingEntity target : targets) {
@@ -159,6 +177,16 @@ public class TornadoEntity extends TamableAnimal {
 
     @Override
     public boolean isPushable() {
+        return false;
+    }
+
+    @Override
+    public boolean canBeCollidedWith() {
+        return false;
+    }
+
+    @Override
+    public boolean canCollideWith(net.minecraft.world.entity.Entity entity) {
         return false;
     }
 

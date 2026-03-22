@@ -29,7 +29,9 @@ public class OnAbilityUseTrait implements TraitRegistry.RaceTrait {
     public void onAbilityUse(Player player, Ability ability) {
         if (condition == null || condition.evaluate(player, null, null, null)) {
             for (ActionRegistry.RaceAction action : actions) {
-                action.execute(player, null, null, null);
+                if (!action.execute(player, null, null, null)) {
+                    break;
+                }
             }
         }
     }

@@ -1,141 +1,148 @@
 {
-    "creraces:name": "race.creraces.lycan.name",
-    "creraces:index": 10.0,
-    "creraces:description": "race.creraces.lycan.description",
-    "creraces:icon": "creraces:textures/screens/lycanthrope_icon.png",
-    "creraces:splash": "creraces:textures/screens/lycanthrope_splash.png",
-    "creraces:portrait": "creraces:textures/screens/lycanthrope_portrait.png",
-    "creraces:name_texture": "creraces:textures/screens/lycanthrope_text.png",
-    "creraces:base_ap": 10,
-    "creraces:base_ad": 8,
-    "creraces:base_ah": 15,
-    "creraces:base_cr": 10,
-    "creraces:resource_type": "ENERGY",
-    "creraces:max_resource": 100,
-    "creraces:difficulty": 2,
-    "creraces:stacks_affect_resource": true,
-    "creraces:night_vision": true,
-    "creraces:regeneration_multiplier": 1.2,
-    "creraces:starting_abilities": [
-        "creraces:wild_hunt",
-        "creraces:trophy_hunter"
-    ],
-    "lunar_cycle": [
-        {
-            "id": "lunar_speed",
-            "type": "creraces:attribute_modifier",
-            "attribute": "minecraft:generic.movement_speed",
-            "value": 0.02,
-            "operation": "addition",
-            "condition": {
-                "type": "creraces:time",
-                "min": 13000,
-                "max": 23000
-            }
-        },
-        {
-            "type": "creraces:on_tick",
-            "interval": 100,
-            "condition": {
-                "type": "not",
-                "condition": {
-                    "type": "creraces:in_sunlight"
-                }
-            },
-            "actions": [
-                {
-                    "type": "creraces:apply_effect",
-                    "effect": "minecraft:strength",
-                    "duration": 200,
-                    "amplifier": {
-                        "base": 0,
-                        "scales_with": "var:stacks",
-                        "factor": 0.5
-                    }
-                }
-            ]
-        }
-    ],
-    "hunt_mechanics": [
-        {
-            "type": "creraces:on_hit",
-            "condition": {
-                "type": "creraces:and",
-                "conditions": [
-                    {
-                        "type": "creraces:attack_charged"
-                    },
-                    {
-                        "type": "creraces:ability_state",
-                        "ability": "creraces:wild_hunt",
-                        "value": 1.0
-                    }
-                ]
-            },
-            "actions": [
-                {
-                    "type": "creraces:damage",
-                    "amount": {
-                        "base": 2.0,
-                        "scales_with": "var:stacks",
-                        "factor": 0.5
-                    },
-                    "damage_type": "minecraft:player_attack"
-                },
-                {
-                    "type": "creraces:heal",
-                    "amount": {
-                        "base": 0.5,
-                        "scales_with": "var:stacks",
-                        "factor": 0.1
-                    }
-                }
-            ]
-        },
-        {
-            "type": "creraces:on_kill",
-            "condition": {
-                "type": "creraces:has_effect",
-                "effect": "creraces:bleeding"
-            },
-            "actions": [
-                {
-                    "type": "creraces:modify_resource",
-                    "resource": "stacks",
-                    "operation": "add",
-                    "value": 2.0
-                }
-            ]
-        },
-        {
-            "type": "creraces:on_kill",
-            "condition": {
-                "type": "not",
-                "condition": {
-                    "type": "creraces:has_effect",
-                    "effect": "creraces:bleeding"
-                }
-            },
-            "actions": [
-                {
-                    "type": "creraces:modify_resource",
-                    "resource": "stacks",
-                    "operation": "add",
-                    "value": 1.0
-                }
-            ]
-        },
-        {
-            "type": "creraces:on_death",
-            "actions": [
-                {
-                    "type": "creraces:modify_resource",
-                    "resource": "stacks",
-                    "operation": "multiply",
-                    "value": 0.5
-                }
-            ]
-        }
-    ],
-    "creraces:wiki_page": "Lycanthrope"
+    "creraces:name":  "race.creraces.lycan.name",
+    "creraces:index":  10.0,
+    "creraces:description":  "race.creraces.lycan.description",
+    "creraces:icon":  "creraces:textures/screens/lycanthrope_icon.png",
+    "creraces:splash":  "creraces:textures/screens/lycanthrope_splash.png",
+    "creraces:portrait":  "creraces:textures/screens/lycanthrope_portrait.png",
+    "creraces:name_texture":  "creraces:textures/screens/lycanthrope_text.png",
+    "creraces:base_ap":  10,
+    "creraces:base_ad":  8,
+    "creraces:base_ah":  15,
+    "creraces:base_cr":  10,
+    "creraces:resource_type":  "ENERGY",
+    "creraces:max_resource":  100,
+    "creraces:difficulty":  2,
+    "creraces:stacks_affect_resource":  true,
+    "creraces:night_vision":  true,
+    "creraces:regeneration_multiplier":  1.2,
+    "creraces:starting_abilities":  [
+                                        "creraces:wild_hunt",
+                                        "creraces:trophy_hunter"
+                                    ],
+    "lunar_cycle":  [
+                        {
+                            "id":  "lunar_speed",
+                            "type":  "creraces:attribute_modifier",
+                            "attribute":  "minecraft:generic.movement_speed",
+                            "value":  0.02,
+                            "operation":  "addition",
+                            "condition":  {
+                                              "type":  "creraces:time",
+                                              "min":  13000,
+                                              "max":  23000
+                                          }
+                        },
+                        {
+                            "type":  "creraces:on_tick",
+                            "interval":  100,
+                            "condition":  {
+                                              "type":  "not",
+                                              "condition":  {
+                                                                "type":  "creraces:in_sunlight"
+                                                            }
+                                          },
+                            "actions":  [
+                                            {
+                                                "type":  "creraces:apply_effect",
+                                                "effect":  "minecraft:strength",
+                                                "duration":  200,
+                                                "amplifier":  {
+                                                                  "base":  0,
+                                                                  "scales_with":  "var:stacks",
+                                                                  "factor":  0.5
+                                                              }
+                                            }
+                                        ]
+                        }
+                    ],
+    "hunt_mechanics":  [
+                           {
+                               "type":  "creraces:on_hit",
+                               "condition":  {
+                                                 "type":  "creraces:and",
+                                                 "conditions":  [
+                                                                    {
+                                                                        "type":  "creraces:attack_charged"
+                                                                    },
+                                                                    {
+                                                                        "type":  "creraces:state",
+                                                                        "state":  "wild_hunt",
+                                                                        "value":  1.0
+                                                                    }
+                                                                ]
+                                             },
+                               "actions":  [
+                                               {
+                                                   "type":  "creraces:damage",
+                                                   "amount":  {
+                                                                  "base":  2.0,
+                                                                  "scales_with":  "var:stacks",
+                                                                  "factor":  0.5
+                                                              },
+                                                   "damage_type":  "minecraft:player_attack"
+                                               },
+                                               {
+                                                   "type":  "creraces:heal",
+                                                   "amount":  {
+                                                                  "base":  0.5,
+                                                                  "scales_with":  "var:stacks",
+                                                                  "factor":  0.1
+                                                              }
+                                               }
+                                           ]
+                           },
+                           {
+                               "type":  "creraces:on_kill",
+                               "condition":  {
+                                                 "type":  "creraces:has_effect",
+                                                 "effect":  "creraces:bleeding"
+                                             },
+                               "actions":  [
+                                               {
+                                                   "type":  "creraces:modify_resource",
+                                                   "resource":  "stacks",
+                                                   "operation":  "add",
+                                                   "value":  2.0
+                                               }
+                                           ]
+                           },
+                           {
+                               "type":  "creraces:on_kill",
+                               "condition":  {
+                                                 "type":  "not",
+                                                 "condition":  {
+                                                                   "type":  "creraces:has_effect",
+                                                                   "effect":  "creraces:bleeding"
+                                                               }
+                                             },
+                               "actions":  [
+                                               {
+                                                   "type":  "creraces:modify_resource",
+                                                   "resource":  "stacks",
+                                                   "operation":  "add",
+                                                   "value":  1.0
+                                               }
+                                           ]
+                           },
+                           {
+                               "type":  "creraces:on_death",
+                               "actions":  [
+                                               {
+                                                   "type":  "creraces:modify_resource",
+                                                   "resource":  "stacks",
+                                                   "operation":  "multiply",
+                                                   "value":  0.5
+                                               }
+                                           ]
+                           }
+                       ],
+    "creraces:wiki_page":  "Lycanthrope",
+    "creraces:splash_x":  -17,
+    "creraces:splash_y":  -3,
+    "creraces:splash_w":  200,
+    "creraces:splash_h":  180,
+    "creraces:name_tex_x":  26,
+    "creraces:name_tex_w":  119,
+    "creraces:name_tex_h":  21
 }

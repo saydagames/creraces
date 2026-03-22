@@ -7,13 +7,20 @@ public class WikiUtils {
     public static String getAbilityUrl(Component name) {
         String nameStr = name.getString().replace(" ", "_");
         String path = CreRacesConfig.WIKI_PAGE_PATH.get();
+        String namespace = CreRacesConfig.WIKI_ABILITY_NAMESPACE.get();
+
+        // Ensure proper capitalization for wiki links
+        if (!nameStr.isEmpty() && Character.isLowerCase(nameStr.charAt(0))) {
+            nameStr = Character.toUpperCase(nameStr.charAt(0)) + nameStr.substring(1);
+        }
+
+        String baseUrl = getBaseWikiUrl();
+        if (!baseUrl.endsWith("/"))
+            baseUrl += "/";
         if (!path.endsWith("/"))
             path += "/";
 
-        String namespace = CreRacesConfig.WIKI_ABILITY_NAMESPACE.get();
-        // Ability: namespace might already have a colon, but WikiUtils previously used abilities/
-        // Let's ensure it matches the new wiki.gg structure.
-        return getBaseWikiUrl() + path + namespace + nameStr;
+        return baseUrl + path + namespace + ":" + nameStr;
     }
 
     public static String getRaceUrl(Component name) {

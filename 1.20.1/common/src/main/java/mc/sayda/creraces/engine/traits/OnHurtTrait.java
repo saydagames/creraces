@@ -28,9 +28,11 @@ public class OnHurtTrait implements TraitRegistry.RaceTrait {
         if (condition == null || condition.evaluate(player,
                 source.getEntity() instanceof net.minecraft.world.entity.LivingEntity le ? le : null, null, null)) {
             for (ActionRegistry.RaceAction action : actions) {
-                action.execute(player,
+                if (!action.execute(player,
                         source.getEntity() instanceof net.minecraft.world.entity.LivingEntity le ? le : null, null,
-                        null);
+                        null)) {
+                    break;
+                }
             }
         }
     }

@@ -19,7 +19,7 @@
         },
         {
             "type": "creraces:set_state",
-            "ability": "creraces:adrenaline_rush",
+            "state": "adrenaline_rush",
             "value": 1
         },
         {
@@ -34,5 +34,7 @@
             "count": 8
         }
     ],
-    "wiki_page": "Ability:Adrenaline_Rush"
+    "wiki_page": "state:Adrenaline_Rush"
 }
+
+

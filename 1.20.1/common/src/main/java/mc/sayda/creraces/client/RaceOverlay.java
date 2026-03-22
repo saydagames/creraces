@@ -108,12 +108,17 @@ public class RaceOverlay {
                 renderSteppedBar(graphics, resourceTex, basePosX + 1, basePosY + 36, currentRes, maxRes, 3);
             }
 
-            // Modern Ability Slots (Restored to the right side)
+            // Modern Ability Slots (Dynamically rendered based on keybinds)
             int slotX = basePosX + 40;
             int slotY = basePosY + 4;
 
-            renderAbilitySlot(graphics, vars, AbilitySlot.A1, slotX, slotY);
-            renderAbilitySlot(graphics, vars, AbilitySlot.A2, slotX + 25, slotY);
+            for (AbilitySlot slot : AbilitySlot.values()) {
+                net.minecraft.client.KeyMapping keyMapping = getKeyMapping(slot);
+                if (keyMapping != null && !keyMapping.isUnbound()) {
+                    renderAbilitySlot(graphics, vars, slot, slotX, slotY);
+                    slotX += 25;
+                }
+            }
 
             RenderSystem.depthMask(true);
             RenderSystem.enableDepthTest();
@@ -125,8 +130,8 @@ public class RaceOverlay {
             double current, double max, int frameHeight) {
         if (max <= 0)
             return;
-        int step = (int) (Math.max(0, max - current) * 31 / max);
-        step = Math.min(31, step);
+        int step = (int) (Math.max(0, max - current) * 30 / max);
+        step = Math.min(30, step);
         graphics.blit(texture, x, y, 0, step * frameHeight, 30, frameHeight, 30, 31 * frameHeight);
     }
 
@@ -209,10 +214,34 @@ public class RaceOverlay {
             case GRIT:
                 currentRes = vars.getGrit();
                 break;
+            case SOULS:
+                currentRes = vars.getSouls();
+                break;
+            case STACKS:
+                currentRes = vars.getStacks();
+                break;
+            case NONE:
             default:
                 return true;
         }
 
         return currentRes >= ability.cost();
+    }
+
+    private static net.minecraft.client.KeyMapping getKeyMapping(AbilitySlot slot) {
+        switch (slot) {
+            case A1:
+                return ModKeyMappings.ABILITY_A1;
+            case A2:
+                return ModKeyMappings.ABILITY_A2;
+            case A3:
+                return ModKeyMappings.ABILITY_A3;
+            case A4:
+                return ModKeyMappings.ABILITY_A4;
+            case A5:
+                return ModKeyMappings.ABILITY_A5;
+            default:
+                return null;
+        }
     }
 }

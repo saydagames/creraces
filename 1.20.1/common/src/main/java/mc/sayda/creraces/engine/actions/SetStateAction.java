@@ -125,51 +125,43 @@ public class SetStateAction implements ActionRegistry.RaceAction {
 
     public static void register() {
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "set_state"), json -> {
-            String state = GsonHelper.getAsString(json, "state", "a1");
-            mc.sayda.creraces.engine.ScalingValue value = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "value",
-                    0.0);
-            @javax.annotation.Nullable
-            String ability = GsonHelper.getNullableString(json, "ability", null);
+            String stateStr = GsonHelper.getAsString(json, "state", "slot");
+            mc.sayda.creraces.engine.ScalingValue value = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "value", 0.0);
             String operation = GsonHelper.getAsString(json, "operation", "set");
             String mode = GsonHelper.getAsString(json, "mode", "STATIC");
-            mc.sayda.creraces.engine.ScalingValue ox = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "offset_x",
-                    0.0);
-            mc.sayda.creraces.engine.ScalingValue oy = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "offset_y",
-                    0.0);
-            mc.sayda.creraces.engine.ScalingValue oz = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "offset_z",
-                    0.0);
+            mc.sayda.creraces.engine.ScalingValue ox = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "offset_x", 0.0);
+            mc.sayda.creraces.engine.ScalingValue oy = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "offset_y", 0.0);
+            mc.sayda.creraces.engine.ScalingValue oz = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "offset_z", 0.0);
 
-            ResourceLocation abilityLoc = null;
-            if (ability != null) {
-                String sub = ability.startsWith("ability:") ? ability.substring(8)
-                        : (ability.startsWith("state:") ? ability.substring(6) : ability);
-                abilityLoc = ResourceLocation.tryParse(sub);
+            ResourceLocation stateLoc = null;
+            if (!"slot".equalsIgnoreCase(stateStr)) {
+                String sub = stateStr.startsWith("state:") ? stateStr.substring(6) : stateStr;
+                if (!sub.contains(":")) {
+                    sub = "creraces:" + sub;
+                }
+                stateLoc = ResourceLocation.tryParse(sub);
             }
-            return new SetStateAction(state, value, abilityLoc, operation, mode, ox, oy, oz);
+            return new SetStateAction(stateStr, value, stateLoc, operation, mode, ox, oy, oz);
         });
         // Alias for legacy modify_state
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "modify_state"), json -> {
-            String state = GsonHelper.getAsString(json, "state", "a1");
-            mc.sayda.creraces.engine.ScalingValue value = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "value",
-                    0.0);
-            @javax.annotation.Nullable
-            String ability = GsonHelper.getNullableString(json, "ability", null);
+            String stateStr = GsonHelper.getAsString(json, "state", "slot");
+            mc.sayda.creraces.engine.ScalingValue value = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "value", 0.0);
             String operation = GsonHelper.getAsString(json, "operation", "add");
             String mode = GsonHelper.getAsString(json, "mode", "STATIC");
-            mc.sayda.creraces.engine.ScalingValue ox = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "offset_x",
-                    0.0);
-            mc.sayda.creraces.engine.ScalingValue oy = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "offset_y",
-                    0.0);
-            mc.sayda.creraces.engine.ScalingValue oz = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "offset_z",
-                    0.0);
+            mc.sayda.creraces.engine.ScalingValue ox = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "offset_x", 0.0);
+            mc.sayda.creraces.engine.ScalingValue oy = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "offset_y", 0.0);
+            mc.sayda.creraces.engine.ScalingValue oz = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "offset_z", 0.0);
 
-            ResourceLocation abilityLoc = null;
-            if (ability != null) {
-                String sub = ability.startsWith("ability:") ? ability.substring(8)
-                        : (ability.startsWith("state:") ? ability.substring(6) : ability);
-                abilityLoc = ResourceLocation.tryParse(sub);
+            ResourceLocation stateLoc = null;
+            if (!"slot".equalsIgnoreCase(stateStr)) {
+                String sub = stateStr.startsWith("state:") ? stateStr.substring(6) : stateStr;
+                if (!sub.contains(":")) {
+                    sub = "creraces:" + sub;
+                }
+                stateLoc = ResourceLocation.tryParse(sub);
             }
-            return new SetStateAction(state, value, abilityLoc, operation, mode, ox, oy, oz);
+            return new SetStateAction(stateStr, value, stateLoc, operation, mode, ox, oy, oz);
         });
     }
 }

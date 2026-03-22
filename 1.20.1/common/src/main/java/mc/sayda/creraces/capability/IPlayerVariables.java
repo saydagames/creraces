@@ -209,6 +209,10 @@ public interface IPlayerVariables extends ISerializableData {
     Map<ResourceLocation, Integer> getTraitTimers();
 
     void setTraitTimer(ResourceLocation id, int ticks);
+    
+    long getResourceTimer();
+
+    void setResourceTimer(long ticks);
 
     void resetOnDeath();
 

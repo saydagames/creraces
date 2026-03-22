@@ -25,7 +25,9 @@ public class OnRespawnTrait implements TraitRegistry.RaceTrait {
     public void onRespawn(Player player) {
         if (condition == null || condition.evaluate(player, null, null, null)) {
             for (ActionRegistry.RaceAction action : actions) {
-                action.execute(player, null, null, null);
+                if (!action.execute(player, null, null, null)) {
+                    break;
+                }
             }
         }
     }

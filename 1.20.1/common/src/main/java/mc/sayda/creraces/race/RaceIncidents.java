@@ -9,32 +9,6 @@ public class RaceIncidents {
     public static void transformPlayer(ServerPlayer player, ResourceLocation raceId) {
         if (raceId.equals(RaceRegistry.NONE)) {
             DataUtils.getVariables(player).ifPresent(vars -> {
-                // If the player has a pocket, kick all people currently in it before resetting
-                if (vars.hasPocket() && player.getServer() != null) {
-                    ResourceLocation pocketDimLoc = new ResourceLocation("creraces:pocket");
-                    for (net.minecraft.server.level.ServerLevel level : player.getServer().getAllLevels()) {
-                        if (level.dimension().location().equals(pocketDimLoc)) {
-                            for (net.minecraft.server.level.ServerPlayer p : level.players()) {
-                                DataUtils.getVariables(p).ifPresent(pVars -> {
-                                    // A guest is in the pocket if their current coordinates are within the owner's
-                                    // pocket range
-                                    // Pockets are spaced 1000 blocks apart, so we check a 500-block radius.
-                                    double dx = p.getX() - vars.getPocketX();
-                                    double dz = p.getZ() - vars.getPocketZ();
-                                    if (Math.abs(dx) < 500 && Math.abs(dz) < 500) {
-                                        mc.sayda.creraces.engine.actions.PocketEntryAction.teleport(p,
-                                                pVars.getReturnDim(), pVars.getReturnX(), pVars.getReturnY(),
-                                                pVars.getReturnZ());
-                                        p.displayClientMessage(net.minecraft.network.chat.Component.literal(
-                                                "The pocket's owner has undergone a spiritual reset. You have been returned to your original location."),
-                                                true);
-                                    }
-                                });
-                            }
-                        }
-                    }
-                }
-
                 vars.fantasySealReset();
                 // Clear cosmetic addons when resetting race
                 CosmeticIncidents.clearAllRacialAddons(player);
@@ -50,6 +24,13 @@ public class RaceIncidents {
 
                 // Reset Scale
                 applyScale(player, RaceScale.DEFAULT);
+
+                // Reset Flight flags (if not in creative/spectator)
+                if (!player.isCreative() && !player.isSpectator()) {
+                    player.getAbilities().mayfly = false;
+                    player.getAbilities().flying = false;
+                    player.onUpdateAbilities();
+                }
 
                 BoundaryHandler.resyncVariables(player, player);
             });
@@ -117,13 +98,22 @@ public class RaceIncidents {
                 }
             }
 
+            // Grant Starting Items (Server side only)
+            if (race.startingItems() != null && !player.level().isClientSide()) {
+                for (ResourceLocation itemId : race.startingItems()) {
+                    if (itemId == null) continue;
+                    net.minecraft.world.item.Item item = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(itemId);
+                    if (item != null && item != net.minecraft.world.item.Items.AIR) {
+                        player.getInventory().add(new net.minecraft.world.item.ItemStack(item));
+                    }
+                }
+            }
+
             // Final Sync - vars.sync handles both local and tracking players
             vars.sync(player);
 
-            // If the race has customizations, open the Mirror Screen
-            if (race.customization() != null && !race.customization().isEmpty()) {
-                BoundaryHandler.sendOpenMirror(player);
-            }
+            // Trigger respawn traits on initial selection too
+            race.traits().forEach(trait -> trait.onRespawn(player));
         });
     }
 
@@ -152,6 +142,14 @@ public class RaceIncidents {
                 CosmeticIncidents.applyCustomizations(player, vars.getCustomizations(), race);
             } else {
                 CosmeticIncidents.applyGStateAddons(player, true);
+                // Reset Flight flags on refresh for NONE race (e.g. login cleanup)
+                if (!player.isCreative() && !player.isSpectator()) {
+                    if (player.getAbilities().mayfly || player.getAbilities().flying) {
+                        player.getAbilities().mayfly = false;
+                        player.getAbilities().flying = false;
+                        player.onUpdateAbilities();
+                    }
+                }
             }
 
             // Full Sync to client and trackers

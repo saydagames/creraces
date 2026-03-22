@@ -14,6 +14,9 @@ public class ModMenuTypes {
     public static final RegistrySupplier<MenuType<MenuGUIMenu>> MENU_GUI = MENUS.register("menu_gui",
             () -> MenuRegistry.ofExtended((syncId, inventory, buf) -> new MenuGUIMenu(syncId, inventory, buf)));
 
+    public static final RegistrySupplier<MenuType<mc.sayda.creraces.world.inventory.MirrorMenu>> MIRROR_GUI = MENUS.register("mirror_gui",
+            () -> MenuRegistry.ofExtended((syncId, inventory, buf) -> new mc.sayda.creraces.world.inventory.MirrorMenu(syncId, inventory, buf)));
+
     public static void register() {
         MENUS.register();
     }

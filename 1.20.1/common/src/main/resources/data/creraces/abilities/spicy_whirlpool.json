@@ -3,7 +3,7 @@
     "description": "ability.creraces.spicy_whirlpool.description",
     "type": "ACTIVE",
     "icon": "minecraft:textures/item/magma_cream.png",
-    "cooldown": 0,
+    "cooldown": 600,
     "cost": 0,
     "race": [
         "creraces:mermaid"
@@ -40,5 +40,7 @@
             "count": 30
         }
     ],
-    "wiki_page": "Ability:Spicy_Whirlpool"
+    "wiki_page": "state:Spicy_Whirlpool"
 }
+
+

@@ -18,13 +18,28 @@ public class ScalingValue {
     private final Evaluator evaluator;
     private final double factor;
     private final List<ScalingComponent> additionalScales;
+    private final MathOp math;
+    private final Double min;
+    private final Double max;
+
+    public enum MathOp {
+        NONE, ROUND, FLOOR, CEIL, SQRT, ABS
+    }
 
     public ScalingValue(double base, @javax.annotation.Nullable Evaluator evaluator, double factor,
             List<ScalingComponent> additionalScales) {
+        this(base, evaluator, factor, additionalScales, MathOp.NONE, null, null);
+    }
+
+    public ScalingValue(double base, @javax.annotation.Nullable Evaluator evaluator, double factor,
+            List<ScalingComponent> additionalScales, MathOp math, Double min, Double max) {
         this.base = base;
         this.evaluator = evaluator;
         this.factor = factor;
         this.additionalScales = additionalScales != null ? additionalScales : new java.util.ArrayList<>();
+        this.math = math != null ? math : MathOp.NONE;
+        this.min = min;
+        this.max = max;
     }
 
     public double base() {
@@ -91,6 +106,21 @@ public class ScalingValue {
             result += comp.evaluator().evaluate(player, target) * comp.factor();
         }
 
+        switch (math) {
+            case ROUND -> result = Math.round(result);
+            case FLOOR -> result = Math.floor(result);
+            case CEIL -> result = Math.ceil(result);
+            case SQRT -> result = Math.sqrt(Math.max(0, result));
+            case ABS -> result = Math.abs(result);
+            default -> {
+            }
+        }
+
+        if (min != null)
+            result = Math.max(min, result);
+        if (max != null)
+            result = Math.min(max, result);
+
         return result;
     }
 
@@ -109,36 +139,43 @@ public class ScalingValue {
         // Hardcoded Attributes
         if (finalKey.equals("ap") || finalKey.equals("creraces:ability_power")) {
             return (p, t) -> {
-                var attr = ModAttributes.ABILITY_POWER.get();
+                Attribute attr = ModAttributes.resolve(ModAttributes.ABILITY_POWER);
                 return attr != null ? p.getAttributeValue(attr) : 0.0;
             };
         }
         if (finalKey.equals("ad") || finalKey.equals("creraces:attack_damage")) {
             return (p, t) -> {
-                var attr = ModAttributes.ATTACK_DAMAGE.get();
+                Attribute attr = ModAttributes.resolve(ModAttributes.ATTACK_DAMAGE);
                 return attr != null ? p.getAttributeValue(attr) : 0.0;
             };
         }
         if (finalKey.equals("ah") || finalKey.equals("haste") || finalKey.equals("creraces:ability_haste")) {
             return (p, t) -> {
-                var attr = ModAttributes.ABILITY_HASTE.get();
+                Attribute attr = ModAttributes.resolve(ModAttributes.ABILITY_HASTE);
                 if (attr == null)
                     return 0.0;
                 double val = p.getAttributeValue(attr);
+                if (ModAttributes.isPercentAttribute(attr)) val *= 100.0;
                 double cap = 40.0;
                 return Math.min(val, cap);
             };
         }
         if (finalKey.equals("crit") || finalKey.equals("cr") || finalKey.equals("creraces:crit_rate")) {
             return (p, t) -> {
-                var attr = ModAttributes.CRIT_RATE.get();
-                return attr != null ? p.getAttributeValue(attr) : 0.0;
+                Attribute attr = ModAttributes.resolve(ModAttributes.CRIT_RATE);
+                if (attr == null) return 0.0;
+                double val = p.getAttributeValue(attr);
+                if (ModAttributes.isPercentAttribute(attr)) val *= 100.0;
+                return val;
             };
         }
         if (finalKey.equals("pen") || finalKey.equals("creraces:armor_penetration")) {
             return (p, t) -> {
-                var attr = ModAttributes.ARMOR_PENETRATION.get();
-                return attr != null ? p.getAttributeValue(attr) : 0.0;
+                Attribute attr = ModAttributes.resolve(ModAttributes.ARMOR_PENETRATION);
+                if (attr == null) return 0.0;
+                double val = p.getAttributeValue(attr);
+                if (ModAttributes.isPercentAttribute(attr)) val *= 100.0;
+                return val;
             };
         }
         if (finalKey.equals("hp") || finalKey.equals("health")) {
@@ -195,8 +232,11 @@ public class ScalingValue {
             };
         }
 
-        if (finalKey.startsWith("ability:") || finalKey.startsWith("state:")) {
-            final String subKey = finalKey.startsWith("ability:") ? finalKey.substring(8) : finalKey.substring(6);
+        if (finalKey.startsWith("state:")) {
+            String subKey = finalKey.substring(6);
+            if (!subKey.contains(":")) {
+                subKey = "creraces:" + subKey;
+            }
             final ResourceLocation abilityId = ResourceLocation.tryParse(subKey);
             if (abilityId == null) {
                 mc.sayda.creraces.CreRaces.LOGGER.error("[CreRaces] Invalid state ID in ScalingValue: {}", subKey);
@@ -219,7 +259,9 @@ public class ScalingValue {
         return (p, t) -> {
             Attribute attr = BuiltInRegistries.ATTRIBUTE.get(attrId);
             if (attr != null && p.getAttributes().hasAttribute(attr)) {
-                return p.getAttributeValue(attr);
+                double val = p.getAttributeValue(attr);
+                if (ModAttributes.isPercentAttribute(attr)) val *= 100.0;
+                return val;
             }
             return 0.0;
         };
@@ -259,7 +301,8 @@ public class ScalingValue {
 
             for (String sKey : obj.keySet()) {
                 if (sKey.equals("base") || sKey.equals("scales_with") || sKey.equals("factor")
-                        || sKey.equals("scales") || sKey.equals("scaling")) {
+                        || sKey.equals("scales") || sKey.equals("scaling") || sKey.equals("math")
+                        || sKey.equals("min") || sKey.equals("max")) {
                     continue;
                 }
                 if (obj.get(sKey).isJsonPrimitive() && obj.get(sKey).getAsJsonPrimitive().isNumber()) {
@@ -267,7 +310,18 @@ public class ScalingValue {
                 }
             }
 
-            return new ScalingValue(base, parseEvaluator(stat), factor, additional);
+            MathOp math = MathOp.NONE;
+            if (obj.has("math")) {
+                try {
+                    math = MathOp.valueOf(obj.get("math").getAsString().toUpperCase());
+                } catch (Exception e) {
+                    mc.sayda.creraces.CreRaces.LOGGER.warn("Unknown math operation: {}", obj.get("math").getAsString());
+                }
+            }
+            Double min = obj.has("min") ? obj.get("min").getAsDouble() : null;
+            Double max = obj.has("max") ? obj.get("max").getAsDouble() : null;
+
+            return new ScalingValue(base, parseEvaluator(stat), factor, additional, math, min, max);
         } else if (json.get(key).isJsonPrimitive() && json.get(key).getAsJsonPrimitive().isString()) {
             return new ScalingValue(0.0, parseEvaluator(json.get(key).getAsString()), 1.0, new ArrayList<>());
         } else {

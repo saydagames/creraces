@@ -74,9 +74,10 @@ public class PlayerMixin implements IPlayerVariables {
                 net.minecraft.world.item.ItemStack stack = player.getUseItem();
                 if (stack.isEmpty()) {
                     stack = player.getMainHandItem();
-                    if (!stack.isEdible()) stack = player.getOffhandItem();
+                    if (!stack.isEdible())
+                        stack = player.getOffhandItem();
                 }
-                
+
                 if (mc.sayda.creraces.util.RaceUtils.isFoodBlocked(player, stack)) {
                     cir.setReturnValue(false);
                     return;
@@ -153,20 +154,26 @@ public class PlayerMixin implements IPlayerVariables {
             var doubleJump = ModAttributes.DOUBLE_JUMP.get();
             if (doubleJump != null)
                 cir.getReturnValue().add(doubleJump);
-            
+
             // Advanced Combat Attributes
             var healRec = ModAttributes.HEALING_RECEIVED.get();
-            if (healRec != null) cir.getReturnValue().add(healRec);
+            if (healRec != null)
+                cir.getReturnValue().add(healRec);
             var armP = ModAttributes.ARMOR_PIERCE.get();
-            if (armP != null) cir.getReturnValue().add(armP);
+            if (armP != null)
+                cir.getReturnValue().add(armP);
             var armS = ModAttributes.ARMOR_SHRED.get();
-            if (armS != null) cir.getReturnValue().add(armS);
+            if (armS != null)
+                cir.getReturnValue().add(armS);
             var magR = ModAttributes.MAGIC_RESIST.get();
-            if (magR != null) cir.getReturnValue().add(magR);
+            if (magR != null)
+                cir.getReturnValue().add(magR);
             var magP = ModAttributes.MAGIC_PIERCE.get();
-            if (magP != null) cir.getReturnValue().add(magP);
+            if (magP != null)
+                cir.getReturnValue().add(magP);
             var magS = ModAttributes.MAGIC_SHRED.get();
-            if (magS != null) cir.getReturnValue().add(magS);
+            if (magS != null)
+                cir.getReturnValue().add(magS);
         } catch (Exception e) {
             // Attribute registration failed - this usually means ModAttributes.init()
             // hasn't run yet (a Fabric bootstrap ordering issue). BootstrapMixin should
@@ -253,33 +260,47 @@ public class PlayerMixin implements IPlayerVariables {
 
     @Override
     public double getAh() {
-        var attr = ModAttributes.ABILITY_HASTE.get();
-        return attr != null ? ((Player) (Object) this).getAttributeValue(attr) : 0.0;
+        var attr = ModAttributes.resolve(ModAttributes.ABILITY_HASTE.get());
+        if (attr != null) {
+            double val = ((Player) (Object) this).getAttributeValue(attr);
+            if (ModAttributes.isPercentAttribute(attr)) return val * 100.0;
+            return val;
+        }
+        return 0.0;
     }
 
     @Override
     public void setAh(double ah) {
-        var attr = ModAttributes.ABILITY_HASTE.get();
+        var attr = ModAttributes.resolve(ModAttributes.ABILITY_HASTE.get());
         if (attr != null) {
             var inst = ((Player) (Object) this).getAttribute(attr);
-            if (inst != null)
-                inst.setBaseValue(ah);
+            if (inst != null) {
+                if (ModAttributes.isPercentAttribute(attr)) inst.setBaseValue(ah / 100.0);
+                else inst.setBaseValue(ah);
+            }
         }
     }
 
     @Override
     public double getCr() {
-        var attr = ModAttributes.CRIT_RATE.get();
-        return attr != null ? ((Player) (Object) this).getAttributeValue(attr) : 0.0;
+        var attr = ModAttributes.resolve(ModAttributes.CRIT_RATE.get());
+        if (attr != null) {
+            double val = ((Player) (Object) this).getAttributeValue(attr);
+            if (ModAttributes.isPercentAttribute(attr)) return val * 100.0;
+            return val;
+        }
+        return 0.0;
     }
 
     @Override
     public void setCr(double cr) {
-        var attr = ModAttributes.CRIT_RATE.get();
+        var attr = ModAttributes.resolve(ModAttributes.CRIT_RATE.get());
         if (attr != null) {
             var inst = ((Player) (Object) this).getAttribute(attr);
-            if (inst != null)
-                inst.setBaseValue(cr);
+            if (inst != null) {
+                if (ModAttributes.isPercentAttribute(attr)) inst.setBaseValue(cr / 100.0);
+                else inst.setBaseValue(cr);
+            }
         }
     }
 
@@ -704,6 +725,16 @@ public class PlayerMixin implements IPlayerVariables {
     }
 
     @Override
+    public long getResourceTimer() {
+        return creraces$variables.getResourceTimer();
+    }
+
+    @Override
+    public void setResourceTimer(long ticks) {
+        creraces$variables.setResourceTimer(ticks);
+    }
+
+    @Override
     public void deserialize(CompoundTag tag) {
         creraces$variables.deserialize(tag);
     }
@@ -731,7 +762,8 @@ public class PlayerMixin implements IPlayerVariables {
 
     @Unique
     private void creraces$handleStaffPreselection(Player player) {
-        if (player.isShiftKeyDown()) return;
+        if (player.isShiftKeyDown())
+            return;
 
         // Check both hands
         creraces$checkAndActivateStaff(player, player.getMainHandItem());
@@ -740,8 +772,9 @@ public class PlayerMixin implements IPlayerVariables {
 
     @Unique
     private void creraces$checkAndActivateStaff(Player player, ItemStack stack) {
-        if (!(stack.getItem() instanceof CommandingStaffItem)) return;
-        
+        if (!(stack.getItem() instanceof CommandingStaffItem))
+            return;
+
         CompoundTag tag = stack.getTag();
         if (tag != null && tag.contains("PendingMode")) {
             String activatedMode = tag.getString("PendingMode");
@@ -757,8 +790,8 @@ public class PlayerMixin implements IPlayerVariables {
             };
 
             player.displayClientMessage(Component.translatable("message.creraces.staff_activated", modeComp), true);
-            player.level().playSound(null, player.getX(), player.getY(), player.getZ(), 
-                SoundEvents.ARROW_HIT_PLAYER, SoundSource.PLAYERS, 0.5f, 0.5f);
+            player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
+                    SoundEvents.ARROW_HIT_PLAYER, SoundSource.PLAYERS, 0.5f, 0.5f);
 
             if (player.level() instanceof ServerLevel serverLevel) {
                 net.minecraft.core.particles.SimpleParticleType pt = switch (activatedMode) {
@@ -768,7 +801,8 @@ public class PlayerMixin implements IPlayerVariables {
                     case "free" -> net.minecraft.core.particles.ParticleTypes.GLOW;
                     default -> net.minecraft.core.particles.ParticleTypes.SOUL;
                 };
-                serverLevel.sendParticles(pt, player.getX(), player.getY() + 2.5, player.getZ(), 10, 0.4, 0.4, 0.4, 0.05);
+                serverLevel.sendParticles(pt, player.getX(), player.getY() + 2.5, player.getZ(), 10, 0.4, 0.4, 0.4,
+                        0.05);
             }
         }
     }

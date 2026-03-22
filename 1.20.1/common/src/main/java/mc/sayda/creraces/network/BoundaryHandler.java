@@ -11,6 +11,12 @@ import net.minecraft.world.entity.player.Player;
 import org.slf4j.Logger;
 import io.netty.buffer.Unpooled;
 import net.minecraft.network.FriendlyByteBuf;
+import dev.architectury.registry.menu.MenuRegistry;
+import dev.architectury.registry.menu.ExtendedMenuProvider;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.entity.player.Inventory;
+import mc.sayda.creraces.world.inventory.MirrorMenu;
 
 /**
  * Manages the boundaries between server and client.
@@ -89,6 +95,16 @@ public class BoundaryHandler {
             pkt.handle(() -> context);
         });
 
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, DoubleJumpPacket.ID, (buf, context) -> {
+            var pkt = new DoubleJumpPacket(buf);
+            pkt.handle(() -> context);
+        });
+
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, RequestMirrorPacket.ID, (buf, context) -> {
+            var pkt = new RequestMirrorPacket(buf);
+            pkt.handle(() -> context);
+        });
+
         LOGGER.info("Yukari has established the server network boundaries.");
     }
 
@@ -111,11 +127,6 @@ public class BoundaryHandler {
 
         NetworkManager.registerReceiver(NetworkManager.Side.S2C, OpenSelectionScreenPacket.ID, (buf, context) -> {
             var pkt = new OpenSelectionScreenPacket(buf);
-            pkt.handle(() -> context);
-        });
-
-        NetworkManager.registerReceiver(NetworkManager.Side.S2C, OpenMirrorScreenPacket.ID, (buf, context) -> {
-            var pkt = new OpenMirrorScreenPacket(buf);
             pkt.handle(() -> context);
         });
 
@@ -184,7 +195,20 @@ public class BoundaryHandler {
     }
 
     public static void sendOpenMirror(ServerPlayer player) {
-        send(player, OpenMirrorScreenPacket.ID, buf -> {
+        MenuRegistry.openExtendedMenu(player, new ExtendedMenuProvider() {
+            @Override
+            public void saveExtraData(FriendlyByteBuf buf) {
+            }
+
+            @Override
+            public Component getDisplayName() {
+                return Component.translatable("creraces.screen.mirror");
+            }
+
+            @Override
+            public AbstractContainerMenu createMenu(int id, Inventory inventory, Player p) {
+                return new MirrorMenu(id, inventory, null);
+            }
         });
     }
 
@@ -308,6 +332,12 @@ public class BoundaryHandler {
         FriendlyByteBuf buf = new FriendlyByteBuf(java.util.Objects.requireNonNull(Unpooled.buffer()));
         new UpdateGStatePacket(gState).toBytes(buf);
         NetworkManager.sendToServer(UpdateGStatePacket.ID, buf);
+    }
+
+    public static void sendDoubleJump() {
+        FriendlyByteBuf buf = new FriendlyByteBuf(java.util.Objects.requireNonNull(Unpooled.buffer()));
+        new DoubleJumpPacket().encode(buf);
+        NetworkManager.sendToServer(DoubleJumpPacket.ID, buf);
     }
 
     public static void sendMiniPlace(mc.sayda.creraces.network.MiniPlacePacket pkt) {

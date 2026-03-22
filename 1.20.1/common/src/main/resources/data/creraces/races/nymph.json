@@ -21,9 +21,7 @@
     "creraces:regeneration_multiplier": 1.1,
     "creraces:blocked_food_types": [
         "meat",
-        "#minecraft:fishes",
-        "#creraces:crafted_foods",
-        "#creraces:neutral_foods"
+        "#minecraft:fishes"
     ],
     "passive": [
         {
@@ -35,6 +33,22 @@
         },
         {
             "type": "creraces:permanent_effect",
+            "effect": "minecraft:hero_of_the_village",
+            "amplifier": 0,
+            "visible": false,
+            "condition": {
+                "type": "creraces:race_equals",
+                "races": [
+                    "creraces:nymph",
+                    "creraces:aurai",
+                    "creraces:dryad",
+                    "creraces:naiad",
+                    "creraces:oread"
+                ]
+            }
+        },
+        {
+            "type": "creraces:permanent_effect",
             "effect": "creraces:nymph_call",
             "amplifier": 0,
             "visible": false,
@@ -42,7 +56,56 @@
                 "type": "creraces:race_equals",
                 "race": "creraces:nymph"
             }
+        },
+        {
+            "type": "creraces:on_tick",
+            "interval": 20,
+            "condition": {
+                "type": "creraces:not",
+                "condition": {
+                    "type": "creraces:has_effect",
+                    "effect": "creraces:nymph_call"
+                }
+            },
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effects": [
+                        {
+                            "effect": "minecraft:slowness",
+                            "amplifier": 1,
+                            "duration": 100
+                        },
+                        {
+                            "effect": "minecraft:weakness",
+                            "amplifier": 254,
+                            "duration": 100
+                        },
+                        {
+                            "effect": "minecraft:blindness",
+                            "amplifier": 0,
+                            "duration": 100
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "creraces:on_respawn",
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "creraces:nymph_call",
+                    "duration": 6000,
+                    "amplifier": 0,
+                    "visible": false
+                }
+            ]
         }
     ],
-    "creraces:wiki_page": "Nymph"
+    "creraces:wiki_page": "Nymph",
+    "creraces:name_tex_x": 37,
+    "creraces:name_tex_y": -36,
+    "creraces:name_tex_w": 96,
+    "creraces:name_tex_h": 22
 }

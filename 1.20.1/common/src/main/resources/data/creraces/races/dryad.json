@@ -12,7 +12,7 @@
     "creraces:base_ah": 15,
     "creraces:base_cr": 12,
     "creraces:resource_type": "MANA",
-    "creraces:max_resource": 120,
+    "creraces:max_resource": 500,
     "creraces:stacks_affect_resource": false,
     "creraces:gstate": "FEMALE",
     "creraces:difficulty": 2,
@@ -58,89 +58,6 @@
             }
         }
     ],
-    "camouflage_logic": [
-        {
-            "type": "creraces:continuous_effect",
-            "name": "camouflage_invisibility",
-            "effect": "creraces:true_invisibility",
-            "resource": "MANA",
-            "drain_rate": 2.0,
-            "duration": 20,
-            "visible": false,
-            "condition": {
-                "type": "creraces:ability_state",
-                "ability": "creraces:camouflage",
-                "value": 1.0
-            }
-        },
-        {
-            "type": "creraces:continuous_effect",
-            "name": "camouflage_speed",
-            "effect": "minecraft:speed",
-            "amplifier": 0,
-            "duration": 20,
-            "visible": true,
-            "condition": {
-                "type": "creraces:ability_state",
-                "ability": "creraces:camouflage",
-                "value": 1.0
-            }
-        },
-        {
-            "type": "creraces:on_hurt",
-            "name": "camouflage_interrupt",
-            "condition": {
-                "type": "creraces:ability_state",
-                "ability": "creraces:camouflage",
-                "value": 1.0
-            },
-            "actions": [
-                {
-                    "type": "creraces:set_state",
-                    "ability": "creraces:camouflage",
-                    "value": 0.0
-                },
-                {
-                    "type": "creraces:set_cooldown",
-                    "id": "creraces:camouflage",
-                    "value": 220
-                }
-            ]
-        },
-        {
-            "type": "creraces:on_tick",
-            "name": "camouflage_mana_expiry",
-            "interval": 1,
-            "condition": {
-                "type": "creraces:and",
-                "conditions": [
-                    {
-                        "type": "creraces:ability_state",
-                        "ability": "creraces:camouflage",
-                        "value": 1.0
-                    },
-                    {
-                        "type": "creraces:resource_level",
-                        "resource": "MANA",
-                        "operator": "==",
-                        "value": 0
-                    }
-                ]
-            },
-            "actions": [
-                {
-                    "type": "creraces:set_state",
-                    "ability": "creraces:camouflage",
-                    "value": 0.0
-                },
-                {
-                    "type": "creraces:set_cooldown",
-                    "id": "creraces:camouflage",
-                    "value": 220
-                }
-            ]
-        }
-    ],
     "sapling_mechanics": [
         {
             "type": "creraces:block_place",
@@ -148,8 +65,8 @@
             "condition": {
                 "type": "not",
                 "condition": {
-                    "type": "creraces:ability_state",
-                    "ability": "state:dryad:tx",
+                    "type": "creraces:state",
+                    "state": "state:dryad:tx",
                     "operator": "!=",
                     "value": 0.0
                 }
@@ -165,30 +82,30 @@
                     "if_true": [
                         {
                             "type": "creraces:message",
-                            "text": "Dryad Sapling location is &cAlready Claimed&f!",
+                            "text": "Dryad Sapling location is \u0026cAlready Claimed\u0026f!",
                             "actionbar": true
                         }
                     ],
                     "if_false": [
                         {
                             "type": "creraces:set_state",
-                            "ability": "state:dryad:tx",
+                            "state": "state:dryad:tx",
                             "mode": "TARGET_BLOCK_X"
                         },
                         {
                             "type": "creraces:set_state",
-                            "ability": "state:dryad:ty",
+                            "state": "state:dryad:ty",
                             "mode": "TARGET_BLOCK_Y",
                             "offset_y": -1
                         },
                         {
                             "type": "creraces:set_state",
-                            "ability": "state:dryad:tz",
+                            "state": "state:dryad:tz",
                             "mode": "TARGET_BLOCK_Z"
                         },
                         {
                             "type": "creraces:set_state",
-                            "ability": "state:dryad:td",
+                            "state": "state:dryad:td",
                             "mode": "POS_DIM"
                         },
                         {
@@ -216,7 +133,7 @@
                         },
                         {
                             "type": "creraces:message",
-                            "text": "Dryad Sapling &aClaimed&f!",
+                            "text": "Dryad Sapling \u0026aClaimed\u0026f!",
                             "actionbar": true
                         }
                     ]
@@ -268,22 +185,22 @@
                         },
                         {
                             "type": "creraces:set_state",
-                            "ability": "state:dryad:tx",
+                            "state": "state:dryad:tx",
                             "value": 0.0
                         },
                         {
                             "type": "creraces:set_state",
-                            "ability": "state:dryad:ty",
+                            "state": "state:dryad:ty",
                             "value": 0.0
                         },
                         {
                             "type": "creraces:set_state",
-                            "ability": "state:dryad:tz",
+                            "state": "state:dryad:tz",
                             "value": 0.0
                         },
                         {
                             "type": "creraces:set_state",
-                            "ability": "state:dryad:td",
+                            "state": "state:dryad:td",
                             "value": 0.0
                         },
                         {
@@ -303,10 +220,10 @@
                                         "value": false
                                     },
                                     {
-                                "type": "creraces:is_position",
-                                "x": "state:dryad:tx",
-                                "y": "state:dryad:ty",
-                                "z": "state:dryad:tz"
+                                        "type": "creraces:is_position",
+                                        "x": "state:dryad:tx",
+                                        "y": "state:dryad:ty",
+                                        "z": "state:dryad:tz"
                                     }
                                 ]
                             },
@@ -408,5 +325,13 @@
             "addon_id": "dryad_body"
         }
     ],
-    "creraces:wiki_page": "Dryad"
+    "creraces:wiki_page": "Dryad",
+    "creraces:splash_x": -15,
+    "creraces:splash_y": -3,
+    "creraces:splash_w": 200,
+    "creraces:splash_h": 179,
+    "creraces:name_tex_x": 48,
+    "creraces:name_tex_w": 74,
+    "creraces:name_tex_h": 21,
+    "creraces:bg_texture": "creraces:textures/screens/selection_earth2_bg.png"
 }

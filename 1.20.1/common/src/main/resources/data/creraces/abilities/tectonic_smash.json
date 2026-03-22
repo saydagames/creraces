@@ -12,8 +12,8 @@
         {
             "type": "creraces:conditional",
             "condition": {
-                "type": "creraces:state_equals",
-                "state": "creraces:tectonic_smash",
+                "type": "creraces:state",
+                "state": "tectonic_smash",
                 "value": 4
             },
             "if_true": [
@@ -48,13 +48,13 @@
                 },
                 {
                     "type": "creraces:set_state",
-                    "ability": "creraces:tectonic_smash",
+                    "state": "tectonic_smash",
                     "value": 0
                 },
                 {
                     "type": "creraces:set_cooldown",
-                    "ability": "creraces:tectonic_smash",
-                    "value": 200
+                    "state": "tectonic_smash",
+                    "value": 1200
                 },
                 {
                     "type": "creraces:play_sound",
@@ -94,7 +94,7 @@
                 },
                 {
                     "type": "creraces:modify_state",
-                    "ability": "creraces:tectonic_smash",
+                    "state": "tectonic_smash",
                     "operation": "add",
                     "value": 1
                 },
@@ -107,5 +107,7 @@
             ]
         }
     ],
-    "wiki_page": "Ability:Tectonic_Smash"
+    "wiki_page": "state:Tectonic_Smash"
 }
+
+

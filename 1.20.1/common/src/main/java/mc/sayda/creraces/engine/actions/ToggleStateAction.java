@@ -88,7 +88,7 @@ public class ToggleStateAction implements ActionRegistry.RaceAction {
 
     public static void register() {
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "toggle_state"), json -> {
-            String state = GsonHelper.getAsString(json, "state", "a1");
+            String stateStr = GsonHelper.getAsString(json, "state", "slot");
             ScalingValue on = ScalingValue.fromJson(json, "on_value", 1.0);
             ScalingValue off = ScalingValue.fromJson(json, "off_value", 0.0);
 
@@ -106,15 +106,16 @@ public class ToggleStateAction implements ActionRegistry.RaceAction {
                 }
             }
 
-            @javax.annotation.Nullable String ability = GsonHelper.getNullableString(json, "ability", null);
-            
-            ResourceLocation abilityLoc = null;
-            if (ability != null) {
-                String sub = ability.startsWith("ability:") ? ability.substring(8) : (ability.startsWith("state:") ? ability.substring(6) : ability);
-                abilityLoc = ResourceLocation.tryParse(sub);
+            ResourceLocation stateLoc = null;
+            if (!"slot".equalsIgnoreCase(stateStr)) {
+                String sub = stateStr.startsWith("state:") ? stateStr.substring(6) : stateStr;
+                if (!sub.contains(":")) {
+                    sub = "creraces:" + sub;
+                }
+                stateLoc = ResourceLocation.tryParse(sub);
             }
 
-            return new ToggleStateAction(state, abilityLoc, on, off, onEnable, onDisable);
+            return new ToggleStateAction(stateStr, stateLoc, on, off, onEnable, onDisable);
         });
     }
 }

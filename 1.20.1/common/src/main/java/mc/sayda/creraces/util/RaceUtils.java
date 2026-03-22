@@ -38,13 +38,13 @@ public class RaceUtils {
                 return false;
 
             java.util.List<String> negated = race.passives().immuneToPotionEffects();
-            if (negated == null || negated.isEmpty())
+            if (negated == null)
                 return false;
-
             String idStr = effectId.toString();
             String path = effectId.getPath();
             for (String blocked : negated) {
-                if (blocked.equals(idStr) || blocked.equals(path)) {
+                if (blocked.equalsIgnoreCase(idStr) || blocked.equalsIgnoreCase(path)
+                        || blocked.equalsIgnoreCase("creraces:" + path)) {
                     return true;
                 }
             }

@@ -64,6 +64,7 @@ public class PlayerVariables implements IPlayerVariables {
     private String returnDim = "minecraft:overworld";
     private boolean isInSpiritRealm = false;
     private boolean smallBuild = false;
+    private long resourceTimer = 0;
 
     @Override
     public ResourceLocation getRace() {
@@ -196,6 +197,20 @@ public class PlayerVariables implements IPlayerVariables {
     public void setSouls(double souls) {
         this.souls = souls;
     }
+
+    @Override
+    public long getResourceTimer() {
+        return resourceTimer;
+    }
+
+    @Override
+    public void setResourceTimer(long ticks) {
+        this.resourceTimer = ticks;
+    }
+
+    // getResourceTimer / setResourceTimer removed from interface.
+    // Field retained only for save-file backward-compat (loaded from disk, never
+    // sent over network).
 
     @Override
     public double getPassiveCooldown() {
@@ -704,6 +719,7 @@ public class PlayerVariables implements IPlayerVariables {
         tag.putDouble("energy", energy);
         tag.putDouble("grit", grit);
         tag.putDouble("souls", souls);
+        tag.putLong("resourceTimer", resourceTimer);
 
         // Cooldowns ARE included in every sync so the HUD overlay counts down
         // correctly.
@@ -788,6 +804,7 @@ public class PlayerVariables implements IPlayerVariables {
         tag.remove("souls");
         tag.remove("stacks");
         tag.remove("passiveCooldown");
+        tag.remove("resourceTimer");
         return tag;
     }
 
@@ -798,6 +815,8 @@ public class PlayerVariables implements IPlayerVariables {
             this.race = new ResourceLocation(Objects.requireNonNull(tag.getString("race")));
         if (tag.contains("hasChosenRace"))
             this.hasChosenRace = tag.getBoolean("hasChosenRace");
+        if (tag.contains("resourceTimer"))
+            this.resourceTimer = tag.getLong("resourceTimer");
         if (tag.contains("karma"))
             this.karma = tag.getDouble("karma");
         if (tag.contains("ap"))

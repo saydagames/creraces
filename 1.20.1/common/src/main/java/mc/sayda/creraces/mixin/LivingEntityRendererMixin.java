@@ -18,14 +18,9 @@ public abstract class LivingEntityRendererMixin {
     @Inject(method = "render(Lnet/minecraft/world/entity/LivingEntity;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V", at = @At("HEAD"), cancellable = true)
     private void creraces$rendering(LivingEntity entity, float entityYaw, float partialTicks, PoseStack matrixStack,
             MultiBufferSource buffer, int packedLight, CallbackInfo ci) {
-        if (entity.hasEffect(ModMobEffects.TRUE_INVISIBILITY.get())) {
-            // Don't cancel the render for the local player themselves (they'd vanish in F5
-            // mode etc.)
-            net.minecraft.client.player.LocalPlayer localPlayer = net.minecraft.client.Minecraft.getInstance().player;
-            if (entity != localPlayer) {
-                ci.cancel();
-                return;
-            }
+        if (ModMobEffects.isInvisible(entity)) {
+            ci.cancel();
+            return;
         }
 
         // Spirit Realm Visibility
@@ -52,7 +47,7 @@ public abstract class LivingEntityRendererMixin {
 
     @Inject(method = "shouldShowName(Lnet/minecraft/world/entity/LivingEntity;)Z", at = @At("HEAD"), cancellable = true)
     private void creraces$hideNameTag(LivingEntity entity, CallbackInfoReturnable<Boolean> cir) {
-        if (entity.hasEffect(ModMobEffects.TRUE_INVISIBILITY.get())) {
+        if (ModMobEffects.isInvisible(entity)) {
             cir.setReturnValue(false);
         }
     }

@@ -24,6 +24,7 @@ public class WorldUtils {
      * <p>
      * Default Dryad values (3×3×2) reproduce the legacy 3×3 hole.
      */
+    @SuppressWarnings("null")
     public static void removeDoor(LevelAccessor world, @javax.annotation.Nonnull BlockPos origin,
             @javax.annotation.Nonnull BlockState blockToMatch,
             @javax.annotation.Nonnull Direction panelFacing,
@@ -64,5 +65,54 @@ public class WorldUtils {
         }
         // Always remove the panel itself (the door_block) individually
         world.destroyBlock(origin, false);
+    }
+
+    /**
+     * Checks if an entity is exposed to rain, taking into account vanilla shelter
+     * and custom CreRaces micro-blocks.
+     */
+    @SuppressWarnings("null")
+    public static boolean isExposedToRain(net.minecraft.world.entity.LivingEntity entity) {
+        net.minecraft.world.level.Level level = entity.level();
+        BlockPos pos = entity.blockPosition();
+
+        if (!level.isRainingAt(pos)) {
+            return false;
+        }
+
+        // Check for micro-block shelter starting from the entity's position up to 16
+        // blocks
+        for (int dy = 0; dy <= 16; dy++) {
+            BlockPos overheadPos = pos.above(dy);
+            BlockState state = level.getBlockState(overheadPos);
+
+            if (state.is(mc.sayda.creraces.registry.ModBlocks.MICRO_BLOCK.get())) {
+                if (level.getBlockEntity(overheadPos) instanceof mc.sayda.creraces.block.entity.MicroBlockEntity micro) {
+                    int playerSlotY = -1;
+                    if (dy == 0) {
+                        double yOffset = entity.getY() - pos.getY();
+                        playerSlotY = (int) (yOffset * 4);
+                    }
+
+                    // Calculate entity's sub-grid column once
+                    int sx = (int) (((entity.getX() - overheadPos.getX()) % 1.0 + 1.0) % 1.0 * 4);
+                    int sz = (int) (((entity.getZ() - overheadPos.getZ()) % 1.0 + 1.0) % 1.0 * 4);
+                    sx = Math.max(0, Math.min(3, sx));
+                    sz = Math.max(0, Math.min(3, sz));
+
+                    for (int sy = playerSlotY + 1; sy < 4; sy++) {
+                        if (!micro.getSlot(sx, sy, sz).isAir()) {
+                            return false; // Sheltered by mini-block roof in THIS column!
+                        }
+                    }
+                }
+            } else if (dy > 0 && state.isSolidRender(level, overheadPos)) {
+                // Regular solid block shelter - redundant due to isRainingAt but kept for
+                // safety
+                return false;
+            }
+        }
+
+        return true;
     }
 }

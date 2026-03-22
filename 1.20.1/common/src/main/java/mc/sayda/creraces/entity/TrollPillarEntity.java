@@ -1,11 +1,11 @@
 package mc.sayda.creraces.entity;
 
-import mc.sayda.creraces.capability.DataUtils;
+
 import mc.sayda.creraces.config.CreRacesConfig;
 
 import mc.sayda.creraces.registry.ModEntities;
 import mc.sayda.creraces.registry.ModMobEffects;
-import net.minecraft.resources.ResourceLocation;
+
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -23,7 +23,7 @@ import net.minecraft.world.entity.AreaEffectCloud;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.AABB;
+
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.server.level.ServerLevel;
 
@@ -132,12 +132,10 @@ public class TrollPillarEntity extends TamableAnimal {
                 }
 
                 double radius = CreRacesConfig.ENTITY_TROLL_PILLAR_CURSE_RADIUS.get();
-                List<LivingEntity> nearby = this.level().getEntitiesOfClass(
-                        LivingEntity.class,
-                        new AABB(center, center).inflate(radius),
-                        e -> e != this && (owner == null
-                                || mc.sayda.creraces.team.RaceTeamManager.canHurt(e, owner)));
-                for (LivingEntity target : nearby) {
+                List<LivingEntity> targets = level().getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class,
+                    getBoundingBox().inflate(radius),
+                    e -> e != this && (owner == null || mc.sayda.creraces.team.RaceTeamManager.canHurt(e, owner) || isTroll(e)));
+                for (LivingEntity target : targets) {
                     target.addEffect(
                             new MobEffectInstance(curseEffect, CreRacesConfig.ENTITY_TROLL_PILLAR_CURSE_DURATION.get(),
                                     0, true, true));
@@ -178,5 +176,14 @@ public class TrollPillarEntity extends TamableAnimal {
     @Override
     public net.minecraft.world.InteractionResult mobInteract(Player player, net.minecraft.world.InteractionHand hand) {
         return net.minecraft.world.InteractionResult.PASS;
+    }
+
+    private boolean isTroll(net.minecraft.world.entity.LivingEntity entity) {
+        if (entity instanceof net.minecraft.world.entity.player.Player player) {
+            return mc.sayda.creraces.capability.DataUtils.getVariables(player)
+                    .map(vars -> new net.minecraft.resources.ResourceLocation("creraces", "troll").equals(vars.getRace()))
+                    .orElse(false);
+        }
+        return false;
     }
 }

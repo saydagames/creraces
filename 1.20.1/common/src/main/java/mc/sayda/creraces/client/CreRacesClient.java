@@ -6,6 +6,7 @@ import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.client.screen.SkillWheelScreen;
 import dev.architectury.registry.menu.MenuRegistry;
 import mc.sayda.creraces.capability.DataUtils;
+import dev.architectury.platform.Platform;
 
 public class CreRacesClient {
         private static net.minecraft.world.entity.player.Player lastPlayerInstance = null;
@@ -26,10 +27,17 @@ public class CreRacesClient {
                 dev.architectury.registry.client.particle.ParticleProviderRegistry.register(
                                 mc.sayda.creraces.registry.ModParticles.MARKER_ATTACK,
                                 mc.sayda.creraces.client.particle.MarkerAttackParticle.Provider::new);
+                dev.architectury.registry.client.particle.ParticleProviderRegistry.register(
+                                mc.sayda.creraces.registry.ModParticles.POISON_EMITTER,
+                                mc.sayda.creraces.client.particle.PoisonEmitterParticle.Provider::new);
 
-                // Menu Registration (Directly in init for Fabric stability)
-                MenuRegistry.registerScreenFactory(mc.sayda.creraces.registry.ModMenuTypes.MENU_GUI.get(),
-                                mc.sayda.creraces.client.screen.MenuGUIScreen::new);
+                // Menu Registration (Directly in init for Fabric as requested, Forge is handled in CLIENT_SETUP below)
+                if (Platform.isFabric()) {
+                        MenuRegistry.registerScreenFactory(mc.sayda.creraces.registry.ModMenuTypes.MENU_GUI.get(),
+                                        mc.sayda.creraces.client.screen.MenuGUIScreen::new);
+                        MenuRegistry.registerScreenFactory(mc.sayda.creraces.registry.ModMenuTypes.MIRROR_GUI.get(),
+                                        mc.sayda.creraces.client.screen.DynamicMirrorScreen::new);
+                }
 
                 // Register renderers early so Architectury can hook into Forge events
                 dev.architectury.registry.client.level.entity.EntityRendererRegistry.register(
@@ -51,9 +59,14 @@ public class CreRacesClient {
                 dev.architectury.registry.client.level.entity.EntityRendererRegistry.register(
                                 mc.sayda.creraces.registry.ModEntities.POISON_EMITTER,
                                 mc.sayda.creraces.client.render.PoisonEmitterRenderer::new);
+
+                // PoisonEmitter Mobile - totem with wheels
+                dev.architectury.registry.client.level.entity.EntityModelLayerRegistry.register(
+                                mc.sayda.creraces.client.model.PoisonEmitterMobileModel.LAYER_LOCATION,
+                                mc.sayda.creraces.client.model.PoisonEmitterMobileModel::createBodyLayer);
                 dev.architectury.registry.client.level.entity.EntityRendererRegistry.register(
                                 mc.sayda.creraces.registry.ModEntities.POISON_EMITTER_MOBILE,
-                                mc.sayda.creraces.client.render.PoisonEmitterRenderer::new);
+                                mc.sayda.creraces.client.render.PoisonEmitterMobileRenderer::new);
 
                 // Tornado - aria legacy entity
                 dev.architectury.registry.client.level.entity.EntityModelLayerRegistry.register(
@@ -80,6 +93,14 @@ public class CreRacesClient {
                                 mc.sayda.creraces.client.render.ToriBellRenderer::createBodyLayer);
 
                 dev.architectury.event.events.client.ClientLifecycleEvent.CLIENT_SETUP.register(instance -> {
+                        // Menu Registration (Forge needs this late to avoid registry race conditions)
+                        if (Platform.isForge()) {
+                                MenuRegistry.registerScreenFactory(mc.sayda.creraces.registry.ModMenuTypes.MENU_GUI.get(),
+                                                mc.sayda.creraces.client.screen.MenuGUIScreen::new);
+                                MenuRegistry.registerScreenFactory(mc.sayda.creraces.registry.ModMenuTypes.MIRROR_GUI.get(),
+                                                mc.sayda.creraces.client.screen.DynamicMirrorScreen::new);
+                        }
+
                         // Register microblock renderer
                         dev.architectury.registry.client.rendering.BlockEntityRendererRegistry.register(
                                         mc.sayda.creraces.registry.ModBlocks.MICRO_BLOCK_ENTITY.get(),
@@ -98,9 +119,13 @@ public class CreRacesClient {
                                         mc.sayda.creraces.registry.ModBlocks.DRYAD_LEAVES.get(),
                                         mc.sayda.creraces.registry.ModBlocks.DRYAD_LEAVES_FLOWERING.get(),
                                         mc.sayda.creraces.registry.ModBlocks.DRYAD_LEAVES_FRUIT.get(),
-                                        mc.sayda.creraces.registry.ModBlocks.DRYAD_SAPLING.get(),
                                         mc.sayda.creraces.registry.ModBlocks.DRYAD_LANTERN.get(),
                                         mc.sayda.creraces.registry.ModBlocks.RAT_HOLE.get());
+
+                        // Dryad Sapling specifically isolated to ensure correct cutout rendering
+                        dev.architectury.registry.client.rendering.RenderTypeRegistry.register(
+                                        net.minecraft.client.renderer.RenderType.cutout(),
+                                        mc.sayda.creraces.registry.ModBlocks.DRYAD_SAPLING.get());
                         dev.architectury.registry.client.rendering.RenderTypeRegistry.register(
                                         net.minecraft.client.renderer.RenderType.translucent(),
                                         mc.sayda.creraces.registry.ModBlocks.MICRO_BLOCK.get());
@@ -152,6 +177,7 @@ public class CreRacesClient {
                                         if (mc.sayda.creraces.config.CreRacesConfig.FORCED_SELECTION.get()
                                                         && minecraft.player.isAlive()
                                                         && !vars.hasChosenRace()
+                                                        && !mc.sayda.creraces.client.ClientAccess.isWaitingForRaceSelection
                                                         && mc.sayda.creraces.client.ClientAccess.hasReceivedInitialSync) {
 
                                                 boolean isCreScreen = minecraft.screen instanceof mc.sayda.creraces.client.screen.RaceSelectionScreen

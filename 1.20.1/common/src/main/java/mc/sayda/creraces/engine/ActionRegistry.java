@@ -137,6 +137,7 @@ public class ActionRegistry {
         mc.sayda.creraces.engine.actions.EnterSpiritRealmAction.register();
         mc.sayda.creraces.engine.actions.ToggleMinibuildAction.register();
         mc.sayda.creraces.engine.actions.BeamAction.register();
+        mc.sayda.creraces.engine.actions.RemoveBlockAction.register();
         mc.sayda.creraces.engine.actions.SleepAction.register();
         mc.sayda.creraces.engine.actions.MessageAction.register();
         mc.sayda.creraces.engine.actions.SummonEntityAction.register();
@@ -146,6 +147,9 @@ public class ActionRegistry {
         mc.sayda.creraces.engine.actions.StopSoundAction.register();
         mc.sayda.creraces.engine.actions.CancelAction.register();
         mc.sayda.creraces.engine.actions.GiveItemAction.register();
+        mc.sayda.creraces.engine.actions.RecallProjectilesAction.register();
         mc.sayda.creraces.engine.actions.MassSummonAction.register();
+        mc.sayda.creraces.engine.actions.BindAbilityAction.register();
+        mc.sayda.creraces.engine.actions.UnbindAbilityAction.register();
     }
 }

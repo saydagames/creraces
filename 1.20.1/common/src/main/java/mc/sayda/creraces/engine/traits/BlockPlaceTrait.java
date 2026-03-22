@@ -54,7 +54,9 @@ public class BlockPlaceTrait implements TraitRegistry.RaceTrait {
             }
 
             for (ActionRegistry.RaceAction action : actions) {
-                action.execute(player, null, null, pos);
+                if (!action.execute(player, null, null, pos)) {
+                    return false;
+                }
             }
             return true;
         }

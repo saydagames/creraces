@@ -13,8 +13,8 @@
         {
             "type": "creraces:conditional",
             "condition": {
-                "type": "creraces:ability_state",
-                "ability": "creraces:fox_form",
+                "type": "creraces:state",
+                "state": "fox_form",
                 "value": 1.0
             },
             "if_true": [
@@ -32,5 +32,5 @@
             ]
         }
     ],
-    "wiki_page": "Ability:Curl_Up"
+    "wiki_page": "state:Curl_Up"
 }

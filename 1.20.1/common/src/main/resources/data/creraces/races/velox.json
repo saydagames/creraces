@@ -46,46 +46,74 @@
             },
             "actions": [
                 {
-                    "type": "creraces:modify_entity_data",
-                    "key": "creraces:foul_play_stacks",
-                    "operation": "add",
-                    "value": 1
-                },
-                {
                     "type": "creraces:conditional",
                     "condition": {
-                        "type": "creraces:entity_data",
-                        "key": "creraces:foul_play_stacks",
-                        "operator": ">=",
-                        "value": 3
+                        "type": "creraces:has_effect",
+                        "effect": "creraces:foul_play",
+                        "amplifier": 1,
+                        "use_target": true
                     },
                     "if_true": [
                         {
                             "type": "creraces:damage",
                             "amount": {
                                 "base": 2,
-                                "scales_with": "ap",
+                                "scales_with": "ad",
                                 "factor": 0.02,
                                 "scales": [
                                     {
-                                        "stat": "target_hp",
+                                        "stat": "target_max_hp",
                                         "factor": 0.1
                                     }
                                 ]
                             },
-                            "damage_type": "minecraft:generic",
+                            "damage_type": "minecraft:player_attack",
                             "source": "self"
                         },
                         {
-                            "type": "creraces:modify_entity_data",
-                            "key": "creraces:foul_play_stacks",
-                            "operation": "set",
-                            "value": 0
+                            "type": "creraces:remove_effect",
+                            "effect": "creraces:foul_play",
+                            "use_target": true
+                        },
+                        {
+                            "type": "creraces:play_sound",
+                            "sound": "minecraft:block.anvil.hit",
+                            "volume": 2,
+                            "pitch": 1.2
                         },
                         {
                             "type": "creraces:spawn_particles",
-                            "particle": "minecraft:crit",
+                            "particle": "minecraft:totem_of_undying",
                             "count": 10
+                        }
+                    ],
+                    "if_false": [
+                        {
+                            "type": "creraces:conditional",
+                            "condition": {
+                                "type": "creraces:has_effect",
+                                "effect": "creraces:foul_play",
+                                "amplifier": 0,
+                                "use_target": true
+                            },
+                            "if_true": [
+                                {
+                                    "type": "creraces:apply_effect",
+                                    "effect": "creraces:foul_play",
+                                    "duration": 100,
+                                    "amplifier": 1,
+                                    "visible": true
+                                }
+                            ],
+                            "if_false": [
+                                {
+                                    "type": "creraces:apply_effect",
+                                    "effect": "creraces:foul_play",
+                                    "duration": 100,
+                                    "amplifier": 0,
+                                    "visible": true
+                                }
+                            ]
                         }
                     ]
                 }
@@ -109,5 +137,11 @@
         "creraces:slash_n_dash",
         "creraces:crescent_swivel"
     ],
-    "creraces:wiki_page": "Velox"
+    "creraces:wiki_page": "Velox",
+    "creraces:splash_x": 13,
+    "creraces:splash_y": -13,
+    "creraces:name_tex_x": 49,
+    "creraces:name_tex_y": -34,
+    "creraces:name_tex_w": 74,
+    "creraces:name_tex_h": 21
 }

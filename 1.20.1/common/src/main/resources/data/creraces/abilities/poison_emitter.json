@@ -3,7 +3,7 @@
     "description": "ability.creraces.poison_emitter.description",
     "icon": "minecraft:textures/item/poisonous_potato.png",
     "category": "UTILITY",
-    "cooldown": 600,
+    "cooldown": 360,
     "race": [
         "creraces:ratkin"
     ],
@@ -58,5 +58,7 @@
             }
         }
     ],
-    "wiki_page": "Ability:Poison_Emitter"
+    "wiki_page": "state:Poison_Emitter"
 }
+
+

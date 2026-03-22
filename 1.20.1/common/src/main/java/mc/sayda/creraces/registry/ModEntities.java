@@ -34,7 +34,7 @@ public class ModEntities {
         public static final RegistrySupplier<EntityType<PoisonEmitterEntity>> POISON_EMITTER = ENTITIES.register(
                         "poison_emitter",
                         () -> EntityType.Builder.<PoisonEmitterEntity>of(PoisonEmitterEntity::new, MobCategory.MISC)
-                                        .sized(0.7F, 0.7F)
+                                        .sized(0.6F, 1.0F)
                                         .clientTrackingRange(8)
                                         .updateInterval(3)
                                         .build("poison_emitter"));
@@ -45,7 +45,7 @@ public class ModEntities {
                                         () -> EntityType.Builder
                                                         .<PoisonEmitterMobileEntity>of(PoisonEmitterMobileEntity::new,
                                                                         MobCategory.MISC)
-                                                        .sized(0.7F, 0.7F)
+                                                        .sized(0.8F, 1.2F)
                                                         .clientTrackingRange(8)
                                                         .updateInterval(3)
                                                         .build("poison_emitter_mobile"));

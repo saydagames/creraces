@@ -1,12 +1,15 @@
 package mc.sayda.creraces.registry;
 
+import dev.architectury.platform.Platform;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.config.CreRacesConfig;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.RangedAttribute;
-import java.util.function.Supplier;
 
 public class ModAttributes {
         public static final DeferredRegister<Attribute> ATTRIBUTES = DeferredRegister.create(CreRaces.MODID,
@@ -19,7 +22,7 @@ public class ModAttributes {
 
         public static final RegistrySupplier<Attribute> MAX_RAGE = ATTRIBUTES.register("max_rage",
                         () -> new RangedAttribute("attribute.creraces.max_rage", 0.0, 0.0,
-                                        10.0)
+                                        1000.0)
                                         .setSyncable(true));
 
         public static final RegistrySupplier<Attribute> MAX_ENERGY = ATTRIBUTES.register("max_energy",
@@ -28,7 +31,7 @@ public class ModAttributes {
 
         public static final RegistrySupplier<Attribute> MAX_GRIT = ATTRIBUTES.register("max_grit",
                         () -> new RangedAttribute("attribute.creraces.max_grit", 0.0, 0.0,
-                                        10.0)
+                                        1000.0)
                                         .setSyncable(true));
 
         // RPG Stats
@@ -59,17 +62,17 @@ public class ModAttributes {
 
         // Regeneration & Decay
         public static final RegistrySupplier<Attribute> MANA_REGEN = ATTRIBUTES.register("mana_regeneration",
-                        () -> new RangedAttribute("attribute.creraces.mana_regen", 0.1, 0.0, 1000.0).setSyncable(true));
+                        () -> new RangedAttribute("attribute.creraces.mana_regen", CreRacesConfig.MANA_REGEN.get(), 0.0, 1000.0).setSyncable(true));
 
         public static final RegistrySupplier<Attribute> ENERGY_REGEN = ATTRIBUTES.register("energy_regeneration",
-                        () -> new RangedAttribute("attribute.creraces.energy_regen", 0.25, 0.0, 1000.0)
+                        () -> new RangedAttribute("attribute.creraces.energy_regen", CreRacesConfig.ENERGY_REGEN.get(), 0.0, 1000.0)
                                         .setSyncable(true));
 
         public static final RegistrySupplier<Attribute> GRIT_DECAY = ATTRIBUTES.register("grit_decay",
-                        () -> new RangedAttribute("attribute.creraces.grit_decay", 0.1, 0.0, 1000.0).setSyncable(true));
+                        () -> new RangedAttribute("attribute.creraces.grit_decay", CreRacesConfig.GRIT_DECAY.get(), 0.0, 1000.0).setSyncable(true));
 
         public static final RegistrySupplier<Attribute> RAGE_DECAY = ATTRIBUTES.register("rage_decay",
-                        () -> new RangedAttribute("attribute.creraces.rage_decay", 0.25, 0.0, 1000.0)
+                        () -> new RangedAttribute("attribute.creraces.rage_decay", CreRacesConfig.RAGE_DECAY.get(), 0.0, 1000.0)
                                         .setSyncable(true));
 
         public static final RegistrySupplier<Attribute> DOUBLE_JUMP = ATTRIBUTES.register("double_jump",
@@ -110,6 +113,76 @@ public class ModAttributes {
                                         .setSyncable(true));
 
         private static boolean initialized = false;
+
+        public static final String APOTHIC_ID = "attributeslib";
+
+        /**
+         * Resolves a CreRaces attribute to its Apothic Attributes equivalent if the mod is present.
+         * This ensures that all components (Traits, Scaling, Combat) point to the same global attribute.
+         */
+        public static Attribute resolve(RegistrySupplier<Attribute> supplier) {
+                if (supplier == null)
+                        return null;
+                if (!Platform.isModLoaded(APOTHIC_ID))
+                        return supplier.get();
+
+                String internalName = supplier.getId().getPath();
+                String apothicName = switch (internalName) {
+                        case "crit_rate" -> "crit_chance";
+                        case "ability_haste" -> "cooldown_reduction";
+                        case "armor_penetration" -> "armor_shred";
+                        case "attack_damage" -> "attack_damage"; // attributeslib:attack_damage
+                        case "magic_resist" -> "magic_resistance";
+                        case "healing_received" -> "healing_received";
+                        default -> internalName;
+                };
+
+                Attribute attr = BuiltInRegistries.ATTRIBUTE.get(new ResourceLocation(APOTHIC_ID, apothicName));
+                return attr != null ? attr : supplier.get();
+        }
+
+        /**
+         * Resolves a raw Attribute to its Apothic version by checking its registry key.
+         */
+        public static Attribute resolve(Attribute attr) {
+                if (attr == null || !Platform.isModLoaded(APOTHIC_ID))
+                        return attr;
+
+                ResourceLocation id = BuiltInRegistries.ATTRIBUTE.getKey(attr);
+                if (id == null || !id.getNamespace().equals(CreRaces.MODID))
+                        return attr;
+
+                String path = id.getPath();
+                String apothicName = switch (path) {
+                        case "crit_rate" -> "crit_chance";
+                        case "ability_haste" -> "cooldown_reduction";
+                        case "armor_penetration" -> "armor_shred";
+                        case "magic_resist" -> "magic_resistance";
+                        case "healing_received" -> "healing_received";
+                        default -> path;
+                };
+
+                Attribute apothicAttr = BuiltInRegistries.ATTRIBUTE.get(new ResourceLocation(APOTHIC_ID, apothicName));
+                return apothicAttr != null ? apothicAttr : attr;
+        }
+
+        /**
+         * Checks if the given resolved Attribute is a percentage-based attribute in AttributesLib
+         * that uses 0.0-1.0 range instead of 0-100.
+         */
+        public static boolean isPercentAttribute(Attribute attr) {
+                if (attr == null)
+                        return false;
+                ResourceLocation id = BuiltInRegistries.ATTRIBUTE.getKey(attr);
+                if (id == null || !id.getNamespace().equals(APOTHIC_ID))
+                        return false;
+
+                String path = id.getPath();
+                return switch (path) {
+                        case "crit_chance", "cooldown_reduction", "armor_shred", "life_steal", "overheal", "current_hp_damage", "dodge_chance" -> true;
+                        default -> false;
+                };
+        }
 
         public static void init() {
                 if (initialized)

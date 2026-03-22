@@ -79,6 +79,12 @@ public class FabricConfig {
         CreRacesConfig.FORCED_SELECTION = () -> common.gameplay.forced_selection;
         CreRacesConfig.ABILITY_HASTE_CAP = () -> common.gameplay.ability_haste_cap;
         CreRacesConfig.RACIAL_AD_MULTIPLIER = () -> common.gameplay.racial_ad_multiplier;
+        CreRacesConfig.RESOURCE_DECAY_GRACE_PERIOD = () -> common.gameplay.resource_decay_grace_period;
+        CreRacesConfig.MANA_AP_SCALING = () -> common.gameplay.mana_ap_scaling;
+        CreRacesConfig.MANA_REGEN = () -> common.gameplay.mana_regen;
+        CreRacesConfig.ENERGY_REGEN = () -> common.gameplay.energy_regen;
+        CreRacesConfig.GRIT_DECAY = () -> common.gameplay.grit_decay;
+        CreRacesConfig.RAGE_DECAY = () -> common.gameplay.rage_decay;
         CreRacesConfig.COIN_DROP_ENABLED = () -> common.gameplay.coin_drop_enabled;
         CreRacesConfig.SAG_WINGS = () -> common.gameplay.sag_wings;
         CreRacesConfig.GSTATE_ENABLED = () -> common.gameplay.gstate_enabled;
@@ -199,6 +205,12 @@ public class FabricConfig {
             public boolean forced_selection = CreRacesConfig.FORCED_SELECTION.get();
             public double ability_haste_cap = CreRacesConfig.ABILITY_HASTE_CAP.get();
             public double racial_ad_multiplier = CreRacesConfig.RACIAL_AD_MULTIPLIER.get();
+            public long resource_decay_grace_period = CreRacesConfig.RESOURCE_DECAY_GRACE_PERIOD.get();
+            public double mana_ap_scaling = CreRacesConfig.MANA_AP_SCALING.get();
+            public double mana_regen = CreRacesConfig.MANA_REGEN.get();
+            public double energy_regen = CreRacesConfig.ENERGY_REGEN.get();
+            public double grit_decay = CreRacesConfig.GRIT_DECAY.get();
+            public double rage_decay = CreRacesConfig.RAGE_DECAY.get();
             public boolean coin_drop_enabled = CreRacesConfig.COIN_DROP_ENABLED.get();
             public boolean sag_wings = CreRacesConfig.SAG_WINGS.get();
             public boolean gstate_enabled = CreRacesConfig.GSTATE_ENABLED.get();

@@ -70,12 +70,21 @@ public class RaceCustomization {
         }
 
         public static RaceCustomization fromJson(JsonObject json) {
+                return fromJson(json, null);
+        }
+
+        public static RaceCustomization fromJson(JsonObject json,
+                        @javax.annotation.Nullable java.util.Map<String, String> externalDefaults) {
                 java.util.List<String> options = new java.util.ArrayList<>();
                 if (json.has("options")) {
                         json.getAsJsonArray("options").forEach(e -> options.add(e.getAsString()));
                 }
 
                 java.util.Map<String, String> raceDefaults = new java.util.HashMap<>();
+                if (externalDefaults != null) {
+                        raceDefaults.putAll(externalDefaults);
+                }
+
                 if (json.has("creraces:race_defaults") || json.has("race_defaults")) {
                         JsonObject rdObj = json.has("creraces:race_defaults") ? json.getAsJsonObject("creraces:race_defaults")
                                         : json.getAsJsonObject("race_defaults");
@@ -84,19 +93,20 @@ public class RaceCustomization {
                         }
                 }
 
+                String id = GsonHelper.getAsString(json, "id", "unknown");
+
                 return new RaceCustomization(
-                                GsonHelper.getAsString(json, "id", "unknown"),
+                                id,
                                 GsonHelper.getAsString(json, "type", "property"),
                                 GsonHelper.getNullableString(json, "addonId", null),
                                 json.has("addon_data") ? json.getAsJsonObject("addon_data")
-                                                : (json.has("addons") ? json.getAsJsonObject("addons") : null), // support
-                                                                                                                // both
-                                                                                                                // keys
+                                                : (json.has("addons") ? json.getAsJsonObject("addons") : null),
                                 options,
                                 json.has("defaultValue") ? json.get("defaultValue").getAsString()
                                                 : (json.has("default") ? json.get("default").getAsString() : ""),
                                 raceDefaults,
                                 GsonHelper.getAsBoolean(json, "hidden", false));
         }
+
 
 }

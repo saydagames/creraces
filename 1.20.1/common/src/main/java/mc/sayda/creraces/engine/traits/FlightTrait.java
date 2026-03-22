@@ -67,21 +67,24 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
 
             // Apply Soggy effect if wings can sag and environment matches
             if (soggyWings) {
-                boolean inRain = player.level().isRainingAt(java.util.Objects.requireNonNull(player.blockPosition()));
+                boolean inRain = mc.sayda.creraces.util.WorldUtils.isExposedToRain(player);
                 boolean inWater = player.isInWater();
                 boolean shouldBeSoggy = inWater || (inRain && mc.sayda.creraces.config.CreRacesConfig.SAG_WINGS.get());
 
                 if (shouldBeSoggy) {
+
+
                     var soggyEffect = mc.sayda.creraces.registry.ModMobEffects.SOGGY.get();
                     if (soggyEffect != null) {
                         player.addEffect(
-                                new net.minecraft.world.effect.MobEffectInstance(soggyEffect, 200, 0, false, false));
+                                new net.minecraft.world.effect.MobEffectInstance(soggyEffect, 9600, 0, false, false));
                     }
                 }
             }
 
+
             boolean isSoggy = soggyWings && player.hasEffect(mc.sayda.creraces.registry.ModMobEffects.SOGGY.get());
-            boolean canFly = conditionMet && currentResource > evaluatedDrain && !isSoggy;
+            boolean canFly = conditionMet && currentResource >= evaluatedDrain && !isSoggy;
             boolean wasMayfly = player.getAbilities().mayfly;
             boolean wasFlying = player.getAbilities().flying;
 

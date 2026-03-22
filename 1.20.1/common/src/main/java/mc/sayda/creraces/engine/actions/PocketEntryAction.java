@@ -70,6 +70,15 @@ public class PocketEntryAction implements ActionRegistry.RaceAction {
                 return;
             }
 
+            // Dryad Restriction
+            if (vars.getRace().toString().equals("creraces:dryad")) {
+                double tx = vars.getPersistentState(new ResourceLocation("dryad:tx"));
+                if (tx == 0.0) {
+                    serverPlayer.displayClientMessage(net.minecraft.network.chat.Component.literal("You must set your soul tree before you can enter your pocket."), true);
+                    return;
+                }
+            }
+
             // Enter Pocket
             boolean firstTime = !vars.hasPocket();
 

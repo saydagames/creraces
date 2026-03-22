@@ -2,16 +2,47 @@
     "name": "ability.creraces.camouflage.name",
     "description": "ability.creraces.camouflage.description",
     "type": "ACTIVE",
+    "cooldown": 720,
     "icon": "minecraft:fern",
     "cost": 1,
     "race": [
         "creraces:dryad",
         "creraces:naiad"
     ],
+    "condition": {
+        "type": "creraces:or",
+        "conditions": [
+            {
+                "type": "creraces:race_equals",
+                "race": "creraces:dryad"
+            },
+            {
+                "type": "creraces:in_water"
+            }
+        ]
+    },
     "actions": [
         {
-            "type": "creraces:toggle_state",
-            "state": "slot"
+            "type": "creraces:conditional",
+            "condition": {
+                "type": "creraces:has_effect",
+                "effect": "creraces:camouflage"
+            },
+            "if_true": [
+                {
+                    "type": "creraces:remove_effect",
+                    "effect": "creraces:camouflage"
+                }
+            ],
+            "if_false": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "creraces:camouflage",
+                    "duration": 1000000,
+                    "amplifier": 0,
+                    "visible": true
+                }
+            ]
         },
         {
             "type": "creraces:play_sound",
@@ -28,5 +59,7 @@
             "value": 0
         }
     ],
-    "wiki_page": "Ability:Camouflage"
+    "wiki_page": "state:Camouflage"
 }
+
+

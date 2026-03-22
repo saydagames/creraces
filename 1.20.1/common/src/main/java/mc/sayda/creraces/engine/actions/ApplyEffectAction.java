@@ -17,22 +17,29 @@ import java.util.Objects;
 public class ApplyEffectAction implements ActionRegistry.RaceAction {
     public static final ResourceLocation ID = new ResourceLocation("creraces", "apply_effect");
 
-    private final net.minecraft.world.effect.MobEffect cachedEffect;
-    private final ScalingValue duration;
-    private final ScalingValue amplifier;
+    private static class EffectData {
+        private final MobEffect effect;
+        private final ScalingValue duration;
+        private final ScalingValue amplifier;
+
+        public EffectData(ResourceLocation effectId, ScalingValue duration, ScalingValue amplifier) {
+            this.effect = Objects.requireNonNull(BuiltInRegistries.MOB_EFFECT.get(Objects.requireNonNull(effectId)));
+            this.duration = duration;
+            this.amplifier = amplifier;
+        }
+    }
+
+    private final java.util.List<EffectData> effects;
     private final boolean ambient;
     private final boolean visible;
     private final ScalingValue radius;
     private final mc.sayda.creraces.engine.TargetFilter targets;
     private final boolean incrementAmplifier;
 
-    public ApplyEffectAction(ResourceLocation effectId, ScalingValue duration,
-            ScalingValue amplifier, boolean ambient, boolean visible,
+    public ApplyEffectAction(java.util.List<EffectData> effects, boolean ambient, boolean visible,
             ScalingValue radius, mc.sayda.creraces.engine.TargetFilter targets,
             boolean incrementAmplifier) {
-        this.cachedEffect = Objects.requireNonNull(BuiltInRegistries.MOB_EFFECT.get(Objects.requireNonNull(effectId)));
-        this.duration = duration;
-        this.amplifier = amplifier;
+        this.effects = effects;
         this.ambient = ambient;
         this.visible = visible;
         this.radius = radius;
@@ -42,13 +49,27 @@ public class ApplyEffectAction implements ActionRegistry.RaceAction {
 
     public static void register() {
         ActionRegistry.register(ID, json -> {
-            ResourceLocation effectId = new ResourceLocation(
-                    Objects.requireNonNull(GsonHelper.getAsString(json, "effect")));
-            if (!BuiltInRegistries.MOB_EFFECT.containsKey(effectId)) {
-                mc.sayda.creraces.CreRaces.LOGGER.error("Unknown mob effect ID in apply_effect action: {}", effectId);
+            java.util.List<EffectData> effects = new java.util.ArrayList<>();
+
+            if (json.has("effects") && json.get("effects").isJsonArray()) {
+                com.google.gson.JsonArray array = json.getAsJsonArray("effects");
+                for (int i = 0; i < array.size(); i++) {
+                    com.google.gson.JsonObject obj = array.get(i).getAsJsonObject();
+                    ResourceLocation effectId = new ResourceLocation(GsonHelper.getAsString(obj, "effect"));
+                    ScalingValue duration = ScalingValue.fromJson(obj, "duration", 200.0);
+                    ScalingValue amplifier = ScalingValue.fromJson(obj, "amplifier", 0.0);
+                    effects.add(new EffectData(effectId, duration, amplifier));
+                }
+            } else if (json.has("effect")) {
+                ResourceLocation effectId = new ResourceLocation(
+                        Objects.requireNonNull(GsonHelper.getAsString(json, "effect")));
+                ScalingValue duration = ScalingValue.fromJson(json, "duration", 200.0);
+                ScalingValue amplifier = ScalingValue.fromJson(json, "amplifier", 0.0);
+                effects.add(new EffectData(effectId, duration, amplifier));
+            } else {
+                throw new IllegalArgumentException("Missing 'effect' or 'effects' array in apply_effect action");
             }
-            ScalingValue duration = ScalingValue.fromJson(json, "duration", 200.0);
-            ScalingValue amplifier = ScalingValue.fromJson(json, "amplifier", 0.0);
+
             boolean ambient = GsonHelper.getAsBoolean(json, "ambient", true);
             boolean visible = GsonHelper.getAsBoolean(json, "visible", true);
             ScalingValue radius = ScalingValue.fromJson(json, "radius", 0.0);
@@ -58,17 +79,16 @@ public class ApplyEffectAction implements ActionRegistry.RaceAction {
                     "targets", defaultAllow);
             boolean incrementAmplifier = GsonHelper.getAsBoolean(json, "increment_amplifier", false);
 
-            return new ApplyEffectAction(effectId, duration, amplifier, ambient, visible,
+            return new ApplyEffectAction(effects, ambient, visible,
                     radius, targets, incrementAmplifier);
         });
     }
 
-    @SuppressWarnings("null")
     @Override
     public boolean execute(Player player, @javax.annotation.Nullable LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
-        if (cachedEffect == null)
+        if (effects.isEmpty())
             return true;
 
         double r = radius.evaluate(player, target);
@@ -79,40 +99,50 @@ public class ApplyEffectAction implements ActionRegistry.RaceAction {
             // AoE Mode
             net.minecraft.world.phys.AABB area = player.getBoundingBox().inflate(r);
             player.level().getEntitiesOfClass(LivingEntity.class, area, e -> targets.isValid(e, player))
-                    .forEach(e -> applyToEntity(player, e, cachedEffect));
+                    .forEach(e -> applyAllToEntity(player, e));
         } else {
             // Single Target Mode logic: Check both player and target if they exist
             if (target != null) {
                 if (targets.isValid(target, player)) {
-                    applyToEntity(player, target, cachedEffect);
+                    applyAllToEntity(player, target);
                 }
             } else {
                 if (targets.isValid(player, player)) {
-                    applyToEntity(player, player, cachedEffect);
+                    applyAllToEntity(player, player);
                 }
             }
         }
         return true;
     }
 
-    private void applyToEntity(Player player, LivingEntity entity, MobEffect effect) {
-        int finalDuration = (int) duration.evaluate(player, entity);
-        int finalAmplifier = (int) amplifier.evaluate(player, entity);
+    private void applyAllToEntity(Player player, LivingEntity entity) {
+        for (EffectData data : effects) {
+            applyToEntity(player, entity, data);
+        }
+    }
 
-        if (incrementAmplifier && entity.hasEffect(effect)) {
-            finalAmplifier += entity.getEffect(effect).getAmplifier() + 1;
+    private void applyToEntity(Player player, LivingEntity entity, EffectData data) {
+        ResourceLocation effectId = BuiltInRegistries.MOB_EFFECT.getKey(data.effect);
+        if (effectId != null && mc.sayda.creraces.util.RaceUtils.isImmuneToEffect(entity, effectId)) {
+            return;
+        }
+
+        int finalDuration = (int) data.duration.evaluate(player, entity);
+        int finalAmplifier = (int) data.amplifier.evaluate(player, entity);
+
+        if (incrementAmplifier && entity.hasEffect(data.effect)) {
+            finalAmplifier += entity.getEffect(data.effect).getAmplifier() + 1;
         }
 
         // Attribution: Link player to target for effects that require a source (e.g. Rat Venom)
         if (player != null && entity instanceof mc.sayda.creraces.util.IPersistentDataAccessor accessor) {
-            ResourceLocation effectId = BuiltInRegistries.MOB_EFFECT.getKey(effect);
             if (effectId != null && effectId.toString().equals("creraces:rat_venom")) {
                 accessor.creraces$getPersistentData().putString("creraces:venom_source", player.getUUID().toString());
             }
         }
 
         // Vanilla MobEffectInstance treats -1 as infinite duration
-        entity.addEffect(new MobEffectInstance(effect, finalDuration == -1 ? -1 : finalDuration, finalAmplifier,
+        entity.addEffect(new MobEffectInstance(data.effect, finalDuration == -1 ? -1 : finalDuration, finalAmplifier,
                 ambient, visible));
     }
 }

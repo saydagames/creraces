@@ -14,6 +14,8 @@ import net.minecraft.Util;
 
 import java.util.Calendar;
 import javax.annotation.Nonnull;
+import io.netty.buffer.Unpooled;
+import net.minecraft.network.FriendlyByteBuf;
 
 import mc.sayda.creraces.client.ModKeyMappings;
 
@@ -58,7 +60,7 @@ public class MenuGUIScreen extends AbstractContainerScreen<MenuGUIMenu> {
 
         // Debug
         this.addRenderableWidget(
-                (Button) Button.builder(Component.translatable("gui.creraces.menu_gui.button_debug"), b -> {
+                Button.builder(Component.translatable("gui.creraces.menu_gui.button_debug"), b -> {
                     if (this.minecraft != null) {
                         this.minecraft.setScreen(new DebugScreen());
                     }
@@ -66,15 +68,13 @@ public class MenuGUIScreen extends AbstractContainerScreen<MenuGUIMenu> {
 
         // Extras (Mirror)
         this.addRenderableWidget(
-                (Button) Button.builder(Component.translatable("gui.creraces.menu_gui.button_extras"), b -> {
-                    if (this.minecraft != null && this.minecraft.player != null) {
-                        mc.sayda.creraces.capability.DataUtils.getVariables(this.minecraft.player).ifPresent(vars -> {
-                            if (this.minecraft != null) {
-                                this.minecraft.setScreen(new DynamicMirrorScreen());
-                            }
-                        });
+                Button.builder(Component.translatable("gui.creraces.menu_gui.button_extras"), b -> {
+                    if (this.minecraft != null) {
+                        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+                        dev.architectury.networking.NetworkManager.sendToServer(mc.sayda.creraces.network.RequestMirrorPacket.ID, buf);
                     }
-                }).bounds(this.leftPos + 93, this.topPos + 124, 61, 20).build());
+                }).bounds(this.leftPos + 93, this.topPos + 124, 61, 20).build()
+        );
 
         // Wiki Button
         this.addRenderableWidget(

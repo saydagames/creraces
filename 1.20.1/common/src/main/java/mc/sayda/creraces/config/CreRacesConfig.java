@@ -28,8 +28,8 @@ public class CreRacesConfig {
     // [SECTION: ENTITY & OTHER]
     public static Supplier<Double> ENTITY_FEATHER_DAMAGE = () -> 2.0;
     public static Supplier<Double> ENTITY_FEATHER_GRAVITY = () -> 0.05;
-    public static Supplier<Double> ENTITY_POISON_EMITTER_HEALTH = () -> 10.0;
-    public static Supplier<Double> ENTITY_POISON_EMITTER_ARMOR = () -> 5.0;
+    public static Supplier<Double> ENTITY_POISON_EMITTER_HEALTH = () -> 16.0;
+    public static Supplier<Double> ENTITY_POISON_EMITTER_ARMOR = () -> 16.0;
     public static Supplier<Double> ENTITY_POISON_EMITTER_FOLLOW_RANGE = () -> 16.0;
     public static Supplier<Double> ENTITY_POISON_EMITTER_KNOCKBACK_RES = () -> 1.0;
     public static Supplier<Double> ENTITY_POISON_EMITTER_MOBILE_MAX_HEALTH = () -> 16.0;
@@ -38,7 +38,7 @@ public class CreRacesConfig {
     public static Supplier<Integer> ENTITY_POISON_EMITTER_LIFETIME_TICKS = () -> 2400; // 2 minutes
 
     // [SECTION: POTION EFFECTS]
-    public static Supplier<Double> RAT_VENOM_SCALING = () -> 0.2;
+    public static Supplier<Double> RAT_VENOM_SCALING = () -> 0.05; // from 0.2
 
     public static Supplier<Double> ENTITY_TORNADO_HEALTH = () -> 20.0;
     public static Supplier<Double> ENTITY_TORNADO_ARMOR = () -> 5.0;
@@ -73,8 +73,14 @@ public class CreRacesConfig {
     public static Supplier<Integer> CUSTOMIZATION_VALUE_MAX_LENGTH = () -> 128;
     public static Supplier<Integer> NETWORK_TEAM_NAME_MAX_LEN = () -> 16;
     public static Supplier<Integer> NETWORK_PLAYER_NAME_MAX_LEN = () -> 16;
-    public static Supplier<Double> RACIAL_AD_MULTIPLIER = () -> 0.01;
+    public static Supplier<Double> RACIAL_AD_MULTIPLIER = () -> 0.002;
     public static Supplier<Double> RESOURCE_MIN_CAPACITY = () -> 10.0;
+    public static Supplier<Long> RESOURCE_DECAY_GRACE_PERIOD = () -> 400L;
+    public static Supplier<Double> MANA_AP_SCALING = () -> 0.3;
+    public static Supplier<Double> MANA_REGEN = () -> 0.1;
+    public static Supplier<Double> ENERGY_REGEN = () -> 0.25;
+    public static Supplier<Double> GRIT_DECAY = () -> 0.25;
+    public static Supplier<Double> RAGE_DECAY = () -> 0.25;
     public static Supplier<Integer> PASSIVE_EXECUTION_INTERVAL = () -> 20;
     public static Supplier<Double> SUNLIGHT_EQUIPMENT_BREAK_CHANCE = () -> 0.01;
     public static Supplier<Integer> SUNLIGHT_BURN_SECONDS = () -> 5;
@@ -87,7 +93,7 @@ public class CreRacesConfig {
     public static Supplier<Integer> DOC_FETCH_TIMEOUT_SECONDS = () -> 10;
     public static Supplier<Boolean> DISABLE_REMOTE_DOCS = () -> false;
     public static Supplier<String> WIKI_PAGE_PATH = () -> "wiki";
-    public static Supplier<String> WIKI_ABILITY_NAMESPACE = () -> "abilities";
+    public static Supplier<String> WIKI_ABILITY_NAMESPACE = () -> "Ability";
     public static Supplier<String> WIKI_BASE_URL = () -> "https://creraces.wiki.gg";
     public static Supplier<String> WIKI_API_BASE = () -> "https://creraces.wiki.gg";
     public static Supplier<Boolean> COIN_DROP_ENABLED = () -> true;
@@ -108,4 +114,5 @@ public class CreRacesConfig {
     public static Supplier<Boolean> ENGINE_POPUPS_ENABLED = () -> true;
     public static Supplier<Double> REMAINS_HEALTH = () -> 10.0;
     public static Supplier<Integer> REMAINS_DECAY_TIME = () -> 1200;
+    public static Supplier<Double> MAX_SOULS = () -> 9.0;
 }

@@ -97,7 +97,6 @@ local.properties
 !gradle-wrapper.jar
 
 # Umbrella Ignores
-*.md
 !README.md
 
 *.txt
@@ -111,3 +110,6 @@ local.properties
 /.minecraft
 /.attributes
 /TestPack
+TOUHOU_REFERENCES.md
+wiki_ability_template.md
+creraces_mappings.md

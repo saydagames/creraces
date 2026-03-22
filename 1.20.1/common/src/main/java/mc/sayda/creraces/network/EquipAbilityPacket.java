@@ -60,6 +60,13 @@ public class EquipAbilityPacket {
                 // Execute onDeactivate actions for the currently equipped ability before
                 // removing it
                 ResourceLocation currentAbilityId = vars.getAbilityInSlot(slot);
+                ResourceLocation abilityToEquip = abilityId;
+
+                // Toggle logic: if already equipped in this slot, unequip
+                if (java.util.Objects.equals(currentAbilityId, abilityId)) {
+                    abilityToEquip = null;
+                }
+
                 if (currentAbilityId != null) {
                     mc.sayda.creraces.ability.Ability currentAbility = mc.sayda.creraces.ability.AbilityRegistry
                             .get(currentAbilityId);
@@ -71,7 +78,7 @@ public class EquipAbilityPacket {
                     }
                 }
 
-                vars.equipAbility(slot, abilityId);
+                vars.equipAbility(slot, abilityToEquip);
                 // Force an immediate attribute refresh to handle passive modifier changes
                 if (context.getPlayer() instanceof net.minecraft.server.level.ServerPlayer sp) {
                     mc.sayda.creraces.race.AttributeIncidents.eikiJudgment(sp);

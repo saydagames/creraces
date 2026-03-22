@@ -3,11 +3,14 @@
     "description": "ability.creraces.quick_current.description",
     "type": "ACTIVE",
     "icon": "minecraft:kelp",
-    "cooldown": 100,
+    "cooldown": 480,
     "cost": 15,
     "race": [
         "creraces:naiad"
     ],
+    "condition": {
+        "type": "creraces:in_water"
+    },
     "actions": [
         {
             "type": "creraces:aoe",
@@ -29,13 +32,15 @@
                 },
                 {
                     "type": "creraces:play_sound",
-                    "sound": "minecraft:block.wet_grass.place",
+                    "sound": "creraces:blessing",
                     "volume": 1,
-                    "pitch": 0.8,
+                    "pitch": 1.0,
                     "use_target": true
                 }
             ]
         }
     ],
-    "wiki_page": "Ability:Quick_Current"
+    "wiki_page": "state:Quick_Current"
 }
+
+

@@ -58,12 +58,15 @@ public class PackRepositoryMixin {
             @SuppressWarnings("unchecked")
             Set<RepositorySource> sources = (Set<RepositorySource>) sourcesField.get(this);
 
-            // Create a mutable copy and add our provider
-            Set<RepositorySource> mutableSources = new java.util.LinkedHashSet<>(sources);
-            mutableSources.add(new RacePackProvider(detectedType));
-            
-            // Set it back to an unmodifiable set to maintain contract
-            sourcesField.set(this, java.util.Collections.unmodifiableSet(mutableSources));
+            // Extra safe addition for cross-platform stability
+            try {
+                sources.add(new RacePackProvider(detectedType));
+            } catch (UnsupportedOperationException e) {
+                // If unmodifiable (common on Forge), create a mutable copy and replace
+                Set<RepositorySource> mutableSources = new java.util.LinkedHashSet<>(sources);
+                mutableSources.add(new RacePackProvider(detectedType));
+                sourcesField.set(this, mutableSources);
+            }
             
         } catch (Throwable e) {
             com.mojang.logging.LogUtils.getLogger().error("[CreRaces] Failed to inject RacePackProvider", e);

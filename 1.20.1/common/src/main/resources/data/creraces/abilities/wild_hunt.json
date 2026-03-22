@@ -3,7 +3,7 @@
     "description": "ability.creraces.wild_hunt.description",
     "type": "ACTIVE",
     "icon": "minecraft:textures/item/bone.png",
-    "cooldown": 0,
+    "cooldown": 380,
     "cost": 0,
     "race": [
         "creraces:lycan"
@@ -25,7 +25,7 @@
         },
         {
             "type": "creraces:set_state",
-            "ability": "creraces:wild_hunt",
+            "state": "wild_hunt",
             "value": 1
         },
         {
@@ -35,5 +35,7 @@
             "pitch": 0.8
         }
     ],
-    "wiki_page": "Ability:Wild_Hunt"
+    "wiki_page": "state:Wild_Hunt"
 }
+
+

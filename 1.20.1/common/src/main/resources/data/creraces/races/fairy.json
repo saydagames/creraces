@@ -25,7 +25,6 @@
         {
             "type": "creraces:flight",
             "resource": "MANA",
-            "drain_rate": 0.0,
             "creraces:soggy_wings": true
         },
         {
@@ -59,6 +58,9 @@
                 }
             ]
         }
+    ],
+    "creraces:starting_items": [
+        "creraces:mirror"
     ],
     "creraces:starting_abilities": [
         "creraces:dash",
@@ -104,5 +106,12 @@
             "tint": "{fairy_color}"
         }
     ],
-    "creraces:wiki_page": "Fairy"
+    "creraces:wiki_page": "Fairy",
+    "creraces:splash_x": -22,
+    "creraces:splash_y": -12,
+    "creraces:splash_w": 200,
+    "creraces:splash_h": 200,
+    "creraces:name_tex_y": -38,
+    "creraces:name_tex_w": 84,
+    "creraces:name_tex_h": 26
 }

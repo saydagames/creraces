@@ -1,73 +1,81 @@
 {
-    "creraces:name": "race.creraces.giant.name",
-    "creraces:index": 11.0,
-    "creraces:scale": 2.0,
-    "creraces:description": "race.creraces.giant.description",
-    "creraces:icon": "creraces:textures/screens/giant_icon.png",
-    "creraces:splash": "creraces:textures/screens/giant_splash.png",
-    "creraces:base_ap": 10,
-    "creraces:base_ad": 15,
-    "creraces:base_ah": 25,
-    "creraces:base_cr": 5,
-    "creraces:resource_type": "GRIT",
-    "creraces:max_resource": 100,
-    "creraces:difficulty": 3,
-    "creraces:immune_to_knockback": true,
-    "creraces:negate_effects": [
-        "minecraft:levitation"
-    ],
-    "giant_attributes": [
-        {
-            "id": "giant_damage",
-            "type": "creraces:attribute_modifier",
-            "attribute": "minecraft:generic.attack_damage",
-            "value": {
-                "base": 5.0
-            },
-            "operation": "addition"
-        }
-    ],
-    "grit_mechanics": [
-        {
-            "type": "creraces:on_hurt",
-            "condition": {
-                "type": "creraces:attack_charged"
-            },
-            "actions": [
-                {
-                    "type": "creraces:modify_resource",
-                    "resource": "grit",
-                    "operation": "add",
-                    "value": 5.0
-                }
-            ]
-        }
-    ],
-    "final_stand": [
-        {
-            "type": "creraces:on_death",
-            "condition": {
-                "type": "creraces:resource_level",
-                "resource": "grit",
-                "operator": ">",
-                "value": 0
-            },
-            "actions": [
-                {
-                    "type": "creraces:apply_effect",
-                    "effect": "creraces:shield",
-                    "duration": -1,
-                    "amplifier": 3,
-                    "visible": true
-                }
-            ]
-        }
-    ],
-    "creraces:starting_abilities": [
-        "creraces:unstoppable_force",
-        "creraces:tectonic_smash"
-    ],
-    "creraces:portrait": "creraces:textures/screens/giant_portrait.png",
-    "creraces:name_texture": "creraces:textures/screens/giant_text.png",
-    "creraces:wiki_page": "Giant"
+    "creraces:name":  "race.creraces.giant.name",
+    "creraces:index":  11.0,
+    "creraces:scale":  2.0,
+    "creraces:description":  "race.creraces.giant.description",
+    "creraces:icon":  "creraces:textures/screens/giant_icon.png",
+    "creraces:splash":  "creraces:textures/screens/giant_splash.png",
+    "creraces:base_ap":  10,
+    "creraces:base_ad":  15,
+    "creraces:base_ah":  25,
+    "creraces:base_cr":  5,
+    "creraces:resource_type":  "GRIT",
+    "creraces:max_resource":  100,
+    "creraces:difficulty":  3,
+    "creraces:immune_to_knockback":  true,
+    "creraces:negate_effects":  [
+                                    "minecraft:levitation"
+                                ],
+    "giant_attributes":  [
+                             {
+                                 "id":  "giant_damage",
+                                 "type":  "creraces:attribute_modifier",
+                                 "attribute":  "minecraft:generic.attack_damage",
+                                 "value":  {
+                                               "base":  5.0
+                                           },
+                                 "operation":  "addition"
+                             }
+                         ],
+    "grit_mechanics":  [
+                           {
+                               "type":  "creraces:on_hurt",
+                               "condition":  {
+                                                 "type":  "creraces:attack_charged"
+                                             },
+                               "actions":  [
+                                               {
+                                                   "type":  "creraces:modify_resource",
+                                                   "resource":  "grit",
+                                                   "operation":  "add",
+                                                   "value":  5.0
+                                               }
+                                           ]
+                           }
+                       ],
+    "final_stand":  [
+                        {
+                            "type":  "creraces:on_death",
+                            "condition":  {
+                                              "type":  "creraces:resource_level",
+                                              "resource":  "grit",
+                                              "operator":  "\u003e",
+                                              "value":  0
+                                          },
+                            "actions":  [
+                                            {
+                                                "type":  "creraces:apply_effect",
+                                                "effect":  "creraces:shield",
+                                                "duration":  -1,
+                                                "amplifier":  3,
+                                                "visible":  true
+                                            }
+                                        ]
+                        }
+                    ],
+    "creraces:starting_abilities":  [
+                                        "creraces:unstoppable_force",
+                                        "creraces:tectonic_smash"
+                                    ],
+    "creraces:portrait":  "creraces:textures/screens/giant_portrait.png",
+    "creraces:name_texture":  "creraces:textures/screens/giant_text.png",
+    "creraces:wiki_page":  "Giant",
+    "creraces:splash_x":  -14,
+    "creraces:splash_y":  -43,
+    "creraces:splash_w":  180,
+    "creraces:splash_h":  235,
+    "creraces:name_tex_x":  51,
+    "creraces:name_tex_y":  -38,
+    "creraces:name_tex_w":  69,
+    "creraces:name_tex_h":  24
 }

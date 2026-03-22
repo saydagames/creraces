@@ -26,7 +26,9 @@ public class OnItemPickupTrait implements TraitRegistry.RaceTrait {
     public void onItemPickup(Player player, ItemStack stack) {
         if (condition == null || condition.evaluate(player, null, null, null)) {
             for (ActionRegistry.RaceAction action : actions) {
-                action.execute(player, null, null, null);
+                if (!action.execute(player, null, null, null)) {
+                    break;
+                }
             }
         }
     }

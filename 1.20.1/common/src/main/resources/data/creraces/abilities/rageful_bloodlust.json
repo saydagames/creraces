@@ -3,7 +3,7 @@
     "description": "ability.creraces.rageful_bloodlust.description",
     "type": "ACTIVE",
     "icon": "minecraft:textures/item/ghast_tear.png",
-    "cooldown": 400,
+    "cooldown": 520,
     "cost": 0,
     "race": [
         "creraces:orc"
@@ -32,8 +32,10 @@
         {
             "type": "creraces:spawn_particles",
             "particle": "minecraft:heart",
+            "spread": 0.5,
+            "speed": 0.05,
             "count": 5
         }
     ],
-    "wiki_page": "Ability:Rageful_Bloodlust"
+    "wiki_page": "state:Rageful_Bloodlust"
 }

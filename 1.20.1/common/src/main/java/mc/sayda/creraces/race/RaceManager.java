@@ -136,13 +136,6 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                         GsonHelper.getAsInt(jsonObject, "base_ah", 0));
                 int baseCr = GsonHelper.getAsInt(jsonObject, "creraces:base_cr",
                         GsonHelper.getAsInt(jsonObject, "base_cr", 0));
-                int maxResource = GsonHelper.getAsInt(jsonObject, "creraces:max_resource",
-                        GsonHelper.getAsInt(jsonObject, "max_resource", 100));
-
-                JsonElement scaleElem = jsonObject.has("creraces:scale") ? jsonObject.get("creraces:scale")
-                        : jsonObject.get("scale");
-                RaceScale scale = RaceScale.fromJson(scaleElem);
-
                 String resourceTypeStr = GsonHelper.getAsString(jsonObject, "creraces:resource_type",
                         GsonHelper.getAsString(jsonObject, "resource_type", "NONE"));
                 if (resourceTypeStr.contains(":"))
@@ -154,6 +147,13 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                 } catch (Exception e) {
                     CreRaces.LOGGER.warn("Race {} has unknown resource type: {}", id, resourceTypeStr);
                 }
+
+                int maxResource = GsonHelper.getAsInt(jsonObject, "creraces:max_resource",
+                        GsonHelper.getAsInt(jsonObject, "max_resource", resourceType == ResourceType.ENERGY ? 200 : 100));
+
+                JsonElement scaleElem = jsonObject.has("creraces:scale") ? jsonObject.get("creraces:scale")
+                        : jsonObject.get("scale");
+                RaceScale scale = RaceScale.fromJson(scaleElem);
 
                 int difficulty = GsonHelper.getAsInt(jsonObject, "creraces:difficulty",
                         GsonHelper.getAsInt(jsonObject, "difficulty", 0));
@@ -178,6 +178,24 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                 int nameTexH = GsonHelper.getAsInt(jsonObject, "creraces:name_tex_h",
                         GsonHelper.getAsInt(jsonObject, "name_tex_h", 20));
 
+                // Global Race Defaults (Customizations)
+                Map<String, Map<String, String>> globalDefaults = new java.util.HashMap<>();
+                JsonElement gdElem = jsonObject.has("creraces:race_defaults") ? jsonObject.get("creraces:race_defaults")
+                        : jsonObject.get("race_defaults");
+                if (gdElem != null && gdElem.isJsonObject()) {
+                    JsonObject gdObj = gdElem.getAsJsonObject();
+                    for (Map.Entry<String, JsonElement> raceEntry : gdObj.entrySet()) {
+                        if (raceEntry.getValue().isJsonObject()) {
+                            Map<String, String> defaults = new java.util.HashMap<>();
+                            JsonObject defsObj = raceEntry.getValue().getAsJsonObject();
+                            for (Map.Entry<String, JsonElement> defEntry : defsObj.entrySet()) {
+                                defaults.put(defEntry.getKey(), defEntry.getValue().getAsString());
+                            }
+                            globalDefaults.put(raceEntry.getKey(), defaults);
+                        }
+                    }
+                }
+
                 // Customizations
                 List<RaceCustomization> customizations = new ArrayList<>();
                 JsonArray custArray = jsonObject.has("creraces:customization")
@@ -185,9 +203,21 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                         : (jsonObject.has("customization") ? jsonObject.getAsJsonArray("customization") : null);
                 if (custArray != null) {
                     for (JsonElement custElem : custArray) {
-                        customizations.add(RaceCustomization.fromJson(custElem.getAsJsonObject()));
+                        JsonObject cObj = custElem.getAsJsonObject();
+                        String cId = GsonHelper.getAsString(cObj, "id", "unknown");
+
+                        // Extract relevant defaults for THIS customization from all races
+                        Map<String, String> custDefaults = new java.util.HashMap<>();
+                        globalDefaults.forEach((rId, rDefs) -> {
+                            if (rDefs.containsKey(cId)) {
+                                custDefaults.put(rId, rDefs.get(cId));
+                            }
+                        });
+
+                        customizations.add(RaceCustomization.fromJson(cObj, custDefaults));
                     }
                 }
+
 
                 // Starting Items/Abilities
                 List<ResourceLocation> startingAbilities = new ArrayList<>();
@@ -483,8 +513,6 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
         }
 
         // Food & Hunger
-        boolean oldCanEatMeat = GsonHelper.getAsBoolean(p, "creraces:can_eat_meat",
-                GsonHelper.getAsBoolean(p, "can_eat_meat", true));
         List<String> blockedFoodTypes = new ArrayList<>();
         JsonArray blockedArray = p.has("creraces:blocked_food_types") ? p.getAsJsonArray("creraces:blocked_food_types")
                 : (p.has("blocked_food_types") ? p.getAsJsonArray("blocked_food_types") : null);
@@ -492,8 +520,6 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
             for (JsonElement e : blockedArray) {
                 blockedFoodTypes.add(standardizeId(e.getAsString()));
             }
-        } else if (!oldCanEatMeat) {
-            blockedFoodTypes.add("meat");
         }
 
         List<String> allowedFoodTypes = new ArrayList<>();

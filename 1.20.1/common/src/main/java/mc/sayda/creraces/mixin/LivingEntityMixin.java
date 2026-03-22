@@ -66,7 +66,8 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
     private void creraces$cancelJump(CallbackInfo ci) {
         LivingEntity entity = (LivingEntity) (Object) this;
         if (entity.hasEffect(mc.sayda.creraces.registry.ModMobEffects.STUNNED.get()) ||
-                entity.hasEffect(mc.sayda.creraces.registry.ModMobEffects.ROOTED.get())) {
+                entity.hasEffect(mc.sayda.creraces.registry.ModMobEffects.ROOTED.get()) ||
+                entity.hasEffect(mc.sayda.creraces.registry.ModMobEffects.FROZEN.get())) {
             ci.cancel();
         }
     }
@@ -219,6 +220,7 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
 
     @Inject(method = "hurt", at = @At("HEAD"), cancellable = true)
     private void creraces$onHitLogic(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+        this.creraces$lastDamageSource = source;
         // Global Spirit Realm damage immunity
         if (mc.sayda.creraces.engine.SpiritMobilityHandler.isSpirit((LivingEntity) (Object) this)) {
             cir.setReturnValue(false);
@@ -266,6 +268,7 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
                         double maxRage = player.getAttributeValue(ModAttributes.MAX_RAGE.get());
                         if (vars.getRage() < maxRage) {
                             vars.setRage(Math.min(maxRage, vars.getRage() + 5.0));
+                            vars.setResourceTimer(player.level().getGameTime());
                             // Full sync: resource changed by a discrete event
                             mc.sayda.creraces.network.BoundaryHandler.resyncVariables(player, player, true);
                         }
@@ -292,9 +295,19 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
                         double maxGrit = player.getAttributeValue(ModAttributes.MAX_GRIT.get());
                         if (vars.getGrit() < maxGrit) {
                             vars.setGrit(Math.min(maxGrit, vars.getGrit() + 5.0));
+                            vars.setResourceTimer(player.level().getGameTime());
                             // Full sync: resource changed by a discrete event
                             mc.sayda.creraces.network.BoundaryHandler.resyncVariables(player, player, true);
                         }
+                    }
+
+                    // Camouflage Interrupt
+                    @SuppressWarnings("null")
+                    boolean hasCamouflage = player.hasEffect(mc.sayda.creraces.registry.ModMobEffects.CAMOUFLAGE.get());
+                    if (hasCamouflage) {
+                        player.removeEffect(mc.sayda.creraces.registry.ModMobEffects.CAMOUFLAGE.get());
+                        vars.setCooldown(new net.minecraft.resources.ResourceLocation("creraces:camouflage"), 220);
+                        mc.sayda.creraces.network.BoundaryHandler.resyncVariables(player, player, true);
                     }
 
                     // Trigger data-driven on_hurt traits
@@ -336,8 +349,18 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
         }
     }
 
+    @Unique
+    private DamageSource creraces$lastDamageSource;
+
     @Inject(method = "knockback", at = @At("HEAD"), cancellable = true)
     private void creraces$knockbackPassive(double strength, double x, double z, CallbackInfo ci) {
+        // Workaround for 1.20.1: Native no_knockback tag is only fully supported in 1.21.1+
+        // This mixin-based check ensures tagged damage types skip knockback.
+        if (this.creraces$lastDamageSource != null && this.creraces$lastDamageSource.is(mc.sayda.creraces.registry.ModDamageTags.NO_KNOCKBACK)) {
+            ci.cancel();
+            return;
+        }
+
         if ((Object) this instanceof Player player) {
             DataUtils.getVariables(player).ifPresent(vars -> {
                 Race race = RaceRegistry.get(vars.getRace());
@@ -495,7 +518,7 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
     @Inject(method = "getVisibilityPercent", at = @At("HEAD"), cancellable = true)
     private void creraces$trueInvisibilityVisibility(Entity viewer, CallbackInfoReturnable<Double> cir) {
         LivingEntity entity = (LivingEntity) (Object) this;
-        if (entity.hasEffect(mc.sayda.creraces.registry.ModMobEffects.TRUE_INVISIBILITY.get())) {
+        if (mc.sayda.creraces.registry.ModMobEffects.isInvisible(entity)) {
             cir.setReturnValue(0.0);
         }
     }

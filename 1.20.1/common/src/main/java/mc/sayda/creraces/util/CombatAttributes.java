@@ -1,13 +1,9 @@
 package mc.sayda.creraces.util;
 
-import dev.architectury.platform.Platform;
 import mc.sayda.creraces.registry.ModAttributes;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import java.util.Optional;
 
 /**
  * Utility class for LoL-style combat attribute resolution.
@@ -19,7 +15,7 @@ public class CombatAttributes {
     public static final String APOTHIC_ID = "attributeslib";
 
     public static double getHealingReceived(LivingEntity entity) {
-        return entity.getAttributeValue(resolve("healing_received", ModAttributes.HEALING_RECEIVED.get()));
+        return entity.getAttributeValue(ModAttributes.resolve(ModAttributes.HEALING_RECEIVED));
     }
 
     public static double getArmor(LivingEntity entity) {
@@ -28,34 +24,31 @@ public class CombatAttributes {
     }
 
     public static double getArmorPierce(LivingEntity entity) {
-        return entity.getAttributeValue(resolve("armor_pierce", ModAttributes.ARMOR_PIERCE.get()));
+        return entity.getAttributeValue(ModAttributes.resolve(ModAttributes.ARMOR_PIERCE));
     }
 
     public static double getArmorShred(LivingEntity entity) {
-        return entity.getAttributeValue(resolve("armor_shred", ModAttributes.ARMOR_SHRED.get()));
+        return entity.getAttributeValue(ModAttributes.resolve(ModAttributes.ARMOR_SHRED));
     }
 
     public static double getMagicResist(LivingEntity entity) {
-        return entity.getAttributeValue(resolve("magic_resist", ModAttributes.MAGIC_RESIST.get()));
+        return entity.getAttributeValue(ModAttributes.resolve(ModAttributes.MAGIC_RESIST));
     }
 
     public static double getMagicPierce(LivingEntity entity) {
-        return entity.getAttributeValue(resolve("magic_pierce", ModAttributes.MAGIC_PIERCE.get()));
+        return entity.getAttributeValue(ModAttributes.resolve(ModAttributes.MAGIC_PIERCE));
     }
 
     public static double getMagicShred(LivingEntity entity) {
-        return entity.getAttributeValue(resolve("magic_shred", ModAttributes.MAGIC_SHRED.get()));
+        return entity.getAttributeValue(ModAttributes.resolve(ModAttributes.MAGIC_SHRED));
     }
 
     /**
      * Resolves an attribute, preferring Apothic Attributes if the mod is loaded.
+     * @deprecated Use {@link ModAttributes#resolve(dev.architectury.registry.registries.RegistrySupplier)}
      */
+    @Deprecated
     private static Attribute resolve(String name, Attribute fallback) {
-        if (Platform.isModLoaded(APOTHIC_ID)) {
-            // Note: On Fabric this returns null because the mod isn't loaded anyway.
-            // On Forge, we look up the Registry entry.
-            return net.minecraft.core.registries.BuiltInRegistries.ATTRIBUTE.get(new ResourceLocation(APOTHIC_ID, name));
-        }
         return fallback;
     }
 }

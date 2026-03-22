@@ -33,13 +33,13 @@ public class AbilityExecutionRegistry {
                     mc.sayda.creraces.CreRaces.LOGGER.info(
                             "AbilityExecutionRegistry: Executing {} actions for ability {}",
                             ability.onActivate().size(), ability.id());
-                    boolean anySuccess = false;
                     for (mc.sayda.creraces.engine.ActionRegistry.RaceAction action : ability.onActivate()) {
-                        if (action.execute(player, null, slot, lookTarget)) {
-                            anySuccess = true;
+                        if (!action.execute(player, null, slot, lookTarget)) {
+                            mc.sayda.creraces.CreRaces.LOGGER.info("AbilityExecutionRegistry: Action failed, stopping execution for ability {}", ability.id());
+                            return false;
                         }
                     }
-                    return anySuccess;
+                    return true;
                 }
                 return false;
             };

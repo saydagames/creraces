@@ -75,8 +75,8 @@
             "type": "creraces:on_land",
             "name": "talon_strike_landing",
             "condition": {
-                "type": "creraces:ability_state",
-                "ability": "creraces:talon_strike",
+                "type": "creraces:state",
+                "state": "talon_strike",
                 "value": 1.0
             },
             "actions": [
@@ -114,7 +114,7 @@
                 },
                 {
                     "type": "creraces:set_state",
-                    "ability": "creraces:talon_strike",
+                    "state": "talon_strike",
                     "value": 0.0
                 }
             ]
@@ -130,8 +130,8 @@
                         "value": true
                     },
                     {
-                        "type": "creraces:ability_state",
-                        "ability": "creraces:talon_strike",
+                        "type": "creraces:state",
+                        "state": "talon_strike",
                         "value": 1.0
                     }
                 ]
@@ -139,7 +139,7 @@
             "actions": [
                 {
                     "type": "creraces:set_state",
-                    "ability": "creraces:talon_strike",
+                    "state": "talon_strike",
                     "value": 0.0
                 }
             ]
@@ -158,14 +158,14 @@
                 "type": "creraces:and",
                 "conditions": [
                     {
-                        "type": "creraces:ability_state",
-                        "ability": "creraces:talon_strike",
+                        "type": "creraces:state",
+                        "state": "talon_strike",
                         "value": 0.0
                     },
                     {
                         "type": "creraces:cooldown",
                         "id": "creraces:flight_exhaustion",
-                        "operator": "<=",
+                        "operator": "\u003c=",
                         "value": 0
                     }
                 ]
@@ -178,12 +178,12 @@
             "actions": [
                 {
                     "type": "creraces:set_cooldown",
-                    "ability": "creraces:dash",
+                    "state": "dash",
                     "value": 0
                 },
                 {
                     "type": "creraces:set_cooldown",
-                    "ability": "creraces:talon_strike",
+                    "state": "talon_strike",
                     "value": 0
                 }
             ]
@@ -248,7 +248,8 @@
     ],
     "creraces:starting_abilities": [
         "creraces:dash",
-        "creraces:talon_strike"
+        "creraces:talon_strike",
+        "creraces:feathercaller"
     ],
     "creraces:starting_items": [
         "creraces:mirror"
@@ -304,5 +305,12 @@
             }
         }
     ],
-    "creraces:wiki_page": "Harpy"
+    "creraces:wiki_page": "Harpy",
+    "creraces:splash_x": -10,
+    "creraces:splash_y": -69,
+    "creraces:splash_w": 200,
+    "creraces:splash_h": 250,
+    "creraces:name_tex_x": 49,
+    "creraces:name_tex_w": 76,
+    "creraces:name_tex_h": 21
 }

@@ -99,6 +99,8 @@ public class ModMobEffects {
 
         public static final RegistrySupplier<MobEffect> BLINDED = MOB_EFFECTS.register("blinded",
                         () -> new mc.sayda.creraces.effect.BlindedEffect());
+        public static final RegistrySupplier<MobEffect> CAMOUFLAGE = MOB_EFFECTS.register("camouflage",
+                        () -> new mc.sayda.creraces.effect.CamouflageEffect());
         public static final RegistrySupplier<MobEffect> FOUL_PLAY = MOB_EFFECTS.register("foul_play",
                         () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.HARMFUL, 0x4B0082));
         public static final RegistrySupplier<MobEffect> INVULNERABILITY = MOB_EFFECTS.register("invulnerability",
@@ -119,6 +121,12 @@ public class ModMobEffects {
                                                         mc.sayda.creraces.registry.ModAttributes.HEALING_RECEIVED.get(),
                                                         "a0f3d95c-9c9e-4e8a-b1f3-d9d7a2d5d361", -0.4D,
                                                         net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADDITION));
+
+
+        @SuppressWarnings("null")
+        public static boolean isInvisible(net.minecraft.world.entity.LivingEntity entity) {
+                return entity.hasEffect(TRUE_INVISIBILITY.get()) || entity.hasEffect(CAMOUFLAGE.get());
+        }
 
         public static void register() {
                 MOB_EFFECTS.register();

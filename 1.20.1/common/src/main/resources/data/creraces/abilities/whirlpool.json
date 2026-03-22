@@ -3,25 +3,54 @@
     "description": "ability.creraces.whirlpool.description",
     "type": "ACTIVE",
     "icon": "minecraft:nautilus_shell",
-    "cooldown": 200,
+    "cooldown": 240,
     "cost": 20,
     "race": [
         "creraces:naiad"
     ],
+    "condition": {
+        "type": "creraces:in_water"
+    },
     "actions": [
         {
-            "type": "creraces:conditional",
-            "condition": {
-                "type": "creraces:in_water"
-            },
-            "if_true": [
+            "type": "creraces:aoe",
+            "radius": 5,
+            "targets": [
+                "enemies"
+            ],
+            "actions": [
                 {
-                    "type": "creraces:aoe",
-                    "radius": 5,
-                    "targets": [
-                        "enemies"
+                    "type": "creraces:conditional",
+                    "condition": {
+                        "type": "creraces:has_effect",
+                        "effect": "creraces:rooted"
+                    },
+                    "if_true": [
+                        {
+                            "type": "creraces:apply_velocity",
+                            "y": -2.0,
+                            "relative": false
+                        },
+                        {
+                            "type": "creraces:modify_resource",
+                            "resource": "air",
+                            "operation": "set",
+                            "value": 0
+                        },
+                        {
+                            "type": "creraces:delay",
+                            "ticks": 10,
+                            "actions": [
+                                {
+                                    "type": "creraces:apply_effect",
+                                    "effect": "creraces:rooted",
+                                    "duration": 100,
+                                    "amplifier": 0
+                                }
+                            ]
+                        }
                     ],
-                    "actions": [
+                    "if_false": [
                         {
                             "type": "creraces:apply_velocity",
                             "mode": "pull",
@@ -34,15 +63,17 @@
                             "value": -20
                         }
                     ]
-                },
-                {
-                    "type": "creraces:play_sound",
-                    "sound": "minecraft:block.bubble_column.whirlpool_inside",
-                    "volume": 1,
-                    "pitch": 1
                 }
             ]
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:block.bubble_column.whirlpool_inside",
+            "volume": 1,
+            "pitch": 1
         }
     ],
-    "wiki_page": "Ability:Whirlpool"
+    "wiki_page": "state:Whirlpool"
 }
+
+

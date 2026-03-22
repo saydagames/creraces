@@ -94,6 +94,17 @@ public class SetCustomizationPacket {
                     // Sync back to tracking players
                     BoundaryHandler.resyncForAllTrackers(player);
                     mc.sayda.creraces.race.AttributeIncidents.eikiJudgment(player);
+
+                    // Consume the mirror item
+                    if (!player.getAbilities().instabuild) {
+                        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+                            net.minecraft.world.item.ItemStack stack = player.getInventory().getItem(i);
+                            if (stack.is(mc.sayda.creraces.registry.ModItems.MIRROR.get())) {
+                                stack.shrink(1);
+                                break;
+                            }
+                        }
+                    }
                 });
             }
         });

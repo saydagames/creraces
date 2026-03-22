@@ -14,13 +14,19 @@
     "creraces:resource_type": "MANA",
     "creraces:max_resource": 100,
     "creraces:gstate": "FEMALE",
-    "creraces:difficulty": 1,
-    "creraces:regeneration_multiplier": 1.1,
+    "creraces:water_vision": true,
+    "creraces:liquid_speed_multiplier": 1.5,
     "creraces:starting_abilities": [
         "creraces:tidal_wave",
         "creraces:whirlpool",
         "creraces:quick_current",
         "creraces:camouflage"
+    ],
+    "aquatic": [
+        {
+            "type": "creraces:aquatic_movement",
+            "neutral_buoyancy": true
+        }
     ],
     "passive": [
         {
@@ -59,89 +65,6 @@
             ]
         }
     ],
-    "camouflage_logic": [
-        {
-            "type": "creraces:continuous_effect",
-            "name": "camouflage_invisibility",
-            "effect": "creraces:true_invisibility",
-            "resource": "MANA",
-            "drain_rate": 2.0,
-            "duration": 20,
-            "visible": false,
-            "condition": {
-                "type": "creraces:ability_state",
-                "ability": "creraces:camouflage",
-                "value": 1.0
-            }
-        },
-        {
-            "type": "creraces:continuous_effect",
-            "name": "camouflage_speed",
-            "effect": "minecraft:speed",
-            "amplifier": 0,
-            "duration": 20,
-            "visible": true,
-            "condition": {
-                "type": "creraces:ability_state",
-                "ability": "creraces:camouflage",
-                "value": 1.0
-            }
-        },
-        {
-            "type": "creraces:on_hurt",
-            "name": "camouflage_interrupt",
-            "condition": {
-                "type": "creraces:ability_state",
-                "ability": "creraces:camouflage",
-                "value": 1.0
-            },
-            "actions": [
-                {
-                    "type": "creraces:set_state",
-                    "ability": "creraces:camouflage",
-                    "value": 0.0
-                },
-                {
-                    "type": "creraces:set_cooldown",
-                    "id": "creraces:camouflage",
-                    "value": 220
-                }
-            ]
-        },
-        {
-            "type": "creraces:on_tick",
-            "name": "camouflage_mana_expiry",
-            "interval": 1,
-            "condition": {
-                "type": "creraces:and",
-                "conditions": [
-                    {
-                        "type": "creraces:ability_state",
-                        "ability": "creraces:camouflage",
-                        "value": 1.0
-                    },
-                    {
-                        "type": "creraces:resource_level",
-                        "resource": "MANA",
-                        "operator": "==",
-                        "value": 0
-                    }
-                ]
-            },
-            "actions": [
-                {
-                    "type": "creraces:set_state",
-                    "ability": "creraces:camouflage",
-                    "value": 0.0
-                },
-                {
-                    "type": "creraces:set_cooldown",
-                    "id": "creraces:camouflage",
-                    "value": 220
-                }
-            ]
-        }
-    ],
     "cosmetics": [
         {
             "type": "creraces:addon",
@@ -152,5 +75,14 @@
             "addon_id": "naiad_body"
         }
     ],
-    "creraces:wiki_page": "Naiad"
+    "creraces:wiki_page": "Naiad",
+    "creraces:splash_x": -7,
+    "creraces:splash_y": 7,
+    "creraces:splash_w": 200,
+    "creraces:splash_h": 179,
+    "creraces:name_tex_x": 51,
+    "creraces:name_tex_y": -38,
+    "creraces:name_tex_w": 72,
+    "creraces:name_tex_h": 24,
+    "creraces:bg_texture": "creraces:textures/screens/selection_water_bg.png"
 }

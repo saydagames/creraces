@@ -10,7 +10,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import java.util.Objects;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
@@ -39,7 +38,15 @@ public class DebugScreen extends Screen {
 
                 this.addRenderableWidget(Button.builder(Component.translatable("gui.done"), (button) -> {
                         this.onClose();
-                }).bounds(this.width / 2 - 100, this.height - 30, 200, 20).build());
+                }).bounds(this.width / 2 - 100, this.height - 30, 98, 20).build());
+
+                this.addRenderableWidget(Button.builder(Component.literal("Copy"), (button) -> {
+                        StringBuilder sb = new StringBuilder();
+                        for (Component line : debugLines) {
+                                sb.append(line.getString()).append("\n");
+                        }
+                        Minecraft.getInstance().keyboardHandler.setClipboard(sb.toString());
+                }).bounds(this.width / 2 + 2, this.height - 30, 98, 20).build());
 
                 refreshDebugInfo();
         }
@@ -65,7 +72,8 @@ public class DebugScreen extends Screen {
                                                         .withStyle(ChatFormatting.AQUA)));
                         debugLines.add(Component.literal("  Chosen: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component.literal(String.valueOf(vars.hasChosenRace()))
-                                                        .withStyle(vars.hasChosenRace() ? ChatFormatting.GREEN : ChatFormatting.RED)));
+                                                        .withStyle(vars.hasChosenRace() ? ChatFormatting.GREEN
+                                                                        : ChatFormatting.RED)));
 
                         Race race = RaceRegistry.get(vars.getRace());
                         String raceName = race != null ? race.name().getString() : "None";
@@ -117,8 +125,60 @@ public class DebugScreen extends Screen {
                                         .append(Component.literal(String.format("%.1f", vars.getCr()))
                                                         .withStyle(ChatFormatting.GREEN)));
 
+                        double armor = player.getArmorValue();
+                        double armPierce = player.getAttributeValue(
+                                        mc.sayda.creraces.registry.ModAttributes.resolve(
+                                                        mc.sayda.creraces.registry.ModAttributes.ARMOR_PIERCE));
+                        double armShred = player.getAttributeValue(
+                                        mc.sayda.creraces.registry.ModAttributes
+                                                        .resolve(mc.sayda.creraces.registry.ModAttributes.ARMOR_SHRED));
+                        double magPierce = player.getAttributeValue(
+                                        mc.sayda.creraces.registry.ModAttributes.resolve(
+                                                        mc.sayda.creraces.registry.ModAttributes.MAGIC_PIERCE));
+                        double magShred = player.getAttributeValue(
+                                        mc.sayda.creraces.registry.ModAttributes
+                                                        .resolve(mc.sayda.creraces.registry.ModAttributes.MAGIC_SHRED));
+                        double magResist = player.getAttributeValue(
+                                        mc.sayda.creraces.registry.ModAttributes.resolve(
+                                                        mc.sayda.creraces.registry.ModAttributes.MAGIC_RESIST));
+                        double healing = player.getAttributeValue(
+                                        mc.sayda.creraces.registry.ModAttributes.resolve(
+                                                        mc.sayda.creraces.registry.ModAttributes.HEALING_RECEIVED));
+
+                        debugLines.add(Component.literal("  Resistances:").withStyle(ChatFormatting.GRAY));
+                        debugLines.add(Component.literal("    Armor: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(String.format("%.1f", armor))
+                                                        .withStyle(ChatFormatting.GREEN)));
+                        debugLines.add(Component.literal("    ArmorPen: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(String.format("%.1f", armPierce)) // Flat
+                                                        .withStyle(ChatFormatting.GREEN))
+                                        .append(Component.literal(" / ").withStyle(ChatFormatting.GRAY))
+                                        .append(Component.literal(String.format("%.1f%%", armShred * 100)) // Pct
+                                                        .withStyle(ChatFormatting.GREEN)));
+                        debugLines.add(Component.literal("    MR: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(String.format("%.1f", magResist))
+                                                        .withStyle(ChatFormatting.GREEN)));
+                        debugLines.add(Component.literal("    MagicPen: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(String.format("%.1f", magPierce)) // Flat
+                                                        .withStyle(ChatFormatting.GREEN))
+                                        .append(Component.literal(" / ").withStyle(ChatFormatting.GRAY))
+                                        .append(Component.literal(String.format("%.1f%%", magShred * 100)) // Pct
+                                                        .withStyle(ChatFormatting.GREEN)));
+
+                        debugLines.add(Component.literal("  Others:").withStyle(ChatFormatting.GRAY));
+                        debugLines.add(Component.literal("    Heal:").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(String.format("%.1f%%", healing * 100))
+                                                        .withStyle(ChatFormatting.GREEN)));
+
                         // --- RESOURCES ---
                         addHeader("RESOURCES");
+
+                        long threshold = mc.sayda.creraces.config.CreRacesConfig.RESOURCE_DECAY_GRACE_PERIOD.get();
+                        long timerAge = Math.min(player.level().getGameTime() - vars.getResourceTimer(), threshold);
+                        ChatFormatting timerColor = timerAge < threshold ? ChatFormatting.GREEN : ChatFormatting.RED;
+                        debugLines.add(Component.literal("  Resource Timer: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(timerAge + " / " + threshold)
+                                                        .withStyle(timerColor)));
                         debugLines.add(Component.literal("  Mana: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component.literal(String.format("%.1f", vars.getMana()))
                                                         .withStyle(ChatFormatting.BLUE))
@@ -137,18 +197,14 @@ public class DebugScreen extends Screen {
                                         .append(Component.literal(String.format("%.2f", vars.getKarma()))
                                                         .withStyle(ChatFormatting.GOLD))
                                         .append(Component.literal(" | Coins: ").withStyle(ChatFormatting.GRAY))
-                                        .append(Component.literal(java.util.Objects.requireNonNull(String.format("%.0f", vars.getCoins())))
+                                        .append(Component
+                                                        .literal(java.util.Objects.requireNonNull(
+                                                                        String.format("%.0f", vars.getCoins())))
                                                         .withStyle(ChatFormatting.GOLD)));
 
-                        debugLines.add(Component.literal("  Stacks: ").withStyle(ChatFormatting.GRAY)
-                                        .append(Component.literal(String.format("%.1f", vars.getStacks()))
-                                                        .withStyle(ChatFormatting.LIGHT_PURPLE)));
-
-                        if (vars.getSouls() > 0) {
-                                debugLines.add(Component.literal("  Souls: ").withStyle(ChatFormatting.GRAY)
-                                                .append(Component.literal(String.format("%.0f", vars.getSouls()))
-                                                                .withStyle(ChatFormatting.DARK_PURPLE)));
-                        }
+                        debugLines.add(Component.literal("  Soul: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(String.format("%.0f/%.0f", vars.getSouls(), mc.sayda.creraces.config.CreRacesConfig.MAX_SOULS.get()))
+                                                        .withStyle(ChatFormatting.DARK_PURPLE)));
 
                         // --- STATES ---
                         addHeader("STATES");
@@ -293,26 +349,28 @@ public class DebugScreen extends Screen {
                         // --- INTERNAL STATES ---
                         addHeader("ABILITY STATES");
                         boolean hasStates = false;
-                        // Since IPlayerVariables doesn't provide a list of all states, we'll check equipped/unlocked 
+                        // Since IPlayerVariables doesn't provide a list of all states, we'll check
+                        // equipped/unlocked
                         // and their dependencies. This is better than nothing.
                         Set<ResourceLocation> allRelevant = new java.util.HashSet<>(vars.getUnlockedAbilities());
-                        for(mc.sayda.creraces.ability.AbilitySlot s : mc.sayda.creraces.ability.AbilitySlot.values()) {
-                            ResourceLocation id = vars.getAbilityInSlot(s);
-                            if(id != null) allRelevant.add(id);
+                        for (mc.sayda.creraces.ability.AbilitySlot s : mc.sayda.creraces.ability.AbilitySlot.values()) {
+                                ResourceLocation id = vars.getAbilityInSlot(s);
+                                if (id != null)
+                                        allRelevant.add(id);
                         }
-                        
+
                         for (ResourceLocation id : allRelevant) {
-                            double state = vars.getPersistentState(id);
-                            if (state != 0) {
-                                hasStates = true;
-                                debugLines.add(Component.literal("  " + id.toString() + ": ")
-                                        .withStyle(ChatFormatting.GRAY)
-                                        .append(Component.literal(String.format("%.2f", state))
-                                                .withStyle(ChatFormatting.AQUA)));
-                            }
+                                double state = vars.getPersistentState(id);
+                                if (state != 0) {
+                                        hasStates = true;
+                                        debugLines.add(Component.literal("  " + id.toString() + ": ")
+                                                        .withStyle(ChatFormatting.GRAY)
+                                                        .append(Component.literal(String.format("%.2f", state))
+                                                                        .withStyle(ChatFormatting.AQUA)));
+                                }
                         }
                         if (!hasStates) {
-                            debugLines.add(Component.literal("  - None").withStyle(ChatFormatting.DARK_GRAY));
+                                debugLines.add(Component.literal("  - None").withStyle(ChatFormatting.DARK_GRAY));
                         }
 
                         // --- ABILITIES & SLOTS ---

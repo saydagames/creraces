@@ -27,10 +27,10 @@ public class MassSummonAction implements ActionRegistry.RaceAction {
     private final ScalingValue minCount;
     private final ScalingValue maxCount;
     private final List<WeightedEntity> pool;
-    private final double range;
+    private final ScalingValue range;
     private final boolean markAsServant;
 
-    public MassSummonAction(ScalingValue minCount, ScalingValue maxCount, List<WeightedEntity> pool, double range, boolean markAsServant) {
+    public MassSummonAction(ScalingValue minCount, ScalingValue maxCount, List<WeightedEntity> pool, ScalingValue range, boolean markAsServant) {
         this.minCount = minCount;
         this.maxCount = maxCount;
         this.pool = pool;
@@ -48,6 +48,7 @@ public class MassSummonAction implements ActionRegistry.RaceAction {
         int numToSummon = min + (max > min ? player.getRandom().nextInt(max - min + 1) : 0);
         
         BlockPos spawnBase = interactionPos != null ? interactionPos : player.blockPosition();
+        double r = range.evaluate(player, target);
 
         for (int i = 0; i < numToSummon; i++) {
             WeightedEntity weighted = getRandomFromPool(player);
@@ -56,8 +57,8 @@ public class MassSummonAction implements ActionRegistry.RaceAction {
             EntityType<?> type = EntityType.byString(weighted.id.toString()).orElse(null);
             if (type == null) continue;
 
-            double dx = (player.getRandom().nextDouble() - 0.5) * range * 2.0;
-            double dz = (player.getRandom().nextDouble() - 0.5) * range * 2.0;
+            double dx = (player.getRandom().nextDouble() - 0.5) * r * 2.0;
+            double dz = (player.getRandom().nextDouble() - 0.5) * r * 2.0;
             BlockPos spawnPos = spawnBase.offset((int)dx, 0, (int)dz);
             
             // Ground check
@@ -105,7 +106,7 @@ public class MassSummonAction implements ActionRegistry.RaceAction {
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "mass_summon"), (json) -> {
             ScalingValue min = json.has("min_count") ? ScalingValue.fromJson(json, "min_count", 1) : new ScalingValue(1, null, 0, new ArrayList<>());
             ScalingValue max = json.has("max_count") ? ScalingValue.fromJson(json, "max_count", 3) : new ScalingValue(3, null, 0, new ArrayList<>());
-            double range = json.has("range") ? json.get("range").getAsDouble() : 6.0;
+            ScalingValue range = ScalingValue.fromJson(json, "range", 6.0);
             boolean servant = !json.has("mark_as_servant") || json.get("mark_as_servant").getAsBoolean();
             
             List<WeightedEntity> pool = new ArrayList<>();

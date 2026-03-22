@@ -31,10 +31,11 @@ public interface Condition {
 
         try {
             return switch (type) {
-                case "state_equals" -> {
-                    String state = GsonHelper.getAsString(json, "state");
+                case "state", "state_equals" -> {
+                    String stateKey = json.has("state") ? GsonHelper.getAsString(json, "state") : GsonHelper.getAsString(json, "ability");
                     ScalingValue value = ScalingValue.fromJson(json, "value", 1.0);
-                    yield new StateEqualsCondition(state, value);
+                    String operator = GsonHelper.getAsString(json, "operator", "==");
+                    yield new StateCondition(stateKey, value, operator);
                 }
                 case "morphed" -> {
                     boolean expected = GsonHelper.getAsBoolean(json, "value", true);
@@ -43,11 +44,6 @@ public interface Condition {
                 case "flying" -> {
                     boolean expected = GsonHelper.getAsBoolean(json, "value", true);
                     yield new FlyingCondition(expected);
-                }
-                case "ability_state" -> {
-                    String ability = GsonHelper.getAsString(json, "ability");
-                    ScalingValue value = ScalingValue.fromJson(json, "value", 1.0);
-                    yield new StateEqualsCondition(ability, value);
                 }
                 case "sneaking" -> {
                     boolean expected = GsonHelper.getAsBoolean(json, "value", true);
@@ -271,7 +267,10 @@ public interface Condition {
                     yield new IsBlockCondition(blockStr, ox, oy, oz, useInteractionPos, absolute);
                 }
                 case "cooldown" -> {
-                    String id = json.has("id") ? GsonHelper.getAsString(json, "id") : GsonHelper.getAsString(json, "ability");
+                    String id = json.has("state") ? GsonHelper.getAsString(json, "state") : (json.has("id") ? GsonHelper.getAsString(json, "id") : GsonHelper.getAsString(json, "ability"));
+                    if (!id.contains(":")) {
+                        id = "creraces:" + id;
+                    }
                     String operator = GsonHelper.getAsString(json, "operator", ">=");
                     ScalingValue value = ScalingValue.fromJson(json, "value", 0.0);
                     yield new CooldownCondition(id, operator, value);
@@ -375,13 +374,15 @@ class HoldingItemCondition implements Condition {
     }
 }
 
-class StateEqualsCondition implements Condition {
+class StateCondition implements Condition {
     private final String state;
     private final ScalingValue value;
+    private final String operator;
 
-    public StateEqualsCondition(String state, ScalingValue value) {
+    public StateCondition(String state, ScalingValue value, String operator) {
         this.state = state;
         this.value = value;
+        this.operator = operator;
     }
 
     @Override
@@ -395,7 +396,10 @@ class StateEqualsCondition implements Condition {
                 targetId = vars.getAbilityInSlot(slot);
             } else if (state != null && !state.isEmpty()) {
                 try {
-                    String sub = state.startsWith("ability:") ? state.substring(8) : (state.startsWith("state:") ? state.substring(6) : state);
+                    String sub = state.startsWith("state:") ? state.substring(6) : state;
+                    if (!sub.contains(":")) {
+                        sub = "creraces:" + sub;
+                    }
                     targetId = ResourceLocation.tryParse(sub);
                 } catch (Exception e) {
                     return false;
@@ -407,7 +411,15 @@ class StateEqualsCondition implements Condition {
 
             double current = vars.getPersistentState(targetId);
             double val = value.evaluate(player, target);
-            return Math.abs(current - val) < 0.001;
+
+            return switch (operator) {
+                case "!=" -> Math.abs(current - val) >= 0.001;
+                case ">" -> current > val;
+                case ">=" -> current >= val;
+                case "<" -> current < val;
+                case "<=" -> current <= val;
+                default -> Math.abs(current - val) < 0.001;
+            };
         }).orElse(false);
     }
 }
@@ -822,47 +834,10 @@ class ExposedToRainCondition implements Condition {
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
-        net.minecraft.world.level.Level level = player.level();
-        BlockPos pos = player.blockPosition();
-
-        boolean isVanillaRaining = level.isRainingAt(pos);
-
-        if (isVanillaRaining && expected) {
-            // Check for shelter starting from the player's position
-            for (int dy = 0; dy <= 16; dy++) {
-                BlockPos overheadPos = pos.above(dy);
-                BlockState state = level.getBlockState(overheadPos);
-                if (state.is(mc.sayda.creraces.registry.ModBlocks.MICRO_BLOCK.get())) {
-                    if (level.getBlockEntity(
-                            overheadPos) instanceof mc.sayda.creraces.block.entity.MicroBlockEntity micro) {
-                        int playerSlotY = -1;
-                        if (dy == 0) {
-                            double yOffset = player.getY() - pos.getY();
-                            playerSlotY = (int) (yOffset * 4);
-                        }
-
-                        // Calculate player's sub-grid column once
-                        int sx = (int) (((player.getX() - overheadPos.getX()) % 1.0 + 1.0) % 1.0 * 4);
-                        int sz = (int) (((player.getZ() - overheadPos.getZ()) % 1.0 + 1.0) % 1.0 * 4);
-                        sx = Math.max(0, Math.min(3, sx));
-                        sz = Math.max(0, Math.min(3, sz));
-
-                        for (int sy = playerSlotY + 1; sy < 4; sy++) {
-                            if (!micro.getSlot(sx, sy, sz).isAir()) {
-                                return !expected; // Sheltered by mini-block roof in THIS column!
-                            }
-                        }
-                    }
-                } else if (dy > 0 && state.isSolidRender(level, overheadPos)) {
-                    // Regular solid block shelter
-                    return !expected;
-                }
-            }
-        }
-
-        return isVanillaRaining == expected;
+        return mc.sayda.creraces.util.WorldUtils.isExposedToRain(player) == expected;
     }
 }
+
 
 class IsSmeltableCondition implements Condition {
     public IsSmeltableCondition() {

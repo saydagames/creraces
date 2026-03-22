@@ -61,8 +61,8 @@
             },
             "operation": "addition",
             "condition": {
-                "type": "creraces:ability_state",
-                "ability": "creraces:fox_form",
+                "type": "creraces:state",
+                "state": "fox_form",
                 "value": 1.0
             }
         },
@@ -75,8 +75,8 @@
             },
             "operation": "addition",
             "condition": {
-                "type": "creraces:ability_state",
-                "ability": "creraces:fox_form",
+                "type": "creraces:state",
+                "state": "fox_form",
                 "value": 1.0
             }
         }
@@ -93,23 +93,23 @@
             },
             "force_fly": true,
             "condition": {
-                "type": "creraces:ability_state",
-                "ability": "creraces:foxfire",
+                "type": "creraces:state",
+                "state": "foxfire",
                 "value": 2.0
             },
             "on_fail": [
                 {
                     "type": "creraces:set_state",
-                    "ability": "creraces:foxfire",
+                    "state": "foxfire",
                     "value": {
                         "base": 0.0
                     }
                 },
                 {
                     "type": "creraces:set_cooldown",
-                    "ability": "creraces:foxfire",
+                    "state": "foxfire",
                     "value": {
-                        "base": 100.0
+                        "base": 360.0
                     }
                 }
             ]
@@ -120,8 +120,8 @@
                 "base": 2.0
             },
             "condition": {
-                "type": "creraces:ability_state",
-                "ability": "creraces:foxfire",
+                "type": "creraces:state",
+                "state": "foxfire",
                 "value": 2.0
             },
             "actions": [
@@ -249,5 +249,14 @@
     ],
     "creraces:portrait": "creraces:textures/screens/kitsune_portrait.png",
     "creraces:name_texture": "creraces:textures/screens/kitsune_text.png",
-    "creraces:wiki_page": "Kitsune"
+    "creraces:wiki_page": "Kitsune",
+    "creraces:splash_x": -7,
+    "creraces:splash_y": -21,
+    "creraces:splash_w": 158,
+    "creraces:splash_h": 206,
+    "creraces:name_tex_x": 40,
+    "creraces:name_tex_y": -40,
+    "creraces:name_tex_w": 94,
+    "creraces:name_tex_h": 26,
+    "creraces:bg_texture": "creraces:textures/screens/selection_spirit_bg.png"
 }

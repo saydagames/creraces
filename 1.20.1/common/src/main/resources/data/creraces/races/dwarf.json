@@ -57,5 +57,12 @@
             ]
         }
     ],
-    "creraces:wiki_page": "Dwarf"
+    "creraces:wiki_page": "Dwarf",
+    "creraces:splash_x": -7,
+    "creraces:splash_y": -20,
+    "creraces:splash_w": 200,
+    "creraces:splash_h": 200,
+    "creraces:name_tex_x": 47,
+    "creraces:name_tex_w": 77,
+    "creraces:name_tex_h": 21
 }

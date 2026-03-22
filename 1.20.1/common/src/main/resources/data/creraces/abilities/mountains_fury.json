@@ -3,7 +3,7 @@
     "description": "ability.creraces.mountains_fury.description",
     "type": "ACTIVE",
     "icon": "minecraft:textures/item/magma_cream.png",
-    "cooldown": 0,
+    "cooldown": 360,
     "cost": 0,
     "race": [
         "creraces:oread"
@@ -12,7 +12,7 @@
         {
             "type": "creraces:conditional",
             "condition": {
-                "type": "creraces:state_equals",
+                "type": "creraces:state",
                 "state": "slot",
                 "value": 1
             },
@@ -89,5 +89,7 @@
             ]
         }
     ],
-    "wiki_page": "Ability:Mountains_Fury"
+    "wiki_page": "state:Mountains_Fury"
 }
+
+

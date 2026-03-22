@@ -21,13 +21,15 @@ public class AOEAction implements ActionRegistry.RaceAction {
     private final mc.sayda.creraces.engine.TargetFilter targets;
     private final net.minecraft.world.effect.MobEffect cachedRequired;
     private final net.minecraft.world.effect.MobEffect cachedNot;
+    private final boolean failIfEmpty;
     private final List<ActionRegistry.RaceAction> actions;
 
     public AOEAction(mc.sayda.creraces.engine.ScalingValue radius, mc.sayda.creraces.engine.TargetFilter targets,
             String requiredEffect,
-            String notEffect, List<ActionRegistry.RaceAction> actions) {
+            String notEffect, boolean failIfEmpty, List<ActionRegistry.RaceAction> actions) {
         this.radius = radius;
         this.targets = targets;
+        this.failIfEmpty = failIfEmpty;
         this.actions = actions;
 
         this.cachedRequired = (requiredEffect != null && !requiredEffect.isEmpty())
@@ -72,8 +74,13 @@ public class AOEAction implements ActionRegistry.RaceAction {
                 });
 
         if (hitTargets.isEmpty()) {
-            return true;
+            if (failIfEmpty) {
+                mc.sayda.creraces.CreRaces.LOGGER.info("AOEAction: No targets found, fail_if_empty is true - returning false.");
+            }
+            return !failIfEmpty;
         }
+
+        mc.sayda.creraces.CreRaces.LOGGER.info("AOEAction: Found {} valid targets.", hitTargets.size());
 
         for (LivingEntity e : hitTargets) {
             for (ActionRegistry.RaceAction action : actions) {
@@ -94,6 +101,7 @@ public class AOEAction implements ActionRegistry.RaceAction {
                     "targets", java.util.Set.of("enemies"));
             String requiredEffect = GsonHelper.getAsString(json, "required_effect", "");
             String notEffect = GsonHelper.getAsString(json, "not_effect", "");
+            boolean failIfEmpty = GsonHelper.getAsBoolean(json, "fail_if_empty", false);
             List<ActionRegistry.RaceAction> actions = new ArrayList<>();
             if (json.has("actions")) {
                 JsonArray array = json.getAsJsonArray("actions");
@@ -101,7 +109,7 @@ public class AOEAction implements ActionRegistry.RaceAction {
                     actions.add(ActionRegistry.fromJson(array.get(i).getAsJsonObject()));
                 }
             }
-            return new AOEAction(radius, targets, requiredEffect, notEffect, actions);
+            return new AOEAction(radius, targets, requiredEffect, notEffect, failIfEmpty, actions);
         });
     }
 }

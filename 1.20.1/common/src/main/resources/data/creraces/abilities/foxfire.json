@@ -3,7 +3,7 @@
     "description": "ability.creraces.foxfire.description",
     "type": "ACTIVE",
     "icon": "minecraft:textures/item/blaze_powder.png",
-    "cooldown": 20,
+    "cooldown": 0,
     "cost": 0,
     "persistent": false,
     "race": [
@@ -12,7 +12,7 @@
     "actions": [
         {
             "type": "creraces:toggle_state",
-            "ability": "creraces:foxfire",
+            "state": "foxfire",
             "on_value": 2,
             "off_value": 0,
             "on_enable": [
@@ -49,5 +49,7 @@
             ]
         }
     ],
-    "wiki_page": "Ability:Foxfire"
+    "wiki_page": "state:Foxfire"
 }
+
+

@@ -110,6 +110,23 @@ public class SkillWheelScreen extends Screen {
                 }
 
                 mc.sayda.creraces.client.AbilityIconRenderer.render(graphics, ability.icon(), x, y, ITEM_SIZE);
+
+                // Cooldown Rendering
+                int cooldown = vars.getCooldown(id);
+                if (cooldown > 0) {
+                    float cooldownPercent = ability.cooldown() > 0
+                            ? Math.min(1f, (float) cooldown / (float) ability.cooldown())
+                            : 1f;
+
+                    // Dynamic Cooldown Box (decreases in size as it recharges)
+                    graphics.fill(x, y + (int) (ITEM_SIZE * (1 - cooldownPercent)), x + ITEM_SIZE, y + ITEM_SIZE,
+                            0x80000000);
+
+                    // Cooldown Counter
+                    String k = String.valueOf(Math.max(1, cooldown / 20));
+                    graphics.drawCenteredString(Minecraft.getInstance().font, k, x + ITEM_SIZE / 2,
+                            y + (ITEM_SIZE / 2) - 4, 0xFFFFFF);
+                }
             }
         });
 

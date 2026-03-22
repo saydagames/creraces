@@ -3,7 +3,7 @@
     "description": "ability.creraces.deadly_venom.description",
     "type": "ACTIVE",
     "icon": "minecraft:textures/item/spider_eye.png",
-    "cooldown": 100,
+    "cooldown": 1200,
     "cost": 20,
     "race": [
         "creraces:ratkin"
@@ -16,6 +16,7 @@
                 "enemies"
             ],
             "required_effect": "creraces:rat_venom",
+            "fail_if_empty": true,
             "actions": [
                 {
                     "type": "creraces:damage",
@@ -41,10 +42,12 @@
         },
         {
             "type": "creraces:play_sound",
-            "sound": "minecraft:entity.spider.ambient",
+            "sound": "creraces:ratkin_a3",
             "volume": 1.0,
-            "pitch": 0.8
+            "pitch": 1.0
         }
     ],
-    "wiki_page": "Ability:Deadly_Venom"
+    "wiki_page": "state:Deadly_Venom"
 }
+
+
