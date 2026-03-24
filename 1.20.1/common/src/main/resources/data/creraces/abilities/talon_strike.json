@@ -1,14 +1,14 @@
 {
-    "name": "ability.creraces.talon_strike.name",
-    "description": "ability.creraces.talon_strike.description",
-    "type": "ACTIVE",
-    "icon": "creraces:textures/item/harpy_feather.png",
-    "cooldown": 500,
-    "cost": 5,
-    "race": [
+    "creraces:name": "ability.creraces.talon_strike.name",
+    "creraces:description": "ability.creraces.talon_strike.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "creraces:textures/item/harpy_feather.png",
+    "creraces:cooldown": 500,
+    "creraces:cost": 5,
+    "creraces:race": [
         "creraces:harpy"
     ],
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:conditional",
             "condition": {
@@ -30,14 +30,16 @@
                 },
                 {
                     "type": "creraces:set_state",
-                    "state": "talon_strike",
+                    "state": "self",
                     "value": 1.0
                 }
             ],
             "if_false": []
         }
     ],
-    "wiki_page": "state:Talon_Strike"
+    "creraces:wiki_page": "Ability:Talon_Strike"
 }
+
+
 
 

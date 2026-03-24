@@ -1,13 +1,13 @@
 {
-    "name": "ability.creraces.crescent_swivel.name",
-    "description": "ability.creraces.crescent_swivel.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:netherite_sword",
-    "cost": 80,
-    "race": [
+    "creraces:name": "ability.creraces.crescent_swivel.name",
+    "creraces:description": "ability.creraces.crescent_swivel.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:netherite_sword",
+    "creraces:cost": 80,
+    "creraces:race": [
         "creraces:velox"
     ],
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:aoe",
             "radius": 2.5,
@@ -28,11 +28,12 @@
                             "type": "creraces:damage",
                             "amount": {
                                 "base": 4,
-                                "scales_with": "ad",
+                                "scales_with": "creraces:ad",
                                 "factor": 0.04,
                                 "scales": [
                                     {
-                                        "stat": "target_max_hp",
+                                        "stat": "creraces:max_health",
+                                        "use_target": true,
                                         "factor": 0.1
                                     }
                                 ]
@@ -50,7 +51,7 @@
                             "type": "creraces:damage",
                             "amount": {
                                 "base": 2,
-                                "scales_with": "ad",
+                                "scales_with": "creraces:ad",
                                 "factor": 0.02
                             },
                             "damage_type": "minecraft:player_attack"
@@ -76,5 +77,6 @@
             "count": 5
         }
     ],
-    "wiki_page": "state:Crescent_Swivel"
+    "creraces:wiki_page": "Ability:Crescent_Swivel"
 }
+

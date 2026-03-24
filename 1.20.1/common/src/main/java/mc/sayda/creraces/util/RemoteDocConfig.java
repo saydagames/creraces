@@ -30,7 +30,7 @@ public class RemoteDocConfig {
         return fallback;
     }
 
-    public static final String INFODOC_SELECTOR = "(?i)\\|\\s*description\\s*=\\s*(.*?)(?=\\s*?\\|\\s*?\\w+\\s*=|\\s*\\}\\}|==|$)";
+    public static final String INFODOC_SELECTOR = "(?i)(?:\\|\\s*description\\s*=\\s*|==\\s*Description\\s*==[\\s\\r\\n]*)(.*?)(?=\\s*?\\|\\s*?\\w+\\s*=|\\s*\\}\\}|[\\s\\r\\n]+==|$)";
     public static final String PASSIVE_SELECTOR = "(?i)==\\s*(?:Racial\\s+)?Passives?\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)";
     public static final String HEADERDOC_SELECTOR = "(?i)==\\s*Description\\s*==[\\s\\r\\n]*(.*?)(?=[\\s\\r\\n]+==|$)";
     public static final String RACE_DESCRIPTION_SELECTOR = INFODOC_SELECTOR;

@@ -91,14 +91,14 @@ public class ResourceTicker {
                                 vars.setGrit(Math.max(0, vars.getGrit() - drain));
                                 yield vars.getGrit() <= 0;
                             }
-                            case SOULS -> {
-                                vars.setSouls(Math.max(0, vars.getSouls() - drain));
-                                yield vars.getSouls() <= 0;
+                            case SOUL -> {
+                                vars.setSoul(Math.max(0, vars.getSoul() - drain));
+                                yield vars.getSoul() <= 0;
                             }
                             default -> false;
                         };
                         if (outOfResource) {
-                            deactivateAbility(player, vars, abilityId, ability);
+                            deactivateAbility(player, vars, abilityId, ability, vars.getSlotForAbility(abilityId));
                         }
                     }
                 }
@@ -110,7 +110,7 @@ public class ResourceTicker {
                     if (remaining - 1 <= 0) {
                         mc.sayda.creraces.ability.Ability ability = mc.sayda.creraces.ability.AbilityRegistry
                                 .get(abilityId);
-                        deactivateAbility(player, vars, abilityId, ability);
+                        deactivateAbility(player, vars, abilityId, ability, vars.getSlotForAbility(abilityId));
                     }
                 }
 
@@ -159,7 +159,7 @@ public class ResourceTicker {
                         // Innates/Passives auto-execute on_activate actions periodically
                         if (ability.onActivate() != null) {
                             for (mc.sayda.creraces.engine.ActionRegistry.RaceAction action : ability.onActivate()) {
-                                action.execute(player, null, null, null);
+                                action.execute(player, null, slot, null);
                             }
                         }
                     }
@@ -234,13 +234,14 @@ public class ResourceTicker {
 
     private static void deactivateAbility(Player player, mc.sayda.creraces.capability.IPlayerVariables vars,
             net.minecraft.resources.ResourceLocation abilityId,
-            mc.sayda.creraces.ability.Ability ability) {
+            mc.sayda.creraces.ability.Ability ability,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
         vars.setAbilityActive(false);
         if (ability != null) {
             vars.setCooldown(abilityId, ability.cooldown());
             if (ability.onDeactivate() != null) {
                 for (mc.sayda.creraces.engine.ActionRegistry.RaceAction action : ability.onDeactivate()) {
-                    action.execute(player, null, null, null);
+                    action.execute(player, null, slot, null);
                 }
             }
         }

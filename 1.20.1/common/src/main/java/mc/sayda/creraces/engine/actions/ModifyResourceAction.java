@@ -38,7 +38,7 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
             return true;
 
         String res = resource.toLowerCase();
-        double evaluatedValue = value.evaluate(player, target);
+        double evaluatedValue = value.evaluate(player, target, slot);
 
         // Handle Vanilla Resources first (available for all/most LivingEntities)
         if (res.equals("air") || res.equals("health") || res.equals("food")) {
@@ -100,6 +100,30 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
                     return true;
                 }
 
+                if (res.startsWith("state:")) {
+                    String subKey = resource.substring(6);
+                    if (!subKey.contains(":")) {
+                        subKey = "creraces:" + subKey;
+                    }
+                    ResourceLocation id = ResourceLocation.tryParse(subKey);
+                    if (id != null) {
+                        current = vars.getPersistentState(id);
+                        double newValue = current;
+                        if (operation.equalsIgnoreCase("add"))
+                            newValue += evaluatedValue;
+                        else if (operation.equalsIgnoreCase("set"))
+                            newValue = evaluatedValue;
+
+                        if (failIfInsufficient && newValue < 0) {
+                            return false;
+                        }
+
+                        vars.setPersistentState(id, newValue);
+                        mc.sayda.creraces.network.BoundaryHandler.resyncVariables(p, p);
+                        return true;
+                    }
+                }
+
                 if (res.equals("energy"))
                     current = vars.getEnergy();
                 else if (res.equals("mana"))
@@ -108,10 +132,8 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
                     current = vars.getRage();
                 else if (res.equals("grit"))
                     current = vars.getGrit();
-                else if (res.equals("souls"))
-                    current = vars.getSouls();
-                else if (res.equals("stacks"))
-                    current = vars.getStacks();
+                else if (res.equals("soul"))
+                    current = vars.getSoul();
 
                 double newValue = current;
                 if (operation.equalsIgnoreCase("add"))
@@ -131,10 +153,8 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
                     vars.setRage(newValue);
                 else if (res.equals("grit"))
                     vars.setGrit(newValue);
-                else if (res.equals("souls"))
-                    vars.setSouls(newValue);
-                else if (res.equals("stacks")) {
-                    vars.setStacks(newValue);
+                else if (res.equals("soul")) {
+                    vars.setSoul(newValue);
                     if (p instanceof net.minecraft.server.level.ServerPlayer sp) {
                         mc.sayda.creraces.race.AttributeIncidents.eikiJudgment(sp);
                     }
@@ -144,6 +164,7 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
             }
         }
         return true;
+
     }
 
     public static void register() {

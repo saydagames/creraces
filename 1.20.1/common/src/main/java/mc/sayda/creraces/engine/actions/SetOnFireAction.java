@@ -20,7 +20,7 @@ public class SetOnFireAction implements ActionRegistry.RaceAction {
             @Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @Nullable net.minecraft.core.BlockPos interactionPos) {
         LivingEntity actualTarget = target != null ? target : player;
-        int seconds = (int) duration.evaluate(player, actualTarget);
+        int seconds = (int) duration.evaluate(player, actualTarget, slot);
         if (seconds > 0) {
             actualTarget.setSecondsOnFire(seconds);
         }

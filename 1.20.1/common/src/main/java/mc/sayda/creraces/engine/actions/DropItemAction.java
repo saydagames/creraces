@@ -32,7 +32,7 @@ public class DropItemAction implements ActionRegistry.RaceAction {
             @Nullable net.minecraft.core.BlockPos interactionPos) {
         Item item = BuiltInRegistries.ITEM.get(itemId);
         if (item != null && player.level() != null) {
-            int c = (int) amount.evaluate(player, target);
+            int c = (int) amount.evaluate(player, target, slot);
             if (c <= 0)
                 return true;
             ItemEntity itemEntity = new ItemEntity(player.level(), player.getX(), player.getY(), player.getZ(),

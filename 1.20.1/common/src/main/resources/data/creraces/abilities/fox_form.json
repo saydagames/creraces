@@ -1,15 +1,15 @@
 {
-    "name": "ability.creraces.fox_form.name",
-    "description": "ability.creraces.fox_form.description",
-    "type": "ACTIVE",
-    "icon": "creraces:textures/screens/kitsune_icon.png",
-    "cooldown": 60,
-    "cost": 20,
-    "persistent": false,
-    "race": [
+    "creraces:name": "ability.creraces.fox_form.name",
+    "creraces:description": "ability.creraces.fox_form.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "creraces:textures/screens/kitsune_icon.png",
+    "creraces:cooldown": 60,
+    "creraces:cost": 20,
+    "creraces:persistent": false,
+    "creraces:race": [
         "creraces:kitsune"
     ],
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:conditional",
             "condition": {
@@ -63,5 +63,6 @@
             ]
         }
     ],
-    "wiki_page": "state:Fox_Form"
+    "creraces:wiki_page": "Ability:Fox_Form"
 }
+

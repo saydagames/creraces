@@ -1,14 +1,14 @@
 {
-    "name": "ability.creraces.rampant_growth.name",
-    "description": "ability.creraces.rampant_growth.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:oak_sapling",
-    "cooldown": 240,
-    "cost": 40,
-    "race": [
+    "creraces:name": "ability.creraces.rampant_growth.name",
+    "creraces:description": "ability.creraces.rampant_growth.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:oak_sapling",
+    "creraces:cooldown": 240,
+    "creraces:cost": 40,
+    "creraces:race": [
         "creraces:dryad"
     ],
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:apply_effect",
             "effect": "creraces:rooted",
@@ -28,7 +28,7 @@
             "amplifier": 0
         },
         {
-            "type": "creraces:apply_particles",
+            "type": "creraces:spawn_particles",
             "particle": "minecraft:happy_villager",
             "count": 15,
             "spread_x": 0.5,
@@ -36,7 +36,7 @@
             "spread_z": 0.5
         },
         {
-            "type": "creraces:apply_particles",
+            "type": "creraces:spawn_particles",
             "particle": "minecraft:composter",
             "count": 10,
             "spread_x": 0.3,
@@ -56,7 +56,9 @@
             "pitch": 1.1
         }
     ],
-    "wiki_page": "state:Rampant_Growth"
+    "creraces:wiki_page": "Ability:Rampant_Growth"
 }
+
+
 
 

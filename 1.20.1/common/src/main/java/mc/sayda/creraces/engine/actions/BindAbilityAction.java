@@ -1,6 +1,5 @@
 package mc.sayda.creraces.engine.actions;
 
-import com.google.gson.JsonObject;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.capability.DataUtils;
@@ -51,7 +50,7 @@ public class BindAbilityAction implements ActionRegistry.RaceAction {
                 }
             }
             ResourceLocation abilityId = new ResourceLocation(GsonHelper.getAsString(json, "ability", "minecraft:barrier"));
-            String saveTo = GsonHelper.getAsString(json, "save_to", null);
+            String saveTo = GsonHelper.getNullableString(json, "save_to", null);
             return new BindAbilityAction(slot, abilityId, saveTo);
         });
     }

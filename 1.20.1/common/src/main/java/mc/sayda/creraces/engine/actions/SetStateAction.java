@@ -42,18 +42,18 @@ public class SetStateAction implements ActionRegistry.RaceAction {
         DataUtils.getVariables(player).ifPresent(vars -> {
             ResourceLocation targetAbilityId = abilityId;
 
-            if (targetAbilityId == null && "slot".equalsIgnoreCase(stateVariable) && slot != null) {
+            if (targetAbilityId == null && "self".equalsIgnoreCase(stateVariable) && slot != null) {
                 targetAbilityId = vars.getAbilityInSlot(slot);
             }
 
             if (targetAbilityId != null) {
                 double current = vars.getPersistentState(targetAbilityId);
-                double val = value.evaluate(player, target);
+                double val = value.evaluate(player, target, slot);
 
                 // Mode logic for capturing coordinates
-                double ox = offsetX.evaluate(player, target);
-                double oy = offsetY.evaluate(player, target);
-                double oz = offsetZ.evaluate(player, target);
+                double ox = offsetX.evaluate(player, target, slot);
+                double oy = offsetY.evaluate(player, target, slot);
+                double oz = offsetZ.evaluate(player, target, slot);
 
                 double contextualValue = val;
                 String m = mode.toUpperCase();
@@ -125,7 +125,7 @@ public class SetStateAction implements ActionRegistry.RaceAction {
 
     public static void register() {
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "set_state"), json -> {
-            String stateStr = GsonHelper.getAsString(json, "state", "slot");
+            String stateStr = GsonHelper.getAsString(json, "state", "self");
             mc.sayda.creraces.engine.ScalingValue value = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "value", 0.0);
             String operation = GsonHelper.getAsString(json, "operation", "set");
             String mode = GsonHelper.getAsString(json, "mode", "STATIC");
@@ -134,7 +134,7 @@ public class SetStateAction implements ActionRegistry.RaceAction {
             mc.sayda.creraces.engine.ScalingValue oz = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "offset_z", 0.0);
 
             ResourceLocation stateLoc = null;
-            if (!"slot".equalsIgnoreCase(stateStr)) {
+            if (!"self".equalsIgnoreCase(stateStr)) {
                 String sub = stateStr.startsWith("state:") ? stateStr.substring(6) : stateStr;
                 if (!sub.contains(":")) {
                     sub = "creraces:" + sub;
@@ -145,7 +145,7 @@ public class SetStateAction implements ActionRegistry.RaceAction {
         });
         // Alias for legacy modify_state
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "modify_state"), json -> {
-            String stateStr = GsonHelper.getAsString(json, "state", "slot");
+            String stateStr = GsonHelper.getAsString(json, "state", "self");
             mc.sayda.creraces.engine.ScalingValue value = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "value", 0.0);
             String operation = GsonHelper.getAsString(json, "operation", "add");
             String mode = GsonHelper.getAsString(json, "mode", "STATIC");
@@ -154,7 +154,7 @@ public class SetStateAction implements ActionRegistry.RaceAction {
             mc.sayda.creraces.engine.ScalingValue oz = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "offset_z", 0.0);
 
             ResourceLocation stateLoc = null;
-            if (!"slot".equalsIgnoreCase(stateStr)) {
+            if (!"self".equalsIgnoreCase(stateStr)) {
                 String sub = stateStr.startsWith("state:") ? stateStr.substring(6) : stateStr;
                 if (!sub.contains(":")) {
                     sub = "creraces:" + sub;

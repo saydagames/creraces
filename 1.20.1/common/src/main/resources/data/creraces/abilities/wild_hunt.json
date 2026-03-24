@@ -1,14 +1,14 @@
 {
-    "name": "ability.creraces.wild_hunt.name",
-    "description": "ability.creraces.wild_hunt.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:textures/item/bone.png",
-    "cooldown": 380,
-    "cost": 0,
-    "race": [
+    "creraces:name": "ability.creraces.wild_hunt.name",
+    "creraces:description": "ability.creraces.wild_hunt.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/bone.png",
+    "creraces:cooldown": 380,
+    "creraces:cost": 0,
+    "creraces:race": [
         "creraces:lycan"
     ],
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:apply_effect",
             "effect": "creraces:true_invisibility",
@@ -35,7 +35,9 @@
             "pitch": 0.8
         }
     ],
-    "wiki_page": "state:Wild_Hunt"
+    "creraces:wiki_page": "Ability:Wild_Hunt"
 }
+
+
 
 

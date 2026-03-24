@@ -38,15 +38,15 @@ public class RemoveBlockAction implements ActionRegistry.RaceAction {
             basePos = interactionPos;
         }
 
-        int ox = (int) x.evaluate(player, target);
-        int oy = (int) y.evaluate(player, target);
-        int oz = (int) z.evaluate(player, target);
+        int ox = (int) x.evaluate(player, target, slot);
+        int oy = (int) y.evaluate(player, target, slot);
+        int oz = (int) z.evaluate(player, target, slot);
         
         BlockPos finalPos = basePos.offset(ox, oy, oz);
 
         // Protection: only remove if it's not bedrock or other unbreakable stuff?
         // Actually, Rat Tunnels use this to remove their own blocks.
-        if (player.level().getBlockState(finalPos).getDestroySpeed(player.level(), finalPos) >= 0) {
+        if (java.util.Objects.requireNonNull(player.level().getBlockState(finalPos)).getDestroySpeed(player.level(), finalPos) >= 0) {
             player.level().setBlockAndUpdate(finalPos, Blocks.AIR.defaultBlockState());
             return true;
         }

@@ -1,14 +1,14 @@
 {
-    "name": "ability.creraces.cowardly_skirmish.name",
-    "description": "ability.creraces.cowardly_skirmish.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:textures/item/iron_sword.png",
-    "cooldown": 420,
-    "cost": 15,
-    "race": [
+    "creraces:name": "ability.creraces.cowardly_skirmish.name",
+    "creraces:description": "ability.creraces.cowardly_skirmish.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/iron_sword.png",
+    "creraces:cooldown": 420,
+    "creraces:cost": 15,
+    "creraces:race": [
         "creraces:ratkin"
     ],
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:conditional",
             "condition": {
@@ -92,7 +92,9 @@
             ]
         }
     ],
-    "wiki_page": "state:Cowardly_Skirmish"
+    "creraces:wiki_page": "Ability:Cowardly_Skirmish"
 }
+
+
 
 

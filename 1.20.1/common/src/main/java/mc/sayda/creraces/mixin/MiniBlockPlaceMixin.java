@@ -221,7 +221,8 @@ public class MiniBlockPlaceMixin {
         if (!(minecraft.hitResult instanceof BlockHitResult bhr))
             return false;
 
-        if (!minecraft.level.getBlockState(pos).is(ModBlocks.MICRO_BLOCK.get()))
+        Block microBlock = ModBlocks.MICRO_BLOCK.get();
+        if (microBlock == null || !minecraft.level.getBlockState(pos).is(microBlock))
             return false;
 
         if (isStart) {
@@ -241,12 +242,12 @@ public class MiniBlockPlaceMixin {
             if (minecraft.level.getBlockEntity(pos) instanceof MicroBlockEntity micro) {
                 BlockState slotState = micro.getSlot(slotX, slotY, slotZ);
                 if (slotState.getBlock() instanceof net.minecraft.world.level.block.JukeboxBlock) {
-                    minecraft.level.levelEvent(minecraft.player, 1010, pos, 0);
+                    minecraft.level.levelEvent(java.util.Objects.requireNonNull(minecraft.player), 1010, pos, 0);
                 }
                 micro.setSlot(slotX, slotY, slotZ, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
             }
 
-            BoundaryHandler.sendMiniRemove(new MiniRemovePacket(pos, slotX, slotY, slotZ));
+            BoundaryHandler.sendMiniRemove(new MiniRemovePacket(java.util.Objects.requireNonNull(pos), slotX, slotY, slotZ));
         }
         return true;
     }

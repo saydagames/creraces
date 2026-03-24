@@ -1,14 +1,14 @@
 {
-    "name": "ability.creraces.tectonic_smash.name",
-    "description": "ability.creraces.tectonic_smash.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:textures/item/iron_boots.png",
-    "cooldown": 0,
-    "cost": 0,
-    "race": [
+    "creraces:name": "ability.creraces.tectonic_smash.name",
+    "creraces:description": "ability.creraces.tectonic_smash.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/iron_boots.png",
+    "creraces:cooldown": 0,
+    "creraces:cost": 0,
+    "creraces:race": [
         "creraces:giant"
     ],
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:conditional",
             "condition": {
@@ -107,7 +107,9 @@
             ]
         }
     ],
-    "wiki_page": "state:Tectonic_Smash"
+    "creraces:wiki_page": "Ability:Tectonic_Smash"
 }
+
+
 
 

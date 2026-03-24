@@ -48,11 +48,6 @@ public class ForgeConfig {
                 public final ForgeConfigSpec.ConfigValue<Double> ability_haste_cap;
                 public final ForgeConfigSpec.ConfigValue<Double> racial_ad_multiplier;
                 public final ForgeConfigSpec.ConfigValue<Long> resource_decay_grace_period;
-                public final ForgeConfigSpec.ConfigValue<Double> mana_ap_scaling;
-                public final ForgeConfigSpec.ConfigValue<Double> mana_regen;
-                public final ForgeConfigSpec.ConfigValue<Double> energy_regen;
-                public final ForgeConfigSpec.ConfigValue<Double> grit_decay;
-                public final ForgeConfigSpec.ConfigValue<Double> rage_decay;
 
                 public final ForgeConfigSpec.ConfigValue<Boolean> coin_drop_enabled;
                 public final ForgeConfigSpec.ConfigValue<Boolean> sag_wings;
@@ -78,6 +73,7 @@ public class ForgeConfig {
                 public final ForgeConfigSpec.ConfigValue<Double> mini_crafting_distance_sqr;
                 public final ForgeConfigSpec.ConfigValue<Long> mini_placement_spam_threshold_ms;
                 public final ForgeConfigSpec.ConfigValue<Double> mini_block_reach_margin;
+                public final ForgeConfigSpec.ConfigValue<Boolean> mini_block_water_resistant;
 
                 // Pocket
                 public final ForgeConfigSpec.ConfigValue<String> action_default_pocket_dim;
@@ -96,7 +92,6 @@ public class ForgeConfig {
 
                 public final ForgeConfigSpec.ConfigValue<Integer> spirit_spawn_check_radius;
                 public final ForgeConfigSpec.ConfigValue<Integer> customization_value_max_length;
-                public final ForgeConfigSpec.ConfigValue<Double> resource_min_capacity;
                 public final ForgeConfigSpec.ConfigValue<Integer> passive_execution_interval;
                 public final ForgeConfigSpec.ConfigValue<Double> sunlight_equipment_break_chance;
                 public final ForgeConfigSpec.ConfigValue<Integer> sunlight_burn_seconds;
@@ -140,20 +135,10 @@ public class ForgeConfig {
                                         "Multiplier for Racial Attack Damage (AD). Default is 0.01 (1% per point).")
                                         .defineInRange("racial_ad_multiplier",
                                                         CreRacesConfig.RACIAL_AD_MULTIPLIER.get(), 0.0, 100.0);
-                        resource_decay_grace_period = builder.comment("Grace period (ticks) before Rage/Grit begins to decay.")
+                        resource_decay_grace_period = builder
+                                        .comment("Grace period (ticks) before Rage/Grit begins to decay.")
                                         .defineInRange("resource_decay_grace_period",
                                                         CreRacesConfig.RESOURCE_DECAY_GRACE_PERIOD.get(), 0L, 100000L);
-                        mana_ap_scaling = builder.comment("Multiplier for Mana scaling from Ability Power (per 1 AP).")
-                                        .defineInRange("mana_ap_scaling",
-                                                        CreRacesConfig.MANA_AP_SCALING.get(), 0.0, 100.0);
-                        mana_regen = builder.comment("Default mana regeneration per tick.")
-                                        .defineInRange("mana_regen", CreRacesConfig.MANA_REGEN.get(), 0.0, 1000.0);
-                        energy_regen = builder.comment("Default energy regeneration per tick.")
-                                        .defineInRange("energy_regen", CreRacesConfig.ENERGY_REGEN.get(), 0.0, 1000.0);
-                        grit_decay = builder.comment("Default grit decay per tick.")
-                                        .defineInRange("grit_decay", CreRacesConfig.GRIT_DECAY.get(), 0.0, 1000.0);
-                        rage_decay = builder.comment("Default rage decay per tick.")
-                                        .defineInRange("rage_decay", CreRacesConfig.RAGE_DECAY.get(), 0.0, 1000.0);
                         coin_drop_enabled = builder.comment("Enable loot-based coin drops.")
                                         .define("coin_drop_enabled", CreRacesConfig.COIN_DROP_ENABLED.get());
                         sag_wings = builder.comment("Allow wings flight to sag during rain.")
@@ -167,8 +152,10 @@ public class ForgeConfig {
                         builder.pop();
 
                         builder.push("Potion Effects");
-                        rat_venom_scaling = builder.comment("Damage scaling factor for Rat Venom per stack. Default 0.2.")
-                                        .defineInRange("rat_venom_scaling", CreRacesConfig.RAT_VENOM_SCALING.get(), 0.0, 10.0);
+                        rat_venom_scaling = builder
+                                        .comment("Damage scaling factor for Rat Venom per stack. Default 0.2.")
+                                        .defineInRange("rat_venom_scaling", CreRacesConfig.RAT_VENOM_SCALING.get(), 0.0,
+                                                        10.0);
                         builder.pop();
 
                         builder.push("Safety");
@@ -228,6 +215,9 @@ public class ForgeConfig {
                                         .defineInRange("mini_block_reach_margin",
                                                         CreRacesConfig.MINI_BLOCK_REACH_MARGIN.get(), 0.0,
                                                         5.0);
+                        mini_block_water_resistant = builder.comment("Blocks cannot be destroyed by flowing water.")
+                                        .define("mini_block_water_resistant",
+                                                        CreRacesConfig.MINI_BLOCK_WATER_RESISTANT.get());
                         builder.pop();
 
                         builder.push("Pockets");
@@ -271,8 +261,6 @@ public class ForgeConfig {
                         builder.pop();
 
                         builder.push("Internal");
-                        resource_min_capacity = builder.defineInRange("resource_min_capacity",
-                                        CreRacesConfig.RESOURCE_MIN_CAPACITY.get(), 0.0, 1000.0);
                         passive_execution_interval = builder.defineInRange("passive_execution_interval",
                                         CreRacesConfig.PASSIVE_EXECUTION_INTERVAL.get(), 1, 1200);
                         sunlight_equipment_break_chance = builder.defineInRange("sunlight_equipment_break_chance",
@@ -551,11 +539,6 @@ public class ForgeConfig {
                 CreRacesConfig.ABILITY_HASTE_CAP = () -> COMMON.ability_haste_cap.get();
                 CreRacesConfig.RACIAL_AD_MULTIPLIER = () -> COMMON.racial_ad_multiplier.get();
                 CreRacesConfig.RESOURCE_DECAY_GRACE_PERIOD = () -> COMMON.resource_decay_grace_period.get();
-                CreRacesConfig.MANA_AP_SCALING = () -> COMMON.mana_ap_scaling.get();
-                CreRacesConfig.MANA_REGEN = () -> COMMON.mana_regen.get();
-                CreRacesConfig.ENERGY_REGEN = () -> COMMON.energy_regen.get();
-                CreRacesConfig.GRIT_DECAY = () -> COMMON.grit_decay.get();
-                CreRacesConfig.RAGE_DECAY = () -> COMMON.rage_decay.get();
                 CreRacesConfig.BREAK_BLOCKS_MAX_RADIUS = () -> COMMON.break_blocks_max_radius.get();
                 CreRacesConfig.AOE_MAX_RADIUS = () -> COMMON.aoe_max_radius.get();
                 CreRacesConfig.BEAM_MAX_LENGTH = () -> COMMON.beam_max_length.get();
@@ -573,6 +556,7 @@ public class ForgeConfig {
                 CreRacesConfig.MINI_CRAFTING_DISTANCE_SQR = () -> COMMON.mini_crafting_distance_sqr.get();
                 CreRacesConfig.MINI_PLACEMENT_SPAM_THRESHOLD_MS = () -> COMMON.mini_placement_spam_threshold_ms.get();
                 CreRacesConfig.MINI_BLOCK_REACH_MARGIN = () -> COMMON.mini_block_reach_margin.get();
+                CreRacesConfig.MINI_BLOCK_WATER_RESISTANT = () -> COMMON.mini_block_water_resistant.get();
 
                 CreRacesConfig.COIN_DROP_ENABLED = () -> COMMON.coin_drop_enabled.get();
                 CreRacesConfig.SAG_WINGS = () -> COMMON.sag_wings.get();
@@ -595,7 +579,6 @@ public class ForgeConfig {
 
                 CreRacesConfig.SPIRIT_SPAWN_CHECK_RADIUS = () -> COMMON.spirit_spawn_check_radius.get();
                 CreRacesConfig.CUSTOMIZATION_VALUE_MAX_LENGTH = () -> COMMON.customization_value_max_length.get();
-                CreRacesConfig.RESOURCE_MIN_CAPACITY = () -> COMMON.resource_min_capacity.get();
                 CreRacesConfig.PASSIVE_EXECUTION_INTERVAL = () -> COMMON.passive_execution_interval.get();
                 CreRacesConfig.SUNLIGHT_EQUIPMENT_BREAK_CHANCE = () -> COMMON.sunlight_equipment_break_chance.get();
                 CreRacesConfig.SUNLIGHT_BURN_SECONDS = () -> COMMON.sunlight_burn_seconds.get();

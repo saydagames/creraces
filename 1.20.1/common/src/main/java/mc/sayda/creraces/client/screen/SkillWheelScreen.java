@@ -103,8 +103,10 @@ public class SkillWheelScreen extends Screen {
                             case A4 -> 0x5555FF; // blue
                             case A5 -> 0xFFAA00; // orange
                         };
-                        graphics.drawCenteredString(this.font, key.getTranslatedKeyMessage(), x + ITEM_SIZE + 10, slotY,
-                                color);
+                        Component msg = key.getTranslatedKeyMessage();
+                        if (msg != null) {
+                            graphics.drawCenteredString(this.font, msg.getString(), x + ITEM_SIZE + 10, slotY, color);
+                        }
                         slotY += 10;
                     }
                 }
@@ -123,9 +125,11 @@ public class SkillWheelScreen extends Screen {
                             0x80000000);
 
                     // Cooldown Counter
-                    String k = String.valueOf(Math.max(1, cooldown / 20));
-                    graphics.drawCenteredString(Minecraft.getInstance().font, k, x + ITEM_SIZE / 2,
-                            y + (ITEM_SIZE / 2) - 4, 0xFFFFFF);
+                    String k = java.util.Objects.requireNonNull(String.valueOf(Math.max(1, cooldown / 20)));
+                    net.minecraft.client.gui.Font font = Minecraft.getInstance().font;
+                    if (font != null) {
+                        graphics.drawCenteredString(font, k, x + ITEM_SIZE / 2, y + (ITEM_SIZE / 2) - 4, 0xFFFFFF);
+                    }
                 }
             }
         });

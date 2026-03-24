@@ -13,7 +13,6 @@
     "creraces:base_cr": 10,
     "creraces:resource_type": "MANA",
     "creraces:max_resource": 120,
-    "creraces:stacks_affect_resource": false,
     "creraces:gstate": "FEMALE",
     "creraces:lava_vision": true,
     "creraces:unaffected_by_lava": true,
@@ -44,8 +43,8 @@
                     },
                     {
                         "type": "creraces:resource_level",
-                        "resource": "stacks",
-                        "operator": "\u003c",
+                        "resource": "state:creraces:stacks",
+                        "operator": "<",
                         "value": 500
                     }
                 ]
@@ -53,7 +52,7 @@
             "actions": [
                 {
                     "type": "creraces:modify_resource",
-                    "resource": "stacks",
+                    "resource": "state:creraces:stacks",
                     "operation": "add",
                     "value": 1
                 }

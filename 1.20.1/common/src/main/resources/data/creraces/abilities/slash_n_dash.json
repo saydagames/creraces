@@ -1,13 +1,13 @@
 {
-    "name": "ability.creraces.slash_n_dash.name",
-    "description": "ability.creraces.slash_n_dash.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:iron_sword",
-    "cost": 100,
-    "race": [
+    "creraces:name": "ability.creraces.slash_n_dash.name",
+    "creraces:description": "ability.creraces.slash_n_dash.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:iron_sword",
+    "creraces:cost": 100,
+    "creraces:race": [
         "creraces:velox"
     ],
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:dash",
             "power": 2,
@@ -30,7 +30,7 @@
                     "type": "creraces:damage",
                     "amount": {
                         "base": 4,
-                        "scales_with": "ad",
+                        "scales_with": "creraces:ad",
                         "factor": 0.04
                     },
                     "damage_type": "minecraft:player_attack"
@@ -49,5 +49,6 @@
             "count": 10
         }
     ],
-    "wiki_page": "state:Slash_N_Dash"
+    "creraces:wiki_page": "Ability:Slash_N_Dash"
 }
+

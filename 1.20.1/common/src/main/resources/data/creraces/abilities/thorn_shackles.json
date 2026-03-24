@@ -1,14 +1,14 @@
 {
-    "name": "ability.creraces.thorn_shackles.name",
-    "description": "ability.creraces.thorn_shackles.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:textures/block/vine.png",
-    "cooldown": 400,
-    "cost": 20,
-    "race": [
+    "creraces:name": "ability.creraces.thorn_shackles.name",
+    "creraces:description": "ability.creraces.thorn_shackles.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/block/vine.png",
+    "creraces:cooldown": 400,
+    "creraces:cost": 20,
+    "creraces:race": [
         "creraces:dryad"
     ],
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:conditional",
             "condition": {
@@ -82,7 +82,9 @@
             "if_false": []
         }
     ],
-    "wiki_page": "state:Thorn_Shackles"
+    "creraces:wiki_page": "Ability:Thorn_Shackles"
 }
+
+
 
 

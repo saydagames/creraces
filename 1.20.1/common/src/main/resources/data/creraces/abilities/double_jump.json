@@ -1,14 +1,16 @@
 {
-    "name": "ability.creraces.double_jump.name",
-    "description": "ability.creraces.double_jump.description",
-    "type": "PASSIVE",
-    "icon": "minecraft:feather",
-    "cooldown": 0,
-    "cost": 0,
-    "race": [
+    "creraces:name": "ability.creraces.double_jump.name",
+    "creraces:description": "ability.creraces.double_jump.description",
+    "creraces:type": "PASSIVE",
+    "creraces:icon": "minecraft:feather",
+    "creraces:cooldown": 0,
+    "creraces:cost": 0,
+    "creraces:race": [
         "creraces:spirit"
     ],
-    "wiki_page": "state:Double_Jump"
+    "creraces:wiki_page": "Ability:Double_Jump"
 }
+
+
 
 

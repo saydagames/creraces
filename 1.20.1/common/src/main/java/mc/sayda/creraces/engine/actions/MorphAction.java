@@ -65,7 +65,7 @@ public class MorphAction implements ActionRegistry.RaceAction {
                                 player.getUUID(), Optional.of(entityId)));
 
                 // Apply scale if specified
-                double s = scale.evaluate(player, target);
+                double s = scale.evaluate(player, target, slot);
                 if (s > 0 && s != 1.0 && player.getServer() != null && player instanceof ServerPlayer sp) {
                     sp.getServer().getCommands().performPrefixedCommand(
                             sp.createCommandSourceStack().withPermission(4).withSuppressedOutput(),

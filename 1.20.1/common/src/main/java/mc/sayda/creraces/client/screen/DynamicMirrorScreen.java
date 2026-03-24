@@ -61,16 +61,22 @@ public class DynamicMirrorScreen extends AbstractContainerScreen<MirrorMenu> {
         int mirrorCenterX = this.width / 2 + 60;
         int arrowY = (this.height / 2 - 95) + 160;
 
-        addRenderableWidget(Button.builder(Component.literal("<-"), b -> previewRotation -= 90)
-                .bounds(mirrorCenterX - 45, arrowY, 20, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("->"), b -> previewRotation += 90)
-                .bounds(mirrorCenterX + 25, arrowY, 20, 20).build());
+        Component backLabel = java.util.Objects.requireNonNull(Component.literal("<-"));
+        addRenderableWidget(java.util.Objects.requireNonNull(Button.builder(backLabel, b -> previewRotation -= 90)
+                .bounds(mirrorCenterX - 45, arrowY, 20, 20).build()));
+        
+        Component forwardLabel = java.util.Objects.requireNonNull(Component.literal("->"));
+        addRenderableWidget(java.util.Objects.requireNonNull(Button.builder(forwardLabel, b -> previewRotation += 90)
+                .bounds(mirrorCenterX + 25, arrowY, 20, 20).build()));
 
         int controlsY = this.height - 30;
-        addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> save())
-                .bounds(this.width / 2 - 100, controlsY, 90, 20).build());
-        addRenderableWidget(Button.builder(Component.translatable("gui.cancel"), b -> onClose())
-                .bounds(this.width / 2 + 10, controlsY, 90, 20).build());
+        Component doneMsg = java.util.Objects.requireNonNull(Component.translatable("gui.done"));
+        addRenderableWidget(java.util.Objects.requireNonNull(Button.builder(doneMsg, b -> save())
+                .bounds(this.width / 2 - 100, controlsY, 90, 20).build()));
+        
+        Component cancelMsg = java.util.Objects.requireNonNull(Component.translatable("gui.cancel"));
+        addRenderableWidget(java.util.Objects.requireNonNull(Button.builder(cancelMsg, b -> onClose())
+                .bounds(this.width / 2 + 10, controlsY, 90, 20).build()));
     }
 
     private void setupRaceWidgets() {
@@ -110,7 +116,7 @@ public class DynamicMirrorScreen extends AbstractContainerScreen<MirrorMenu> {
                     String initialValue = tempCustomizations.getOrDefault(cust.id(), cust.defaultValue());
 
                     // Widget Label component
-                    Component label = Component.translatable("cust.creraces." + cust.id());
+                    Component label = java.util.Objects.requireNonNull(Component.translatable("cust.creraces." + cust.id()));
 
                     if (cust.options().isEmpty()) {
                         // Text Entry for Hex/Free choice
@@ -125,9 +131,9 @@ public class DynamicMirrorScreen extends AbstractContainerScreen<MirrorMenu> {
                         addRenderableWidget(editBox);
                     } else {
                         // Cycle Button for fixed options
-                        addRenderableWidget(CycleButton
-                                .builder((String val) -> Component
-                                        .translatable("gui.creraces.mirror." + cust.id() + "." + val))
+                        addRenderableWidget(java.util.Objects.requireNonNull(CycleButton
+                                .builder((String val) -> java.util.Objects.requireNonNull(Component
+                                        .translatable("gui.creraces.mirror." + cust.id() + "." + val)))
                                 .withValues(cust.options())
                                 .withInitialValue(initialValue)
                                 .create(leftAnchorX, yOffset + 12, 140, 20,
@@ -135,7 +141,7 @@ public class DynamicMirrorScreen extends AbstractContainerScreen<MirrorMenu> {
                                             tempCustomizations.put(cust.id(), value);
                                             vars.setCustomization(cust.id(), value);
                                             updatePreviewAddons(this.minecraft.player, vars);
-                                        }));
+                                        })));
                     }
                     yOffset += 40; // Spacing for title + widget
                 }

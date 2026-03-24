@@ -66,8 +66,7 @@ public class ContinuousEffectTrait implements TraitRegistry.RaceTrait {
                 case ENERGY -> vars.getEnergy();
                 case GRIT -> vars.getGrit();
                 case RAGE -> vars.getRage();
-                case SOULS -> vars.getSouls();
-                case STACKS -> vars.getPersistentState(new ResourceLocation(CreRaces.MODID, "stacks"));
+                case SOUL -> vars.getSoul();
                 case NONE -> 0.0;
                 default -> 100.0;
             };
@@ -94,10 +93,7 @@ public class ContinuousEffectTrait implements TraitRegistry.RaceTrait {
                         case ENERGY -> vars.setEnergy(Math.max(0, vars.getEnergy() - evaluatedDrain));
                         case GRIT -> vars.setGrit(Math.max(0, vars.getGrit() - evaluatedDrain));
                         case RAGE -> vars.setRage(Math.max(0, vars.getRage() - evaluatedDrain));
-                        case SOULS -> vars.setSouls(Math.max(0, vars.getSouls() - evaluatedDrain));
-                        case STACKS -> vars.setPersistentState(new ResourceLocation(CreRaces.MODID, "stacks"),
-                                Math.max(0, vars.getPersistentState(new ResourceLocation(CreRaces.MODID, "stacks"))
-                                        - evaluatedDrain));
+                        case SOUL -> vars.setSoul(Math.max(0, vars.getSoul() - evaluatedDrain));
                         case NONE -> {
                         }
                     }
@@ -105,8 +101,9 @@ public class ContinuousEffectTrait implements TraitRegistry.RaceTrait {
             } else {
                 // Handle failure (Server only)
                 if (!player.level().isClientSide()) {
-                    ResourceLocation failId = new ResourceLocation(traitId.getNamespace(),
-                            traitId.getPath() + "_failed");
+                    String namespace = java.util.Objects.requireNonNull(traitId.getNamespace());
+                    String path = java.util.Objects.requireNonNull(traitId.getPath()) + "_failed";
+                    ResourceLocation failId = new ResourceLocation(namespace, path);
                     boolean alreadyFailed = vars.getPersistentState(failId) > 0;
                     if (conditionMet && resource != ResourceType.NONE && currentResource < evaluatedDrain
                             && !alreadyFailed) {
@@ -127,7 +124,9 @@ public class ContinuousEffectTrait implements TraitRegistry.RaceTrait {
             }
 
             if (conditionMet && (resource == ResourceType.NONE || currentResource >= evaluatedDrain)) {
-                ResourceLocation failId = new ResourceLocation(traitId.getNamespace(), traitId.getPath() + "_failed");
+                String namespace = java.util.Objects.requireNonNull(traitId.getNamespace());
+                String path = java.util.Objects.requireNonNull(traitId.getPath()) + "_failed";
+                ResourceLocation failId = new ResourceLocation(namespace, path);
                 vars.setPersistentState(failId, 0.0);
             }
         });

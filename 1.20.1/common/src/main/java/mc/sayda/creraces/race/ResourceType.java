@@ -9,8 +9,7 @@ public enum ResourceType {
     RAGE(0xCC3333, "Rage"),
     ENERGY(0xFFCC33, "Energy"),
     GRIT(0x666666, "Grit"),
-    SOULS(0x9933CC, "Souls"),
-    STACKS(0x580000, "Stacks");
+    SOUL(0x9933CC, "Soul");
 
     private final int color;
     private final String displayName;

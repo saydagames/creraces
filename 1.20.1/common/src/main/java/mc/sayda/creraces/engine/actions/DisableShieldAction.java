@@ -20,9 +20,9 @@ public class DisableShieldAction implements ActionRegistry.RaceAction {
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
         if (target instanceof Player targetPlayer) {
-            int ticks = (int) duration.evaluate(player, target);
-            if (ticks > 0) {
-                targetPlayer.getCooldowns().addCooldown(net.minecraft.world.item.Items.SHIELD, ticks);
+            int d = (int) duration.evaluate(player, target, slot);
+            if (d > 0) {
+                targetPlayer.getCooldowns().addCooldown(net.minecraft.world.item.Items.SHIELD, d);
                 targetPlayer.stopUsingItem();
                 targetPlayer.level().broadcastEntityEvent(targetPlayer, (byte) 30); // Shield break sound/particles
             } else {

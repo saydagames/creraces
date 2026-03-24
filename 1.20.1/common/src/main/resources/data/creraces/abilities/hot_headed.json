@@ -1,22 +1,22 @@
 {
-    "name": "ability.creraces.hot_headed.name",
-    "description": "ability.creraces.hot_headed.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:textures/item/fire_charge.png",
-    "cooldown": 100,
-    "cost": 0,
-    "race": [
+    "creraces:name": "ability.creraces.hot_headed.name",
+    "creraces:description": "ability.creraces.hot_headed.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/fire_charge.png",
+    "creraces:cooldown": 100,
+    "creraces:cost": 0,
+    "creraces:race": [
         "creraces:oread"
     ],
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:toggle_state",
-            "state": "slot",
+            "state": "self",
             "on_value": 1,
             "off_value": 0,
             "on_enable": [
                 {
-                    "type": "creraces:apply_particles",
+                    "type": "creraces:spawn_particles",
                     "particle": "minecraft:flame",
                     "count": 20
                 },
@@ -37,15 +37,17 @@
             ]
         }
     ],
-    "on_deactivate": [
+    "creraces:on_deactivate": [
         {
             "type": "creraces:set_state",
-            "state": "slot",
+            "state": "self",
             "operation": "SET",
             "value": 0
         }
     ],
-    "wiki_page": "state:Hot_Headed"
+    "creraces:wiki_page": "Ability:Hot_Headed"
 }
+
+
 
 

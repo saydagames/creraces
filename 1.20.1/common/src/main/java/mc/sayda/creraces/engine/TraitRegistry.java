@@ -89,6 +89,7 @@ public class TraitRegistry {
             };
         }
         String typeStr = json.get("type").getAsString();
+
         ResourceLocation type = ResourceLocation.tryParse(typeStr);
         if (type == null) {
             CreRaces.LOGGER.error("Malformed trait type '{}' - skipping.", typeStr);

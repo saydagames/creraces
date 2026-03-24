@@ -25,13 +25,13 @@ public class BreakBlocksAction implements ActionRegistry.RaceAction {
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
         BlockPos center = player.blockPosition();
-        int r = (int) radius.evaluate(player, target);
+        double r = radius.evaluate(player, target, slot);
         int maxRadius = 10;
         if (maxRadius > 0)
             r = Math.min(r, maxRadius);
-        for (int x = -r; x <= r; x++) {
-            for (int y = -r; y <= r; y++) {
-                for (int z = -r; z <= r; z++) {
+        for (int x = -(int)r; x <= r; x++) {
+            for (int y = -(int)r; y <= r; y++) {
+                for (int z = -(int)r; z <= r; z++) {
                     BlockPos pos = center.offset(x, y, z);
                     if (pos.equals(center))
                         continue;

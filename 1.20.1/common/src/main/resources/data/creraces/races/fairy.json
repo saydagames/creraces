@@ -85,7 +85,7 @@
             "hidden": true
         }
     ],
-    "race_defaults": {
+    "creraces:race_defaults": {
         "creraces:spring_fairy": {
             "fairy_color": "#FF99FF"
         },

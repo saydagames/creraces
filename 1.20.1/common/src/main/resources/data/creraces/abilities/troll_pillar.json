@@ -1,14 +1,14 @@
 {
-    "name": "ability.creraces.troll_pillar.name",
-    "description": "ability.creraces.troll_pillar.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:textures/item/stone.png",
-    "cooldown": 320,
-    "cost": 30,
-    "race": [
+    "creraces:name": "ability.creraces.troll_pillar.name",
+    "creraces:description": "ability.creraces.troll_pillar.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/stone.png",
+    "creraces:cooldown": 320,
+    "creraces:cost": 30,
+    "creraces:race": [
         "creraces:troll"
     ],
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:summon_entity",
             "entity": "creraces:troll_pillar",
@@ -29,7 +29,9 @@
             "count": 8
         }
     ],
-    "wiki_page": "state:Troll_Pillar"
+    "creraces:wiki_page": "Ability:Troll_Pillar"
 }
+
+
 
 

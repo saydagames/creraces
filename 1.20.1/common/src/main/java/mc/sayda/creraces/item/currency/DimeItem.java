@@ -39,8 +39,11 @@ public class DimeItem extends Item {
     public @Nonnull InteractionResultHolder<ItemStack> use(@Nonnull Level level, @Nonnull Player player,
             @Nonnull InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
-        addCoin(level, player, stack);
-        return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
+        if (stack != null) {
+            addCoin(level, player, stack);
+            return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
+        }
+        return InteractionResultHolder.pass(stack);
     }
 
     @Override

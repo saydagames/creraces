@@ -40,9 +40,9 @@ public class TeleportAction implements ActionRegistry.RaceAction {
         if (!configured)
             return true;
 
-        double targetX = x.evaluate(player, target);
-        double targetY = y.evaluate(player, target);
-        double targetZ = z.evaluate(player, target);
+        double targetX = x.evaluate(player, target, slot);
+        double targetY = y.evaluate(player, target, slot);
+        double targetZ = z.evaluate(player, target, slot);
 
         ResourceLocation targetDim = dimension;
         if (dimensionKey != null) {

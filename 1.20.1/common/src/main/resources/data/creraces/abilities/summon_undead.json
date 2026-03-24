@@ -1,14 +1,14 @@
 {
-    "name": "ability.creraces.summon_undead.name",
-    "description": "ability.creraces.summon_undead.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:textures/item/bone.png",
-    "cooldown": 420,
-    "cost": 30,
-    "race": [
+    "creraces:name": "ability.creraces.summon_undead.name",
+    "creraces:description": "ability.creraces.summon_undead.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/bone.png",
+    "creraces:cooldown": 420,
+    "creraces:cost": 30,
+    "creraces:race": [
         "creraces:undead"
     ],
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:mass_summon",
             "min_count": { "base": 3 },
@@ -29,8 +29,10 @@
             "pitch": 0.8
         }
     ],
-    "wiki_page": "state:Summon_Undead"
+    "creraces:wiki_page": "Ability:Summon_Undead"
 }
+
+
 
 
 

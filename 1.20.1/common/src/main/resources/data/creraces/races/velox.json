@@ -58,11 +58,12 @@
                             "type": "creraces:damage",
                             "amount": {
                                 "base": 2,
-                                "scales_with": "ad",
+                                "scales_with": "creraces:ad",
                                 "factor": 0.02,
                                 "scales": [
                                     {
-                                        "stat": "target_max_hp",
+                                        "stat": "creraces:max_health",
+                                        "use_target": true,
                                         "factor": 0.1
                                     }
                                 ]

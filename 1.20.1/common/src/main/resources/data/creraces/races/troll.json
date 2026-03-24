@@ -125,7 +125,8 @@
                     "type": "creraces:heal",
                     "amount": {
                         "base": 0,
-                        "scales_with": "target_max_hp",
+                        "scales_with": "creraces:max_health",
+                        "use_target": true,
                         "factor": 0.1
                     }
                 },
@@ -133,7 +134,7 @@
                     "type": "creraces:damage",
                     "amount": {
                         "base": 2.0,
-                        "scales_with": "ad",
+                        "scales_with": "creraces:ad",
                         "factor": 0.02
                     },
                     "damage_type": "minecraft:player_attack"

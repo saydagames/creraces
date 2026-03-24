@@ -1,13 +1,13 @@
 {
-    "name": "ability.creraces.poison_emitter.name",
-    "description": "ability.creraces.poison_emitter.description",
-    "icon": "minecraft:textures/item/poisonous_potato.png",
+    "creraces:name": "ability.creraces.poison_emitter.name",
+    "creraces:description": "ability.creraces.poison_emitter.description",
+    "creraces:icon": "minecraft:textures/item/poisonous_potato.png",
     "category": "UTILITY",
-    "cooldown": 360,
-    "race": [
+    "creraces:cooldown": 360,
+    "creraces:race": [
         "creraces:ratkin"
     ],
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:conditional",
             "condition": {
@@ -58,7 +58,9 @@
             }
         }
     ],
-    "wiki_page": "state:Poison_Emitter"
+    "creraces:wiki_page": "Ability:Poison_Emitter"
 }
+
+
 
 

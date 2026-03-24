@@ -1,19 +1,19 @@
 {
-    "name": "ability.creraces.mountains_fury.name",
-    "description": "ability.creraces.mountains_fury.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:textures/item/magma_cream.png",
-    "cooldown": 360,
-    "cost": 0,
-    "race": [
+    "creraces:name": "ability.creraces.mountains_fury.name",
+    "creraces:description": "ability.creraces.mountains_fury.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/magma_cream.png",
+    "creraces:cooldown": 360,
+    "creraces:cost": 0,
+    "creraces:race": [
         "creraces:oread"
     ],
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:conditional",
             "condition": {
                 "type": "creraces:state",
-                "state": "slot",
+                "state": "self",
                 "value": 1
             },
             "if_true": [
@@ -29,11 +29,11 @@
                             "type": "creraces:damage",
                             "amount": {
                                 "base": 2.0,
-                                "scales_with": "ap",
+                                "scales_with": "creraces:ap",
                                 "factor": 0.02,
                                 "scales": [
                                     {
-                                        "stat": "var:stacks",
+                                        "stat": "Ability:creraces:stacks",
                                         "factor": 0.01
                                     }
                                 ]
@@ -64,20 +64,20 @@
                 },
                 {
                     "type": "creraces:modify_resource",
-                    "resource": "stacks",
+                    "resource": "Ability:creraces:stacks",
                     "operation": "set",
                     "value": 0
                 },
                 {
                     "type": "creraces:set_state",
-                    "state": "slot",
+                    "state": "self",
                     "value": 0
                 }
             ],
             "if_false": [
                 {
                     "type": "creraces:set_state",
-                    "state": "slot",
+                    "state": "self",
                     "value": 1
                 },
                 {
@@ -89,7 +89,9 @@
             ]
         }
     ],
-    "wiki_page": "state:Mountains_Fury"
+    "creraces:wiki_page": "Ability:Mountains_Fury"
 }
+
+
 
 

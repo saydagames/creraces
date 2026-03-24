@@ -68,7 +68,10 @@ public class ToriBellBlock extends BellBlock {
             if (isWeathered) {
                 if (isKitsune && level.dimension() == Level.OVERWORLD) {
                     if (checkAndPlaceStructure((ServerLevel) level, pos, player, vars)) {
-                        level.playSound(null, pos, SoundEvents.BELL_BLOCK, SoundSource.BLOCKS, 1.0f, 1.0f);
+                        net.minecraft.sounds.SoundEvent ringSound = SoundEvents.BELL_BLOCK;
+                        if (ringSound != null) {
+                            level.playSound(null, pos, ringSound, SoundSource.BLOCKS, 1.0f, 1.0f);
+                        }
                     } else {
                         player.displayClientMessage(Component.translatable("block.creraces.tori_bell.pattern_missing"),
                                 true);
@@ -175,7 +178,10 @@ public class ToriBellBlock extends BellBlock {
         BoundaryHandler.resyncForAllTrackers(player);
         BoundaryHandler.resyncVariables(player, player);
 
-        level.playSound(null, pos, SoundEvents.BELL_BLOCK, SoundSource.BLOCKS, 1.0f, 1.0f);
+        net.minecraft.sounds.SoundEvent ringSound = SoundEvents.BELL_BLOCK;
+        if (ringSound != null) {
+            level.playSound(null, pos, ringSound, SoundSource.BLOCKS, 1.0f, 1.0f);
+        }
 
         if (isGuidingSpirit) {
             List<Player> nearbyPlayers = level.getEntitiesOfClass(Player.class, new AABB(pos).inflate(5));

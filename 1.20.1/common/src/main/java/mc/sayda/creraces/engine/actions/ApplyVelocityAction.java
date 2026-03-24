@@ -46,10 +46,10 @@ public class ApplyVelocityAction implements ActionRegistry.RaceAction {
         if (entity == null)
             return false;
 
-        double s = strength.evaluate(player, target);
-        double vx = x.evaluate(player, target);
-        double vy = y.evaluate(player, target);
-        double vz = z.evaluate(player, target);
+        double s = strength.evaluate(player, target, slot);
+        double vx = x.evaluate(player, target, slot);
+        double vy = y.evaluate(player, target, slot);
+        double vz = z.evaluate(player, target, slot);
 
         Vec3 velocity;
         if (mode.equalsIgnoreCase("pull")) {

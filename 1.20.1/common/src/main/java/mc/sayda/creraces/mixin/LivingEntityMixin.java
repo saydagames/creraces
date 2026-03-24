@@ -303,9 +303,9 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
 
                     // Camouflage Interrupt
                     @SuppressWarnings("null")
-                    boolean hasCamouflage = player.hasEffect(mc.sayda.creraces.registry.ModMobEffects.CAMOUFLAGE.get());
+                    boolean hasCamouflage = player.hasEffect(java.util.Objects.requireNonNull(mc.sayda.creraces.registry.ModMobEffects.CAMOUFLAGE.get()));
                     if (hasCamouflage) {
-                        player.removeEffect(mc.sayda.creraces.registry.ModMobEffects.CAMOUFLAGE.get());
+                        player.removeEffect(java.util.Objects.requireNonNull(mc.sayda.creraces.registry.ModMobEffects.CAMOUFLAGE.get()));
                         vars.setCooldown(new net.minecraft.resources.ResourceLocation("creraces:camouflage"), 220);
                         mc.sayda.creraces.network.BoundaryHandler.resyncVariables(player, player, true);
                     }

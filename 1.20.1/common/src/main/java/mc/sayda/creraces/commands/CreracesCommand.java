@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
+import net.minecraft.commands.SharedSuggestionProvider;
 
 /**
  * Main command for race management.
@@ -60,8 +61,11 @@ public class CreracesCommand {
                                                         return 1;
                                                 }))
 
+                                // select subcommand
                                 .then(Commands.literal("select")
-                                                .then(Commands.argument("target", EntityArgument.player())
+                                                .then(Commands.argument("target",
+                                                                java.util.Objects.requireNonNull(
+                                                                                EntityArgument.player()))
                                                                 .requires(src -> src.hasPermission(2))
                                                                 .executes(ctx -> executeOpenSelection(ctx.getSource(),
                                                                                 EntityArgument.getPlayer(ctx,
@@ -73,8 +77,11 @@ public class CreracesCommand {
                                                         return executeOpenSelection(ctx.getSource(), player);
                                                 }))
 
+                                // mirror subcommand
                                 .then(Commands.literal("mirror")
-                                                .then(Commands.argument("target", EntityArgument.player())
+                                                .then(Commands.argument("target",
+                                                                java.util.Objects.requireNonNull(
+                                                                                EntityArgument.player()))
                                                                 .requires(src -> src.hasPermission(2))
                                                                 .executes(ctx -> executeOpenMirror(ctx.getSource(),
                                                                                 EntityArgument.getPlayer(ctx,
@@ -86,12 +93,12 @@ public class CreracesCommand {
                                                         return executeOpenMirror(ctx.getSource(), player);
                                                 }))
 
-                                // debug <target> (Available to everyone - Fallback for Debug)
+                                // debug subcommand
                                 .then(Commands.literal("debug")
-                                                .then(Commands.argument("target", EntityArgument.player())
-                                                                .requires(src -> src.hasPermission(2)) // Only admins
-                                                                                                       // can debug
-                                                                                                       // others
+                                                .then(Commands.argument("target",
+                                                                java.util.Objects.requireNonNull(
+                                                                                EntityArgument.player()))
+                                                                .requires(src -> src.hasPermission(2))
                                                                 .executes(ctx -> executeOpenDebug(ctx.getSource(),
                                                                                 EntityArgument.getPlayer(ctx,
                                                                                                 "target"))))
@@ -105,12 +112,12 @@ public class CreracesCommand {
                                 // reset <target> (Admin Only)
                                 .then(Commands.literal("reset")
                                                 .requires(src -> src.hasPermission(2))
-                                                .then(Commands.argument("target", EntityArgument.player())
-                                                                .executes(
-                                                                                ctx -> executeReset(ctx.getSource(),
-                                                                                                EntityArgument.getPlayer(
-                                                                                                                ctx,
-                                                                                                                "target"))))
+                                                .then(Commands.argument("target",
+                                                                java.util.Objects.requireNonNull(
+                                                                                EntityArgument.player()))
+                                                                .executes(ctx -> executeReset(ctx.getSource(),
+                                                                                EntityArgument.getPlayer(ctx,
+                                                                                                "target"))))
                                                 .executes(ctx -> {
                                                         ServerPlayer player = ctx.getSource().getPlayer();
                                                         if (player == null)
@@ -121,9 +128,13 @@ public class CreracesCommand {
                                 // setrace <target> <race_id> (Admin Only)
                                 .then(Commands.literal("setrace")
                                                 .requires(src -> src.hasPermission(2))
-                                                .then(Commands.argument("target", EntityArgument.player())
+                                                .then(Commands.argument("target",
+                                                                java.util.Objects.requireNonNull(
+                                                                                EntityArgument.player()))
                                                                 .then(Commands.argument("race",
-                                                                                ResourceLocationArgument.id())
+                                                                                java.util.Objects.requireNonNull(
+                                                                                                ResourceLocationArgument
+                                                                                                                .id()))
                                                                                 .suggests(CreracesCommand::suggestRaces)
                                                                                 .executes(ctx -> executeSet(
                                                                                                 ctx.getSource(),
@@ -136,9 +147,13 @@ public class CreracesCommand {
                                 // grant <target> <ability_id> (Admin Only)
                                 .then(Commands.literal("grant")
                                                 .requires(src -> src.hasPermission(2))
-                                                .then(Commands.argument("target", EntityArgument.player())
+                                                .then(Commands.argument("target",
+                                                                java.util.Objects.requireNonNull(
+                                                                                EntityArgument.player()))
                                                                 .then(Commands.argument("ability",
-                                                                                ResourceLocationArgument.id())
+                                                                                java.util.Objects.requireNonNull(
+                                                                                                ResourceLocationArgument
+                                                                                                                .id()))
                                                                                 .suggests(CreracesCommand::suggestAbilities)
                                                                                 .executes(ctx -> executeGrant(
                                                                                                 ctx.getSource(),
@@ -151,9 +166,13 @@ public class CreracesCommand {
                                 // revoke <target> <ability_id> (Admin Only)
                                 .then(Commands.literal("revoke")
                                                 .requires(src -> src.hasPermission(2))
-                                                .then(Commands.argument("target", EntityArgument.player())
+                                                .then(Commands.argument("target",
+                                                                java.util.Objects.requireNonNull(
+                                                                                EntityArgument.player()))
                                                                 .then(Commands.argument("ability",
-                                                                                ResourceLocationArgument.id())
+                                                                                java.util.Objects.requireNonNull(
+                                                                                                ResourceLocationArgument
+                                                                                                                .id()))
                                                                                 .suggests(CreracesCommand::suggestUnlockedAbilities)
                                                                                 .executes(ctx -> executeRevoke(
                                                                                                 ctx.getSource(),
@@ -166,7 +185,9 @@ public class CreracesCommand {
                                 // setrandom <target> (Admin Only)
                                 .then(Commands.literal("setrandom")
                                                 .requires(src -> src.hasPermission(2))
-                                                .then(Commands.argument("target", EntityArgument.player())
+                                                .then(Commands.argument("target",
+                                                                java.util.Objects.requireNonNull(
+                                                                                EntityArgument.player()))
                                                                 .executes(ctx -> executeSetRandom(ctx.getSource(),
                                                                                 EntityArgument.getPlayer(ctx,
                                                                                                 "target"))))
@@ -189,13 +210,17 @@ public class CreracesCommand {
                                 // modify <target> <variable> <value> (Admin Only)
                                 .then(Commands.literal("modify")
                                                 .requires(src -> src.hasPermission(2))
-                                                .then(Commands.argument("target", EntityArgument.player())
-                                                                .then(Commands.argument("variable",
-                                                                                StringArgumentType.word())
+                                                .then(Commands.argument("target",
+                                                                java.util.Objects.requireNonNull(
+                                                                                EntityArgument.player()))
+                                                                .then(Commands.argument("variable", java.util.Objects
+                                                                                .requireNonNull(StringArgumentType
+                                                                                                .word()))
                                                                                 .suggests(CreracesCommand::suggestVariables)
                                                                                 .then(Commands.argument("value",
-                                                                                                StringArgumentType
-                                                                                                                .word())
+                                                                                                java.util.Objects
+                                                                                                                .requireNonNull(StringArgumentType
+                                                                                                                                .word()))
                                                                                                 .suggests(CreracesCommand::suggestValues)
                                                                                                 .executes(ctx -> executeModify(
                                                                                                                 ctx.getSource(),
@@ -206,35 +231,40 @@ public class CreracesCommand {
                                                                                                                                 .getString(ctx, "variable"),
                                                                                                                 StringArgumentType
                                                                                                                                 .getString(ctx, "value")))))))
+
+                                // pocket subcommand
                                 .then(Commands.literal("pocket")
                                                 .then(Commands.literal("goto")
                                                                 .requires(src -> src.hasPermission(2))
-                                                                .then(Commands.argument("index",
-                                                                                IntegerArgumentType.integer(1))
+                                                                .then(Commands.argument("index", java.util.Objects
+                                                                                .requireNonNull(IntegerArgumentType
+                                                                                                .integer(1)))
                                                                                 .executes(ctx -> executePocketTeleport(
                                                                                                 ctx.getSource(),
                                                                                                 IntegerArgumentType
-                                                                                                                .getInteger(ctx,
-                                                                                                                                "index")))))
+                                                                                                                .getInteger(ctx, "index")))))
                                                 .then(Commands.literal("invite")
-                                                                .then(Commands.argument("target",
-                                                                                EntityArgument.player())
+                                                                .then(Commands.argument("target", java.util.Objects
+                                                                                .requireNonNull(EntityArgument
+                                                                                                .player()))
                                                                                 .executes(ctx -> executePocketInvite(
                                                                                                 ctx.getSource(),
                                                                                                 EntityArgument.getPlayer(
                                                                                                                 ctx,
                                                                                                                 "target")))))
                                                 .then(Commands.literal("revoke")
-                                                                .then(Commands.argument("target",
-                                                                                EntityArgument.player())
+                                                                .then(Commands.argument("target", java.util.Objects
+                                                                                .requireNonNull(EntityArgument
+                                                                                                .player()))
                                                                                 .executes(ctx -> executePocketRevoke(
                                                                                                 ctx.getSource(),
                                                                                                 EntityArgument.getPlayer(
                                                                                                                 ctx,
                                                                                                                 "target")))))
                                                 .then(Commands.literal("kick")
-                                                                .then(Commands.argument("target",
-                                                                                EntityArgument.player())
+                                                                .then(Commands.argument("target", java.util.Objects
+                                                                                .requireNonNull(EntityArgument
+                                                                                                .player()))
                                                                                 .executes(ctx -> executePocketKick(
                                                                                                 ctx.getSource(),
                                                                                                 EntityArgument.getPlayer(
@@ -243,7 +273,9 @@ public class CreracesCommand {
                                                 .then(Commands.literal("list")
                                                                 .executes(ctx -> executePocketList(ctx.getSource())))
                                                 .then(Commands.literal("join")
-                                                                .then(Commands.argument("host", EntityArgument.player())
+                                                                .then(Commands.argument("host", java.util.Objects
+                                                                                .requireNonNull(EntityArgument
+                                                                                                .player()))
                                                                                 .executes(ctx -> executePocketJoin(
                                                                                                 ctx.getSource(),
                                                                                                 EntityArgument.getPlayer(
@@ -255,97 +287,108 @@ public class CreracesCommand {
                 boolean isOp = source.hasPermission(2);
 
                 source.sendSuccess(
-                                () -> Component.translatable("creraces.help.header")
-                                                .withStyle(ChatFormatting.GOLD),
+                                () -> java.util.Objects.requireNonNull(Component.translatable("creraces.help.header")
+                                                .withStyle(ChatFormatting.GOLD)),
                                 false);
 
                 // Public Commands
                 source.sendSuccess(
-                                () -> Component.literal("/creraces abilities").withStyle(ChatFormatting.GRAY)
+                                () -> java.util.Objects.requireNonNull(Component.literal("/creraces abilities")
+                                                .withStyle(ChatFormatting.GRAY)
                                                 .append(Component.translatable("creraces.help.abilities")
-                                                                .withStyle(ChatFormatting.DARK_GRAY)),
+                                                                .withStyle(ChatFormatting.DARK_GRAY))),
                                 false);
 
                 source.sendSuccess(
-                                () -> Component.literal("/creraces select" + (isOp ? " [player]" : ""))
+                                () -> java.util.Objects.requireNonNull(Component
+                                                .literal("/creraces select" + (isOp ? " [player]" : ""))
                                                 .withStyle(ChatFormatting.GRAY)
                                                 .append(Component.translatable("creraces.help.selection")
-                                                                .withStyle(ChatFormatting.DARK_GRAY)),
+                                                                .withStyle(ChatFormatting.DARK_GRAY))),
                                 false);
 
                 source.sendSuccess(
-                                () -> Component.literal("/creraces mirror" + (isOp ? " [player]" : ""))
-                                                .withStyle(ChatFormatting.GRAY)
-                                                .append(Component.translatable("creraces.help.mirror")
-                                                                .withStyle(ChatFormatting.DARK_GRAY)),
+                                () -> java.util.Objects.requireNonNull(
+                                                Component.literal("/creraces mirror" + (isOp ? " [player]" : ""))
+                                                                .withStyle(ChatFormatting.GRAY)
+                                                                .append(Component.translatable("creraces.help.mirror")
+                                                                                .withStyle(ChatFormatting.DARK_GRAY))),
                                 false);
 
                 source.sendSuccess(
-                                () -> Component.literal("/creraces pocket <invite|join|list|kick|revoke>")
+                                () -> java.util.Objects.requireNonNull(Component
+                                                .literal("/creraces pocket <invite|join|list|kick|revoke>")
                                                 .withStyle(ChatFormatting.GRAY)
                                                 .append(Component.literal(" - Pocket management commands")
-                                                                .withStyle(ChatFormatting.DARK_GRAY)),
+                                                                .withStyle(ChatFormatting.DARK_GRAY))),
                                 false);
 
                 source.sendSuccess(
-                                () -> Component.literal("/creraces debug" + (isOp ? " [player]" : ""))
-                                                .withStyle(ChatFormatting.GRAY)
-                                                .append(Component.translatable("creraces.help.debug")
-                                                                .withStyle(ChatFormatting.DARK_GRAY)),
+                                () -> java.util.Objects.requireNonNull(
+                                                Component.literal("/creraces debug" + (isOp ? " [player]" : ""))
+                                                                .withStyle(ChatFormatting.GRAY)
+                                                                .append(Component.translatable("creraces.help.debug")
+                                                                                .withStyle(ChatFormatting.DARK_GRAY))),
                                 false);
 
                 // OP-Only Commands
                 if (isOp) {
                         source.sendSuccess(
-                                        () -> Component.literal("/creraces reset <player>")
+                                        () -> java.util.Objects.requireNonNull(Component
+                                                        .literal("/creraces reset <player>")
                                                         .withStyle(ChatFormatting.GRAY)
                                                         .append(Component.translatable("creraces.help.reset")
-                                                                        .withStyle(ChatFormatting.DARK_GRAY)),
+                                                                        .withStyle(ChatFormatting.DARK_GRAY))),
                                         false);
                         source.sendSuccess(
-                                        () -> Component.literal("/creraces setrace <player> <id>")
+                                        () -> java.util.Objects.requireNonNull(Component
+                                                        .literal("/creraces setrace <player> <id>")
                                                         .withStyle(ChatFormatting.GRAY)
                                                         .append(Component.translatable("creraces.help.setrace")
-                                                                        .withStyle(ChatFormatting.DARK_GRAY)),
+                                                                        .withStyle(ChatFormatting.DARK_GRAY))),
                                         false);
                         source.sendSuccess(
-                                        () -> Component.literal("/creraces grant <player> <ability>")
+                                        () -> java.util.Objects.requireNonNull(Component
+                                                        .literal("/creraces grant <player> <ability>")
                                                         .withStyle(ChatFormatting.GRAY)
                                                         .append(Component.literal(" - Grants an ability to a player")
-                                                                        .withStyle(ChatFormatting.DARK_GRAY)),
+                                                                        .withStyle(ChatFormatting.DARK_GRAY))),
                                         false);
                         source.sendSuccess(
-                                        () -> Component.literal("/creraces revoke <player> <ability>")
+                                        () -> java.util.Objects.requireNonNull(Component
+                                                        .literal("/creraces revoke <player> <ability>")
                                                         .withStyle(ChatFormatting.GRAY)
                                                         .append(Component.literal(" - Revokes an ability from a player")
-                                                                        .withStyle(ChatFormatting.DARK_GRAY)),
+                                                                        .withStyle(ChatFormatting.DARK_GRAY))),
                                         false);
                         source.sendSuccess(
-                                        () -> Component.literal("/creraces setrandom <player>")
+                                        () -> java.util.Objects.requireNonNull(Component
+                                                        .literal("/creraces setrandom <player>")
                                                         .withStyle(ChatFormatting.GRAY)
                                                         .append(Component.translatable("creraces.help.setrandom")
-                                                                        .withStyle(ChatFormatting.DARK_GRAY)),
+                                                                        .withStyle(ChatFormatting.DARK_GRAY))),
                                         false);
                         source.sendSuccess(
-                                        () -> Component.literal("/creraces reload")
+                                        () -> java.util.Objects.requireNonNull(Component.literal("/creraces reload")
                                                         .withStyle(ChatFormatting.GRAY)
                                                         .append(Component
                                                                         .literal(" - Reloads all race and ability data")
-                                                                        .withStyle(ChatFormatting.DARK_GRAY)),
+                                                                        .withStyle(ChatFormatting.DARK_GRAY))),
                                         false);
                         source.sendSuccess(
-                                        () -> Component.literal("/creraces pocket goto <index>")
+                                        () -> java.util.Objects.requireNonNull(Component
+                                                        .literal("/creraces pocket goto <index>")
                                                         .withStyle(ChatFormatting.GRAY)
                                                         .append(Component.literal(" - Teleport to any pocket index")
-                                                                        .withStyle(ChatFormatting.DARK_GRAY)),
+                                                                        .withStyle(ChatFormatting.DARK_GRAY))),
                                         false);
                 }
 
                 source.sendSuccess(
-                                () -> Component.literal("/creraces refresh")
+                                () -> java.util.Objects.requireNonNull(Component.literal("/creraces refresh")
                                                 .withStyle(ChatFormatting.GRAY)
                                                 .append(Component.literal(" - Refreshes your attributes and cosmetics")
-                                                                .withStyle(ChatFormatting.DARK_GRAY)),
+                                                                .withStyle(ChatFormatting.DARK_GRAY))),
                                 false);
 
                 return 1;
@@ -368,7 +411,9 @@ public class CreracesCommand {
 
         private static int executeReset(CommandSourceStack source, ServerPlayer target) {
                 RaceIncidents.transformPlayer(target, RaceRegistry.NONE);
-                source.sendSuccess(() -> Component.literal("Reset race for " + target.getGameProfile().getName()),
+                source.sendSuccess(
+                                () -> java.util.Objects.requireNonNull(Component
+                                                .literal("Reset race for " + target.getGameProfile().getName())),
                                 true);
                 return 1;
         }
@@ -382,8 +427,10 @@ public class CreracesCommand {
                 }
 
                 RaceIncidents.transformPlayer(target, race.id());
-                source.sendSuccess(() -> Component.translatable("creraces.command.set_success",
-                                race.name(), target.getGameProfile().getName()), true);
+                source.sendSuccess(() -> java.util.Objects
+                                .requireNonNull(Component.translatable("creraces.command.set_success",
+                                                race.name(), target.getGameProfile().getName())),
+                                true);
                 return 1;
         }
 
@@ -400,9 +447,9 @@ public class CreracesCommand {
                         vars.unlockAbility(abilityId);
                         mc.sayda.creraces.network.BoundaryHandler.resyncVariables(target, target);
 
-                        source.sendSuccess(() -> Component
+                        source.sendSuccess(() -> java.util.Objects.requireNonNull(Component
                                         .literal("Granted " + abilityId + " to " + target.getGameProfile().getName())
-                                        .withStyle(ChatFormatting.GREEN), true);
+                                        .withStyle(ChatFormatting.GREEN)), true);
                         return 1;
                 }).orElse(0);
         }
@@ -414,9 +461,9 @@ public class CreracesCommand {
                         // Force refresh to update menus and UI
                         RaceIncidents.refreshPlayer(target);
 
-                        source.sendSuccess(() -> Component
+                        source.sendSuccess(() -> java.util.Objects.requireNonNull(Component
                                         .literal("Revoked " + abilityId + " from " + target.getGameProfile().getName())
-                                        .withStyle(ChatFormatting.YELLOW), true);
+                                        .withStyle(ChatFormatting.YELLOW)), true);
                         return 1;
                 }).orElse(0);
         }
@@ -431,8 +478,10 @@ public class CreracesCommand {
         }
 
         private static int executeReload(CommandSourceStack source) {
-                source.sendSuccess(() -> Component.translatable("creraces.command.reloading")
-                                .withStyle(ChatFormatting.YELLOW), true);
+                source.sendSuccess(() -> java.util.Objects
+                                .requireNonNull(Component.translatable("creraces.command.reloading")
+                                                .withStyle(ChatFormatting.YELLOW)),
+                                true);
 
                 List<String> ids = new ArrayList<>(source.getServer().getPackRepository().getSelectedIds());
 
@@ -452,8 +501,10 @@ public class CreracesCommand {
                         // Clear remote wiki-text cache after definitions are pushed
                         mc.sayda.creraces.network.BoundaryHandler.broadcastClearCache();
 
-                        source.sendSuccess(() -> Component.translatable("creraces.command.reloaded")
-                                        .withStyle(ChatFormatting.GREEN), true);
+                        source.sendSuccess(() -> java.util.Objects
+                                        .requireNonNull(Component.translatable("creraces.command.reloaded")
+                                                        .withStyle(ChatFormatting.GREEN)),
+                                        true);
                 }, source.getServer()); // run on the main server thread
 
                 return 1;
@@ -475,7 +526,7 @@ public class CreracesCommand {
 
                         boolean core = switch (varLower) {
                                 case "mana", "energy", "grit", "rage", "karma", "ap", "ad", "ah", "cr", "coins",
-                                                "souls", "stacks", "spirit", "minibuild",
+                                                "soul", "spirit", "minibuild",
                                                 "a1", "a2", "a3", "a4", "a5",
                                                 "c1", "c2", "c3", "c4", "c5" ->
                                         true;
@@ -494,8 +545,7 @@ public class CreracesCommand {
                                         case "ah" -> vars.setAh(Double.parseDouble(finalValue));
                                         case "cr" -> vars.setCr(Double.parseDouble(finalValue));
                                         case "coins" -> vars.setCoins(Double.parseDouble(finalValue));
-                                        case "souls" -> vars.setSouls(Double.parseDouble(finalValue));
-                                        case "stacks" -> vars.setStacks(Double.parseDouble(finalValue));
+                                        case "soul" -> vars.setSoul(Double.parseDouble(finalValue));
                                         case "morphed" -> vars.setMorphed(finalValue.equals("1.0"));
                                         case "spirit" -> {
                                                 vars.setInSpiritRealm(finalValue.equals("1.0"));
@@ -565,7 +615,22 @@ public class CreracesCommand {
                                                 if (id != null)
                                                         vars.setCooldown(id, (int) Double.parseDouble(finalValue));
                                         }
-                                        default -> vars.setCustomization(variable.toLowerCase(), value);
+                                        default -> {
+                                                if (varLower.startsWith("state:")) {
+                                                        String subKey = varLower.substring(6);
+                                                        if (!subKey.contains(":")) {
+                                                                subKey = "creraces:" + subKey;
+                                                        }
+                                                        ResourceLocation id = ResourceLocation.tryParse(subKey);
+                                                        if (id != null) {
+                                                                vars.setPersistentState(id, Double.parseDouble(finalValue));
+                                                        } else {
+                                                                vars.setCustomization(varLower, value);
+                                                        }
+                                                } else {
+                                                        vars.setCustomization(varLower, value);
+                                                }
+                                        }
                                 }
                         } catch (NumberFormatException e) {
                                 source.sendFailure(Component.literal("Invalid number: " + value));
@@ -836,7 +901,7 @@ public class CreracesCommand {
         private static CompletableFuture<Suggestions> suggestVariables(CommandContext<CommandSourceStack> context,
                         SuggestionsBuilder builder) {
                 // Core Stats
-                List.of("mana", "energy", "grit", "rage", "karma", "ap", "ad", "ah", "cr", "coins", "souls", "stacks",
+                List.of("mana", "energy", "grit", "rage", "karma", "ap", "ad", "ah", "cr", "coins", "soul",
                                 "gstate", "morphed", "spirit", "minibuild")
                                 .forEach(builder::suggest);
 

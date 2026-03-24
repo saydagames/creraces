@@ -1,14 +1,14 @@
 {
-    "name": "ability.creraces.bloodrage.name",
-    "description": "ability.creraces.bloodrage.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:textures/item/diamond_sword.png",
-    "cooldown": 1800,
-    "cost": 30,
-    "race": [
+    "creraces:name": "ability.creraces.bloodrage.name",
+    "creraces:description": "ability.creraces.bloodrage.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/diamond_sword.png",
+    "creraces:cooldown": 1800,
+    "creraces:cost": 30,
+    "creraces:race": [
         "creraces:orc"
     ],
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:apply_effect",
             "effect": "minecraft:strength",
@@ -30,7 +30,9 @@
             "pitch": 0.8
         }
     ],
-    "wiki_page": "state:Bloodrage"
+    "creraces:wiki_page": "Ability:Bloodrage"
 }
+
+
 
 

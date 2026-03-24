@@ -1,14 +1,14 @@
 {
-    "name": "ability.creraces.rageful_bloodlust.name",
-    "description": "ability.creraces.rageful_bloodlust.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:textures/item/ghast_tear.png",
-    "cooldown": 520,
-    "cost": 0,
-    "race": [
+    "creraces:name": "ability.creraces.rageful_bloodlust.name",
+    "creraces:description": "ability.creraces.rageful_bloodlust.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/ghast_tear.png",
+    "creraces:cooldown": 520,
+    "creraces:cost": 0,
+    "creraces:race": [
         "creraces:orc"
     ],
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:heal",
             "amount": {
@@ -37,5 +37,6 @@
             "count": 5
         }
     ],
-    "wiki_page": "state:Rageful_Bloodlust"
+    "creraces:wiki_page": "Ability:Rageful_Bloodlust"
 }
+

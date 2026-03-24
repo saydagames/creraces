@@ -127,13 +127,7 @@ public class RaceScale {
                 if (json == null || json.isJsonNull()) {
                         return DEFAULT;
                 }
-                if (json.isJsonPrimitive()) {
-                        JsonObject wrapper = new JsonObject();
-                        wrapper.add("val", json);
-                        ScalingValue s = ScalingValue.fromJson(wrapper, "val",
-                                        1.0);
-                        return new RaceScale(s, s, s, s, s, s, s, s, s, s, s, s, s);
-                }
+
                 if (json.isJsonObject()) {
                         JsonObject obj = json.getAsJsonObject();
                         ScalingValue base = ScalingValue.fromJson(obj, "base",

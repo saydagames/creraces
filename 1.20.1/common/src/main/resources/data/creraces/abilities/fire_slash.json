@@ -1,16 +1,16 @@
 {
-    "name": "ability.creraces.fire_slash.name",
-    "description": "ability.creraces.fire_slash.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:textures/item/blaze_powder.png",
-    "cooldown": 60,
-    "cost": 5,
-    "actions": [
+    "creraces:name": "ability.creraces.fire_slash.name",
+    "creraces:description": "ability.creraces.fire_slash.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/blaze_powder.png",
+    "creraces:cooldown": 60,
+    "creraces:cost": 5,
+    "creraces:actions": [
         {
             "type": "creraces:aoe",
             "damage": {
                 "base": 6.0,
-                "ap": 0.5
+                "creraces:ap": 0.5
             },
             "radius": 4.0,
             "set_on_fire": true,
@@ -27,7 +27,9 @@
             "pitch": 1.0
         }
     ],
-    "wiki_page": "state:Fire_Slash"
+    "creraces:wiki_page": "Ability:Fire_Slash"
 }
+
+
 
 

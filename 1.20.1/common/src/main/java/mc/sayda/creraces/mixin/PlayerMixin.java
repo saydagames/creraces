@@ -133,9 +133,6 @@ public class PlayerMixin implements IPlayerVariables {
             var critRate = ModAttributes.CRIT_RATE.get();
             if (critRate != null)
                 cir.getReturnValue().add(critRate);
-            var armorPen = ModAttributes.ARMOR_PENETRATION.get();
-            if (armorPen != null)
-                cir.getReturnValue().add(armorPen);
             var abilityHaste = ModAttributes.ABILITY_HASTE.get();
             if (abilityHaste != null)
                 cir.getReturnValue().add(abilityHaste);
@@ -263,7 +260,8 @@ public class PlayerMixin implements IPlayerVariables {
         var attr = ModAttributes.resolve(ModAttributes.ABILITY_HASTE.get());
         if (attr != null) {
             double val = ((Player) (Object) this).getAttributeValue(attr);
-            if (ModAttributes.isPercentAttribute(attr)) return val * 100.0;
+            if (ModAttributes.isPercentAttribute(attr))
+                return val * 100.0;
             return val;
         }
         return 0.0;
@@ -275,8 +273,10 @@ public class PlayerMixin implements IPlayerVariables {
         if (attr != null) {
             var inst = ((Player) (Object) this).getAttribute(attr);
             if (inst != null) {
-                if (ModAttributes.isPercentAttribute(attr)) inst.setBaseValue(ah / 100.0);
-                else inst.setBaseValue(ah);
+                if (ModAttributes.isPercentAttribute(attr))
+                    inst.setBaseValue(ah / 100.0);
+                else
+                    inst.setBaseValue(ah);
             }
         }
     }
@@ -286,7 +286,8 @@ public class PlayerMixin implements IPlayerVariables {
         var attr = ModAttributes.resolve(ModAttributes.CRIT_RATE.get());
         if (attr != null) {
             double val = ((Player) (Object) this).getAttributeValue(attr);
-            if (ModAttributes.isPercentAttribute(attr)) return val * 100.0;
+            if (ModAttributes.isPercentAttribute(attr))
+                return val * 100.0;
             return val;
         }
         return 0.0;
@@ -298,8 +299,10 @@ public class PlayerMixin implements IPlayerVariables {
         if (attr != null) {
             var inst = ((Player) (Object) this).getAttribute(attr);
             if (inst != null) {
-                if (ModAttributes.isPercentAttribute(attr)) inst.setBaseValue(cr / 100.0);
-                else inst.setBaseValue(cr);
+                if (ModAttributes.isPercentAttribute(attr))
+                    inst.setBaseValue(cr / 100.0);
+                else
+                    inst.setBaseValue(cr);
             }
         }
     }
@@ -355,23 +358,13 @@ public class PlayerMixin implements IPlayerVariables {
     }
 
     @Override
-    public double getSouls() {
-        return creraces$variables.getSouls();
+    public double getSoul() {
+        return creraces$variables.getSoul();
     }
 
     @Override
-    public void setSouls(double souls) {
-        creraces$variables.setSouls(souls);
-    }
-
-    @Override
-    public double getStacks() {
-        return creraces$variables.getStacks();
-    }
-
-    @Override
-    public void setStacks(double stacks) {
-        creraces$variables.setStacks(stacks);
+    public void setSoul(double soul) {
+        creraces$variables.setSoul(soul);
     }
 
     @Override

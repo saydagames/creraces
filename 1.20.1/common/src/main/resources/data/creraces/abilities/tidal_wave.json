@@ -1,18 +1,18 @@
 {
-    "name": "ability.creraces.tidal_wave.name",
-    "description": "ability.creraces.tidal_wave.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:textures/item/nautilus_shell.png",
-    "cooldown": 180,
-    "cost": 0,
-    "race": [
+    "creraces:name": "ability.creraces.tidal_wave.name",
+    "creraces:description": "ability.creraces.tidal_wave.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/nautilus_shell.png",
+    "creraces:cooldown": 180,
+    "creraces:cost": 0,
+    "creraces:race": [
         "creraces:mermaid",
         "creraces:naiad"
     ],
-    "condition": {
+    "creraces:condition": {
         "type": "creraces:in_water"
     },
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:dash",
             "power": 2.2,
@@ -32,7 +32,9 @@
             "count": 25
         }
     ],
-    "wiki_page": "state:Tidal_Wave"
+    "creraces:wiki_page": "Ability:Tidal_Wave"
 }
+
+
 
 

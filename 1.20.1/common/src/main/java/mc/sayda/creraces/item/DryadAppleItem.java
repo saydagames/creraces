@@ -14,7 +14,8 @@ import mc.sayda.creraces.registry.ModMobEffects;
 
 public class DryadAppleItem extends Item {
     private final Variant variant;
-    private static final net.minecraft.resources.ResourceLocation DRYAD_RACE = new net.minecraft.resources.ResourceLocation("creraces", "dryad");
+    private static final net.minecraft.resources.ResourceLocation DRYAD_RACE = new net.minecraft.resources.ResourceLocation(
+            "creraces", "dryad");
 
     public enum Variant {
         DEFAULT(4, 2.4f, Rarity.COMMON),
@@ -36,15 +37,15 @@ public class DryadAppleItem extends Item {
                     .nutrition(this.nutrition)
                     .saturationMod(this.saturation)
                     .alwaysEat();
-            
+
             if (this == GOLDEN) {
                 builder.effect(new MobEffectInstance(MobEffects.REGENERATION, 100, 1), 1.0F)
-                       .effect(new MobEffectInstance(MobEffects.ABSORPTION, 2400, 0), 1.0F);
+                        .effect(new MobEffectInstance(MobEffects.ABSORPTION, 2400, 0), 1.0F);
             } else if (this == ENCHANTED) {
                 builder.effect(new MobEffectInstance(MobEffects.REGENERATION, 400, 1), 1.0F)
-                       .effect(new MobEffectInstance(MobEffects.ABSORPTION, 2400, 3), 1.0F)
-                       .effect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 6000, 0), 1.0F)
-                       .effect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 6000, 0), 1.0F);
+                        .effect(new MobEffectInstance(MobEffects.ABSORPTION, 2400, 3), 1.0F)
+                        .effect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 6000, 0), 1.0F)
+                        .effect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 6000, 0), 1.0F);
             }
             return builder.build();
         }
@@ -61,18 +62,18 @@ public class DryadAppleItem extends Item {
     }
 
     @Override
-    public ItemStack finishUsingItem(ItemStack stack, Level level, LivingEntity entity) {
+    public ItemStack finishUsingItem(ItemStack stack, Level level, @javax.annotation.Nonnull LivingEntity entity) {
         ItemStack result = super.finishUsingItem(stack, level, entity);
-        
+
         if (!level.isClientSide && entity instanceof Player player) {
             DataUtils.getVariables(player).ifPresent(vars -> {
-                if (DRYAD_RACE.equals(vars.getRace())) {
+                if (DRYAD_RACE.equals(vars.getRace())) { // TODO: Change to all Nymphs?
                     // Apply Nymph Call for 15 minutes
                     player.addEffect(new MobEffectInstance(ModMobEffects.NYMPH_CALL.get(), 18000, 0));
                 }
             });
         }
-        
+
         return result;
     }
 }

@@ -51,8 +51,8 @@ public class BeamAction implements ActionRegistry.RaceAction {
         if (player.level().isClientSide())
             return false;
 
-        double dr = drainRate.evaluate(player, target);
-        double dur = duration.evaluate(player, target);
+        double dr = drainRate.evaluate(player, target, slot);
+        double dur = duration.evaluate(player, target, slot);
         if (dur > 0 || dr > 0) {
             DataUtils.getVariables(player).ifPresent(vars -> {
                 vars.setAbilityActive(true);
@@ -64,8 +64,8 @@ public class BeamAction implements ActionRegistry.RaceAction {
                         this);
 
                 // Sync start of beam
-                float rVal = (float) radius.evaluate(player, null);
-                float lVal = (float) length.evaluate(player, null);
+                float rVal = (float) radius.evaluate(player, null, slot);
+                float lVal = (float) length.evaluate(player, null, slot);
                 int maxLen = mc.sayda.creraces.config.CreRacesConfig.BEAM_MAX_LENGTH.get();
                 if (maxLen > 0)
                     lVal = Math.min(lVal, (float) maxLen);
@@ -79,7 +79,7 @@ public class BeamAction implements ActionRegistry.RaceAction {
             return true;
         }
 
-        performBeamLogic(player);
+        performBeamLogic(player, slot);
         return true;
     }
 
@@ -89,14 +89,14 @@ public class BeamAction implements ActionRegistry.RaceAction {
     }
 
     @SuppressWarnings("null")
-    private void performBeamLogic(Player player) {
+    private void performBeamLogic(Player player, @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
         Vec3 start = player.getEyePosition();
         Vec3 direction = player.getLookAngle();
-        double l = length.evaluate(player, null);
+        double l = length.evaluate(player, null, slot);
         int maxLen = 64;
         if (maxLen > 0)
             l = Math.min(l, maxLen);
-        double rVal = radius.evaluate(player, null);
+        double rVal = radius.evaluate(player, null, slot);
         Vec3 end = start.add(direction.scale(l));
 
         AABB searchArea = new AABB(start, end).inflate(rVal);
@@ -108,10 +108,10 @@ public class BeamAction implements ActionRegistry.RaceAction {
 
         for (Entity e : possibleTargets) {
             LivingEntity living = (LivingEntity) e;
-            double r = radius.evaluate(player, living);
+            double r = radius.evaluate(player, living, slot);
             if (isInsideBeam(start, end, living.getEyePosition(), r)) {
                 for (ActionRegistry.RaceAction action : actions) {
-                    action.execute(player, living, null, null);
+                    action.execute(player, living, slot, null);
                 }
             }
         }
@@ -134,12 +134,13 @@ public class BeamAction implements ActionRegistry.RaceAction {
         if (action != null) {
             DataUtils.getVariables(player).ifPresent(vars -> {
                 if (vars.isAbilityActive() && vars.getActiveAbilityDuration() > 0) {
-                    action.performBeamLogic(player);
+                    mc.sayda.creraces.ability.AbilitySlot slot = vars.getSlotForAbility(abilityId);
+                    action.performBeamLogic(player, slot);
 
                     // Periodically re-sync to ensure trackers see it
                     if (player.tickCount % Math.max(1, action.syncInterval) == 0) {
-                        float rVal = (float) action.radius.evaluate(player, null);
-                        float lVal = (float) action.length.evaluate(player, null);
+                        float rVal = (float) action.radius.evaluate(player, null, slot);
+                        float lVal = (float) action.length.evaluate(player, null, slot);
                         // Clamp radius/length by configuring max
                         int maxRadius = 100;
                         if (maxRadius > 0)

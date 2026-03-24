@@ -1,17 +1,17 @@
 {
-    "name": "ability.creraces.quick_current.name",
-    "description": "ability.creraces.quick_current.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:kelp",
-    "cooldown": 480,
-    "cost": 15,
-    "race": [
+    "creraces:name": "ability.creraces.quick_current.name",
+    "creraces:description": "ability.creraces.quick_current.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:kelp",
+    "creraces:cooldown": 480,
+    "creraces:cost": 15,
+    "creraces:race": [
         "creraces:naiad"
     ],
-    "condition": {
+    "creraces:condition": {
         "type": "creraces:in_water"
     },
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:aoe",
             "radius": 6,
@@ -23,7 +23,7 @@
                     "amplifier": 0
                 },
                 {
-                    "type": "creraces:apply_particles",
+                    "type": "creraces:spawn_particles",
                     "particle": "minecraft:bubble",
                     "count": 15,
                     "spread_x": 1,
@@ -40,7 +40,9 @@
             ]
         }
     ],
-    "wiki_page": "state:Quick_Current"
+    "creraces:wiki_page": "Ability:Quick_Current"
 }
+
+
 
 

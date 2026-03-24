@@ -89,7 +89,7 @@ public class AbilityIncidents {
             case RAGE -> vars.getRage() >= cost;
             case ENERGY -> vars.getEnergy() >= cost;
             case GRIT -> vars.getGrit() >= cost;
-            case SOULS -> vars.getSouls() >= cost;
+            case SOUL -> vars.getSoul() >= cost;
             default -> true;
         };
     }
@@ -102,7 +102,7 @@ public class AbilityIncidents {
             case RAGE -> vars.setRage(Math.max(0, vars.getRage() - cost));
             case ENERGY -> vars.setEnergy(Math.max(0, vars.getEnergy() - cost));
             case GRIT -> vars.setGrit(Math.max(0, vars.getGrit() - cost));
-            case SOULS -> vars.setSouls(Math.max(0, vars.getSouls() - cost));
+            case SOUL -> vars.setSoul(Math.max(0, vars.getSoul() - cost));
             case NONE -> {
             }
             default -> {

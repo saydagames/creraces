@@ -167,9 +167,14 @@ public class RaceOverlay {
 
                 if (!usable) {
                     drawBorder(graphics, x - 1, y - 1, 20, 20, 0x88FF0000); // Translucent Red
-                } else if (!active && (ability.type() == mc.sayda.creraces.ability.AbilityType.INNATE
-                        || ability.type() == mc.sayda.creraces.ability.AbilityType.PASSIVE)) {
-                    drawBorder(graphics, x - 1, y - 1, 20, 20, 0x88AAAAAA); // Translucent Gray
+                } else if (active) {
+                    drawBorder(graphics, x - 1, y - 1, 20, 20, 0x8800FF00); // Translucent Green
+                } else if (ability.type() == mc.sayda.creraces.ability.AbilityType.INNATE
+                        || ability.type() == mc.sayda.creraces.ability.AbilityType.PASSIVE) {
+                    // Only show gray border if it's a toggleable ability that is currently OFF
+                    if (ability.onDeactivate() != null && !ability.onDeactivate().isEmpty()) {
+                        drawBorder(graphics, x - 1, y - 1, 20, 20, 0x88AAAAAA); // Translucent Gray
+                    }
                 }
             }
         }
@@ -214,11 +219,8 @@ public class RaceOverlay {
             case GRIT:
                 currentRes = vars.getGrit();
                 break;
-            case SOULS:
-                currentRes = vars.getSouls();
-                break;
-            case STACKS:
-                currentRes = vars.getStacks();
+            case SOUL:
+                currentRes = vars.getSoul();
                 break;
             case NONE:
             default:

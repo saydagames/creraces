@@ -1,15 +1,15 @@
 {
-    "name": "ability.creraces.camouflage.name",
-    "description": "ability.creraces.camouflage.description",
-    "type": "ACTIVE",
-    "cooldown": 720,
-    "icon": "minecraft:fern",
-    "cost": 1,
-    "race": [
+    "creraces:name": "ability.creraces.camouflage.name",
+    "creraces:description": "ability.creraces.camouflage.description",
+    "creraces:type": "ACTIVE",
+    "creraces:cooldown": 720,
+    "creraces:icon": "minecraft:fern",
+    "creraces:cost": 1,
+    "creraces:race": [
         "creraces:dryad",
         "creraces:naiad"
     ],
-    "condition": {
+    "creraces:condition": {
         "type": "creraces:or",
         "conditions": [
             {
@@ -21,7 +21,7 @@
             }
         ]
     },
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:conditional",
             "condition": {
@@ -51,15 +51,13 @@
             "pitch": 2
         }
     ],
-    "on_deactivate": [
+    "creraces:on_deactivate": [
         {
             "type": "creraces:set_state",
-            "state": "slot",
+            "state": "self",
             "operation": "SET",
             "value": 0
         }
     ],
-    "wiki_page": "state:Camouflage"
+    "creraces:wiki_page": "Ability:Camouflage"
 }
-
-

@@ -35,7 +35,7 @@ public class RemoveEffectAction implements ActionRegistry.RaceAction {
             e.removeEffect(effect);
         };
 
-        double r = radius.evaluate(player, target);
+        double r = radius.evaluate(player, target, slot);
         int maxAoeRadius = 100;
         if (maxAoeRadius > 0)
             r = Math.min(r, maxAoeRadius);

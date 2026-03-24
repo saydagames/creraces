@@ -59,7 +59,8 @@ public class IncidentResolver {
 
         // Entity Events
         dev.architectury.event.events.common.EntityEvent.LIVING_DEATH.register((entity, source) -> {
-            net.minecraft.world.entity.player.Player killer = mc.sayda.creraces.util.CombatUtils.getRootOwner(source.getEntity());
+            net.minecraft.world.entity.player.Player killer = mc.sayda.creraces.util.CombatUtils
+                    .getRootOwner(source.getEntity());
             if (killer instanceof ServerPlayer sp) {
                 onIncidentVictory(sp, entity);
             }
@@ -98,6 +99,18 @@ public class IncidentResolver {
 
     private static dev.architectury.event.CompoundEventResult<net.minecraft.world.item.ItemStack> onIncidentInteraction(
             ServerPlayer player, net.minecraft.world.InteractionHand hand) {
+        // Lockdown/Stun check
+        var stunned = mc.sayda.creraces.registry.ModMobEffects.STUNNED.get();
+        if (stunned != null && player.hasEffect(stunned)) {
+            return dev.architectury.event.CompoundEventResult.interruptTrue(player.getItemInHand(hand));
+        }
+        if (mc.sayda.creraces.config.CreRacesConfig.FORCED_SELECTION.get()) {
+            if (!DataUtils.getVariables(player).map(mc.sayda.creraces.capability.IPlayerVariables::hasChosenRace)
+                    .orElse(true)) {
+                return dev.architectury.event.CompoundEventResult.interruptTrue(player.getItemInHand(hand));
+            }
+        }
+
         net.minecraft.world.item.ItemStack stack = player.getItemInHand(hand);
         java.util.Optional<mc.sayda.creraces.capability.IPlayerVariables> varsOpt = DataUtils.getVariables(player);
         if (varsOpt.isPresent()) {
@@ -116,6 +129,18 @@ public class IncidentResolver {
 
     private static dev.architectury.event.EventResult onIncidentBlockInteraction(ServerPlayer player,
             net.minecraft.world.InteractionHand hand, net.minecraft.core.BlockPos pos) {
+        // Lockdown/Stun check
+        var stunned = mc.sayda.creraces.registry.ModMobEffects.STUNNED.get();
+        if (stunned != null && player.hasEffect(stunned)) {
+            return dev.architectury.event.EventResult.interruptTrue();
+        }
+        if (mc.sayda.creraces.config.CreRacesConfig.FORCED_SELECTION.get()) {
+            if (!DataUtils.getVariables(player).map(mc.sayda.creraces.capability.IPlayerVariables::hasChosenRace)
+                    .orElse(true)) {
+                return dev.architectury.event.EventResult.interruptTrue();
+            }
+        }
+
         net.minecraft.world.level.block.state.BlockState state = player.level().getBlockState(pos);
         java.util.Optional<mc.sayda.creraces.capability.IPlayerVariables> varsOpt = DataUtils.getVariables(player);
         if (varsOpt.isPresent()) {
@@ -134,6 +159,18 @@ public class IncidentResolver {
 
     private static dev.architectury.event.EventResult onIncidentBlockPlace(ServerPlayer player,
             net.minecraft.core.BlockPos pos, net.minecraft.world.level.block.state.BlockState state) {
+        // Lockdown/Stun check
+        var stunned = mc.sayda.creraces.registry.ModMobEffects.STUNNED.get();
+        if (stunned != null && player.hasEffect(stunned)) {
+            return dev.architectury.event.EventResult.interruptTrue();
+        }
+        if (mc.sayda.creraces.config.CreRacesConfig.FORCED_SELECTION.get()) {
+            if (!DataUtils.getVariables(player).map(mc.sayda.creraces.capability.IPlayerVariables::hasChosenRace)
+                    .orElse(true)) {
+                return dev.architectury.event.EventResult.interruptTrue();
+            }
+        }
+
         java.util.Optional<mc.sayda.creraces.capability.IPlayerVariables> varsOpt = DataUtils.getVariables(player);
         if (varsOpt.isPresent()) {
             mc.sayda.creraces.capability.IPlayerVariables vars = varsOpt.get();
@@ -153,6 +190,19 @@ public class IncidentResolver {
     private static void onIncidentAttack(ServerPlayer player, net.minecraft.world.entity.LivingEntity victim) {
         if (mc.sayda.creraces.util.DamageGuard.isProcessing()) {
             return;
+        }
+
+        // Lockdown/Stun check (Attack cancellation is also in PlayerMixin, but double
+        // checking here)
+        var stunned = mc.sayda.creraces.registry.ModMobEffects.STUNNED.get();
+        if (stunned != null && player.hasEffect(stunned)) {
+            return;
+        }
+        if (mc.sayda.creraces.config.CreRacesConfig.FORCED_SELECTION.get()) {
+            if (!DataUtils.getVariables(player).map(mc.sayda.creraces.capability.IPlayerVariables::hasChosenRace)
+                    .orElse(true)) {
+                return;
+            }
         }
 
         mc.sayda.creraces.util.DamageGuard.setProcessing(true);
@@ -277,6 +327,11 @@ public class IncidentResolver {
                         if (res != null) {
                             player.addEffect(new net.minecraft.world.effect.MobEffectInstance(
                                     res, 40, 255, false, false, false));
+                        }
+                        var stunned = mc.sayda.creraces.registry.ModMobEffects.STUNNED.get();
+                        if (stunned != null) {
+                            player.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                                    stunned, 40, 0, false, false, false));
                         }
                     }
                 });

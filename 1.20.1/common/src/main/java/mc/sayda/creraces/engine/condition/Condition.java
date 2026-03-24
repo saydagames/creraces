@@ -24,9 +24,17 @@ public interface Condition {
 
     @SuppressWarnings("null")
     static Condition fromJson(JsonObject json) {
-        String typeStr = GsonHelper.getAsString(json, "type");
+        if (!json.has("type")) {
+            mc.sayda.creraces.CreRaces.LOGGER.error("Condition missing 'type' field - skipping. JSON: {}", json);
+            return (player, target, slot, interactionPos) -> false;
+        }
+        String typeStr = json.get("type").getAsString();
         @SuppressWarnings("null")
-        ResourceLocation typeLoc = new ResourceLocation(typeStr);
+        ResourceLocation typeLoc = ResourceLocation.tryParse(typeStr);
+        if (typeLoc == null) {
+            mc.sayda.creraces.CreRaces.LOGGER.error("Malformed condition type '{}' - skipping.", typeStr);
+            return (player, target, slot, interactionPos) -> false;
+        }
         String type = typeLoc.getPath();
 
         try {
@@ -200,16 +208,23 @@ public interface Condition {
                             if (rd == null)
                                 return false;
 
-                            mc.sayda.creraces.race.RaceCustomization cData = rd.customization().stream()
-                                    .filter(c -> c.id().equals(id))
-                                    .findFirst()
-                                    .orElse(null);
-                            if (cData == null)
-                                return false;
+                            String val;
+                            if (id.equalsIgnoreCase("race")) {
+                                val = activeRaceLoc.toString();
+                            } else if (id.equalsIgnoreCase("gstate")) {
+                                val = String.valueOf(vars.getGState());
+                            } else {
+                                mc.sayda.creraces.race.RaceCustomization cData = rd.customization().stream()
+                                        .filter(c -> c.id().equals(id))
+                                        .findFirst()
+                                        .orElse(null);
+                                if (cData == null)
+                                    return false;
 
-                            String val = vars.getCustomization(id.toLowerCase());
-                            if (val == null || val.isEmpty())
-                                val = cData.defaultValue();
+                                val = vars.getCustomization(id.toLowerCase());
+                                if (val == null || val.isEmpty())
+                                    val = cData.defaultValue();
+                            }
 
                             return validVals.contains(val);
                         }).orElse(false);
@@ -246,6 +261,9 @@ public interface Condition {
                             ResourceLocation activeRaceLoc = vars.getRace();
                             if (activeRaceLoc == null)
                                 return false;
+
+                            if (id.equalsIgnoreCase("race") || id.equalsIgnoreCase("gstate")) return true;
+
                             String val = vars.getCustomization(id.toLowerCase());
                             return val != null && !val.isEmpty() && !val.equals("0.0") && !val.equals("0");
                         }).orElse(false);
@@ -392,7 +410,7 @@ class StateCondition implements Condition {
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
         return DataUtils.getVariables(player).map(vars -> {
             ResourceLocation targetId = null;
-            if ("slot".equalsIgnoreCase(state) && slot != null) {
+            if ("self".equalsIgnoreCase(state) && slot != null) {
                 targetId = vars.getAbilityInSlot(slot);
             } else if (state != null && !state.isEmpty()) {
                 try {
@@ -797,9 +815,8 @@ class ResourceLevelCondition implements Condition {
                     case "grit" -> vars.getGrit();
                     case "rage" -> vars.getRage();
                     case "karma" -> vars.getKarma();
-                    case "souls" -> vars.getSouls();
+                    case "soul" -> vars.getSoul();
                     case "coins" -> vars.getCoins();
-                    case "stacks" -> vars.getStacks();
                     case "ap" -> vars.getAp();
                     case "ad" -> vars.getAd();
                     case "ah" -> vars.getAh();
@@ -1039,7 +1056,7 @@ class IsBlockCondition implements Condition {
 
         if (blockDefinition.startsWith("#")) {
             ResourceLocation tagLoc = new ResourceLocation(blockDefinition.substring(1));
-            return state.is(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.BLOCK, tagLoc));
+            return state.is(net.minecraft.tags.TagKey.create(java.util.Objects.requireNonNull(net.minecraft.core.registries.Registries.BLOCK), tagLoc));
         } else {
             return net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString()
                     .equals(blockDefinition);

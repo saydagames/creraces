@@ -1,14 +1,14 @@
 {
-    "name": "ability.creraces.unstoppable_force.name",
-    "description": "ability.creraces.unstoppable_force.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:textures/item/iron_chestplate.png",
-    "cooldown": 880,
-    "cost": 0,
-    "race": [
+    "creraces:name": "ability.creraces.unstoppable_force.name",
+    "creraces:description": "ability.creraces.unstoppable_force.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/iron_chestplate.png",
+    "creraces:cooldown": 880,
+    "creraces:cost": 0,
+    "creraces:race": [
         "creraces:giant"
     ],
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:apply_effect",
             "effect": "minecraft:speed",
@@ -36,7 +36,9 @@
             "count": 15
         }
     ],
-    "wiki_page": "state:Unstoppable_Force"
+    "creraces:wiki_page": "Ability:Unstoppable_Force"
 }
+
+
 
 

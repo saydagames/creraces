@@ -54,21 +54,22 @@ public class AbilityManager extends SimplePreparableReloadListener<Map<ResourceL
             try {
                 JsonObject jsonObject = element.getAsJsonObject();
 
-                String nameStr = GsonHelper.getAsString(jsonObject, "name", id.getPath());
-                String descStr = GsonHelper.getAsString(jsonObject, "description", "");
-                String typeStr = GsonHelper.getAsString(jsonObject, "type", "ACTIVE");
-                String iconStr = GsonHelper.getAsString(jsonObject, "icon", "minecraft:textures/item/barrier.png");
+                String path = java.util.Objects.requireNonNull(id.getPath());
+                String nameStr = java.util.Objects.requireNonNull(GsonHelper.getAsString(jsonObject, "creraces:name", path));
+                String descStr = GsonHelper.getAsString(jsonObject, "creraces:description", "");
+                String typeStr = GsonHelper.getAsString(jsonObject, "creraces:type", "ACTIVE");
+                String iconStr = GsonHelper.getAsString(jsonObject, "creraces:icon", "minecraft:textures/item/barrier.png");
                 
-                int cooldown = GsonHelper.getAsInt(jsonObject, "cooldown", 0);
-                int cost = GsonHelper.getAsInt(jsonObject, "cost", 0);
-                boolean persistent = GsonHelper.getAsBoolean(jsonObject, "persistent", false);
+                int cooldown = GsonHelper.getAsInt(jsonObject, "creraces:cooldown", 0);
+                int cost = GsonHelper.getAsInt(jsonObject, "creraces:cost", 0);
+                boolean persistent = GsonHelper.getAsBoolean(jsonObject, "creraces:persistent", false);
 
                 java.util.List<ResourceLocation> allowedRaces = new java.util.ArrayList<>();
-                if (jsonObject.has("race")) {
-                    JsonElement raceElem = jsonObject.get("race");
+                if (jsonObject.has("creraces:race")) {
+                    JsonElement raceElem = jsonObject.get("creraces:race");
                     if (raceElem.isJsonArray()) {
                         for (JsonElement e : raceElem.getAsJsonArray()) {
-                            String rStr = e.getAsString();
+                            String rStr = java.util.Objects.requireNonNull(e.getAsString());
                             ResourceLocation rl = ResourceLocation.tryParse(rStr);
                             if (rl != null)
                                 allowedRaces.add(rl);
@@ -76,7 +77,7 @@ public class AbilityManager extends SimplePreparableReloadListener<Map<ResourceL
                                 CreRaces.LOGGER.warn("Ability {} has malformed race ID: {}", id, rStr);
                         }
                     } else {
-                        String rStr = raceElem.getAsString();
+                        String rStr = java.util.Objects.requireNonNull(raceElem.getAsString());
                         ResourceLocation rl = ResourceLocation.tryParse(rStr);
                         if (rl != null)
                             allowedRaces.add(rl);
@@ -86,22 +87,23 @@ public class AbilityManager extends SimplePreparableReloadListener<Map<ResourceL
                 }
 
                 java.util.List<mc.sayda.creraces.engine.ActionRegistry.RaceAction> onActivate = new java.util.ArrayList<>();
-                if (jsonObject.has("actions")) {
-                    for (JsonElement e : jsonObject.getAsJsonArray("actions")) {
+                if (jsonObject.has("creraces:actions")) {
+                    for (JsonElement e : jsonObject.getAsJsonArray("creraces:actions")) {
                         onActivate.add(mc.sayda.creraces.engine.ActionRegistry.fromJson(e.getAsJsonObject()));
                     }
                 }
 
                 java.util.List<mc.sayda.creraces.engine.ActionRegistry.RaceAction> onDeactivate = new java.util.ArrayList<>();
-                if (jsonObject.has("on_deactivate")) {
-                    for (JsonElement e : jsonObject.getAsJsonArray("on_deactivate")) {
+                if (jsonObject.has("creraces:on_deactivate")) {
+                    for (JsonElement e : jsonObject.getAsJsonArray("creraces:on_deactivate")) {
                         onDeactivate.add(mc.sayda.creraces.engine.ActionRegistry.fromJson(e.getAsJsonObject()));
                     }
                 }
 
                 // Remote Documentation
-                if (jsonObject.has("wiki_page")) {
-                    String wikiPage = jsonObject.get("wiki_page").getAsString();
+                if (jsonObject.has("creraces:wiki_page")) {
+                    String wikiPage = jsonObject.get("creraces:wiki_page").getAsString();
+                    
                     AbilityRegistry.registerRemoteDoc(id, mc.sayda.creraces.util.RemoteDocConfig.fromWikiPage(wikiPage,
                             mc.sayda.creraces.util.RemoteDocConfig.INFODOC_SELECTOR, descStr));
                     AbilityRegistry.registerRemoteFullDoc(id,
@@ -109,17 +111,17 @@ public class AbilityManager extends SimplePreparableReloadListener<Map<ResourceL
                                     mc.sayda.creraces.util.RemoteDocConfig.HEADERDOC_SELECTOR, descStr));
                 }
 
-                if (jsonObject.has("remote_description")) {
+                if (jsonObject.has("creraces:remote_description")) {
                     mc.sayda.creraces.util.RemoteDocConfig remoteConfig = mc.sayda.creraces.util.RemoteDocConfig
-                            .fromJson(jsonObject.getAsJsonObject("remote_description"));
+                            .fromJson(jsonObject.getAsJsonObject("creraces:remote_description"));
                     if (remoteConfig != null) {
                         AbilityRegistry.registerRemoteDoc(id, remoteConfig);
                     }
                 }
 
-                if (jsonObject.has("remote_full_description")) {
+                if (jsonObject.has("creraces:remote_full_description")) {
                     mc.sayda.creraces.util.RemoteDocConfig remoteConfig = mc.sayda.creraces.util.RemoteDocConfig
-                            .fromJson(jsonObject.getAsJsonObject("remote_full_description"));
+                            .fromJson(jsonObject.getAsJsonObject("creraces:remote_full_description"));
                     if (remoteConfig != null) {
                         AbilityRegistry.registerRemoteFullDoc(id, remoteConfig);
                     }
@@ -139,6 +141,11 @@ public class AbilityManager extends SimplePreparableReloadListener<Map<ResourceL
                     CreRaces.LOGGER.warn("Ability {} has unknown type: {}", id, typeStr);
                 }
 
+                mc.sayda.creraces.engine.condition.Condition condition = (player, target, slot, interactionPos) -> true;
+                if (jsonObject.has("creraces:condition")) {
+                    condition = mc.sayda.creraces.engine.condition.Condition.fromJson(jsonObject.getAsJsonObject("creraces:condition"));
+                }
+
                 Ability ability = new Ability(
                         id,
                         Component.translatable(nameStr),
@@ -150,7 +157,8 @@ public class AbilityManager extends SimplePreparableReloadListener<Map<ResourceL
                         persistent,
                         allowedRaces,
                         onActivate,
-                        onDeactivate);
+                        onDeactivate,
+                        condition);
 
                 AbilityRegistry.register(ability);
                 count[0]++;

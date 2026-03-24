@@ -1,14 +1,14 @@
 {
-    "name": "ability.creraces.mini_build.name",
-    "description": "ability.creraces.mini_build.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:grass_block",
-    "cooldown": 20,
-    "cost": 0,
-    "race": [
+    "creraces:name": "ability.creraces.mini_build.name",
+    "creraces:description": "ability.creraces.mini_build.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:grass_block",
+    "creraces:cooldown": 20,
+    "creraces:cost": 0,
+    "creraces:race": [
         "creraces:tiny"
     ],
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:toggle_minibuild"
         },
@@ -42,5 +42,6 @@
             "pitch": 2
         }
     ],
-    "wiki_page": "state:Mini_Build"
+    "creraces:wiki_page": "Ability:Mini_Build"
 }
+

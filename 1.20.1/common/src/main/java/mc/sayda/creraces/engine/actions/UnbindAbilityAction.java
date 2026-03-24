@@ -1,6 +1,5 @@
 package mc.sayda.creraces.engine.actions;
 
-import com.google.gson.JsonObject;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.capability.DataUtils;
@@ -53,7 +52,7 @@ public class UnbindAbilityAction implements ActionRegistry.RaceAction {
                     CreRaces.LOGGER.warn("Invalid slot in unbind action: {}", json.get("slot").getAsString());
                 }
             }
-            String restoreFrom = GsonHelper.getAsString(json, "restore_from", null);
+            String restoreFrom = GsonHelper.getNullableString(json, "restore_from", null);
             return new UnbindAbilityAction(slot, restoreFrom);
         });
     }

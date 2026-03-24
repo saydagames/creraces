@@ -1,20 +1,22 @@
 {
-    "name": "ability.creraces.adrenaline_rush.name",
-    "description": "ability.creraces.adrenaline_rush.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:textures/item/fermented_spider_eye.png",
-    "cooldown": 400,
-    "cost": 0,
-    "race": [
+    "creraces:name": "ability.creraces.adrenaline_rush.name",
+    "creraces:description": "ability.creraces.adrenaline_rush.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/fermented_spider_eye.png",
+    "creraces:cooldown": 400,
+    "creraces:cost": 0,
+    "creraces:race": [
         "creraces:troll"
     ],
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:apply_effect",
             "effect": "minecraft:speed",
             "duration": 200,
             "amplifier": 1,
-            "targets": ["self"],
+            "targets": [
+                "self"
+            ],
             "visible": true
         },
         {
@@ -34,7 +36,5 @@
             "count": 8
         }
     ],
-    "wiki_page": "state:Adrenaline_Rush"
+    "creraces:wiki_page": "Ability:Adrenaline_Rush"
 }
-
-

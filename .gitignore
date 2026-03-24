@@ -98,6 +98,7 @@ local.properties
 
 # Umbrella Ignores
 !README.md
+*.md
 
 *.txt
 !LICENSE.txt
@@ -110,6 +111,3 @@ local.properties
 /.minecraft
 /.attributes
 /TestPack
-TOUHOU_REFERENCES.md
-wiki_ability_template.md
-creraces_mappings.md

@@ -38,7 +38,6 @@ public class Race {
         private final List<RaceTrait> traits;
         private final boolean isSpirit;
         private final boolean isTiny;
-        private final boolean stacksAffectResource;
         private final mc.sayda.creraces.engine.GState gState;
 
         private Race(Builder builder) {
@@ -75,18 +74,18 @@ public class Race {
                 this.traits = builder.traits;
                 this.isSpirit = builder.isSpirit;
                 this.isTiny = builder.isTiny;
-                this.stacksAffectResource = builder.stacksAffectResource;
                 this.gState = builder.gState;
         }
 
         public static class Builder {
                 private final ResourceLocation id;
                 private final net.minecraft.network.chat.Component name;
-                
+
                 private net.minecraft.network.chat.Component description = net.minecraft.network.chat.Component.empty();
                 private ResourceLocation icon = new ResourceLocation("minecraft", "textures/item/barrier.png");
                 private ResourceLocation portrait = new ResourceLocation("creraces", "textures/screens/race.png");
-                private ResourceLocation splash = new ResourceLocation("creraces", "textures/screens/unknown_splash.png");
+                private ResourceLocation splash = new ResourceLocation("creraces",
+                                "textures/screens/unknown_splash.png");
                 private ResourceLocation nameTexture = null;
                 private ResourceLocation parentRace = null;
                 private double index = Double.MAX_VALUE;
@@ -94,7 +93,8 @@ public class Race {
                 private RaceScale scale = null;
                 private int maxResource = 100;
                 private ResourceType resourceType = ResourceType.NONE;
-                private ResourceLocation bgTexture = new ResourceLocation("creraces", "textures/screens/selection_bg.png");
+                private ResourceLocation bgTexture = new ResourceLocation("creraces",
+                                "textures/screens/selection_bg.png");
                 private int difficulty = 0;
                 private int splashX = 15, splashY = -10, splashW = 141, splashH = 199;
                 private int nameTexX = 44, nameTexY = -35, nameTexW = 86, nameTexH = 20;
@@ -105,7 +105,6 @@ public class Race {
                 private List<RaceTrait> traits = new java.util.ArrayList<>();
                 private boolean isSpirit = false;
                 private boolean isTiny = false;
-                private boolean stacksAffectResource = false;
                 private mc.sayda.creraces.engine.GState gState = mc.sayda.creraces.engine.GState.BOTH;
 
                 public Builder(ResourceLocation id, net.minecraft.network.chat.Component name) {
@@ -113,14 +112,44 @@ public class Race {
                         this.name = name;
                 }
 
-                public Builder description(net.minecraft.network.chat.Component description) { this.description = description; return this; }
-                public Builder icon(ResourceLocation icon) { if (icon != null) this.icon = icon; return this; }
-                public Builder portrait(ResourceLocation portrait) { if (portrait != null) this.portrait = portrait; return this; }
-                public Builder splash(ResourceLocation splash) { if (splash != null) this.splash = splash; return this; }
-                public Builder nameTexture(@Nullable ResourceLocation nameTexture) { this.nameTexture = nameTexture; return this; }
-                public Builder parentRace(@Nullable ResourceLocation parentRace) { this.parentRace = parentRace; return this; }
-                public Builder index(double index) { this.index = index; return this; }
-                
+                public Builder description(net.minecraft.network.chat.Component description) {
+                        this.description = description;
+                        return this;
+                }
+
+                public Builder icon(ResourceLocation icon) {
+                        if (icon != null)
+                                this.icon = icon;
+                        return this;
+                }
+
+                public Builder portrait(ResourceLocation portrait) {
+                        if (portrait != null)
+                                this.portrait = portrait;
+                        return this;
+                }
+
+                public Builder splash(ResourceLocation splash) {
+                        if (splash != null)
+                                this.splash = splash;
+                        return this;
+                }
+
+                public Builder nameTexture(@Nullable ResourceLocation nameTexture) {
+                        this.nameTexture = nameTexture;
+                        return this;
+                }
+
+                public Builder parentRace(@Nullable ResourceLocation parentRace) {
+                        this.parentRace = parentRace;
+                        return this;
+                }
+
+                public Builder index(double index) {
+                        this.index = index;
+                        return this;
+                }
+
                 public Builder stats(int baseAp, int baseAd, int baseAh, int baseCr) {
                         this.baseAp = baseAp;
                         this.baseAd = baseAd;
@@ -129,16 +158,27 @@ public class Race {
                         return this;
                 }
 
-                public Builder scale(RaceScale scale) { this.scale = scale; return this; }
-                
+                public Builder scale(RaceScale scale) {
+                        this.scale = scale;
+                        return this;
+                }
+
                 public Builder resource(ResourceType type, int maxResource) {
                         this.resourceType = type;
                         this.maxResource = maxResource;
                         return this;
                 }
 
-                public Builder bgTexture(ResourceLocation bgTexture) { if (bgTexture != null) this.bgTexture = bgTexture; return this; }
-                public Builder difficulty(int difficulty) { this.difficulty = difficulty; return this; }
+                public Builder bgTexture(ResourceLocation bgTexture) {
+                        if (bgTexture != null)
+                                this.bgTexture = bgTexture;
+                        return this;
+                }
+
+                public Builder difficulty(int difficulty) {
+                        this.difficulty = difficulty;
+                        return this;
+                }
 
                 public Builder splashDimensions(int x, int y, int w, int h) {
                         this.splashX = x;
@@ -156,21 +196,59 @@ public class Race {
                         return this;
                 }
 
-                public Builder customizations(List<RaceCustomization> customization) { if (customization != null) this.customization = customization; return this; }
-                public Builder startingAbilities(List<ResourceLocation> abilities) { if (abilities != null) this.startingAbilities = abilities; return this; }
-                public Builder startingItems(List<ResourceLocation> items) { if (items != null) this.startingItems = items; return this; }
-                public Builder passives(@Nullable Passives passives) { this.passives = passives; return this; }
-                public Builder traits(List<RaceTrait> traits) { if (traits != null) this.traits = traits; return this; }
-                
-                public Builder isSpirit(boolean isSpirit) { this.isSpirit = isSpirit; return this; }
-                public Builder isTiny(boolean isTiny) { this.isTiny = isTiny; return this; }
-                public Builder stacksAffectResource(boolean stacksAffectResource) { this.stacksAffectResource = stacksAffectResource; return this; }
-                public Builder gState(mc.sayda.creraces.engine.GState gState) { if (gState != null) this.gState = gState; return this; }
+                public Builder customizations(List<RaceCustomization> customization) {
+                        if (customization != null)
+                                this.customization = customization;
+                        return this;
+                }
+
+                public Builder startingAbilities(List<ResourceLocation> abilities) {
+                        if (abilities != null)
+                                this.startingAbilities = abilities;
+                        return this;
+                }
+
+                public Builder startingItems(List<ResourceLocation> items) {
+                        if (items != null)
+                                this.startingItems = items;
+                        return this;
+                }
+
+                public Builder passives(@Nullable Passives passives) {
+                        this.passives = passives;
+                        return this;
+                }
+
+                public Builder traits(List<RaceTrait> traits) {
+                        if (traits != null)
+                                this.traits = traits;
+                        return this;
+                }
+
+                public Builder isSpirit(boolean isSpirit) {
+                        this.isSpirit = isSpirit;
+                        return this;
+                }
+
+                public Builder isTiny(boolean isTiny) {
+                        this.isTiny = isTiny;
+                        return this;
+                }
+
+
+                public Builder gState(mc.sayda.creraces.engine.GState gState) {
+                        if (gState != null)
+                                this.gState = gState;
+                        return this;
+                }
 
                 public Race build() {
-                        if (this.id == null) throw new IllegalStateException("Race ID cannot be null");
-                        if (this.name == null) throw new IllegalStateException("Race Name cannot be null");
-                        if (this.scale == null) throw new IllegalStateException("Race Scale cannot be null for race " + this.id);
+                        if (this.id == null)
+                                throw new IllegalStateException("Race ID cannot be null");
+                        if (this.name == null)
+                                throw new IllegalStateException("Race Name cannot be null");
+                        if (this.scale == null)
+                                throw new IllegalStateException("Race Scale cannot be null for race " + this.id);
                         return new Race(this);
                 }
         }
@@ -307,9 +385,6 @@ public class Race {
                 return isTiny;
         }
 
-        public boolean stacksAffectResource() {
-                return stacksAffectResource;
-        }
 
         /**
          * The forced gender state for this race.
@@ -386,8 +461,10 @@ public class Race {
                         this.noHunger = noHunger;
                         this.noHungerDrain = noHungerDrain;
                         this.fixedHunger = fixedHunger;
-                        this.blockedFoodTypes = blockedFoodTypes != null ? blockedFoodTypes : new java.util.ArrayList<>();
-                        this.allowedFoodTypes = allowedFoodTypes != null ? allowedFoodTypes : new java.util.ArrayList<>();
+                        this.blockedFoodTypes = blockedFoodTypes != null ? blockedFoodTypes
+                                        : new java.util.ArrayList<>();
+                        this.allowedFoodTypes = allowedFoodTypes != null ? allowedFoodTypes
+                                        : new java.util.ArrayList<>();
                         this.canEatWhenFull = canEatWhenFull;
                         this.hatedByEntities = hatedByEntities;
                         this.respectedByEntities = respectedByEntities;
@@ -427,7 +504,6 @@ public class Race {
                 public boolean lavaVision() {
                         return lavaVision;
                 }
-
 
                 public boolean canFly() {
                         return canFly;
@@ -510,7 +586,10 @@ public class Race {
                 }
 
                 public static Passives DEFAULT = new Passives(
-                                false, true, false, new java.util.ArrayList<>(), new java.util.ArrayList<>(), // Breathing (+ effect immunity)
+                                false, true, false, new java.util.ArrayList<>(), new java.util.ArrayList<>(), // Breathing
+                                                                                                              // (+
+                                                                                                              // effect
+                                                                                                              // immunity)
                                 false, false, false, // Vision
                                 false, // canFly
                                 new mc.sayda.creraces.engine.ScalingValue(1.0, null, 0, new java.util.ArrayList<>()), // liquidSpeedMultiplier
@@ -521,8 +600,13 @@ public class Race {
                                 new mc.sayda.creraces.engine.ScalingValue(1.0, null, 0, new java.util.ArrayList<>()), // invulnerabilityTicksMultiplier
                                 false, false, // noHunger, noHungerDrain
                                 new mc.sayda.creraces.engine.ScalingValue(0.0, null, 0, new java.util.ArrayList<>()), // fixedHunger
-                                new java.util.ArrayList<>(), new java.util.ArrayList<>(), false, // Food (blocked, allowed, canEatWhenFull)
-                                new java.util.ArrayList<>(), new java.util.ArrayList<>(), new java.util.ArrayList<>(), // Social (hated, respected, defended)
+                                new java.util.ArrayList<>(), new java.util.ArrayList<>(), false, // Food (blocked,
+                                                                                                 // allowed,
+                                                                                                 // canEatWhenFull)
+                                new java.util.ArrayList<>(), new java.util.ArrayList<>(), new java.util.ArrayList<>(), // Social
+                                                                                                                       // (hated,
+                                                                                                                       // respected,
+                                                                                                                       // defended)
                                 null, // spawnOnDeath
                                 false // canCommandSocials
                 );

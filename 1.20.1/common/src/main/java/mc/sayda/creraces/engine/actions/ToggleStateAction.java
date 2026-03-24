@@ -41,7 +41,7 @@ public class ToggleStateAction implements ActionRegistry.RaceAction {
         DataUtils.getVariables(player).ifPresent(vars -> {
             ResourceLocation targetAbilityId = abilityId;
 
-            if (targetAbilityId == null && "slot".equalsIgnoreCase(stateVariable) && slot != null) {
+            if (targetAbilityId == null && "self".equalsIgnoreCase(stateVariable) && slot != null) {
                 targetAbilityId = vars.getAbilityInSlot(slot);
             } else if (targetAbilityId == null) {
                 // Handle stateVariable as a potential ResourceLocation string with prefixes
@@ -53,16 +53,16 @@ public class ToggleStateAction implements ActionRegistry.RaceAction {
                 } else if (stateVariable.startsWith("custom:")) {
                     parsedStateVariable = stateVariable.substring(7);
                 }
-                targetAbilityId = ResourceLocation.tryParse(parsedStateVariable);
+                targetAbilityId = ResourceLocation.tryParse(java.util.Objects.requireNonNull(parsedStateVariable));
             }
 
             if (targetAbilityId == null)
                 return;
 
-            double current = vars.getPersistentState(targetAbilityId);
-            double on = onValue.evaluate(player, target);
-            double off = offValue.evaluate(player, target);
+            double on = onValue.evaluate(player, target, slot);
+            double off = offValue.evaluate(player, target, slot);
 
+            double current = vars.getPersistentState(targetAbilityId);
             if (Math.abs(current - off) < 0.001) {
                 vars.setPersistentState(targetAbilityId, on);
                 for (ActionRegistry.RaceAction a : onEnable) {
@@ -88,7 +88,7 @@ public class ToggleStateAction implements ActionRegistry.RaceAction {
 
     public static void register() {
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "toggle_state"), json -> {
-            String stateStr = GsonHelper.getAsString(json, "state", "slot");
+            String stateStr = GsonHelper.getAsString(json, "state", "self");
             ScalingValue on = ScalingValue.fromJson(json, "on_value", 1.0);
             ScalingValue off = ScalingValue.fromJson(json, "off_value", 0.0);
 
@@ -107,7 +107,7 @@ public class ToggleStateAction implements ActionRegistry.RaceAction {
             }
 
             ResourceLocation stateLoc = null;
-            if (!"slot".equalsIgnoreCase(stateStr)) {
+            if (!"self".equalsIgnoreCase(stateStr)) {
                 String sub = stateStr.startsWith("state:") ? stateStr.substring(6) : stateStr;
                 if (!sub.contains(":")) {
                     sub = "creraces:" + sub;

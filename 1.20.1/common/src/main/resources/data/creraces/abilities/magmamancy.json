@@ -1,14 +1,14 @@
 {
-    "name": "ability.creraces.magmamancy.name",
-    "description": "ability.creraces.magmamancy.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:textures/item/lava_bucket.png",
-    "cooldown": 20,
-    "cost": 50,
-    "race": [
+    "creraces:name": "ability.creraces.magmamancy.name",
+    "creraces:description": "ability.creraces.magmamancy.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/lava_bucket.png",
+    "creraces:cooldown": 20,
+    "creraces:cost": 50,
+    "creraces:race": [
         "creraces:oread"
     ],
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:conditional",
             "condition": {
@@ -17,7 +17,7 @@
             "if_true": [
                 {
                     "type": "creraces:toggle_state",
-                    "state": "slot",
+                    "state": "self",
                     "on_value": 1,
                     "off_value": 0,
                     "on_enable": [
@@ -76,7 +76,9 @@
             ]
         }
     ],
-    "wiki_page": "state:Magmamancy"
+    "creraces:wiki_page": "Ability:Magmamancy"
 }
+
+
 
 

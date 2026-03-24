@@ -1,14 +1,14 @@
 {
-    "name": "ability.creraces.searing_charge.name",
-    "description": "ability.creraces.searing_charge.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:textures/item/blaze_rod.png",
-    "cooldown": 40,
-    "cost": 0,
-    "race": [
+    "creraces:name": "ability.creraces.searing_charge.name",
+    "creraces:description": "ability.creraces.searing_charge.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/blaze_rod.png",
+    "creraces:cooldown": 40,
+    "creraces:cost": 0,
+    "creraces:race": [
         "creraces:oread"
     ],
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:dash",
             "power": 1.5,
@@ -23,7 +23,7 @@
                     "type": "creraces:damage",
                     "amount": {
                         "base": 4.0,
-                        "scales_with": "ad",
+                        "scales_with": "creraces:ad",
                         "factor": 0.2
                     },
                     "knockback": 1.2,
@@ -43,7 +43,9 @@
             "count": 10
         }
     ],
-    "wiki_page": "state:Searing_Charge"
+    "creraces:wiki_page": "Ability:Searing_Charge"
 }
+
+
 
 

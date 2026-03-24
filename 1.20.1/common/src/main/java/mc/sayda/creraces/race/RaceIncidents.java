@@ -48,6 +48,11 @@ public class RaceIncidents {
             // Set new race
             vars.setRace(raceId);
             vars.setHasChosenRace(true);
+            var stunned = mc.sayda.creraces.registry.ModMobEffects.STUNNED.get();
+            if (stunned != null) {
+                player.removeEffect(stunned);
+            }
+            player.removeEffect(net.minecraft.world.effect.MobEffects.DAMAGE_RESISTANCE);
 
             // Apply Scale
             applyScale(player, race.scale());

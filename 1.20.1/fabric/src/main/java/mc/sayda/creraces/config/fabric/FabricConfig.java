@@ -80,16 +80,10 @@ public class FabricConfig {
         CreRacesConfig.ABILITY_HASTE_CAP = () -> common.gameplay.ability_haste_cap;
         CreRacesConfig.RACIAL_AD_MULTIPLIER = () -> common.gameplay.racial_ad_multiplier;
         CreRacesConfig.RESOURCE_DECAY_GRACE_PERIOD = () -> common.gameplay.resource_decay_grace_period;
-        CreRacesConfig.MANA_AP_SCALING = () -> common.gameplay.mana_ap_scaling;
-        CreRacesConfig.MANA_REGEN = () -> common.gameplay.mana_regen;
-        CreRacesConfig.ENERGY_REGEN = () -> common.gameplay.energy_regen;
-        CreRacesConfig.GRIT_DECAY = () -> common.gameplay.grit_decay;
-        CreRacesConfig.RAGE_DECAY = () -> common.gameplay.rage_decay;
         CreRacesConfig.COIN_DROP_ENABLED = () -> common.gameplay.coin_drop_enabled;
         CreRacesConfig.SAG_WINGS = () -> common.gameplay.sag_wings;
         CreRacesConfig.GSTATE_ENABLED = () -> common.gameplay.gstate_enabled;
         CreRacesConfig.RITUAL_MODE = () -> common.gameplay.ritual_mode;
-        CreRacesConfig.RESOURCE_MIN_CAPACITY = () -> common.gameplay.resource_min_capacity;
         CreRacesConfig.PASSIVE_EXECUTION_INTERVAL = () -> common.gameplay.passive_execution_interval;
         CreRacesConfig.SUNLIGHT_EQUIPMENT_BREAK_CHANCE = () -> common.gameplay.sunlight_equipment_break_chance;
         CreRacesConfig.SUNLIGHT_BURN_SECONDS = () -> common.gameplay.sunlight_burn_seconds;
@@ -118,6 +112,7 @@ public class FabricConfig {
         CreRacesConfig.MINI_CRAFTING_DISTANCE_SQR = () -> common.minibuild.mini_crafting_distance_sqr;
         CreRacesConfig.MINI_PLACEMENT_SPAM_THRESHOLD_MS = () -> common.minibuild.mini_placement_spam_threshold_ms;
         CreRacesConfig.MINI_BLOCK_REACH_MARGIN = () -> common.minibuild.mini_block_reach_margin;
+        CreRacesConfig.MINI_BLOCK_WATER_RESISTANT = () -> common.minibuild.mini_block_water_resistant;
 
         // Pockets
         CreRacesConfig.POCKET_DIM_SPACING = () -> common.pockets.pocket_dim_spacing;
@@ -206,16 +201,10 @@ public class FabricConfig {
             public double ability_haste_cap = CreRacesConfig.ABILITY_HASTE_CAP.get();
             public double racial_ad_multiplier = CreRacesConfig.RACIAL_AD_MULTIPLIER.get();
             public long resource_decay_grace_period = CreRacesConfig.RESOURCE_DECAY_GRACE_PERIOD.get();
-            public double mana_ap_scaling = CreRacesConfig.MANA_AP_SCALING.get();
-            public double mana_regen = CreRacesConfig.MANA_REGEN.get();
-            public double energy_regen = CreRacesConfig.ENERGY_REGEN.get();
-            public double grit_decay = CreRacesConfig.GRIT_DECAY.get();
-            public double rage_decay = CreRacesConfig.RAGE_DECAY.get();
             public boolean coin_drop_enabled = CreRacesConfig.COIN_DROP_ENABLED.get();
             public boolean sag_wings = CreRacesConfig.SAG_WINGS.get();
             public boolean gstate_enabled = CreRacesConfig.GSTATE_ENABLED.get();
             public int ritual_mode = CreRacesConfig.RITUAL_MODE.get();
-            public double resource_min_capacity = CreRacesConfig.RESOURCE_MIN_CAPACITY.get();
             public int passive_execution_interval = CreRacesConfig.PASSIVE_EXECUTION_INTERVAL.get();
             public double sunlight_equipment_break_chance = CreRacesConfig.SUNLIGHT_EQUIPMENT_BREAK_CHANCE.get();
             public int sunlight_burn_seconds = CreRacesConfig.SUNLIGHT_BURN_SECONDS.get();
@@ -246,6 +235,7 @@ public class FabricConfig {
             public double mini_crafting_distance_sqr = CreRacesConfig.MINI_CRAFTING_DISTANCE_SQR.get();
             public long mini_placement_spam_threshold_ms = CreRacesConfig.MINI_PLACEMENT_SPAM_THRESHOLD_MS.get();
             public double mini_block_reach_margin = CreRacesConfig.MINI_BLOCK_REACH_MARGIN.get();
+            public boolean mini_block_water_resistant = CreRacesConfig.MINI_BLOCK_WATER_RESISTANT.get();
         }
 
         public static class Pockets {

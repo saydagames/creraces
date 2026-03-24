@@ -1,14 +1,14 @@
 {
-    "name": "ability.creraces.fruitful_harvest.name",
-    "description": "ability.creraces.fruitful_harvest.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:textures/item/glistering_melon_slice.png",
-    "cooldown": 420,
-    "cost": 10,
-    "race": [
+    "creraces:name": "ability.creraces.fruitful_harvest.name",
+    "creraces:description": "ability.creraces.fruitful_harvest.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/glistering_melon_slice.png",
+    "creraces:cooldown": 420,
+    "creraces:cost": 10,
+    "creraces:race": [
         "creraces:undead"
     ],
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:aoe",
             "radius": 16.0,
@@ -67,7 +67,9 @@
             ]
         }
     ],
-    "wiki_page": "state:Fruitful_Harvest"
+    "creraces:wiki_page": "Ability:Fruitful_Harvest"
 }
+
+
 
 

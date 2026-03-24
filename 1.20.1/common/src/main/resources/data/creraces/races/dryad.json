@@ -13,7 +13,6 @@
     "creraces:base_cr": 12,
     "creraces:resource_type": "MANA",
     "creraces:max_resource": 500,
-    "creraces:stacks_affect_resource": false,
     "creraces:gstate": "FEMALE",
     "creraces:difficulty": 2,
     "creraces:regeneration_multiplier": 1.15,
@@ -116,7 +115,7 @@
                             "overwrite": true
                         },
                         {
-                            "type": "creraces:apply_particles",
+                            "type": "creraces:spawn_particles",
                             "particle": "minecraft:happy_villager",
                             "count": 15,
                             "spread_x": 0.5,

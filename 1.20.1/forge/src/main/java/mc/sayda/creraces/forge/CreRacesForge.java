@@ -9,9 +9,7 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 @Mod(CreRaces.MODID)
 public class CreRacesForge {
 
-        private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
-
-        public CreRacesForge() {
+    public CreRacesForge() {
                 IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
                 net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
                                 net.minecraftforge.fml.config.ModConfig.Type.COMMON,

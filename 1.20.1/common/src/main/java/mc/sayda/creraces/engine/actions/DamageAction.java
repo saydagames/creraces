@@ -41,23 +41,24 @@ public class DamageAction implements ActionRegistry.RaceAction {
         // Single Target Mode logic: Check both player and target if they exist
         if (target != null) {
             if (targets.isValid(target, player)) {
-                applyDamage(player, target);
+                applyDamage(player, target, slot);
             }
         } else {
             if (targets.isValid(player, player)) {
-                applyDamage(player, player);
+                applyDamage(player, player, slot);
             }
         }
         return true;
     }
 
-    private void applyDamage(Player player, net.minecraft.world.entity.LivingEntity actualTarget) {
+    private void applyDamage(Player player, net.minecraft.world.entity.LivingEntity actualTarget, 
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
         // Safety Guard: Don't damage allies if FF is off
         if (actualTarget != player && !mc.sayda.creraces.team.RaceTeamManager.canHurt(actualTarget, player)) {
             return;
         }
 
-        double dmg = amount.evaluate(player, actualTarget);
+        double dmg = amount.evaluate(player, actualTarget, slot);
 
         if (damagePerStack != null && stackEffect != null && !stackEffect.isEmpty()) {
             net.minecraft.resources.ResourceLocation effectId = new net.minecraft.resources.ResourceLocation(
@@ -66,11 +67,11 @@ public class DamageAction implements ActionRegistry.RaceAction {
                     .get(effectId);
             if (effect != null && actualTarget.hasEffect(effect)) {
                 int amplifier = actualTarget.getEffect(effect).getAmplifier();
-                dmg += (amplifier + 1) * damagePerStack.evaluate(player, actualTarget);
+                dmg += (amplifier + 1) * damagePerStack.evaluate(player, actualTarget, slot);
             }
         }
 
-        double fireSecs = fireDuration.evaluate(player, actualTarget);
+        double fireSecs = fireDuration.evaluate(player, actualTarget, slot);
 
         if (dmg > 0 || fireSecs > 0) {
             net.minecraft.world.damagesource.DamageSource source;
@@ -112,7 +113,7 @@ public class DamageAction implements ActionRegistry.RaceAction {
             }
 
             if (knockback != null) {
-                float kb = (float) knockback.evaluate(player, actualTarget);
+                float kb = (float) knockback.evaluate(player, actualTarget, slot);
                 if (kb > 0) {
                     actualTarget.knockback(kb, player.getX() - actualTarget.getX(),
                             player.getZ() - actualTarget.getZ());
@@ -120,7 +121,7 @@ public class DamageAction implements ActionRegistry.RaceAction {
             }
 
             if (healAmount != null) {
-                float heal = (float) healAmount.evaluate(player, actualTarget);
+                float heal = (float) healAmount.evaluate(player, actualTarget, slot);
                 if (heal > 0) {
                     player.heal(heal);
                 }

@@ -1,14 +1,14 @@
 {
-    "name": "ability.creraces.low_pressure_area.name",
-    "description": "ability.creraces.low_pressure_area.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:feather",
-    "cooldown": 1200,
-    "cost": 20,
-    "race": [
+    "creraces:name": "ability.creraces.low_pressure_area.name",
+    "creraces:description": "ability.creraces.low_pressure_area.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:feather",
+    "creraces:cooldown": 1200,
+    "creraces:cost": 20,
+    "creraces:race": [
         "creraces:aurai"
     ],
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:aoe",
             "radius": 12,
@@ -19,7 +19,7 @@
                     "strength": 1.2
                 },
                 {
-                    "type": "creraces:apply_particles",
+                    "type": "creraces:spawn_particles",
                     "particle": "minecraft:cloud",
                     "count": 10,
                     "spread_x": 1,
@@ -36,7 +36,9 @@
             ]
         }
     ],
-    "wiki_page": "state:Low_Pressure_Area"
+    "creraces:wiki_page": "Ability:Low_Pressure_Area"
 }
+
+
 
 

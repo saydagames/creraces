@@ -51,34 +51,36 @@ public class MenuGUIScreen extends AbstractContainerScreen<MenuGUIMenu> {
         super.init();
 
         // Start Your Adventure
+        Component startAdventure = java.util.Objects.requireNonNull(Component.translatable("gui.creraces.menu_gui.button_start_your_adventure1"));
         this.addRenderableWidget(
-                Button.builder(Component.translatable("gui.creraces.menu_gui.button_start_your_adventure1"), b -> {
+                java.util.Objects.requireNonNull(Button.builder(startAdventure, b -> {
                     if (this.minecraft != null) {
                         this.minecraft.setScreen(new RaceSelectionScreen());
                     }
-                }).bounds(this.leftPos + 21, this.topPos + 97, 133, 20).build());
+                }).bounds(this.leftPos + 21, this.topPos + 97, 133, 20).build()));
 
         // Debug
         this.addRenderableWidget(
-                Button.builder(Component.translatable("gui.creraces.menu_gui.button_debug"), b -> {
+                java.util.Objects.requireNonNull(Button.builder(java.util.Objects.requireNonNull(Component.translatable("gui.creraces.menu_gui.button_debug")), b -> {
                     if (this.minecraft != null) {
                         this.minecraft.setScreen(new DebugScreen());
                     }
-                }).bounds(this.leftPos + 21, this.topPos + 124, 63, 20).build());
+                }).bounds(this.leftPos + 21, this.topPos + 124, 63, 20).build()));
 
         // Extras (Mirror)
         this.addRenderableWidget(
-                Button.builder(Component.translatable("gui.creraces.menu_gui.button_extras"), b -> {
+                java.util.Objects.requireNonNull(Button.builder(java.util.Objects.requireNonNull(Component.translatable("gui.creraces.menu_gui.button_extras")), b -> {
                     if (this.minecraft != null) {
                         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
                         dev.architectury.networking.NetworkManager.sendToServer(mc.sayda.creraces.network.RequestMirrorPacket.ID, buf);
                     }
-                }).bounds(this.leftPos + 93, this.topPos + 124, 61, 20).build()
+                }).bounds(this.leftPos + 93, this.topPos + 124, 61, 20).build())
         );
 
         // Wiki Button
+        Component wikiMsg = java.util.Objects.requireNonNull(Component.translatable("gui.creraces.menu_gui.button_wiki"));
         this.addRenderableWidget(
-                (Button) Button.builder(Component.translatable("gui.creraces.menu_gui.button_wiki"), b -> {
+                java.util.Objects.requireNonNull(Button.builder(wikiMsg, b -> {
                     if (this.minecraft != null) {
                         String url = mc.sayda.creraces.util.WikiUtils.getBaseWikiUrl();
                         this.minecraft.setScreen(new ConfirmLinkScreen(confirmed -> {
@@ -88,7 +90,7 @@ public class MenuGUIScreen extends AbstractContainerScreen<MenuGUIMenu> {
                             this.minecraft.setScreen(this);
                         }, url, true));
                     }
-                }).bounds(this.leftPos + 21, this.topPos + 148, 133, 10).build());
+                }).bounds(this.leftPos + 21, this.topPos + 148, 133, 10).build()));
 
         // Gender System Toggle
         if (mc.sayda.creraces.config.CreRacesConfig.GSTATE_ENABLED.get()) {
@@ -97,7 +99,7 @@ public class MenuGUIScreen extends AbstractContainerScreen<MenuGUIMenu> {
                 boolean forced = currentRace != null
                         && currentRace.getGState() != mc.sayda.creraces.engine.GState.BOTH;
 
-                Button mfButton = Button.builder(Component.translatable("gui.creraces.menu_gui.button_mf"), button -> {
+                Button mfButton = java.util.Objects.requireNonNull(Button.builder(java.util.Objects.requireNonNull(Component.translatable("gui.creraces.menu_gui.button_mf")), button -> {
                     if (this.minecraft != null && this.minecraft.player != null) {
                         int gState = vars.getGState();
                         int nextState = gState == 0 ? 1 : 0;
@@ -106,9 +108,9 @@ public class MenuGUIScreen extends AbstractContainerScreen<MenuGUIMenu> {
                     }
                 }).bounds(this.leftPos - 70, this.topPos + 16, 40, 20).tooltip(
                         net.minecraft.client.gui.components.Tooltip
-                                .create(forced ? Component.translatable("gui.creraces.menu_gui.tooltip_gender_locked")
-                                        : Component.translatable("gui.creraces.menu_gui.tooltip_gender")))
-                        .build();
+                                .create(forced ? java.util.Objects.requireNonNull(Component.translatable("gui.creraces.menu_gui.tooltip_gender_locked"))
+                                        : java.util.Objects.requireNonNull(Component.translatable("gui.creraces.menu_gui.tooltip_gender"))))
+                        .build());
 
                 if (forced) {
                     mfButton.active = false;
@@ -182,14 +184,20 @@ public class MenuGUIScreen extends AbstractContainerScreen<MenuGUIMenu> {
     protected void renderLabels(@Nonnull GuiGraphics graphics, int mouseX, int mouseY) {
         // We moved the welcome labels to render() for centering and coloring
 
-        graphics.drawString(this.font, Component.translatable("gui.creraces.menu_gui.label_keybind_hint1",
-                ModKeyMappings.SKILL_WHEEL.getTranslatedKeyMessage()), 20, 161, 0xb0b0b0);
-        graphics.drawString(this.font, Component.translatable("gui.creraces.menu_gui.label_keybind_hint2",
-                ModKeyMappings.ABILITY_A1.getTranslatedKeyMessage(),
-                ModKeyMappings.ABILITY_A2.getTranslatedKeyMessage()),
-                20, 171, 0xb0b0b0);
-        graphics.drawString(this.font, Component.translatable("gui.creraces.menu_gui.label_keybind_hint3",
-                ModKeyMappings.MENU_GUI.getTranslatedKeyMessage()), 20, 181, 0xb0b0b0);
+        if (this.font != null) {
+            Component hint1 = java.util.Objects.requireNonNull(Component.translatable("gui.creraces.menu_gui.label_keybind_hint1",
+                    java.util.Objects.requireNonNull(ModKeyMappings.SKILL_WHEEL.getTranslatedKeyMessage())));
+            graphics.drawString(java.util.Objects.requireNonNull(this.font), java.util.Objects.requireNonNull(hint1), 20, 161, 0xb0b0b0);
+
+            Component hint2 = java.util.Objects.requireNonNull(Component.translatable("gui.creraces.menu_gui.label_keybind_hint2",
+                    java.util.Objects.requireNonNull(ModKeyMappings.ABILITY_A1.getTranslatedKeyMessage()),
+                    java.util.Objects.requireNonNull(ModKeyMappings.ABILITY_A2.getTranslatedKeyMessage())));
+            graphics.drawString(java.util.Objects.requireNonNull(this.font), hint2, 20, 171, 0xb0b0b0);
+
+            Component hint3 = java.util.Objects.requireNonNull(Component.translatable("gui.creraces.menu_gui.label_keybind_hint3",
+                    java.util.Objects.requireNonNull(ModKeyMappings.MENU_GUI.getTranslatedKeyMessage())));
+            graphics.drawString(java.util.Objects.requireNonNull(this.font), hint3, 20, 181, 0xb0b0b0);
+        }
 
         if (mc.sayda.creraces.config.CreRacesConfig.GSTATE_ENABLED.get() && this.minecraft != null
                 && this.minecraft.player != null) {

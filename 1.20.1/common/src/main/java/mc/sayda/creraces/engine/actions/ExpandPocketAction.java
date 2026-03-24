@@ -122,8 +122,8 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
         }
 
         DataUtils.getVariables(player).ifPresentOrElse(vars -> {
-            double currentCost = cost.evaluate(player, target);
-            int maxLimit = (int) Math.round(limit.evaluate(player, target));
+            double currentCost = cost.evaluate(player, target, slot);
+            int maxLimit = (int) Math.round(limit.evaluate(player, target, slot));
 
             Block doorMatchBlock = BuiltInRegistries.BLOCK.get(doorBlock);
 
@@ -205,9 +205,9 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
                 }
             } else {
                 // Default STRUCTURE logic
-                int dx = (int) Math.round(rule.offsetX.evaluate(player, target));
-                int dy = (int) Math.round(rule.offsetY.evaluate(player, target));
-                int dz = (int) Math.round(rule.offsetZ.evaluate(player, target));
+                int dx = (int) Math.round(rule.offsetX.evaluate(player, target, slot));
+                int dy = (int) Math.round(rule.offsetY.evaluate(player, target, slot));
+                int dz = (int) Math.round(rule.offsetZ.evaluate(player, target, slot));
 
                 // Step 1: Remove the door panel BEFORE placing the structure (matches legacy
                 // RemoveDoorProcedure first call)

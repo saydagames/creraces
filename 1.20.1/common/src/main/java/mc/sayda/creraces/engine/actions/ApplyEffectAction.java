@@ -91,58 +91,62 @@ public class ApplyEffectAction implements ActionRegistry.RaceAction {
         if (effects.isEmpty())
             return true;
 
-        double r = radius.evaluate(player, target);
+        double r = radius.evaluate(player, target, slot);
         int maxAoeRadius = 100;
         if (maxAoeRadius > 0)
             r = Math.min(r, maxAoeRadius);
         if (r > 0) {
             // AoE Mode
-            net.minecraft.world.phys.AABB area = player.getBoundingBox().inflate(r);
-            player.level().getEntitiesOfClass(LivingEntity.class, area, e -> targets.isValid(e, player))
-                    .forEach(e -> applyAllToEntity(player, e));
+            net.minecraft.world.phys.AABB area = java.util.Objects.requireNonNull(player.getBoundingBox().inflate(r));
+            player.level().getEntitiesOfClass(LivingEntity.class, area, e -> e != null && targets.isValid(e, player))
+                    .forEach(e -> applyAllToEntity(player, e, slot));
         } else {
             // Single Target Mode logic: Check both player and target if they exist
             if (target != null) {
                 if (targets.isValid(target, player)) {
-                    applyAllToEntity(player, target);
+                    applyAllToEntity(player, target, slot);
                 }
             } else {
                 if (targets.isValid(player, player)) {
-                    applyAllToEntity(player, player);
+                    applyAllToEntity(player, player, slot);
                 }
             }
         }
         return true;
     }
 
-    private void applyAllToEntity(Player player, LivingEntity entity) {
+    private void applyAllToEntity(Player player, LivingEntity entity, @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
         for (EffectData data : effects) {
-            applyToEntity(player, entity, data);
+            applyToEntity(player, entity, data, slot);
         }
     }
 
-    private void applyToEntity(Player player, LivingEntity entity, EffectData data) {
-        ResourceLocation effectId = BuiltInRegistries.MOB_EFFECT.getKey(data.effect);
+    private void applyToEntity(Player player, LivingEntity entity, EffectData data, @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
+        ResourceLocation effectId = BuiltInRegistries.MOB_EFFECT.getKey(java.util.Objects.requireNonNull(data.effect));
         if (effectId != null && mc.sayda.creraces.util.RaceUtils.isImmuneToEffect(entity, effectId)) {
             return;
         }
 
-        int finalDuration = (int) data.duration.evaluate(player, entity);
-        int finalAmplifier = (int) data.amplifier.evaluate(player, entity);
+        int finalDuration = (int) data.duration.evaluate(player, entity, slot);
+        int finalAmplifier = (int) data.amplifier.evaluate(player, entity, slot);
 
-        if (incrementAmplifier && entity.hasEffect(data.effect)) {
-            finalAmplifier += entity.getEffect(data.effect).getAmplifier() + 1;
+        MobEffectInstance existing = entity.getEffect(java.util.Objects.requireNonNull(data.effect));
+        if (incrementAmplifier && existing != null) {
+            finalAmplifier += existing.getAmplifier() + 1;
         }
 
         // Attribution: Link player to target for effects that require a source (e.g. Rat Venom)
         if (player != null && entity instanceof mc.sayda.creraces.util.IPersistentDataAccessor accessor) {
-            if (effectId != null && effectId.toString().equals("creraces:rat_venom")) {
-                accessor.creraces$getPersistentData().putString("creraces:venom_source", player.getUUID().toString());
+            if (effectId != null && java.util.Objects.requireNonNull(effectId.toString()).equals("creraces:rat_venom")) {
+                var dataTag = accessor.creraces$getPersistentData();
+                if (dataTag != null) {
+                    dataTag.putString("creraces:venom_source", java.util.Objects.requireNonNull(player.getUUID().toString()));
+                }
             }
         }
 
         // Vanilla MobEffectInstance treats -1 as infinite duration
-        entity.addEffect(new MobEffectInstance(data.effect, finalDuration == -1 ? -1 : finalDuration, finalAmplifier,
+        entity.addEffect(new MobEffectInstance(java.util.Objects.requireNonNull(data.effect), finalDuration == -1 ? -1 : finalDuration, finalAmplifier,
                 ambient, visible));
     }
 }

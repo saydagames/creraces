@@ -1,14 +1,14 @@
 {
-    "name": "ability.creraces.quick_escape.name",
-    "description": "ability.creraces.quick_escape.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:textures/item/ender_pearl.png",
-    "cost": 40,
-    "cooldown": 1800,
-    "race": [
+    "creraces:name": "ability.creraces.quick_escape.name",
+    "creraces:description": "ability.creraces.quick_escape.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/ender_pearl.png",
+    "creraces:cost": 40,
+    "creraces:cooldown": 1800,
+    "creraces:race": [
         "creraces:dryad"
     ],
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:conditional",
             "condition": {
@@ -65,7 +65,9 @@
             ]
         }
     ],
-    "wiki_page": "state:Quick_Escape"
+    "creraces:wiki_page": "Ability:Quick_Escape"
 }
+
+
 
 

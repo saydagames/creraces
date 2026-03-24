@@ -37,9 +37,9 @@ public class LaunchProjectileAction implements ActionRegistry.RaceAction {
         if (player.level() == null)
             return true;
 
-        float dmg = (float) damage.evaluate(player, target);
-        float spd = (float) speed.evaluate(player, target);
-        float acc = (float) inaccuracy.evaluate(player, target);
+        float dmg = (float) damage.evaluate(player, target, slot);
+        float spd = (float) speed.evaluate(player, target, slot);
+        float acc = (float) inaccuracy.evaluate(player, target, slot);
 
         if ("arrow".equals(projectileType) || "minecraft:arrow".equals(projectileType)) {
             Arrow arrow = new Arrow(player.level(), player);

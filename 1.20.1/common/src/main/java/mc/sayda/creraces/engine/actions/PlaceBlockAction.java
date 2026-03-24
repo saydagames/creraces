@@ -43,9 +43,9 @@ public class PlaceBlockAction implements ActionRegistry.RaceAction {
             targetPos = interactionPos;
         }
 
-        int ox = (int) offsetX.evaluate(player, target);
-        int oy = (int) offsetY.evaluate(player, target);
-        int oz = (int) offsetZ.evaluate(player, target);
+        int ox = (int) offsetX.evaluate(player, target, slot);
+        int oy = (int) offsetY.evaluate(player, target, slot);
+        int oz = (int) offsetZ.evaluate(player, target, slot);
         BlockPos finalPos = targetPos.offset(ox, oy, oz);
 
         net.minecraft.world.level.block.Block resolvedBlock = net.minecraft.core.registries.BuiltInRegistries.BLOCK

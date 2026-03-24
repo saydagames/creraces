@@ -19,6 +19,7 @@ public class AttributeIncidents {
     // Unique UUID for racial AD modifier (applied from IPlayerVariables.getAd())
     private static final UUID RACE_AD_MODIFIER = UUID.fromString("c0d3b4be-0001-4000-8000-000000000001");
     private static final UUID RESOURCE_MODIFIER = UUID.fromString("c0d3b4be-0001-4000-8000-000000000004");
+    private static final UUID MANA_AP_MODIFIER = UUID.fromString("c0d3b4be-0001-4000-8000-000000000010");
     private static final UUID EQUIP_DOUBLE_JUMP_MODIFIER = UUID.fromString("c0d3b4be-0001-4000-8000-000000000005");
 
     public static void eikiJudgment(ServerPlayer player) {
@@ -36,60 +37,74 @@ public class AttributeIncidents {
                 double racialAD = vars.getAd();
                 double amount = racialAD * mc.sayda.creraces.config.CreRacesConfig.RACIAL_AD_MULTIPLIER.get();
                 AttributeModifier.Operation op = AttributeModifier.Operation.MULTIPLY_TOTAL;
-                
+
                 AttributeModifier existing = attackDamage.getModifier(RACE_AD_MODIFIER);
-                if (existing == null || Math.abs(existing.getAmount() - amount) > 1e-6 || existing.getOperation() != op) {
-                    if (existing != null) attackDamage.removeModifier(RACE_AD_MODIFIER);
+                if (existing == null || Math.abs(existing.getAmount() - amount) > 1e-6
+                        || existing.getOperation() != op) {
+                    if (existing != null)
+                        attackDamage.removeModifier(RACE_AD_MODIFIER);
                     if (amount != 0) {
-                        attackDamage.addPermanentModifier(new AttributeModifier(RACE_AD_MODIFIER, "CreRaces Base AD", amount, op));
+                        attackDamage.addPermanentModifier(
+                                new AttributeModifier(RACE_AD_MODIFIER, "CreRaces AD Modifier", amount, op));
                     }
                 }
             }
 
             // 2. Generic Trait Application
             java.util.Set<UUID> activeTraits = new java.util.HashSet<>();
-            
+
             for (mc.sayda.creraces.engine.TraitRegistry.RaceTrait trait : race.traits()) {
                 if (trait instanceof mc.sayda.creraces.engine.traits.AttributeModifierTrait amt) {
-                    boolean conditionMet = amt.getCondition() == null || amt.getCondition().evaluate(player, null, null, null);
-                    
+                    boolean conditionMet = amt.getCondition() == null
+                            || amt.getCondition().evaluate(player, null, null, null);
+
                     if (conditionMet) {
                         Attribute attr = amt.getAttribute();
                         Attribute resolvedAttr = ModAttributes.resolve(attr);
-                        ResourceLocation attrKey = net.minecraft.core.registries.BuiltInRegistries.ATTRIBUTE.getKey(resolvedAttr);
+                        ResourceLocation attrKey = net.minecraft.core.registries.BuiltInRegistries.ATTRIBUTE
+                                .getKey(resolvedAttr);
                         if (attrKey != null) {
                             String traitId = trait.getTraitId();
                             // Deterministic UUID based on trait ID (managed by user in JSON)
                             UUID uuid = UUID.nameUUIDFromBytes(("creraces:" + traitId).getBytes());
                             activeTraits.add(uuid);
-                            
+
                             AttributeInstance instance = player.getAttribute(resolvedAttr);
                             if (instance != null) {
                                 double newValue = amt.getValue().evaluate(player);
-                                if (ModAttributes.isPercentAttribute(resolvedAttr)) newValue /= 100.0;
-                                
+                                if (ModAttributes.isPercentAttribute(resolvedAttr))
+                                    newValue /= 100.0;
+
                                 AttributeModifier.Operation newOp = amt.getOperation();
                                 AttributeModifier existing = instance.getModifier(uuid);
 
-                                if (existing == null || Math.abs(existing.getAmount() - newValue) > 1e-6 || existing.getOperation() != newOp) {
-                                    mc.sayda.creraces.CreRaces.LOGGER.debug("EikiJudgment: {} trait {} for {}. Value: {}, Op: {}", 
-                                            existing == null ? "Applying" : "Updating", traitId, player.getScoreboardName(), newValue, newOp);
-                                    if (existing != null) instance.removeModifier(uuid);
-                                    
+                                if (existing == null || Math.abs(existing.getAmount() - newValue) > 1e-6
+                                        || existing.getOperation() != newOp) {
+                                    mc.sayda.creraces.CreRaces.LOGGER.debug(
+                                            "EikiJudgment: {} trait {} for {}. Value: {}, Op: {}",
+                                            existing == null ? "Applying" : "Updating", traitId,
+                                            player.getScoreboardName(), newValue, newOp);
+                                    if (existing != null)
+                                        instance.removeModifier(uuid);
+
                                     String modifierName = "CreRaces Trait";
                                     if (traitId != null && !traitId.isEmpty() && !traitId.contains(":")) {
                                         modifierName = "CreRaces: " + traitId;
                                     }
-                                    
-                                    instance.addPermanentModifier(new AttributeModifier(uuid, modifierName, newValue, newOp));
-                                    
+
+                                    instance.addPermanentModifier(
+                                            new AttributeModifier(uuid, modifierName, newValue, newOp));
+
                                     // Verify application
                                     if (instance.getModifier(uuid) == null) {
-                                        mc.sayda.creraces.CreRaces.LOGGER.error("EikiJudgment: FAILED to set modifier {} ({}) on {}", traitId, attrKey, player.getScoreboardName());
+                                        mc.sayda.creraces.CreRaces.LOGGER.error(
+                                                "EikiJudgment: FAILED to set modifier {} ({}) on {}", traitId, attrKey,
+                                                player.getScoreboardName());
                                     }
                                 }
                             } else if (player.tickCount % 200 == 0) {
-                                mc.sayda.creraces.CreRaces.LOGGER.warn("EikiJudgment: Player {} lacks attribute: {}", player.getScoreboardName(), attrKey);
+                                mc.sayda.creraces.CreRaces.LOGGER.warn("EikiJudgment: Player {} lacks attribute: {}",
+                                        player.getScoreboardName(), attrKey);
                             }
                         }
                     }
@@ -101,13 +116,14 @@ public class AttributeIncidents {
                 java.util.List<AttributeModifier> toRemove = new java.util.ArrayList<>();
                 for (AttributeModifier mod : instance.getModifiers()) {
                     String name = mod.getName();
-                    if ((name.startsWith("CreRaces:") || "CreRaces Trait".equals(name) || "Race Trait".equals(name)) 
-                        && !activeTraits.contains(mod.getId())) {
+                    if ((name.startsWith("CreRaces:") || "CreRaces Trait".equals(name) || "Race Trait".equals(name))
+                            && !activeTraits.contains(mod.getId())) {
                         toRemove.add(mod);
                     }
                 }
                 if (!toRemove.isEmpty()) {
-                    mc.sayda.creraces.CreRaces.LOGGER.debug("EikiJudgment: Clearing {} orphaned race traits from {}", toRemove.size(), player.getScoreboardName());
+                    mc.sayda.creraces.CreRaces.LOGGER.debug("EikiJudgment: Clearing {} orphaned race traits from {}",
+                            toRemove.size(), player.getScoreboardName());
                     toRemove.forEach(mod -> instance.removeModifier(mod.getId()));
                 }
             });
@@ -129,12 +145,30 @@ public class AttributeIncidents {
                 AttributeModifier existing = doubleJumpAttr.getModifier(EQUIP_DOUBLE_JUMP_MODIFIER);
                 if (isEquipped) {
                     if (existing == null) {
-                        doubleJumpAttr.addPermanentModifier(new AttributeModifier(EQUIP_DOUBLE_JUMP_MODIFIER, "Double Jump Ability", 1.0, AttributeModifier.Operation.ADDITION));
-                        mc.sayda.creraces.CreRaces.LOGGER.debug("EikiJudgment: Applied Double Jump modifier to {}", player.getScoreboardName());
+                        doubleJumpAttr.addPermanentModifier(new AttributeModifier(EQUIP_DOUBLE_JUMP_MODIFIER,
+                                "Double Jump Ability", 1.0, AttributeModifier.Operation.ADDITION));
+                        mc.sayda.creraces.CreRaces.LOGGER.debug("EikiJudgment: Applied Double Jump modifier to {}",
+                                player.getScoreboardName());
                     }
                 } else if (existing != null) {
                     doubleJumpAttr.removeModifier(EQUIP_DOUBLE_JUMP_MODIFIER);
-                    mc.sayda.creraces.CreRaces.LOGGER.debug("EikiJudgment: Removed Double Jump modifier from {}", player.getScoreboardName());
+                    mc.sayda.creraces.CreRaces.LOGGER.debug("EikiJudgment: Removed Double Jump modifier from {}",
+                            player.getScoreboardName());
+                }
+            }
+
+            // 6. Global Mana Scaling (30% AP)
+            AttributeInstance maxMana = player.getAttribute(ModAttributes.resolve(ModAttributes.MAX_MANA));
+            if (maxMana != null) {
+                double amount = vars.getAp() * 0.3;
+                AttributeModifier existing = maxMana.getModifier(MANA_AP_MODIFIER);
+                if (existing == null || Math.abs(existing.getAmount() - amount) > 1e-6) {
+                    if (existing != null)
+                        maxMana.removeModifier(MANA_AP_MODIFIER);
+                    if (amount != 0) {
+                        maxMana.addPermanentModifier(new AttributeModifier(MANA_AP_MODIFIER, "Global Mana Scaling",
+                                amount, AttributeModifier.Operation.ADDITION));
+                    }
                 }
             }
         });
@@ -145,7 +179,7 @@ public class AttributeIncidents {
         clearModifier(player, Attributes.ATTACK_DAMAGE, RACE_AD_MODIFIER);
 
         // All generic trait attribute modifiers are applied via AttributeModifierTrait
-        // using deterministic per-attribute-and-index UUIDs. 
+        // using deterministic per-attribute-and-index UUIDs.
         // We clear everything named "Race Trait" to ensure complete cleanup.
         player.getAttributes().getSyncableAttributes().forEach(instance -> {
             java.util.List<AttributeModifier> toRemove = new java.util.ArrayList<>();
@@ -178,27 +212,35 @@ public class AttributeIncidents {
                 case MANA -> {
                     targetAttr = ModAttributes.resolve(ModAttributes.MAX_MANA);
                     name = "Race Mana";
-                    // Mana scaling: json_base + (ap * scaling)
-                    amount += vars.getAp() * mc.sayda.creraces.config.CreRacesConfig.MANA_AP_SCALING.get();
                 }
-                case RAGE -> { targetAttr = ModAttributes.resolve(ModAttributes.MAX_RAGE); name = "Race Rage"; }
-                case ENERGY -> { 
-                    targetAttr = ModAttributes.resolve(ModAttributes.MAX_ENERGY); name = "Race Energy";
-                    if (race.stacksAffectResource()) amount -= vars.getStacks();
-                    amount = Math.max(mc.sayda.creraces.config.CreRacesConfig.RESOURCE_MIN_CAPACITY.get(), amount);
+                case RAGE -> {
+                    targetAttr = ModAttributes.resolve(ModAttributes.MAX_RAGE);
+                    name = "Race Rage";
                 }
-                case GRIT -> { targetAttr = ModAttributes.resolve(ModAttributes.MAX_GRIT); name = "Race Grit"; }
-                default -> { targetAttr = null; name = ""; }
+                case ENERGY -> {
+                    targetAttr = ModAttributes.resolve(ModAttributes.MAX_ENERGY);
+                    name = "Race Energy";
+                    amount -= vars.getGrit();
+                }
+                case GRIT -> {
+                    targetAttr = ModAttributes.resolve(ModAttributes.MAX_GRIT);
+                    name = "Race Grit";
+                }
+                default -> {
+                    targetAttr = null;
+                    name = "";
+                }
             }
 
             // Clear from all resource attributes first
-            for (var attr : new net.minecraft.world.entity.ai.attributes.Attribute[]{
-                ModAttributes.resolve(ModAttributes.MAX_MANA),
-                ModAttributes.resolve(ModAttributes.MAX_RAGE),
-                ModAttributes.resolve(ModAttributes.MAX_ENERGY),
-                ModAttributes.resolve(ModAttributes.MAX_GRIT)
+            for (var attr : new net.minecraft.world.entity.ai.attributes.Attribute[] {
+                    ModAttributes.resolve(ModAttributes.MAX_MANA),
+                    ModAttributes.resolve(ModAttributes.MAX_RAGE),
+                    ModAttributes.resolve(ModAttributes.MAX_ENERGY),
+                    ModAttributes.resolve(ModAttributes.MAX_GRIT)
             }) {
-                if (attr != targetAttr) clearModifier(player, attr, RESOURCE_MODIFIER);
+                if (attr != targetAttr)
+                    clearModifier(player, attr, RESOURCE_MODIFIER);
             }
 
             if (targetAttr != null) {
@@ -206,8 +248,10 @@ public class AttributeIncidents {
                 if (instance != null) {
                     AttributeModifier existing = instance.getModifier(RESOURCE_MODIFIER);
                     if (existing == null || Math.abs(existing.getAmount() - amount) > 1e-6) {
-                        if (existing != null) instance.removeModifier(RESOURCE_MODIFIER);
-                        instance.addPermanentModifier(new AttributeModifier(RESOURCE_MODIFIER, name, amount, AttributeModifier.Operation.ADDITION));
+                        if (existing != null)
+                            instance.removeModifier(RESOURCE_MODIFIER);
+                        instance.addPermanentModifier(new AttributeModifier(RESOURCE_MODIFIER, name, amount,
+                                AttributeModifier.Operation.ADDITION));
                     }
                 }
             }

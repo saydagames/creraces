@@ -50,7 +50,7 @@ public class AOEAction implements ActionRegistry.RaceAction {
         if (player.level() == null)
             return true;
 
-        double r = radius.evaluate(player, target);
+        double r = radius.evaluate(player, target, slot);
         int maxRadius = 100;
         if (maxRadius > 0)
             r = Math.min(r, maxRadius);

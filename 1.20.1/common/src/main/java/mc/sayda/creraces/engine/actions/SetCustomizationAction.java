@@ -41,9 +41,9 @@ public class SetCustomizationAction implements ActionRegistry.RaceAction {
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
         DataUtils.getVariables(player).ifPresent(vars -> {
             String valToSet = value;
-            double ox = offsetX.evaluate(player, target);
-            double oy = offsetY.evaluate(player, target);
-            double oz = offsetZ.evaluate(player, target);
+            double ox = offsetX.evaluate(player, target, slot);
+            double oy = offsetY.evaluate(player, target, slot);
+            double oz = offsetZ.evaluate(player, target, slot);
 
             switch (mode.toUpperCase()) {
                 case "POS_X" -> valToSet = String.valueOf(player.getX() + ox);

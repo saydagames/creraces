@@ -67,6 +67,11 @@ public class BoundaryHandler {
             pkt.handle(() -> context);
         });
 
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, DebugActionPacket.ID, (buf, context) -> {
+            var pkt = new DebugActionPacket(buf);
+            pkt.handle(() -> context);
+        });
+
         NetworkManager.registerReceiver(NetworkManager.Side.C2S, mc.sayda.creraces.network.MiniPlacePacket.ID,
                 (buf, context) -> {
                     var pkt = new mc.sayda.creraces.network.MiniPlacePacket(buf);
@@ -338,6 +343,12 @@ public class BoundaryHandler {
         FriendlyByteBuf buf = new FriendlyByteBuf(java.util.Objects.requireNonNull(Unpooled.buffer()));
         new DoubleJumpPacket().encode(buf);
         NetworkManager.sendToServer(DoubleJumpPacket.ID, buf);
+    }
+
+    public static void sendDebugAction(String action, String key, String value) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(java.util.Objects.requireNonNull(Unpooled.buffer()));
+        new DebugActionPacket(action, key, value).encode(buf);
+        NetworkManager.sendToServer(DebugActionPacket.ID, buf);
     }
 
     public static void sendMiniPlace(mc.sayda.creraces.network.MiniPlacePacket pkt) {

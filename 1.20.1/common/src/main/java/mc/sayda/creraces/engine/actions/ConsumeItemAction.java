@@ -25,7 +25,7 @@ public class ConsumeItemAction implements ActionRegistry.RaceAction {
     public boolean execute(Player player, @javax.annotation.Nullable LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
-        int toRemoveTotal = (int) amount.evaluate(player, target);
+        int toRemoveTotal = (int) amount.evaluate(player, target, slot);
         if (toRemoveTotal <= 0)
             return true;
 

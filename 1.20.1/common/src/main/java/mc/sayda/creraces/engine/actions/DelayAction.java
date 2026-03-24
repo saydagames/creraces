@@ -32,7 +32,7 @@ public class DelayAction implements ActionRegistry.RaceAction {
         if (player.level().isClientSide())
             return true;
 
-        int t = Math.max(1, (int) ticks.evaluate(player, target));
+        int t = Math.max(1, (int) ticks.evaluate(player, target, slot));
         // Safety cap: prevents scheduler bloat (0 = disabled)
         int max = 1200;
         if (max > 0) {

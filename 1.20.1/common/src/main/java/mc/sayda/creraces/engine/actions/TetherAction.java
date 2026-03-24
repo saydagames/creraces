@@ -62,13 +62,13 @@ public class TetherAction implements ActionRegistry.RaceAction {
         UUID casterId = player.getUUID();
         UUID targetId = target.getUUID();
 
-        int durData = (int) duration.evaluate(player);
-        int intData = (int) interval.evaluate(player);
-        float distData = (float) maxDistance.evaluate(player);
-        float widthData = (float) width.evaluate(player);
+        int durData = (int) duration.evaluate(player, target, slot);
+        int intData = (int) interval.evaluate(player, target, slot);
+        float distData = (float) maxDistance.evaluate(player, target, slot);
+        float widthData = (float) width.evaluate(player, target, slot);
 
         TetherData data = new TetherData(durData, distData, intData, actions, onCompleteActions, onBreakActions,
-                target);
+                target, slot);
 
         ACTIVE_TETHERS.computeIfAbsent(casterId, k -> new ConcurrentHashMap<>()).put(targetId, data);
 
@@ -116,7 +116,7 @@ public class TetherAction implements ActionRegistry.RaceAction {
                 if (dist > (data.maxDistance * data.maxDistance)) {
                     // Tether broke natively from distance
                     for (ActionRegistry.RaceAction action : data.onBreakActions) {
-                        action.execute(caster, data.targetEntity, null, null);
+                        action.execute(caster, data.targetEntity, data.slot, null);
                     }
                     toRemove.add(targetId);
                     continue;
@@ -129,14 +129,14 @@ public class TetherAction implements ActionRegistry.RaceAction {
             // Apply interval actions
             if (data.interval > 0 && data.ticksAlive % data.interval == 0) {
                 for (ActionRegistry.RaceAction action : data.actions) {
-                    action.execute(caster, data.targetEntity, null, null);
+                    action.execute(caster, data.targetEntity, data.slot, null);
                 }
             }
 
             // Complete successfully if it reached max duration
             if (data.ticksAlive >= data.durationTicks) {
                 for (ActionRegistry.RaceAction action : data.onCompleteActions) {
-                    action.execute(caster, data.targetEntity, null, null);
+                    action.execute(caster, data.targetEntity, data.slot, null);
                 }
                 toRemove.add(targetId);
             }
@@ -209,12 +209,15 @@ public class TetherAction implements ActionRegistry.RaceAction {
         public final List<ActionRegistry.RaceAction> onBreakActions;
         @javax.annotation.Nonnull
         public final LivingEntity targetEntity;
+        @javax.annotation.Nullable
+        public final mc.sayda.creraces.ability.AbilitySlot slot;
 
         public int ticksAlive = 0;
 
-        public TetherData(int durationTicks, float maxDistance, int interval,
+            public TetherData(int durationTicks, float maxDistance, int interval,
                 List<ActionRegistry.RaceAction> actions, List<ActionRegistry.RaceAction> onCompleteActions,
-                List<ActionRegistry.RaceAction> onBreakActions, @javax.annotation.Nonnull LivingEntity targetEntity) {
+                List<ActionRegistry.RaceAction> onBreakActions, @javax.annotation.Nonnull LivingEntity targetEntity,
+                @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
             this.durationTicks = durationTicks;
             this.maxDistance = maxDistance;
             this.interval = interval;
@@ -222,6 +225,7 @@ public class TetherAction implements ActionRegistry.RaceAction {
             this.onCompleteActions = onCompleteActions;
             this.onBreakActions = onBreakActions;
             this.targetEntity = targetEntity;
+            this.slot = slot;
         }
     }
 }

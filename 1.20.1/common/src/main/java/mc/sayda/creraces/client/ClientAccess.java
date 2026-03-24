@@ -8,7 +8,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.world.item.ItemStack;
 
 public class ClientAccess {
-    public static boolean hasReceivedInitialSync = false;
+    public static net.minecraft.world.entity.player.Player lastSyncedPlayer = null;
     public static boolean isWaitingForRaceSelection = false;
 
     public static Level getLevel() {
@@ -71,7 +71,7 @@ public class ClientAccess {
             }
 
             if (finalTarget == minecraft.player) {
-                hasReceivedInitialSync = true;
+                lastSyncedPlayer = finalTarget;
                 if (data.contains("hasChosenRace") && data.getBoolean("hasChosenRace")) {
                     isWaitingForRaceSelection = false;
                 }

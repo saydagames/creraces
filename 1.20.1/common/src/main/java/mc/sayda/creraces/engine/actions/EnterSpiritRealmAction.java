@@ -44,7 +44,7 @@ public class EnterSpiritRealmAction implements ActionRegistry.RaceAction {
             BoundaryHandler.resyncVariables(player, player);
 
             // Handle AoE "guiding" if radius is set
-            double r = radius.evaluate(player, target);
+            double r = radius.evaluate(player, target, slot);
             if (r > 0) {
                 net.minecraft.world.level.Level level = player.level();
                 net.minecraft.world.phys.AABB area = player.getBoundingBox().inflate(r);

@@ -58,7 +58,7 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
                 case ENERGY -> vars.getEnergy();
                 case GRIT -> vars.getGrit();
                 case RAGE -> vars.getRage();
-                case SOULS -> vars.getSouls();
+                case SOUL -> vars.getSoul();
                 case NONE -> 0.0;
                 default -> 100.0;
             };
@@ -83,7 +83,7 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
             }
 
 
-            boolean isSoggy = soggyWings && player.hasEffect(mc.sayda.creraces.registry.ModMobEffects.SOGGY.get());
+            boolean isSoggy = soggyWings && player.hasEffect(java.util.Objects.requireNonNull(mc.sayda.creraces.registry.ModMobEffects.SOGGY.get()));
             boolean canFly = conditionMet && currentResource >= evaluatedDrain && !isSoggy;
             boolean wasMayfly = player.getAbilities().mayfly;
             boolean wasFlying = player.getAbilities().flying;
@@ -103,7 +103,7 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
                         case ENERGY -> vars.setEnergy(Math.max(0, vars.getEnergy() - evaluatedDrain));
                         case GRIT -> vars.setGrit(Math.max(0, vars.getGrit() - evaluatedDrain));
                         case RAGE -> vars.setRage(Math.max(0, vars.getRage() - evaluatedDrain));
-                        case SOULS -> vars.setSouls(Math.max(0, vars.getSouls() - evaluatedDrain));
+                        case SOUL -> vars.setSoul(Math.max(0, vars.getSoul() - evaluatedDrain));
                         case NONE -> {
                         } // No resource to drain
                     }
@@ -117,8 +117,8 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
                     }
 
                     // On Fail Logic
-                    ResourceLocation failId = new ResourceLocation(traitId.getNamespace(),
-                            traitId.getPath() + "_failed");
+                    ResourceLocation failId = new ResourceLocation(java.util.Objects.requireNonNull(traitId.getNamespace()),
+                            java.util.Objects.requireNonNull(traitId.getPath()) + "_failed");
                     boolean alreadyFailed = vars.getPersistentState(failId) > 0;
                     if (conditionMet && currentResource < evaluatedDrain && !alreadyFailed) {
                         vars.setPersistentState(failId, 1.0);
@@ -144,7 +144,7 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
             }
 
             if (conditionMet && currentResource >= evaluatedDrain) {
-                ResourceLocation failId = new ResourceLocation(traitId.getNamespace(), traitId.getPath() + "_failed");
+                ResourceLocation failId = new ResourceLocation(java.util.Objects.requireNonNull(traitId.getNamespace()), java.util.Objects.requireNonNull(traitId.getPath()) + "_failed");
                 vars.setPersistentState(failId, 0.0);
             }
 

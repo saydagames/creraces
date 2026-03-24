@@ -1,19 +1,19 @@
 {
-    "name": "ability.creraces.unstoppable_charge.name",
-    "description": "ability.creraces.unstoppable_charge.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:textures/item/iron_chestplate.png",
-    "cooldown": 420,
-    "cost": 20,
-    "race": [
+    "creraces:name": "ability.creraces.unstoppable_charge.name",
+    "creraces:description": "ability.creraces.unstoppable_charge.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/iron_chestplate.png",
+    "creraces:cooldown": 420,
+    "creraces:cost": 20,
+    "creraces:race": [
         "creraces:dwarf"
     ],
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:dash",
             "power": {
                 "base": 2.0,
-                "ad": 0.3
+                "creraces:ad": 0.3
             },
             "direction": "forward"
         },
@@ -31,7 +31,9 @@
             "pitch": 0.7
         }
     ],
-    "wiki_page": "state:Unstoppable_Charge"
+    "creraces:wiki_page": "Ability:Unstoppable_Charge"
 }
+
+
 
 

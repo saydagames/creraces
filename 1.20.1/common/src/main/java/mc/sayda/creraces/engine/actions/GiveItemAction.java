@@ -32,7 +32,7 @@ public class GiveItemAction implements ActionRegistry.RaceAction {
             @Nullable net.minecraft.core.BlockPos interactionPos) {
         Item item = BuiltInRegistries.ITEM.get(itemId);
         if (item != null) {
-            int count = (int) amount.evaluate(player, target);
+            int count = (int) amount.evaluate(player, target, slot);
             if (count > 0) {
                 ItemStack stack = new ItemStack(item, count);
                 if (!player.getInventory().add(stack)) {

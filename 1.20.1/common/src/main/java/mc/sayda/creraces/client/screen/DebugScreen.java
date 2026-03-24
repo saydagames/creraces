@@ -2,7 +2,6 @@ package mc.sayda.creraces.client.screen;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import mc.sayda.creraces.capability.DataUtils;
-import mc.sayda.creraces.capability.IPlayerVariables;
 import mc.sayda.creraces.race.Race;
 import mc.sayda.creraces.race.RaceRegistry;
 import net.minecraft.client.Minecraft;
@@ -16,26 +15,29 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import javax.annotation.Nonnull;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-
+import java.util.*;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.components.EditBox;
 
 public class DebugScreen extends Screen {
+        private static final int LINE_HEIGHT = 12;
         private final List<Component> debugLines = new ArrayList<>();
         private double scrollAmount;
+        private int maxScroll;
+        private final List<LineMetadata> lineMetadata = new ArrayList<>();
+        private LineMetadata selectedLine = null;
+        private EditBox editBox;
+        private Button applyButton;
+        private Button cancelButton;
 
         public DebugScreen() {
                 super(Component.translatable("gui.creraces.debug.title"));
         }
 
         @Override
+        @SuppressWarnings("null")
         protected void init() {
-                super.init();
-
                 this.addRenderableWidget(Button.builder(Component.translatable("gui.done"), (button) -> {
                         this.onClose();
                 }).bounds(this.width / 2 - 100, this.height - 30, 98, 20).build());
@@ -48,19 +50,57 @@ public class DebugScreen extends Screen {
                         Minecraft.getInstance().keyboardHandler.setClipboard(sb.toString());
                 }).bounds(this.width / 2 + 2, this.height - 30, 98, 20).build());
 
+                // Editor widgets (hidden by default)
+                // Two-row layout: Label on top, Input/Buttons below
+                // Slimmer EditBox (100) and Buttons (45) centered as a group
+                editBox = new EditBox(this.font, this.width / 2 - 100, this.height - 60, 100, 16, Component.empty());
+                applyButton = Button.builder(Component.literal("Apply"), b -> applyEdit())
+                                .bounds(this.width / 2 + 5, this.height - 60, 45, 16).build();
+                cancelButton = Button.builder(Component.literal("Cancel"), b -> cancelEdit())
+                                .bounds(this.width / 2 + 55, this.height - 60, 45, 16).build();
+
+                this.addRenderableWidget(editBox);
+                this.addRenderableWidget(applyButton);
+                this.addRenderableWidget(cancelButton);
+
+                editBox.visible = false;
+                applyButton.visible = false;
+                cancelButton.visible = false;
+
                 refreshDebugInfo();
+        }
+
+        private void applyEdit() {
+                if (selectedLine != null && !editBox.getValue().isEmpty()) {
+                        mc.sayda.creraces.network.BoundaryHandler.sendDebugAction(selectedLine.action, selectedLine.key,
+                                        editBox.getValue());
+                        cancelEdit();
+                        refreshDebugInfo();
+                }
+        }
+
+        @SuppressWarnings("null")
+        private void cancelEdit() {
+                selectedLine = null;
+                editBox.visible = false;
+                applyButton.visible = false;
+                cancelButton.visible = false;
+                this.setFocused(null);
         }
 
         @SuppressWarnings("null")
         private void refreshDebugInfo() {
                 debugLines.clear();
+                lineMetadata.clear();
                 Player player = Minecraft.getInstance().player;
                 if (player == null)
                         return;
 
                 DataUtils.getVariables(player).ifPresent(vars -> {
                         // --- IDENTITY ---
+                        debugLines.add(Component.literal(""));
                         addHeader("IDENTITY");
+                        Race race = RaceRegistry.get(vars.getRace());
                         debugLines.add(Component.literal("  Player: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component.literal(player.getName().getString())
                                                         .withStyle(ChatFormatting.WHITE)));
@@ -70,35 +110,33 @@ public class DebugScreen extends Screen {
                         debugLines.add(Component.literal("  Race ID: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component.literal(vars.getRace().toString())
                                                         .withStyle(ChatFormatting.AQUA)));
+                        String raceName = race != null ? race.name().getString() : "None";
+                        debugLines.add(Component.literal("  Race Name: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(raceName).withStyle(ChatFormatting.AQUA)));
+                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "race", "race",
+                                        vars.getRace().toString()));
+                        ResourceLocation parent = race != null ? race.parentRace() : null;
+                        String parentStr = parent != null ? parent.toString() : "None";
+                        debugLines.add(Component.literal("  Parent: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(parentStr).withStyle(ChatFormatting.DARK_AQUA)));
                         debugLines.add(Component.literal("  Chosen: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component.literal(String.valueOf(vars.hasChosenRace()))
                                                         .withStyle(vars.hasChosenRace() ? ChatFormatting.GREEN
                                                                         : ChatFormatting.RED)));
 
-                        Race race = RaceRegistry.get(vars.getRace());
-                        String raceName = race != null ? race.name().getString() : "None";
-                        debugLines.add(Component.literal("  Race Name: ").withStyle(ChatFormatting.GRAY)
-                                        .append(Component.literal(raceName).withStyle(ChatFormatting.AQUA)));
-
-                        if (vars.getTeamId() != null) {
-                                debugLines.add(Component.literal("  Team: ").withStyle(ChatFormatting.GRAY)
-                                                .append(Component.literal(vars.getTeamName())
-                                                                .withStyle(ChatFormatting.WHITE))
-                                                .append(Component.literal(" (")
-                                                                .withStyle(ChatFormatting.GRAY))
-                                                .append(Component.literal(vars.getTeamId().toString().substring(0, 8))
-                                                                .withStyle(ChatFormatting.DARK_GRAY))
-                                                .append(Component.literal("...)")
-                                                                .withStyle(ChatFormatting.GRAY)));
-                        }
+                        String teamName = vars.getTeamId() != null ? vars.getTeamName() : "None";
+                        String teamIdStr = vars.getTeamId() != null
+                                        ? vars.getTeamId().toString().substring(0, 8) + "..."
+                                        : "None";
+                        debugLines.add(Component.literal("  Team: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(teamName).withStyle(ChatFormatting.WHITE))
+                                        .append(Component.literal(" (").withStyle(ChatFormatting.GRAY))
+                                        .append(Component.literal(teamIdStr).withStyle(ChatFormatting.DARK_GRAY))
+                                        .append(Component.literal(")").withStyle(ChatFormatting.GRAY)));
+                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "variable", "teamname",
+                                        vars.getTeamName()));
 
                         if (race != null) {
-                                ResourceLocation parent = race.parentRace();
-                                if (parent != null) {
-                                        debugLines.add(Component.literal("  Parent: ").withStyle(ChatFormatting.GRAY)
-                                                        .append(Component.literal(parent.toString())
-                                                                        .withStyle(ChatFormatting.DARK_AQUA)));
-                                }
                                 debugLines.add(Component.literal("  Base Ratios: ").withStyle(ChatFormatting.GRAY)
                                                 .append(Component.literal("AP: " + race.baseAp())
                                                                 .withStyle(ChatFormatting.GOLD))
@@ -108,131 +146,216 @@ public class DebugScreen extends Screen {
                                                                 .withStyle(ChatFormatting.GOLD))
                                                 .append(Component.literal(" CR: " + race.baseCr())
                                                                 .withStyle(ChatFormatting.GOLD)));
+                        } else {
+                                debugLines.add(Component.literal("  Base Ratios: ").withStyle(ChatFormatting.GRAY)
+                                                .append(Component.literal("None").withStyle(ChatFormatting.DARK_GRAY)));
                         }
 
                         // --- STATISTICS ---
                         addHeader("STATISTICS");
-                        debugLines.add(Component.literal("  AP: ").withStyle(ChatFormatting.GRAY)
-                                        .append(Component.literal(String.format("%.1f", vars.getAp()))
+                        double adBase = player
+                                        .getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE)
+                                        .getBaseValue();
+                        debugLines.add(Component.literal("  AD: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(String.format("%.1f", vars.getAd())) // Total
                                                         .withStyle(ChatFormatting.GREEN))
-                                        .append(Component.literal(" | AD: ").withStyle(ChatFormatting.GRAY))
-                                        .append(Component.literal(String.format("%.1f", vars.getAd()))
+                                        .append(Component.literal(" / ").withStyle(ChatFormatting.GRAY))
+                                        .append(Component.literal(String.format("%.1f", adBase)) // Base
                                                         .withStyle(ChatFormatting.GREEN)));
-                        debugLines.add(Component.literal("  AH: ").withStyle(ChatFormatting.GRAY)
-                                        .append(Component.literal(String.format("%.1f", vars.getAh()))
-                                                        .withStyle(ChatFormatting.GREEN))
-                                        .append(Component.literal(" | CR: ").withStyle(ChatFormatting.GRAY))
-                                        .append(Component.literal(String.format("%.1f", vars.getCr()))
-                                                        .withStyle(ChatFormatting.GREEN)));
+                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "variable", "ad",
+                                        String.valueOf(vars.getAd())));
 
+                        double apBase = player.getAttribute(mc.sayda.creraces.registry.ModAttributes
+                                        .resolve(mc.sayda.creraces.registry.ModAttributes.ABILITY_POWER))
+                                        .getBaseValue();
+                        debugLines.add(Component.literal("  AP: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(String.format("%.1f", vars.getAp())) // Total
+                                                        .withStyle(ChatFormatting.GREEN))
+                                        .append(Component.literal(" / ").withStyle(ChatFormatting.GRAY))
+                                        .append(Component.literal(String.format("%.1f", apBase)) // Base
+                                                        .withStyle(ChatFormatting.GREEN)));
+                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "variable", "ap",
+                                        String.valueOf(vars.getAp())));
+
+                        debugLines.add(Component.literal("  Haste: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(String.format("%.1f%%", vars.getAh()))
+                                                        .withStyle(ChatFormatting.GREEN)));
+                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "variable", "ah",
+                                        String.valueOf(vars.getAh())));
+
+                        debugLines.add(Component.literal("  Crit: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(String.format("%.1f%%", vars.getCr()))
+                                                        .withStyle(ChatFormatting.GREEN)));
+                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "variable", "cr",
+                                        String.valueOf(vars.getCr())));
+
+                        // Resistances (Consolidated into STATISTICS)
                         double armor = player.getArmorValue();
+                        double armorBase = player
+                                        .getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR)
+                                        .getBaseValue();
+                        debugLines.add(Component.literal("  Armor: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(String.format("%.1f", armor)) // Total
+                                                        .withStyle(ChatFormatting.GREEN))
+                                        .append(Component.literal(" / ").withStyle(ChatFormatting.GRAY))
+                                        .append(Component.literal(String.format("%.1f", armorBase)) // Base
+                                                        .withStyle(ChatFormatting.GREEN)));
+                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "attribute",
+                                        "minecraft:generic.armor", String.valueOf(armorBase)));
+
                         double armPierce = player.getAttributeValue(
                                         mc.sayda.creraces.registry.ModAttributes.resolve(
                                                         mc.sayda.creraces.registry.ModAttributes.ARMOR_PIERCE));
                         double armShred = player.getAttributeValue(
                                         mc.sayda.creraces.registry.ModAttributes
                                                         .resolve(mc.sayda.creraces.registry.ModAttributes.ARMOR_SHRED));
+                        debugLines.add(Component.literal("  ArmorPen: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(String.format("%.1f", armPierce)) // Flat
+                                                        .withStyle(ChatFormatting.GREEN))
+                                        .append(Component.literal(" / ").withStyle(ChatFormatting.GRAY))
+                                        .append(Component.literal(String.format("%.1f%%", armShred * 100)) // Pct
+                                                        .withStyle(ChatFormatting.GREEN)));
+                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "attribute",
+                                        "creraces:armor_pierce", String.valueOf(armPierce)));
+
+                        double magResist = player.getAttributeValue(
+                                        mc.sayda.creraces.registry.ModAttributes.resolve(
+                                                        mc.sayda.creraces.registry.ModAttributes.MAGIC_RESIST));
+                        double magResistBase = player.getAttribute(
+                                        mc.sayda.creraces.registry.ModAttributes.resolve(
+                                                        mc.sayda.creraces.registry.ModAttributes.MAGIC_RESIST))
+                                        .getBaseValue();
+                        debugLines.add(Component.literal("  MR: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(String.format("%.1f", magResist)) // Total
+                                                        .withStyle(ChatFormatting.GREEN))
+                                        .append(Component.literal(" / ").withStyle(ChatFormatting.GRAY))
+                                        .append(Component.literal(String.format("%.1f", magResistBase)) // Base
+                                                        .withStyle(ChatFormatting.GREEN)));
+                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "attribute",
+                                        "creraces:magic_resist", String.valueOf(magResistBase)));
+
                         double magPierce = player.getAttributeValue(
                                         mc.sayda.creraces.registry.ModAttributes.resolve(
                                                         mc.sayda.creraces.registry.ModAttributes.MAGIC_PIERCE));
                         double magShred = player.getAttributeValue(
                                         mc.sayda.creraces.registry.ModAttributes
                                                         .resolve(mc.sayda.creraces.registry.ModAttributes.MAGIC_SHRED));
-                        double magResist = player.getAttributeValue(
-                                        mc.sayda.creraces.registry.ModAttributes.resolve(
-                                                        mc.sayda.creraces.registry.ModAttributes.MAGIC_RESIST));
-                        double healing = player.getAttributeValue(
-                                        mc.sayda.creraces.registry.ModAttributes.resolve(
-                                                        mc.sayda.creraces.registry.ModAttributes.HEALING_RECEIVED));
-
-                        debugLines.add(Component.literal("  Resistances:").withStyle(ChatFormatting.GRAY));
-                        debugLines.add(Component.literal("    Armor: ").withStyle(ChatFormatting.GRAY)
-                                        .append(Component.literal(String.format("%.1f", armor))
-                                                        .withStyle(ChatFormatting.GREEN)));
-                        debugLines.add(Component.literal("    ArmorPen: ").withStyle(ChatFormatting.GRAY)
-                                        .append(Component.literal(String.format("%.1f", armPierce)) // Flat
-                                                        .withStyle(ChatFormatting.GREEN))
-                                        .append(Component.literal(" / ").withStyle(ChatFormatting.GRAY))
-                                        .append(Component.literal(String.format("%.1f%%", armShred * 100)) // Pct
-                                                        .withStyle(ChatFormatting.GREEN)));
-                        debugLines.add(Component.literal("    MR: ").withStyle(ChatFormatting.GRAY)
-                                        .append(Component.literal(String.format("%.1f", magResist))
-                                                        .withStyle(ChatFormatting.GREEN)));
-                        debugLines.add(Component.literal("    MagicPen: ").withStyle(ChatFormatting.GRAY)
+                        debugLines.add(Component.literal("  MagicPen: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component.literal(String.format("%.1f", magPierce)) // Flat
                                                         .withStyle(ChatFormatting.GREEN))
                                         .append(Component.literal(" / ").withStyle(ChatFormatting.GRAY))
                                         .append(Component.literal(String.format("%.1f%%", magShred * 100)) // Pct
                                                         .withStyle(ChatFormatting.GREEN)));
+                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "attribute",
+                                        "creraces:magic_pierce", String.valueOf(magPierce)));
 
-                        debugLines.add(Component.literal("  Others:").withStyle(ChatFormatting.GRAY));
-                        debugLines.add(Component.literal("    Heal:").withStyle(ChatFormatting.GRAY)
-                                        .append(Component.literal(String.format("%.1f%%", healing * 100))
+                        double healing = player.getAttributeValue(
+                                        mc.sayda.creraces.registry.ModAttributes.resolve(
+                                                        mc.sayda.creraces.registry.ModAttributes.HEALING_RECEIVED));
+                        double healingBase = player.getAttribute(
+                                        mc.sayda.creraces.registry.ModAttributes.resolve(
+                                                        mc.sayda.creraces.registry.ModAttributes.HEALING_RECEIVED))
+                                        .getBaseValue();
+                        debugLines.add(Component.literal("  Heal: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(String.format("%.1f%%", healing * 100)) // Total
+                                                        .withStyle(ChatFormatting.GREEN))
+                                        .append(Component.literal(" / ").withStyle(ChatFormatting.GRAY))
+                                        .append(Component.literal(String.format("%.1f%%", healingBase * 100)) // Base
                                                         .withStyle(ChatFormatting.GREEN)));
+                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "attribute",
+                                        "creraces:healing_received", String.valueOf(healingBase)));
 
                         // --- RESOURCES ---
                         addHeader("RESOURCES");
-
                         long threshold = mc.sayda.creraces.config.CreRacesConfig.RESOURCE_DECAY_GRACE_PERIOD.get();
                         long timerAge = Math.min(player.level().getGameTime() - vars.getResourceTimer(), threshold);
                         ChatFormatting timerColor = timerAge < threshold ? ChatFormatting.GREEN : ChatFormatting.RED;
                         debugLines.add(Component.literal("  Resource Timer: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component.literal(timerAge + " / " + threshold)
                                                         .withStyle(timerColor)));
+
                         debugLines.add(Component.literal("  Mana: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component.literal(String.format("%.1f", vars.getMana()))
-                                                        .withStyle(ChatFormatting.BLUE))
-                                        .append(Component.literal(" | Rage: ").withStyle(ChatFormatting.GRAY))
+                                                        .withStyle(ChatFormatting.BLUE)));
+                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "variable", "mana",
+                                        String.valueOf(vars.getMana())));
+
+                        debugLines.add(Component.literal("  Rage: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component.literal(String.format("%.1f", vars.getRage()))
                                                         .withStyle(ChatFormatting.RED)));
+                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "variable", "rage",
+                                        String.valueOf(vars.getRage())));
 
                         debugLines.add(Component.literal("  Energy: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component.literal(String.format("%.1f", vars.getEnergy()))
-                                                        .withStyle(ChatFormatting.YELLOW))
-                                        .append(Component.literal(" | Grit: ").withStyle(ChatFormatting.GRAY))
+                                                        .withStyle(ChatFormatting.YELLOW)));
+                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "variable", "energy",
+                                        String.valueOf(vars.getEnergy())));
+
+                        debugLines.add(Component.literal("  Grit: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component.literal(String.format("%.1f", vars.getGrit()))
                                                         .withStyle(ChatFormatting.WHITE)));
+                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "variable", "grit",
+                                        String.valueOf(vars.getGrit())));
+
+                        debugLines.add(Component.literal("  Soul: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component
+                                                        .literal(String.format("%.0f/%.0f", vars.getSoul(),
+                                                                        mc.sayda.creraces.config.CreRacesConfig.MAX_SOUL
+                                                                                        .get()))
+                                                        .withStyle(ChatFormatting.DARK_PURPLE)));
+                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "variable", "soul",
+                                        String.valueOf(vars.getSoul())));
 
                         debugLines.add(Component.literal("  Karma: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component.literal(String.format("%.2f", vars.getKarma()))
-                                                        .withStyle(ChatFormatting.GOLD))
-                                        .append(Component.literal(" | Coins: ").withStyle(ChatFormatting.GRAY))
+                                                        .withStyle(ChatFormatting.GREEN)));
+                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "variable", "karma",
+                                        String.valueOf(vars.getKarma())));
+
+                        debugLines.add(Component.literal("  Coins: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component
                                                         .literal(java.util.Objects.requireNonNull(
                                                                         String.format("%.0f", vars.getCoins())))
-                                                        .withStyle(ChatFormatting.GOLD)));
-
-                        debugLines.add(Component.literal("  Soul: ").withStyle(ChatFormatting.GRAY)
-                                        .append(Component.literal(String.format("%.0f/%.0f", vars.getSouls(), mc.sayda.creraces.config.CreRacesConfig.MAX_SOULS.get()))
-                                                        .withStyle(ChatFormatting.DARK_PURPLE)));
-
+                                                        .withStyle(ChatFormatting.GREEN)));
+                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "variable", "coins",
+                                        String.valueOf(vars.getCoins())));
                         // --- STATES ---
                         addHeader("STATES");
-                        debugLines.add(Component.literal("  Morphed: ").withStyle(ChatFormatting.GRAY)
+                        debugLines.add(Component.literal("    Morphed: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component.literal(String.valueOf(vars.isMorphed()))
                                                         .withStyle(vars.isMorphed() ? ChatFormatting.GREEN
-                                                                        : ChatFormatting.RED))
-                                        .append(Component.literal(" | Spirit: ").withStyle(ChatFormatting.GRAY))
+                                                                        : ChatFormatting.RED)));
+                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "state", "morphed",
+                                        String.valueOf(vars.isMorphed())));
+
+                        debugLines.add(Component.literal("    Spirit: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component.literal(String.valueOf(vars.isInSpiritRealm()))
                                                         .withStyle(vars.isInSpiritRealm() ? ChatFormatting.GREEN
                                                                         : ChatFormatting.RED)));
+                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "state", "spirit",
+                                        String.valueOf(vars.isInSpiritRealm())));
 
-                        debugLines.add(Component.literal("  Small Build: ").withStyle(ChatFormatting.GRAY)
+                        debugLines.add(Component.literal("    Small Build: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component.literal(String.valueOf(vars.isSmallBuild()))
                                                         .withStyle(vars.isSmallBuild() ? ChatFormatting.GREEN
                                                                         : ChatFormatting.RED)));
+                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "state", "smallbuild",
+                                        String.valueOf(vars.isSmallBuild())));
 
-                        debugLines.add(Component.literal("  gState: ").withStyle(ChatFormatting.GRAY)
+                        debugLines.add(Component.literal("    gState: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component.literal(String.valueOf(vars.getGState()))
                                                         .withStyle(ChatFormatting.WHITE)));
+                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "state", "gstate",
+                                        String.valueOf(vars.getGState())));
 
                         // --- ACTIVE ABILITY ---
                         addHeader("ACTIVE ABILITY");
                         if (vars.isAbilityActive() && vars.getActiveAbility() != null) {
-                                debugLines.add(Component.literal("  ID: ").withStyle(ChatFormatting.GRAY)
+                                debugLines.add(Component.literal("    ID: ").withStyle(ChatFormatting.GRAY)
                                                 .append(Component.literal(vars.getActiveAbility().toString())
                                                                 .withStyle(ChatFormatting.YELLOW)));
-                                debugLines.add(Component.literal("  Duration: ").withStyle(ChatFormatting.GRAY)
+                                debugLines.add(Component.literal("    Duration: ").withStyle(ChatFormatting.GRAY)
                                                 .append(Component
                                                                 .literal(String.valueOf(
                                                                                 vars.getActiveAbilityDuration()))
@@ -243,21 +366,93 @@ public class DebugScreen extends Screen {
                                                                                 vars.getActiveAbilityDrain()))
                                                                 .withStyle(ChatFormatting.WHITE)));
                         } else {
-                                debugLines.add(Component.literal("  - None").withStyle(ChatFormatting.DARK_GRAY));
+                                debugLines.add(Component.literal("    - None").withStyle(ChatFormatting.DARK_GRAY));
                         }
 
-                        // --- WORLD & POCKET ---
+                        // --- TRAIT TIMERS ---
+                        addHeader("TRAIT TIMERS");
+                        Map<ResourceLocation, Integer> timers = vars.getTraitTimers();
+                        boolean hasActiveTimers = timers.values().stream().anyMatch(t -> t > 0);
+                        if (hasActiveTimers) {
+                                // Sort by ID for consistency
+                                List<ResourceLocation> sortedIds = new ArrayList<>(timers.keySet());
+                                sortedIds.sort(Comparator.comparing(ResourceLocation::toString));
+                                for (ResourceLocation id : sortedIds) {
+                                        int time = timers.get(id);
+                                        if (time > 0) {
+                                                debugLines.add(Component.literal("    " + id.getPath() + ": ")
+                                                                .withStyle(ChatFormatting.GRAY)
+                                                                .append(Component.literal(String.valueOf(time))
+                                                                                .withStyle(ChatFormatting.WHITE)));
+                                        }
+                                }
+                        } else {
+                                debugLines.add(Component.literal("    - None").withStyle(ChatFormatting.DARK_GRAY));
+                        }
+
+                        // --- COOLDOWNS ---
+                        addHeader("COOLDOWNS");
+                        Map<ResourceLocation, Integer> cooldowns = vars.getCooldowns();
+                        boolean hasActiveCooldowns = cooldowns.values().stream().anyMatch(t -> t > 0);
+                        if (hasActiveCooldowns) {
+                                List<ResourceLocation> sortedIds = new ArrayList<>(cooldowns.keySet());
+                                sortedIds.sort(Comparator.comparing(ResourceLocation::toString));
+                                for (ResourceLocation id : sortedIds) {
+                                        int time = cooldowns.get(id);
+                                        if (time > 0) {
+                                                debugLines.add(Component.literal("    " + id.toString() + ": ")
+                                                                .withStyle(ChatFormatting.GRAY)
+                                                                .append(Component.literal(String.valueOf(time))
+                                                                                .withStyle(ChatFormatting.WHITE)));
+                                                lineMetadata.add(new LineMetadata(debugLines.size() - 1, "cooldown",
+                                                                id.toString(), String.valueOf(time)));
+                                        }
+                                }
+                        } else {
+                                debugLines.add(Component.literal("    - None").withStyle(ChatFormatting.DARK_GRAY));
+                        }
+
+                        addHeader("DIMENSION RETURN");
+                        debugLines.add(Component.literal("  Return Dim: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(vars.getReturnDim())
+                                                        .withStyle(ChatFormatting.WHITE)));
+                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "variable", "returndim",
+                                        vars.getReturnDim()));
+
+                        debugLines.add(Component.literal("  Return X: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(String.format("%.1f", vars.getReturnX()))
+                                                        .withStyle(ChatFormatting.WHITE)));
+                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "variable", "returnX",
+                                        String.valueOf(vars.getReturnX())));
+
+                        debugLines.add(Component.literal("  Return Y: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(String.format("%.1f", vars.getReturnY()))
+                                                        .withStyle(ChatFormatting.WHITE)));
+                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "variable", "returnY",
+                                        String.valueOf(vars.getReturnY())));
+
+                        debugLines.add(Component.literal("  Return Z: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(String.format("%.1f", vars.getReturnZ()))
+                                                        .withStyle(ChatFormatting.WHITE)));
+                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "variable", "returnZ",
+                                        String.valueOf(vars.getReturnZ())));
+
                         addHeader("WORLD & POCKET");
-                        debugLines.add(Component.literal("  Pocket: ").withStyle(ChatFormatting.GRAY)
+                        debugLines.add(Component.literal("  Has Pocket: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component.literal(String.valueOf(vars.hasPocket()))
                                                         .withStyle(vars.hasPocket() ? ChatFormatting.GREEN
-                                                                        : ChatFormatting.RED))
-                                        .append(Component.literal(" | Index: ").withStyle(ChatFormatting.GRAY))
-                                        .append(Component.literal(String.valueOf(vars.getPocketIndex()))
-                                                        .withStyle(ChatFormatting.WHITE)));
+                                                                        : ChatFormatting.RED)));
+
+                        debugLines.add(Component.literal("  In Pocket: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component
+                                                        .literal(String.valueOf(player.level().dimension().location()
+                                                                        .getPath().contains("pocket")))
+                                                        .withStyle(player.level().dimension().location().getPath()
+                                                                        .contains("pocket") ? ChatFormatting.GREEN
+                                                                                        : ChatFormatting.RED)));
 
                         if (vars.hasPocket()) {
-                                debugLines.add(Component.literal("    Pos: ").withStyle(ChatFormatting.GRAY)
+                                debugLines.add(Component.literal("    Pocket Pos: ").withStyle(ChatFormatting.GRAY)
                                                 .append(Component
                                                                 .literal(String.format("%.1f, %.1f, %.1f",
                                                                                 vars.getPocketX(),
@@ -281,51 +476,6 @@ public class DebugScreen extends Screen {
                                 }
                         }
 
-                        // --- TRAIT TIMERS ---
-                        addHeader("TRAIT TIMERS");
-                        Map<ResourceLocation, Integer> timers = vars.getTraitTimers();
-                        boolean hasActiveTimers = timers.values().stream().anyMatch(t -> t > 0);
-                        if (hasActiveTimers) {
-                                timers.forEach((id, time) -> {
-                                        if (time > 0) {
-                                                debugLines.add(Component.literal("  " + id.getPath() + ": ")
-                                                                .withStyle(ChatFormatting.GRAY)
-                                                                .append(Component.literal(String.valueOf(time))
-                                                                                .withStyle(ChatFormatting.WHITE)));
-                                        }
-                                });
-                        } else {
-                                debugLines.add(Component.literal("  - None").withStyle(ChatFormatting.DARK_GRAY));
-                        }
-
-                        // --- COOLDOWNS ---
-                        addHeader("COOLDOWNS");
-                        Map<ResourceLocation, Integer> cooldowns = vars.getCooldowns();
-                        boolean hasActiveCooldowns = cooldowns.values().stream().anyMatch(t -> t > 0);
-                        if (hasActiveCooldowns) {
-                                cooldowns.forEach((id, time) -> {
-                                        if (time > 0) {
-                                                debugLines.add(Component.literal("  " + id.toString() + ": ")
-                                                                .withStyle(ChatFormatting.GRAY)
-                                                                .append(Component.literal(String.valueOf(time))
-                                                                                .withStyle(ChatFormatting.WHITE)));
-                                        }
-                                });
-                        } else {
-                                debugLines.add(Component.literal("  - None").withStyle(ChatFormatting.DARK_GRAY));
-                        }
-
-                        addHeader("DIMENSION RETURN");
-
-                        debugLines.add(Component.literal("  Return Dim: ").withStyle(ChatFormatting.GRAY)
-                                        .append(Component.literal(vars.getReturnDim())
-                                                        .withStyle(ChatFormatting.WHITE)));
-                        debugLines.add(Component.literal("    Pos: ").withStyle(ChatFormatting.GRAY)
-                                        .append(Component.literal(
-                                                        String.format("%.1f, %.1f, %.1f", vars.getReturnX(),
-                                                                        vars.getReturnY(), vars.getReturnZ()))
-                                                        .withStyle(ChatFormatting.WHITE)));
-
                         // --- INTERNAL ---
                         addHeader("INTERNAL");
                         debugLines.add(Component.literal("  Passive CD: ").withStyle(ChatFormatting.GRAY)
@@ -338,65 +488,47 @@ public class DebugScreen extends Screen {
                         if (cust.isEmpty()) {
                                 debugLines.add(Component.literal("  - None").withStyle(ChatFormatting.DARK_GRAY));
                         } else {
-                                cust.forEach((k, v) -> {
+                                List<String> sortedKeys = new ArrayList<>(cust.keySet());
+                                Collections.sort(sortedKeys);
+                                for (String k : sortedKeys) {
+                                        String v = cust.get(k);
                                         debugLines.add(Component.literal("  - " + k + ": ")
                                                         .withStyle(ChatFormatting.GRAY)
                                                         .append(Component.literal(v)
                                                                         .withStyle(ChatFormatting.LIGHT_PURPLE)));
-                                });
-                        }
-
-                        // --- INTERNAL STATES ---
-                        addHeader("ABILITY STATES");
-                        boolean hasStates = false;
-                        // Since IPlayerVariables doesn't provide a list of all states, we'll check
-                        // equipped/unlocked
-                        // and their dependencies. This is better than nothing.
-                        Set<ResourceLocation> allRelevant = new java.util.HashSet<>(vars.getUnlockedAbilities());
-                        for (mc.sayda.creraces.ability.AbilitySlot s : mc.sayda.creraces.ability.AbilitySlot.values()) {
-                                ResourceLocation id = vars.getAbilityInSlot(s);
-                                if (id != null)
-                                        allRelevant.add(id);
-                        }
-
-                        for (ResourceLocation id : allRelevant) {
-                                double state = vars.getPersistentState(id);
-                                if (state != 0) {
-                                        hasStates = true;
-                                        debugLines.add(Component.literal("  " + id.toString() + ": ")
-                                                        .withStyle(ChatFormatting.GRAY)
-                                                        .append(Component.literal(String.format("%.2f", state))
-                                                                        .withStyle(ChatFormatting.AQUA)));
                                 }
                         }
-                        if (!hasStates) {
+
+                        // --- ABILITY STATES (Dynamic) ---
+                        addHeader("ABILITY STATES");
+                        CompoundTag nbt = vars.serialize();
+                        CompoundTag states = nbt.getCompound("abilityStates");
+                        if (states.isEmpty()) {
                                 debugLines.add(Component.literal("  - None").withStyle(ChatFormatting.DARK_GRAY));
+                        } else {
+                                List<String> sortedKeys = new ArrayList<>(states.getAllKeys());
+                                Collections.sort(sortedKeys);
+                                for (String key : sortedKeys) {
+                                        double stateValue = states.getDouble(key);
+                                        debugLines.add(Component.literal("  " + key + ": ")
+                                                        .withStyle(ChatFormatting.GRAY)
+                                                        .append(Component.literal(String.format("%.2f", stateValue))
+                                                                        .withStyle(ChatFormatting.AQUA)));
+                                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "ability_state", key,
+                                                        String.valueOf(stateValue)));
+                                }
                         }
 
-                        // --- ABILITIES & SLOTS ---
-                        addHeader("ABILITIES & SLOTS");
-                        debugLines.add(Component.literal("  Slots: ").withStyle(ChatFormatting.GRAY)
-                                        .append(Objects.requireNonNull(
-                                                        formatSlot(vars, mc.sayda.creraces.ability.AbilitySlot.A1)))
-                                        .append(" ")
-                                        .append(Objects.requireNonNull(
-                                                        formatSlot(vars, mc.sayda.creraces.ability.AbilitySlot.A2)))
-                                        .append(" ")
-                                        .append(Objects.requireNonNull(
-                                                        formatSlot(vars, mc.sayda.creraces.ability.AbilitySlot.A3)))
-                                        .append(" ")
-                                        .append(Objects.requireNonNull(
-                                                        formatSlot(vars, mc.sayda.creraces.ability.AbilitySlot.A4)))
-                                        .append(" ")
-                                        .append(Objects.requireNonNull(
-                                                        formatSlot(vars, mc.sayda.creraces.ability.AbilitySlot.A5))));
-
-                        debugLines.add(Component.literal("  Unlocked:").withStyle(ChatFormatting.GRAY));
+                        // --- ABILITIES ---
+                        addHeader("ABILITIES");
+                        debugLines.add(Component.literal("    Unlocked:").withStyle(ChatFormatting.GRAY));
                         Set<ResourceLocation> unlocked = vars.getUnlockedAbilities();
                         if (unlocked.isEmpty()) {
                                 debugLines.add(Component.literal("    - None").withStyle(ChatFormatting.DARK_GRAY));
                         } else {
-                                for (ResourceLocation ability : unlocked) {
+                                List<ResourceLocation> sortedUnlocked = new ArrayList<>(unlocked);
+                                sortedUnlocked.sort(Comparator.comparing(ResourceLocation::toString));
+                                for (ResourceLocation ability : sortedUnlocked) {
                                         debugLines.add(Component.literal("    - " + ability.toString())
                                                         .withStyle(ChatFormatting.YELLOW));
                                 }
@@ -412,13 +544,6 @@ public class DebugScreen extends Screen {
                                 ChatFormatting.GOLD));
         }
 
-        private Component formatSlot(IPlayerVariables vars, mc.sayda.creraces.ability.AbilitySlot slot) {
-                ResourceLocation abilityId = vars.getAbilityInSlot(slot);
-                double state = abilityId != null ? vars.getPersistentState(abilityId) : 0.0;
-                return Component.literal(slot.name() + "(" + String.format("%.0f", state) + ")")
-                                .withStyle(state > 0 ? ChatFormatting.WHITE : ChatFormatting.DARK_GRAY);
-        }
-
         @Override
         @SuppressWarnings("null")
         public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
@@ -432,27 +557,44 @@ public class DebugScreen extends Screen {
                 int listTop = 25;
                 int listBottom = this.height - 45;
 
-                // Draw Panel Background
-                graphics.fill(listLeft - 5, listTop - 5, listLeft + listWidth + 5, listBottom + 5, 0xAA000000);
-                graphics.renderOutline(listLeft - 5, listTop - 5, listWidth + 10, (listBottom - listTop) + 10,
-                                0xAA888888);
+                // Draw Panel // Background for list
+                graphics.fill(listLeft, listTop, listLeft + listWidth, listBottom, 0x88000000);
+                graphics.renderOutline(listLeft, listTop, listWidth, listBottom - listTop, 0xFFAAAAAA);
 
-                int entryHeight = 10;
-                int totalHeight = debugLines.size() * entryHeight;
-
-                // Clamp scroll
-                int maxScroll = Math.max(0, totalHeight - (listBottom - listTop));
-                this.scrollAmount = Mth.clamp(this.scrollAmount, 0, maxScroll);
+                // Calculations for clipping and scrolling
+                int totalHeight = debugLines.size() * LINE_HEIGHT;
+                maxScroll = Math.max(0, totalHeight - (listBottom - listTop));
+                scrollAmount = Mth.clamp(scrollAmount, 0, maxScroll);
 
                 graphics.enableScissor(listLeft, listTop, listLeft + listWidth, listBottom);
                 PoseStack pose = graphics.pose();
                 pose.pushPose();
-                pose.translate(0, -this.scrollAmount, 0);
 
-                int y = listTop;
-                for (Component line : debugLines) {
-                        graphics.drawString(this.font, line, listLeft + 5, y, 0xFFFFFF);
-                        y += entryHeight;
+                int startLine = (int) (scrollAmount / LINE_HEIGHT);
+                int endLine = Math.min(debugLines.size() - 1, startLine + (listBottom - listTop) / LINE_HEIGHT + 1);
+
+                for (int i = startLine; i <= endLine; i++) {
+                        Component line = debugLines.get(i);
+                        int currentY = listTop + (i * LINE_HEIGHT) - (int) scrollAmount;
+
+                        // Hover highlight
+                        if (mouseX >= listLeft && mouseX <= listLeft + listWidth && mouseY >= currentY
+                                        && mouseY < currentY + LINE_HEIGHT && mouseY >= listTop
+                                        && mouseY <= listBottom) {
+                                graphics.fill(listLeft, currentY, listLeft + listWidth, currentY + LINE_HEIGHT,
+                                                0x44FFFFFF);
+                        }
+
+                        // Selection highlight
+                        for (LineMetadata meta : lineMetadata) {
+                                if (meta.index == i && selectedLine == meta) {
+                                        graphics.fill(listLeft, currentY, listLeft + listWidth, currentY + LINE_HEIGHT,
+                                                        0x66FFFFFF);
+                                        break;
+                                }
+                        }
+
+                        graphics.drawString(this.font, line, listLeft + 5, currentY + (LINE_HEIGHT - 9) / 2, 0xFFFFFF);
                 }
 
                 pose.popPose();
@@ -467,12 +609,108 @@ public class DebugScreen extends Screen {
                         graphics.fill(scrollbarX, barTop, scrollbarX + 3, barTop + barHeight, 0xAAFFFFFF);
                 }
 
-                super.render(graphics, mouseX, mouseY, partialTick);
+                if (selectedLine != null) {
+                        graphics.pose().pushPose();
+                        graphics.pose().translate(0, 0, 100);
+
+                        // Editor background (Tighter fit)
+                        graphics.fill(this.width / 2 - 110, this.height - 85, this.width / 2 + 110, this.height - 38,
+                                        0xFF000000);
+                        graphics.renderOutline(this.width / 2 - 110, this.height - 85, 220, 47, 0xFFAAAAAA);
+
+                        String labelStr = "Edit " + selectedLine.key + ":";
+                        graphics.drawString(this.font, labelStr, this.width / 2 - 100, this.height - 78, 0xFFD700);
+
+                        // Render widgets inside the Z-translation block so they are on top of the black
+                        // box
+                        super.render(graphics, mouseX, mouseY, partialTick);
+
+                        graphics.pose().popPose();
+                } else {
+                        super.render(graphics, mouseX, mouseY, partialTick);
+                }
+        }
+
+        @Override
+        public boolean mouseClicked(double mouseX, double mouseY, int button) {
+                // If editor is visible, check if click is inside editor bounds
+                if (selectedLine != null) {
+                        if (mouseX >= this.width / 2 - 110 && mouseX <= this.width / 2 + 110
+                                        && mouseY >= this.height - 85 && mouseY <= this.height - 38) {
+                                return super.mouseClicked(mouseX, mouseY, button);
+                        }
+                }
+
+                int listWidth = Math.min(this.width - 40, 400);
+                int listLeft = (this.width - listWidth) / 2;
+                int listTop = 25;
+                int listBottom = this.height - 45;
+
+                if (mouseX >= listLeft && mouseX <= listLeft + listWidth && mouseY >= listTop && mouseY <= listBottom) {
+                        double clickedY = mouseY - listTop + scrollAmount;
+                        int entryIndex = (int) (clickedY / LINE_HEIGHT);
+
+                        // Find metadata for this index
+                        for (LineMetadata meta : lineMetadata) {
+                                if (meta.index == entryIndex) {
+                                        selectedLine = meta;
+                                        editBox.visible = true;
+                                        applyButton.visible = true;
+                                        cancelButton.visible = true;
+                                        editBox.setValue(java.util.Objects.requireNonNull(meta.currentValue));
+                                        editBox.setFocused(true);
+                                        this.setFocused(editBox);
+                                        editBox.setCursorPosition(editBox.getValue().length());
+                                        return true;
+                                }
+                        }
+
+                        cancelEdit();
+                }
+
+                return super.mouseClicked(mouseX, mouseY, button);
+        }
+
+        @Override
+        public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+                if (selectedLine != null) {
+                        if (keyCode == 257 || keyCode == 335) { // Enter or Numpad Enter
+                                applyEdit();
+                                return true;
+                        }
+                        if (keyCode == 256) { // Escape
+                                cancelEdit();
+                                return true;
+                        }
+                }
+                return super.keyPressed(keyCode, scanCode, modifiers);
+        }
+
+        @Override
+        public boolean charTyped(char codePoint, int modifiers) {
+                if (selectedLine != null && editBox.charTyped(codePoint, modifiers)) {
+                        return true;
+                }
+                return super.charTyped(codePoint, modifiers);
+        }
+
+        private static class LineMetadata {
+                final int index;
+                final String action;
+                final String key;
+                final String currentValue;
+
+                LineMetadata(int index, String action, String key, String currentValue) {
+                        this.index = index;
+                        this.action = action;
+                        this.key = key;
+                        this.currentValue = currentValue;
+                }
         }
 
         @Override
         public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-                this.scrollAmount -= delta * 10;
+                this.scrollAmount -= delta * 20; // Increased sensitivity slightly
                 return true;
         }
 

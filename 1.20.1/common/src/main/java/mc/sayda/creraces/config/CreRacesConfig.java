@@ -11,6 +11,7 @@ public class CreRacesConfig {
     public static Supplier<Double> MINI_CRAFTING_DISTANCE_SQR = () -> 64.0;
     public static Supplier<Long> MINI_PLACEMENT_SPAM_THRESHOLD_MS = () -> 50L;
     public static Supplier<Double> MINI_BLOCK_REACH_MARGIN = () -> 1.5;
+    public static Supplier<Boolean> MINI_BLOCK_WATER_RESISTANT = () -> true;
     public static Supplier<Integer> MICRO_BLOCK_LIGHT_PER_TORCH = () -> 5;
     public static Supplier<Integer> MICRO_BLOCK_MAX_LIGHT = () -> 15;
 
@@ -74,13 +75,7 @@ public class CreRacesConfig {
     public static Supplier<Integer> NETWORK_TEAM_NAME_MAX_LEN = () -> 16;
     public static Supplier<Integer> NETWORK_PLAYER_NAME_MAX_LEN = () -> 16;
     public static Supplier<Double> RACIAL_AD_MULTIPLIER = () -> 0.002;
-    public static Supplier<Double> RESOURCE_MIN_CAPACITY = () -> 10.0;
     public static Supplier<Long> RESOURCE_DECAY_GRACE_PERIOD = () -> 400L;
-    public static Supplier<Double> MANA_AP_SCALING = () -> 0.3;
-    public static Supplier<Double> MANA_REGEN = () -> 0.1;
-    public static Supplier<Double> ENERGY_REGEN = () -> 0.25;
-    public static Supplier<Double> GRIT_DECAY = () -> 0.25;
-    public static Supplier<Double> RAGE_DECAY = () -> 0.25;
     public static Supplier<Integer> PASSIVE_EXECUTION_INTERVAL = () -> 20;
     public static Supplier<Double> SUNLIGHT_EQUIPMENT_BREAK_CHANCE = () -> 0.01;
     public static Supplier<Integer> SUNLIGHT_BURN_SECONDS = () -> 5;
@@ -114,5 +109,5 @@ public class CreRacesConfig {
     public static Supplier<Boolean> ENGINE_POPUPS_ENABLED = () -> true;
     public static Supplier<Double> REMAINS_HEALTH = () -> 10.0;
     public static Supplier<Integer> REMAINS_DECAY_TIME = () -> 1200;
-    public static Supplier<Double> MAX_SOULS = () -> 9.0;
+    public static Supplier<Double> MAX_SOUL = () -> 9.0;
 }

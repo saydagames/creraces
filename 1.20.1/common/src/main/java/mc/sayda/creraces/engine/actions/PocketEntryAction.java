@@ -54,7 +54,7 @@ public class PocketEntryAction implements ActionRegistry.RaceAction {
         if (!(player instanceof ServerPlayer serverPlayer))
             return true;
 
-        ServerLevel pocketWorld = serverPlayer.server.getLevel(ResourceKey.create(Registries.DIMENSION, dimension));
+        ServerLevel pocketWorld = serverPlayer.server.getLevel(ResourceKey.create(Registries.DIMENSION, java.util.Objects.requireNonNull(dimension)));
         if (pocketWorld == null) {
             CreRaces.LOGGER.error("Could not find pocket dimension: {}", dimension);
             return true;
@@ -63,9 +63,9 @@ public class PocketEntryAction implements ActionRegistry.RaceAction {
         DataUtils.getVariables(serverPlayer).ifPresent(vars -> {
             if (serverPlayer.level().dimension().location().equals(dimension)) {
                 // Return to Entry Dimension
-                double rx = vars.getReturnX() + returnOffsetX.evaluate(player, target);
-                double ry = vars.getReturnY() + returnOffsetY.evaluate(player, target);
-                double rz = vars.getReturnZ() + returnOffsetZ.evaluate(player, target);
+                double rx = vars.getReturnX() + returnOffsetX.evaluate(player, target, slot);
+                double ry = vars.getReturnY() + returnOffsetY.evaluate(player, target, slot);
+                double rz = vars.getReturnZ() + returnOffsetZ.evaluate(player, target, slot);
                 teleport(serverPlayer, vars.getReturnDim(), rx, ry, rz);
                 return;
             }
@@ -86,7 +86,7 @@ public class PocketEntryAction implements ActionRegistry.RaceAction {
             vars.setReturnX(serverPlayer.getX());
             vars.setReturnY(serverPlayer.getY());
             vars.setReturnZ(serverPlayer.getZ());
-            vars.setReturnDim(serverPlayer.level().dimension().location().toString());
+            vars.setReturnDim(java.util.Objects.requireNonNull(serverPlayer.level().dimension().location()).toString());
 
             double tx = vars.getPocketX();
             double ty = vars.getPocketY();
@@ -108,9 +108,9 @@ public class PocketEntryAction implements ActionRegistry.RaceAction {
                 final double finalTx = tx;
                 final double finalTy = ty;
                 final double finalTz = tz;
-                double sOffX = structureOffsetX.evaluate(player, target);
-                double sOffY = structureOffsetY.evaluate(player, target);
-                double sOffZ = structureOffsetZ.evaluate(player, target);
+                double sOffX = structureOffsetX.evaluate(player, target, slot);
+                double sOffY = structureOffsetY.evaluate(player, target, slot);
+                double sOffZ = structureOffsetZ.evaluate(player, target, slot);
 
                 StructureTemplate template = pocketWorld.getStructureManager().getOrCreate(structure);
                 if (template != null) {
@@ -124,9 +124,9 @@ public class PocketEntryAction implements ActionRegistry.RaceAction {
                 vars.setHasPocket(true);
 
                 // Initialize stable spawn point for this host's pocket
-                vars.setPocketSpawnX(tx + spawnOffsetX.evaluate(player, target) + sOffX);
-                vars.setPocketSpawnY(ty + spawnOffsetY.evaluate(player, target) + sOffY);
-                vars.setPocketSpawnZ(tz + spawnOffsetZ.evaluate(player, target) + sOffZ);
+                vars.setPocketSpawnX(tx + spawnOffsetX.evaluate(player, target, slot) + sOffX);
+                vars.setPocketSpawnY(ty + spawnOffsetY.evaluate(player, target, slot) + sOffY);
+                vars.setPocketSpawnZ(tz + spawnOffsetZ.evaluate(player, target, slot) + sOffZ);
             }
 
             // Teleport to the saved stable spawn point

@@ -1,15 +1,15 @@
 {
-    "name": "ability.creraces.foxfire.name",
-    "description": "ability.creraces.foxfire.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:textures/item/blaze_powder.png",
-    "cooldown": 0,
-    "cost": 0,
-    "persistent": false,
-    "race": [
+    "creraces:name": "ability.creraces.foxfire.name",
+    "creraces:description": "ability.creraces.foxfire.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/blaze_powder.png",
+    "creraces:cooldown": 0,
+    "creraces:cost": 0,
+    "creraces:persistent": false,
+    "creraces:race": [
         "creraces:kitsune"
     ],
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:toggle_state",
             "state": "foxfire",
@@ -49,7 +49,9 @@
             ]
         }
     ],
-    "wiki_page": "state:Foxfire"
+    "creraces:wiki_page": "Ability:Foxfire"
 }
+
+
 
 

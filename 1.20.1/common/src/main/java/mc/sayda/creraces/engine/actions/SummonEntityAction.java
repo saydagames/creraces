@@ -78,7 +78,7 @@ public class SummonEntityAction implements ActionRegistry.RaceAction {
         // Resolve spawn position
         BlockPos spawnPos;
         if (useRaycast) {
-            double rRange = rayRange.evaluate(player, target);
+            double rRange = rayRange.evaluate(player, target, slot);
             BlockHitResult hit = serverLevel.clip(new ClipContext(
                     player.getEyePosition(1f),
                     player.getEyePosition(1f).add(player.getViewVector(1f).scale(rRange)),
@@ -91,7 +91,7 @@ public class SummonEntityAction implements ActionRegistry.RaceAction {
             spawnPos = hit.getBlockPos().above();
         } else {
             BlockPos base = (useTarget && target != null) ? target.blockPosition() : player.blockPosition();
-            double r = range.evaluate(player, target);
+            double r = range.evaluate(player, target, slot);
             if (r > 0) {
                 double dx = (player.getRandom().nextDouble() - 0.5) * r * 2.0;
                 double dz = (player.getRandom().nextDouble() - 0.5) * r * 2.0;
@@ -115,7 +115,7 @@ public class SummonEntityAction implements ActionRegistry.RaceAction {
         }
 
         // Apply Y offset
-        int yOff = (int) Math.round(offsetY.evaluate(player, target));
+        int yOff = (int) Math.round(offsetY.evaluate(player, target, slot));
         if (yOff != 0)
             spawnPos = spawnPos.above(yOff);
 

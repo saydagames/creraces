@@ -2,12 +2,11 @@ package mc.sayda.creraces.util;
 
 import mc.sayda.creraces.registry.ModAttributes;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 
 /**
  * Utility class for LoL-style combat attribute resolution.
- * Implements "Smart Getters" that prioritize Apothic Attributes (Forge) 
+ * Implements "Smart Getters" that prioritize Apothic Attributes (Forge)
  * but fall back to CreRaces equivalents on Fabric or standalone Forge.
  */
 public class CombatAttributes {
@@ -41,14 +40,5 @@ public class CombatAttributes {
 
     public static double getMagicShred(LivingEntity entity) {
         return entity.getAttributeValue(ModAttributes.resolve(ModAttributes.MAGIC_SHRED));
-    }
-
-    /**
-     * Resolves an attribute, preferring Apothic Attributes if the mod is loaded.
-     * @deprecated Use {@link ModAttributes#resolve(dev.architectury.registry.registries.RegistrySupplier)}
-     */
-    @Deprecated
-    private static Attribute resolve(String name, Attribute fallback) {
-        return fallback;
     }
 }

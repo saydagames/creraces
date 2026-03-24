@@ -4,7 +4,6 @@ import dev.architectury.platform.Platform;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
 import mc.sayda.creraces.CreRaces;
-import mc.sayda.creraces.config.CreRacesConfig;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -50,10 +49,7 @@ public class ModAttributes {
                                         10.0)
                                         .setSyncable(true)); // Percentage
 
-        public static final RegistrySupplier<Attribute> ARMOR_PENETRATION = ATTRIBUTES.register("armor_penetration",
-                        () -> new RangedAttribute("attribute.creraces.armor_penetration", 0.0, 0.0,
-                                        10.0)
-                                        .setSyncable(true)); // Percentage
+
 
         public static final RegistrySupplier<Attribute> ABILITY_HASTE = ATTRIBUTES.register("ability_haste",
                         () -> new RangedAttribute("attribute.creraces.ability_haste", 0.0, 0.0,
@@ -62,17 +58,17 @@ public class ModAttributes {
 
         // Regeneration & Decay
         public static final RegistrySupplier<Attribute> MANA_REGEN = ATTRIBUTES.register("mana_regeneration",
-                        () -> new RangedAttribute("attribute.creraces.mana_regen", CreRacesConfig.MANA_REGEN.get(), 0.0, 1000.0).setSyncable(true));
+                        () -> new RangedAttribute("attribute.creraces.mana_regen", 0.1, 0.0, 1000.0).setSyncable(true));
 
         public static final RegistrySupplier<Attribute> ENERGY_REGEN = ATTRIBUTES.register("energy_regeneration",
-                        () -> new RangedAttribute("attribute.creraces.energy_regen", CreRacesConfig.ENERGY_REGEN.get(), 0.0, 1000.0)
+                        () -> new RangedAttribute("attribute.creraces.energy_regen", 0.25, 0.0, 1000.0)
                                         .setSyncable(true));
 
         public static final RegistrySupplier<Attribute> GRIT_DECAY = ATTRIBUTES.register("grit_decay",
-                        () -> new RangedAttribute("attribute.creraces.grit_decay", CreRacesConfig.GRIT_DECAY.get(), 0.0, 1000.0).setSyncable(true));
+                        () -> new RangedAttribute("attribute.creraces.grit_decay", 0.25, 0.0, 1000.0).setSyncable(true));
 
         public static final RegistrySupplier<Attribute> RAGE_DECAY = ATTRIBUTES.register("rage_decay",
-                        () -> new RangedAttribute("attribute.creraces.rage_decay", CreRacesConfig.RAGE_DECAY.get(), 0.0, 1000.0)
+                        () -> new RangedAttribute("attribute.creraces.rage_decay", 0.25, 0.0, 1000.0)
                                         .setSyncable(true));
 
         public static final RegistrySupplier<Attribute> DOUBLE_JUMP = ATTRIBUTES.register("double_jump",
@@ -130,7 +126,7 @@ public class ModAttributes {
                 String apothicName = switch (internalName) {
                         case "crit_rate" -> "crit_chance";
                         case "ability_haste" -> "cooldown_reduction";
-                        case "armor_penetration" -> "armor_shred";
+
                         case "attack_damage" -> "attack_damage"; // attributeslib:attack_damage
                         case "magic_resist" -> "magic_resistance";
                         case "healing_received" -> "healing_received";
@@ -156,7 +152,7 @@ public class ModAttributes {
                 String apothicName = switch (path) {
                         case "crit_rate" -> "crit_chance";
                         case "ability_haste" -> "cooldown_reduction";
-                        case "armor_penetration" -> "armor_shred";
+
                         case "magic_resist" -> "magic_resistance";
                         case "healing_received" -> "healing_received";
                         default -> path;

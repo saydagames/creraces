@@ -110,8 +110,17 @@ public class MicroBlock extends BaseEntityBlock {
     // ─── Solidity & Occlusion ───────────────────────────────────────────────────
 
     @Override
-    public boolean isCollisionShapeFullBlock(BlockState state, BlockGetter level, BlockPos pos) {
+    public boolean isCollisionShapeFullBlock(@javax.annotation.Nonnull BlockState state,
+            @javax.annotation.Nonnull BlockGetter level, @javax.annotation.Nonnull BlockPos pos) {
         return false; // Grid is rarely a full block
+    }
+
+    @Override
+    public boolean canBeReplaced(BlockState state, net.minecraft.world.level.material.Fluid fluid) {
+        if (mc.sayda.creraces.config.CreRacesConfig.MINI_BLOCK_WATER_RESISTANT.get()) {
+            return false;
+        }
+        return super.canBeReplaced(state, fluid);
     }
 
     @Override
@@ -183,16 +192,23 @@ public class MicroBlock extends BaseEntityBlock {
      */
 
     @Override
-    public void playerDestroy(Level level, Player player, BlockPos pos,
-            BlockState state, @Nullable BlockEntity blockEntity,
-            ItemStack tool) {
+    public void playerDestroy(@javax.annotation.Nonnull Level level, @javax.annotation.Nonnull Player player,
+            @javax.annotation.Nonnull BlockPos pos,
+            @javax.annotation.Nonnull BlockState state, @Nullable BlockEntity blockEntity,
+            @javax.annotation.Nonnull ItemStack tool) {
         if (!level.isClientSide && blockEntity instanceof MicroBlockEntity micro) {
             // Drop regular mini-blocks
             micro.forEachOccupied((x, y, z, slotState) -> {
-                ItemStack drop = new ItemStack(slotState.getBlock().asItem());
-                if (!drop.isEmpty()) {
-                    popResource(level, pos, drop);
+                net.minecraft.world.level.ItemLike itemLike = slotState.getBlock().asItem();
+                if (itemLike != net.minecraft.world.item.Items.AIR) {
+                    @SuppressWarnings("null")
+                    @javax.annotation.Nonnull
+                    ItemStack drop = new ItemStack(itemLike);
+                    if (!drop.isEmpty()) {
+                        popResource(level, pos, drop);
+                    }
                 }
+                    
             });
             // Inventories are handled by onRemove
         }

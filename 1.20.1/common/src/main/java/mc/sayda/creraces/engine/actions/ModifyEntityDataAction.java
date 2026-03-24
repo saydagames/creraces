@@ -52,7 +52,7 @@ public class ModifyEntityDataAction implements ActionRegistry.RaceAction {
             return true;
         }
 
-        double val = value.evaluate(player, target);
+        double val = value.evaluate(player, target, slot);
         double current = persistentData.getDouble(key);
         double newValue = current;
 

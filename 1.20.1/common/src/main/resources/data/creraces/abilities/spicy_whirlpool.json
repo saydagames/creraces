@@ -1,17 +1,17 @@
 {
-    "name": "ability.creraces.spicy_whirlpool.name",
-    "description": "ability.creraces.spicy_whirlpool.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:textures/item/magma_cream.png",
-    "cooldown": 600,
-    "cost": 0,
-    "race": [
+    "creraces:name": "ability.creraces.spicy_whirlpool.name",
+    "creraces:description": "ability.creraces.spicy_whirlpool.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/magma_cream.png",
+    "creraces:cooldown": 600,
+    "creraces:cost": 0,
+    "creraces:race": [
         "creraces:mermaid"
     ],
-    "condition": {
+    "creraces:condition": {
         "type": "creraces:in_water"
     },
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:aoe",
             "radius": 5.0,
@@ -40,7 +40,9 @@
             "count": 30
         }
     ],
-    "wiki_page": "state:Spicy_Whirlpool"
+    "creraces:wiki_page": "Ability:Spicy_Whirlpool"
 }
+
+
 
 

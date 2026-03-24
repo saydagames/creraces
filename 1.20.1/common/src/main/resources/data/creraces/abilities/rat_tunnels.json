@@ -1,14 +1,14 @@
 {
-    "name": "ability.creraces.rat_tunnels.name",
-    "description": "ability.creraces.rat_tunnels.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:textures/item/rabbit_hide.png",
-    "cooldown": 0,
-    "cost": 5,
-    "race": [
+    "creraces:name": "ability.creraces.rat_tunnels.name",
+    "creraces:description": "ability.creraces.rat_tunnels.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/rabbit_hide.png",
+    "creraces:cooldown": 0,
+    "creraces:cost": 5,
+    "creraces:race": [
         "creraces:ratkin"
     ],
-    "actions": [
+    "creraces:actions": [
                 {
                     "type": "creraces:conditional",
                     "condition": {
@@ -113,7 +113,9 @@
                     ]
                 }
     ],
-    "wiki_page": "state:Rat_Tunnels"
+    "creraces:wiki_page": "Ability:Rat_Tunnels"
 }
+
+
 
 

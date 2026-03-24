@@ -15,7 +15,6 @@
     "creraces:resource_type": "MANA",
     "creraces:max_resource": 100,
     "creraces:difficulty": 1,
-    "creraces:stacks_affect_resource": false,
     "creraces:gstate": "FEMALE",
     "creraces:is_spirit": true,
     "creraces:regeneration_multiplier": 1.1,

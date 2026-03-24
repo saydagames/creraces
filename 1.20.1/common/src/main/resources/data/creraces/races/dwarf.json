@@ -28,7 +28,7 @@
             "attribute": "minecraft:generic.armor",
             "value": {
                 "base": 2.0,
-                "scales_with": "ad",
+                "scales_with": "creraces:ad",
                 "factor": 0.01
             },
             "operation": "addition"

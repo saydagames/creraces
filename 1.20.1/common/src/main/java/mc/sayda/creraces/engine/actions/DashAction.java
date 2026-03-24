@@ -29,9 +29,9 @@ public class DashAction implements ActionRegistry.RaceAction {
     public boolean execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
-        double p = power.evaluate(player, target);
-        double ym = yMultiplier.evaluate(player, target);
-        double yb = yBoost.evaluate(player, target);
+        double p = power.evaluate(player, target, slot);
+        double ym = yMultiplier.evaluate(player, target, slot);
+        double yb = yBoost.evaluate(player, target, slot);
         Vec3 look = player.getLookAngle();
         Vec3 motion = player.getDeltaMovement();
 

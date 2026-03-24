@@ -1,11 +1,11 @@
 {
-    "name": "ability.creraces.water_breathing.name",
-    "description": "ability.creraces.water_breathing.description",
-    "type": "INNATE",
-    "icon": "minecraft:textures/item/pufferfish.png",
-    "cooldown": 0,
-    "cost": 0,
-    "actions": [
+    "creraces:name": "ability.creraces.water_breathing.name",
+    "creraces:description": "ability.creraces.water_breathing.description",
+    "creraces:type": "INNATE",
+    "creraces:icon": "minecraft:textures/item/pufferfish.png",
+    "creraces:cooldown": 0,
+    "creraces:cost": 0,
+    "creraces:actions": [
         {
             "type": "creraces:apply_effect",
             "effect": "minecraft:water_breathing",
@@ -15,13 +15,15 @@
             "visible": false
         }
     ],
-    "on_deactivate": [
+    "creraces:on_deactivate": [
         {
             "type": "creraces:remove_effect",
             "effect": "minecraft:water_breathing"
         }
     ],
-    "wiki_page": "state:Water_Breathing"
+    "creraces:wiki_page": "Ability:Water_Breathing"
 }
+
+
 
 

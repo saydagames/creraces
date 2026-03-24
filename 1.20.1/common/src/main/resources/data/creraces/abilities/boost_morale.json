@@ -1,14 +1,14 @@
 {
-    "name": "ability.creraces.boost_morale.name",
-    "description": "ability.creraces.boost_morale.description",
-    "type": "ACTIVE",
-    "icon": "minecraft:textures/item/golden_sword.png",
-    "cooldown": 2400,
-    "cost": 15,
-    "race": [
+    "creraces:name": "ability.creraces.boost_morale.name",
+    "creraces:description": "ability.creraces.boost_morale.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/golden_sword.png",
+    "creraces:cooldown": 2400,
+    "creraces:cost": 15,
+    "creraces:race": [
         "creraces:undead"
     ],
-    "actions": [
+    "creraces:actions": [
         {
             "type": "creraces:apply_effect",
             "effect": "minecraft:strength",
@@ -58,7 +58,9 @@
             ]
         }
     ],
-    "wiki_page": "state:Boost_Morale"
+    "creraces:wiki_page": "Ability:Boost_Morale"
 }
+
+
 
 

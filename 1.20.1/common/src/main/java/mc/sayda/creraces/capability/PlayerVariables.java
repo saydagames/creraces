@@ -30,9 +30,8 @@ public class PlayerVariables implements IPlayerVariables {
     private double rage = 0.0;
     private double energy = 0.0;
     private double grit = 0.0;
-    private double souls = 0.0;
+    private double soul = 0.0;
     private double passiveCooldown = 0.0;
-    private double stacks = 0.0;
     private final Map<ResourceLocation, Integer> cooldowns = new ConcurrentHashMap<>();
     private final Set<ResourceLocation> unlockedAbilities = ConcurrentHashMap.newKeySet();
     private final Map<AbilitySlot, ResourceLocation> equippedAbilities = new ConcurrentHashMap<>();
@@ -189,13 +188,13 @@ public class PlayerVariables implements IPlayerVariables {
     }
 
     @Override
-    public double getSouls() {
-        return souls;
+    public double getSoul() {
+        return soul;
     }
 
     @Override
-    public void setSouls(double souls) {
-        this.souls = souls;
+    public void setSoul(double soul) {
+        this.soul = soul;
     }
 
     @Override
@@ -220,20 +219,6 @@ public class PlayerVariables implements IPlayerVariables {
     @Override
     public void setPassiveCooldown(double ticks) {
         this.passiveCooldown = ticks;
-    }
-
-    // getResourceTimer / setResourceTimer removed from interface.
-    // Field retained only for save-file backward-compat (loaded from disk, never
-    // sent over network).
-
-    @Override
-    public double getStacks() {
-        return stacks;
-    }
-
-    @Override
-    public void setStacks(double stacks) {
-        this.stacks = stacks;
     }
 
     @Override
@@ -322,9 +307,8 @@ public class PlayerVariables implements IPlayerVariables {
         this.rage = 0;
         this.energy = 0;
         this.grit = 0;
-        this.souls = 0;
+        this.soul = 0;
         this.passiveCooldown = 0;
-        this.stacks = 0;
         this.cooldowns.clear();
         this.unlockedAbilities.clear();
         this.equippedAbilities.clear();
@@ -371,8 +355,6 @@ public class PlayerVariables implements IPlayerVariables {
         this.rage = 0;
         this.energy = 0;
         this.grit = 0;
-        this.souls = 0;
-        this.stacks = 0;
         this.passiveCooldown = 0;
 
         // Clear non-persistent cooldowns
@@ -718,7 +700,7 @@ public class PlayerVariables implements IPlayerVariables {
         tag.putDouble("rage", rage);
         tag.putDouble("energy", energy);
         tag.putDouble("grit", grit);
-        tag.putDouble("souls", souls);
+        tag.putDouble("soul", soul);
         tag.putLong("resourceTimer", resourceTimer);
 
         // Cooldowns ARE included in every sync so the HUD overlay counts down
@@ -792,7 +774,7 @@ public class PlayerVariables implements IPlayerVariables {
         // TODO: This feels cheep? What if others are added in the future, it would be
         // better if it can obtain them from a list or similar?
 
-        // Delta sync: omit resources (mana, rage, energy, grit, souls, stacks,
+        // Delta sync: omit resources (mana, rage, energy, grit, soul, stacks,
         // passiveCooldown).
         // The client predicts these every tick; a full sync fires on all discrete
         // events.
@@ -801,8 +783,7 @@ public class PlayerVariables implements IPlayerVariables {
         tag.remove("rage");
         tag.remove("energy");
         tag.remove("grit");
-        tag.remove("souls");
-        tag.remove("stacks");
+        tag.remove("soul");
         tag.remove("passiveCooldown");
         tag.remove("resourceTimer");
         return tag;
@@ -839,8 +820,8 @@ public class PlayerVariables implements IPlayerVariables {
             this.energy = tag.getDouble("energy");
         if (tag.contains("grit"))
             this.grit = tag.getDouble("grit");
-        if (tag.contains("souls"))
-            this.souls = tag.getDouble("souls");
+        if (tag.contains("soul"))
+            this.soul = tag.getDouble("soul");
 
         if (tag.contains("cooldowns", Tag.TAG_COMPOUND)) {
             this.cooldowns.clear();

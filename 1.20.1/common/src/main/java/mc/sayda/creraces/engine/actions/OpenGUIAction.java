@@ -47,7 +47,7 @@ public class OpenGUIAction implements ActionRegistry.RaceAction {
             case "ender_chest", "enderchest" -> openEnderChest(sp);
             case "inventory", "chest", "barrel", "furnace", "smoker", "blast_furnace", "loom", "cartography",
                     "grindstone", "stonecutter", "anvil" ->
-                openNearestContainer(sp, interactionPos);
+                openNearestContainer(sp, interactionPos, slot);
             case "race_selection", "race_menu" -> {
                 mc.sayda.creraces.network.BoundaryHandler.sendOpenSelection(sp);
                 yield true;
@@ -127,7 +127,7 @@ public class OpenGUIAction implements ActionRegistry.RaceAction {
     /**
      * Scans nearby blocks for a valid container and opens it.
      */
-    private boolean openNearestContainer(ServerPlayer player, @javax.annotation.Nullable BlockPos interactionPos) {
+    private boolean openNearestContainer(ServerPlayer player, @javax.annotation.Nullable BlockPos interactionPos, @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
         Level level = player.level();
         BlockPos origin = player.blockPosition();
 
@@ -136,18 +136,21 @@ public class OpenGUIAction implements ActionRegistry.RaceAction {
         boolean foundContainer = false;
 
         if (interactionPos != null) {
-            if (isMatchingContainer(level.getBlockState(interactionPos))) {
+            net.minecraft.world.level.block.state.BlockState state = level.getBlockState(interactionPos);
+            if (state != null && isMatchingContainer(state)) {
                 best = interactionPos;
                 foundContainer = true;
             }
         }
 
         if (!foundContainer && interactionPos == null) {
-            int rad = Math.max(1, (int) radius.evaluate(player));
-            for (BlockPos pos : BlockPos.betweenClosed(
-                    origin.offset(-rad, -rad, -rad),
-                    origin.offset(rad, rad, rad))) {
-                if (isMatchingContainer(level.getBlockState(pos))) {
+            int rad = Math.max(1, (int) radius.evaluate(player, null, slot));
+            BlockPos min = java.util.Objects.requireNonNull(origin.offset(-rad, -rad, -rad));
+            BlockPos max = java.util.Objects.requireNonNull(origin.offset(rad, rad, rad));
+            for (BlockPos pos : java.util.Objects.requireNonNull(BlockPos.betweenClosed(min, max))) {
+                if (pos == null) continue;
+                net.minecraft.world.level.block.state.BlockState state = level.getBlockState(pos);
+                if (state != null && isMatchingContainer(state)) {
                     double dist = pos.distSqr(origin);
                     if (dist < bestDist) {
                         bestDist = dist;
@@ -160,7 +163,7 @@ public class OpenGUIAction implements ActionRegistry.RaceAction {
 
         if (best == null) {
             CreRaces.LOGGER.debug("[OpenGUIAction] No container found within {} blocks of {}.",
-                    (int) radius.evaluate(player),
+                    (int) radius.evaluate(player, null, slot),
                     origin);
             return false;
         }

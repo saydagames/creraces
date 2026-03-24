@@ -12,7 +12,6 @@
     "creraces:name_texture": "creraces:textures/screens/harpy_text.png",
     "creraces:resource_type": "ENERGY",
     "creraces:max_resource": 100,
-    "creraces:stacks_affect_resource": false,
     "creraces:gstate": "FEMALE",
     "creraces:difficulty": 2,
     "creraces:immune_to_damage": [
@@ -76,7 +75,7 @@
             "name": "talon_strike_landing",
             "condition": {
                 "type": "creraces:state",
-                "state": "talon_strike",
+                "state": "creraces:talon_strike",
                 "value": 1.0
             },
             "actions": [
@@ -114,7 +113,7 @@
                 },
                 {
                     "type": "creraces:set_state",
-                    "state": "talon_strike",
+                    "state": "creraces:talon_strike",
                     "value": 0.0
                 }
             ]
@@ -131,7 +130,7 @@
                     },
                     {
                         "type": "creraces:state",
-                        "state": "talon_strike",
+                        "state": "creraces:talon_strike",
                         "value": 1.0
                     }
                 ]
@@ -139,7 +138,7 @@
             "actions": [
                 {
                     "type": "creraces:set_state",
-                    "state": "talon_strike",
+                    "state": "creraces:talon_strike",
                     "value": 0.0
                 }
             ]
@@ -159,13 +158,13 @@
                 "conditions": [
                     {
                         "type": "creraces:state",
-                        "state": "talon_strike",
+                        "state": "creraces:talon_strike",
                         "value": 0.0
                     },
                     {
                         "type": "creraces:cooldown",
                         "id": "creraces:flight_exhaustion",
-                        "operator": "\u003c=",
+                        "operator": "<=",
                         "value": 0
                     }
                 ]
@@ -183,7 +182,7 @@
                 },
                 {
                     "type": "creraces:set_cooldown",
-                    "state": "talon_strike",
+                    "state": "creraces:talon_strike",
                     "value": 0
                 }
             ]

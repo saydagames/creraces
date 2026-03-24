@@ -10,6 +10,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.lang.reflect.Method;
 import mc.sayda.creraces.engine.traits.AddonTrait;
+import mc.sayda.creraces.engine.GState;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * Bridges CreRaces racial customizations with Twilight Lib's cosmetic system.
@@ -168,7 +170,7 @@ public class CosmeticIncidents {
             // we wipe it upon race reset. This covers both racial traits and Mirror
             // selections.
             if (!owned.contains(id)) {
-                mc.sayda.creraces.CreRaces.LOGGER.info("[CreRaces] Deactivating non-owned addon on reset: {}", id);
+                mc.sayda.creraces.CreRaces.LOGGER.debug("[CreRaces] Deactivating non-owned addon on reset: {}", id);
                 setAddonActiveRobust(addons, id, false, true);
             }
         }
@@ -184,7 +186,12 @@ public class CosmeticIncidents {
         for (Map.Entry<String, String> entry : custMap.entrySet()) {
             result = result.replace("{" + entry.getKey() + "}", entry.getValue());
         }
-        if (race != null && result.contains("{")) {
+
+        // Handle Race placeholder
+        if (race != null) {
+            result = result.replace("{race}", race.id().toString());
+            result = result.replace("{gender}", race.getGState() == GState.FEMALE ? "female" : "male");
+            
             for (RaceCustomization cust : race.customization()) {
                 String placeholder = "{" + cust.id() + "}";
                 if (result.contains(placeholder)) {
@@ -192,10 +199,26 @@ public class CosmeticIncidents {
                 }
             }
         }
+        
         if (result.contains("{")) {
             result = result.replaceAll("\\{[^}]*\\}", "0");
         }
         return result;
+    }
+
+    public static String resolvePlaceholders(net.minecraft.world.entity.player.Player player, String template) {
+        return mc.sayda.creraces.capability.DataUtils.getVariables(player).map(vars -> {
+            ResourceLocation raceId = vars.getRace();
+            Race race = RaceRegistry.get(raceId);
+            String result = resolvePlaceholders(template, vars.getCustomizations(), race);
+            
+            // Special field injections for fields not in custMap
+            result = result.replace("{race}", raceId.toString());
+            result = result.replace("{gstate}", String.valueOf(vars.getGState()));
+            result = result.replace("{gender}", vars.getGState() == 1 ? "female" : "male");
+            
+            return result;
+        }).orElse(template);
     }
 
     private static int resolveColor(String colorSource, Map<String, String> custMap) {

@@ -53,7 +53,7 @@ public class FeatherProjectile extends ThrowableItemProjectile {
     @Override
     @Nonnull
     public EntityDimensions getDimensions(@Nonnull net.minecraft.world.entity.Pose pose) {
-        return EntityDimensions.fixed(0.1f, 0.1f);
+        return java.util.Objects.requireNonNull(EntityDimensions.fixed(0.1f, 0.1f));
     }
 
     public void setRecalling(boolean recalling) {
@@ -144,15 +144,17 @@ public class FeatherProjectile extends ThrowableItemProjectile {
             }
 
             net.minecraft.world.entity.Entity owner = this.getOwner();
-            if (owner instanceof LivingEntity shooter && !mc.sayda.creraces.team.RaceTeamManager.canHurt(living, shooter)) {
+            if (!(owner instanceof LivingEntity shooter)) {
+                return;
+            }
+            if (!mc.sayda.creraces.team.RaceTeamManager.canHurt(living, shooter)) {
                 return;
             }
 
-            net.minecraft.world.damagesource.DamageSource source = this.damageSources().thrown(this, owner);
-            if (source != null) {
-                living.hurt(source, this.damage);
-                hitEntities.add(living.getId());
-            }
+            net.minecraft.world.damagesource.DamageSource source = java.util.Objects.requireNonNull(this.damageSources().thrown(this, shooter));
+            living.hurt(source, this.damage); // Assuming damage is still a float, not an attribute
+            living.knockback(0.4D, java.util.Objects.requireNonNull(this.getDeltaMovement().x), java.util.Objects.requireNonNull(this.getDeltaMovement().z));
+            hitEntities.add(living.getId());
             // Passthrough: NO discard() here
         }
     }
@@ -181,18 +183,18 @@ public class FeatherProjectile extends ThrowableItemProjectile {
                 return;
             }
 
-            Vec3 target = owner.position().add(0, 1.0, 0); // Aim for waist
-            Vec3 dir = target.subtract(this.position()).normalize();
+            Vec3 target = java.util.Objects.requireNonNull(owner.position().add(0, 1.0, 0)); // Aim for waist
+            Vec3 dir = java.util.Objects.requireNonNull(target.subtract(this.position()).normalize());
             double speed = 1.2; // Return speed (increased for snappiness)
-            Vec3 movement = dir.scale(speed);
+            Vec3 movement = java.util.Objects.requireNonNull(dir.scale(speed));
             this.setDeltaMovement(movement);
             
             // Use direct positioning for snappy, block-ignoring movement
             this.setPos(this.getX() + movement.x, this.getY() + movement.y, this.getZ() + movement.z);
             
             // Check for collision with entities manually
-            AABB search = this.getBoundingBox().inflate(0.5);
-            for (LivingEntity e : this.level().getEntitiesOfClass(LivingEntity.class, search)) {
+            AABB search = java.util.Objects.requireNonNull(this.getBoundingBox().inflate(0.5));
+            for (LivingEntity e : java.util.Objects.requireNonNull(this.level().getEntitiesOfClass(LivingEntity.class, search))) {
                 if (e != owner) {
                     this.onHitEntity(new EntityHitResult(e));
                 }

@@ -17,7 +17,7 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
 
     public interface ParticlePattern {
         void spawn(ServerLevel level, Player player, net.minecraft.world.entity.LivingEntity target,
-                ParticleOptions particle, int count, double speed, double spin);
+                ParticleOptions particle, int count, double speed, double spin, @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot);
 
         static ParticlePattern fromJson(JsonObject json) {
             String type = GsonHelper.getAsString(json, "type", "circle");
@@ -58,9 +58,9 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
 
         @Override
         public void spawn(ServerLevel level, Player player, net.minecraft.world.entity.LivingEntity target,
-                ParticleOptions particle, int count, double speed, double spin) {
-            double r = radius.evaluate(player, target);
-            int pCount = (int) points.evaluate(player, target);
+                ParticleOptions particle, int count, double speed, double spin, @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
+            double r = radius.evaluate(player, target, slot);
+            int pCount = (int) points.evaluate(player, target, slot);
             if (pCount <= 0)
                 return;
 
@@ -97,9 +97,9 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
 
         @Override
         public void spawn(ServerLevel level, Player player, net.minecraft.world.entity.LivingEntity target,
-                ParticleOptions particle, int count, double speed, double spin) {
-            double r = radius.evaluate(player, target);
-            int pCount = (int) points.evaluate(player, target);
+                ParticleOptions particle, int count, double speed, double spin, @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
+            double r = radius.evaluate(player, target, slot);
+            int pCount = (int) points.evaluate(player, target, slot);
             if (pCount <= 0)
                 return;
 
@@ -132,11 +132,11 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
 
         @Override
         public void spawn(ServerLevel level, Player player, net.minecraft.world.entity.LivingEntity target,
-                ParticleOptions particle, int count, double speed, double spin) {
-            double r = radius.evaluate(player, target);
-            double h = height.evaluate(player, target);
-            int pCount = (int) points.evaluate(player, target);
-            double rot = rotations.evaluate(player, target);
+                ParticleOptions particle, int count, double speed, double spin, @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
+            double r = radius.evaluate(player, target, slot);
+            double h = height.evaluate(player, target, slot);
+            int pCount = (int) points.evaluate(player, target, slot);
+            double rot = rotations.evaluate(player, target, slot);
             if (pCount <= 0)
                 return;
 
@@ -183,7 +183,7 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
         if (player.level() instanceof ServerLevel sl) {
-            int pCount = (int) count.evaluate(player, target);
+            int pCount = (int) count.evaluate(player, target, slot);
             if (pCount <= 0)
                 return true;
 
@@ -192,26 +192,26 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
             if (target != null) {
                 // AoE Context: apply to valid target
                 if (targets.isValid(target, player)) {
-                    spawnOnTarget(sl, player, target, pCount);
+                    spawnOnTarget(sl, player, target, pCount, slot);
                 }
             } else {
                 // Non-AoE Context: apply to player if valid (e.g. self)
                 if (targets.isValid(player, player)) {
-                    spawnOnTarget(sl, player, player, pCount);
+                    spawnOnTarget(sl, player, player, pCount, slot);
                 }
             }
         }
         return true;
     }
 
-    private void spawnOnTarget(ServerLevel sl, Player player, net.minecraft.world.entity.LivingEntity actualTarget, int pCount) {
+    private void spawnOnTarget(ServerLevel sl, Player player, net.minecraft.world.entity.LivingEntity actualTarget, int pCount, @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
         if (pattern != null) {
-            pattern.spawn(sl, player, actualTarget, particle, pCount, speed.evaluate(player, actualTarget),
-                    spin.evaluate(player, actualTarget));
+            pattern.spawn(sl, player, actualTarget, particle, pCount, speed.evaluate(player, actualTarget, slot),
+                    spin.evaluate(player, actualTarget, slot), slot);
         } else {
             sl.sendParticles(particle, actualTarget.getX(), actualTarget.getY() + 1.0, actualTarget.getZ(), pCount,
-                    dx.evaluate(player, actualTarget), dy.evaluate(player, actualTarget), dz.evaluate(player, actualTarget),
-                    speed.evaluate(player, actualTarget));
+                    dx.evaluate(player, actualTarget, slot), dy.evaluate(player, actualTarget, slot), dz.evaluate(player, actualTarget, slot),
+                    speed.evaluate(player, actualTarget, slot));
         }
     }
 
@@ -277,6 +277,5 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
         };
 
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "spawn_particles"), factory);
-        ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "apply_particles"), factory);
     }
 }

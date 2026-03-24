@@ -26,7 +26,7 @@ public class StealItemAction implements ActionRegistry.RaceAction {
         if (!(target instanceof Player targetPlayer))
             return true;
 
-        double c = chance.evaluate(player, target);
+        double c = chance.evaluate(player, target, slot);
         if (player.level().random.nextDouble() > c)
             return true;
 
