@@ -170,7 +170,7 @@ public class CosmeticIncidents {
             // we wipe it upon race reset. This covers both racial traits and Mirror
             // selections.
             if (!owned.contains(id)) {
-                mc.sayda.creraces.CreRaces.LOGGER.debug("[CreRaces] Deactivating non-owned addon on reset: {}", id);
+                mc.sayda.creraces.CreRaces.LOGGER.debug("Deactivating non-owned addon on reset: {}", id);
                 setAddonActiveRobust(addons, id, false, true);
             }
         }
@@ -191,7 +191,7 @@ public class CosmeticIncidents {
         if (race != null) {
             result = result.replace("{race}", race.id().toString());
             result = result.replace("{gender}", race.getGState() == GState.FEMALE ? "female" : "male");
-            
+
             for (RaceCustomization cust : race.customization()) {
                 String placeholder = "{" + cust.id() + "}";
                 if (result.contains(placeholder)) {
@@ -199,7 +199,7 @@ public class CosmeticIncidents {
                 }
             }
         }
-        
+
         if (result.contains("{")) {
             result = result.replaceAll("\\{[^}]*\\}", "0");
         }
@@ -211,12 +211,12 @@ public class CosmeticIncidents {
             ResourceLocation raceId = vars.getRace();
             Race race = RaceRegistry.get(raceId);
             String result = resolvePlaceholders(template, vars.getCustomizations(), race);
-            
+
             // Special field injections for fields not in custMap
             result = result.replace("{race}", raceId.toString());
             result = result.replace("{gstate}", String.valueOf(vars.getGState()));
             result = result.replace("{gender}", vars.getGState() == 1 ? "female" : "male");
-            
+
             return result;
         }).orElse(template);
     }
@@ -302,7 +302,7 @@ public class CosmeticIncidents {
         if (addons == null || id == null || id.isEmpty())
             return;
 
-        mc.sayda.creraces.CreRaces.LOGGER.debug("[CreRaces] setAddonActiveRobust: id={}, active={}, persistent={}", id,
+        mc.sayda.creraces.CreRaces.LOGGER.debug("setAddonActiveRobust: id={}, active={}, persistent={}", id,
                 active, persistent);
 
         // Try standard 3-arg method if available (Twilight Lib 2.0.0+)

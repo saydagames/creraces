@@ -1,7 +1,9 @@
 package mc.sayda.creraces.engine.condition;
 
+
 import java.util.Objects;
 import com.google.gson.JsonObject;
+import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.engine.ScalingValue;
 import mc.sayda.creraces.util.GsonHelper;
@@ -13,6 +15,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import mc.sayda.creraces.engine.TargetFilter;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Universal condition check for actions and traits.
@@ -25,14 +28,14 @@ public interface Condition {
     @SuppressWarnings("null")
     static Condition fromJson(JsonObject json) {
         if (!json.has("type")) {
-            mc.sayda.creraces.CreRaces.LOGGER.error("Condition missing 'type' field - skipping. JSON: {}", json);
+            CreRaces.LOGGER.error("Condition missing 'type' field - skipping. JSON: {}", json);
             return (player, target, slot, interactionPos) -> false;
         }
         String typeStr = json.get("type").getAsString();
         @SuppressWarnings("null")
         ResourceLocation typeLoc = ResourceLocation.tryParse(typeStr);
         if (typeLoc == null) {
-            mc.sayda.creraces.CreRaces.LOGGER.error("Malformed condition type '{}' - skipping.", typeStr);
+            CreRaces.LOGGER.error("Malformed condition type '{}' - skipping.", typeStr);
             return (player, target, slot, interactionPos) -> false;
         }
         String type = typeLoc.getPath();
@@ -40,7 +43,8 @@ public interface Condition {
         try {
             return switch (type) {
                 case "state", "state_equals" -> {
-                    String stateKey = json.has("state") ? GsonHelper.getAsString(json, "state") : GsonHelper.getAsString(json, "ability");
+                    String stateKey = json.has("state") ? GsonHelper.getAsString(json, "state")
+                            : GsonHelper.getAsString(json, "ability");
                     ScalingValue value = ScalingValue.fromJson(json, "value", 1.0);
                     String operator = GsonHelper.getAsString(json, "operator", "==");
                     yield new StateCondition(stateKey, value, operator);
@@ -62,16 +66,20 @@ public interface Condition {
                     yield new OnGroundCondition(expected);
                 }
                 case "wearing_armor" -> {
-                    @javax.annotation.Nullable String item = GsonHelper.getNullableString(json, "item", null);
-                    @javax.annotation.Nullable String tag = GsonHelper.getNullableString(json, "tag", null);
+                    @javax.annotation.Nullable
+                    String item = GsonHelper.getNullableString(json, "item", null);
+                    @javax.annotation.Nullable
+                    String tag = GsonHelper.getNullableString(json, "tag", null);
                     String slot = GsonHelper.getAsString(json, "slot", "0");
                     if (tag != null && !tag.startsWith("#"))
                         tag = "#" + tag;
                     yield new WearingArmorCondition(item != null ? item : tag, slot);
                 }
                 case "holding_item" -> {
-                    @javax.annotation.Nullable String item = GsonHelper.getNullableString(json, "item", null);
-                    @javax.annotation.Nullable String tag = GsonHelper.getNullableString(json, "tag", null);
+                    @javax.annotation.Nullable
+                    String item = GsonHelper.getNullableString(json, "item", null);
+                    @javax.annotation.Nullable
+                    String tag = GsonHelper.getNullableString(json, "tag", null);
                     boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
                     if (tag != null && !tag.startsWith("#"))
                         tag = "#" + tag;
@@ -102,8 +110,10 @@ public interface Condition {
                     yield new NotCondition(condition);
                 }
                 case "biome" -> {
-                    @javax.annotation.Nullable String biomeId = GsonHelper.getNullableString(json, "biome", null);
-                    @javax.annotation.Nullable String tag = GsonHelper.getNullableString(json, "tag", null);
+                    @javax.annotation.Nullable
+                    String biomeId = GsonHelper.getNullableString(json, "biome", null);
+                    @javax.annotation.Nullable
+                    String tag = GsonHelper.getNullableString(json, "tag", null);
                     yield new BiomeCondition(biomeId, tag);
                 }
                 case "weather" -> {
@@ -117,7 +127,8 @@ public interface Condition {
                 }
                 case "in_water" -> {
                     boolean expected = GsonHelper.getAsBoolean(json, "value", true);
-                    yield new InWaterCondition(expected);
+                    boolean includeRain = GsonHelper.getAsBoolean(json, "include_rain", false);
+                    yield new InWaterCondition(expected, includeRain);
                 }
                 case "in_sunlight" -> {
                     boolean expected = GsonHelper.getAsBoolean(json, "value", true);
@@ -149,6 +160,35 @@ public interface Condition {
                     boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
                     @SuppressWarnings("null")
                     Condition c = new HasEffectCondition(new ResourceLocation(id), amp, useTarget);
+                    yield c;
+                }
+                case "can_place_block" -> {
+                    ScalingValue ox = ScalingValue.fromJson(json, "offset_x", 0.0);
+                    ScalingValue oy = ScalingValue.fromJson(json, "offset_y", 0.0);
+                    ScalingValue oz = ScalingValue.fromJson(json, "offset_z", 0.0);
+                    boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
+                    boolean useTargetBlock = GsonHelper.getAsBoolean(json, "use_target_block", false);
+                    boolean absolute = GsonHelper.getAsBoolean(json, "absolute", false);
+
+                    ScalingValue.MathOp math = ScalingValue.MathOp.ROUND;
+                    if (json.has("math")) {
+                        try {
+                            math = ScalingValue.MathOp.valueOf(json.get("math").getAsString().toUpperCase());
+                        } catch (Exception e) {
+                            CreRaces.LOGGER.warn("Invalid math mode in CanPlaceBlockCondition: {}",
+                                    json.get("math").getAsString());
+                        }
+                    }
+                    yield new CanPlaceBlockCondition(ox, oy, oz, useTarget, useTargetBlock, absolute, math);
+                }
+                case "has_enchantment" -> {
+                    String id = GsonHelper.getAsString(json, "enchantment");
+                    ScalingValue level = ScalingValue.fromJson(json, "level", 1.0);
+                    String slot = GsonHelper.getAsString(json, "slot", "any");
+                    String operator = GsonHelper.getAsString(json, "operator", ">=");
+                    boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
+                    @SuppressWarnings("null")
+                    Condition c = new HasEnchantmentCondition(id, level, slot, operator, useTarget);
                     yield c;
                 }
                 case "is_smeltable" -> {
@@ -186,7 +226,20 @@ public interface Condition {
                     ScalingValue x = ScalingValue.fromJson(json, "x", 0.0);
                     ScalingValue y = ScalingValue.fromJson(json, "y", 0.0);
                     ScalingValue z = ScalingValue.fromJson(json, "z", 0.0);
-                    yield new IsPositionCondition(x, y, z);
+                    boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
+                    boolean useTargetBlock = GsonHelper.getAsBoolean(json, "use_target_block", false);
+                    boolean absolute = GsonHelper.getAsBoolean(json, "absolute", true);
+
+                    ScalingValue.MathOp math = ScalingValue.MathOp.ROUND;
+                    if (json.has("math")) {
+                        try {
+                            math = ScalingValue.MathOp.valueOf(json.get("math").getAsString().toUpperCase());
+                        } catch (Exception e) {
+                            CreRaces.LOGGER.warn("Invalid math mode in IsPositionCondition: {}",
+                                    json.get("math").getAsString());
+                        }
+                    }
+                    yield new IsPositionCondition(x, y, z, useTarget, useTargetBlock, absolute, math);
                 }
                 case "dimension" -> {
                     String dim = GsonHelper.getAsString(json, "value", "minecraft:overworld");
@@ -198,37 +251,7 @@ public interface Condition {
                     for (com.google.gson.JsonElement e : json.getAsJsonArray("values")) {
                         validVals.add(e.getAsString());
                     }
-                    yield (player, target, slotCtx, interactionPos) -> {
-                        return DataUtils.getVariables(player).map(vars -> {
-                            ResourceLocation activeRaceLoc = vars.getRace();
-                            if (activeRaceLoc == null)
-                                return false;
-
-                            mc.sayda.creraces.race.Race rd = mc.sayda.creraces.race.RaceRegistry.get(activeRaceLoc);
-                            if (rd == null)
-                                return false;
-
-                            String val;
-                            if (id.equalsIgnoreCase("race")) {
-                                val = activeRaceLoc.toString();
-                            } else if (id.equalsIgnoreCase("gstate")) {
-                                val = String.valueOf(vars.getGState());
-                            } else {
-                                mc.sayda.creraces.race.RaceCustomization cData = rd.customization().stream()
-                                        .filter(c -> c.id().equals(id))
-                                        .findFirst()
-                                        .orElse(null);
-                                if (cData == null)
-                                    return false;
-
-                                val = vars.getCustomization(id.toLowerCase());
-                                if (val == null || val.isEmpty())
-                                    val = cData.defaultValue();
-                            }
-
-                            return validVals.contains(val);
-                        }).orElse(false);
-                    };
+                    yield new CustomizationEqualsCondition(id, validVals.toArray(new String[0]));
                 }
                 case "race_equals" -> {
                     java.util.List<String> validRaces = new java.util.ArrayList<>();
@@ -240,34 +263,11 @@ public interface Condition {
                             validRaces.add(e.getAsString());
                         }
                     }
-                    yield (player, target, slotCtx, interactionPos) -> {
-                        return DataUtils.getVariables(player).map(vars -> {
-                            ResourceLocation activeRaceLoc = vars.getRace();
-                            String activeRaceId = activeRaceLoc != null ? activeRaceLoc.toString() : null;
-                            if (activeRaceId == null || activeRaceId.isEmpty())
-                                return false;
-                            for (String race : validRaces) {
-                                if (activeRaceId.equals(race))
-                                    return true;
-                            }
-                            return false;
-                        }).orElse(false);
-                    };
+                    yield new RaceEqualsCondition(validRaces);
                 }
                 case "has_customization" -> {
                     String id = GsonHelper.getAsString(json, "id");
-                    yield (player, target, slotCtx, interactionPos) -> {
-                        return DataUtils.getVariables(player).map(vars -> {
-                            ResourceLocation activeRaceLoc = vars.getRace();
-                            if (activeRaceLoc == null)
-                                return false;
-
-                            if (id.equalsIgnoreCase("race") || id.equalsIgnoreCase("gstate")) return true;
-
-                            String val = vars.getCustomization(id.toLowerCase());
-                            return val != null && !val.isEmpty() && !val.equals("0.0") && !val.equals("0");
-                        }).orElse(false);
-                    };
+                    yield new HasCustomizationCondition(id);
                 }
                 case "has_entities" -> {
                     mc.sayda.creraces.engine.ScalingValue radius = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
@@ -282,14 +282,27 @@ public interface Condition {
                     ScalingValue oz = ScalingValue.fromJson(json, "offset_z", 0.0);
                     boolean useInteractionPos = GsonHelper.getAsBoolean(json, "use_interaction_pos", true);
                     boolean absolute = GsonHelper.getAsBoolean(json, "absolute", false);
-                    yield new IsBlockCondition(blockStr, ox, oy, oz, useInteractionPos, absolute);
+
+                    ScalingValue.MathOp math = ScalingValue.MathOp.ROUND;
+                    if (json.has("math")) {
+                        try {
+                            math = ScalingValue.MathOp.valueOf(json.get("math").getAsString().toUpperCase());
+                        } catch (Exception e) {
+                            mc.sayda.creraces.CreRaces.LOGGER.warn("Invalid math mode in IsBlockCondition: {}",
+                                    json.get("math").getAsString());
+                        }
+                    }
+
+                    yield new IsBlockCondition(blockStr, ox, oy, oz, useInteractionPos, absolute, math);
                 }
                 case "cooldown" -> {
-                    String id = json.has("state") ? GsonHelper.getAsString(json, "state") : (json.has("id") ? GsonHelper.getAsString(json, "id") : GsonHelper.getAsString(json, "ability"));
+                    String id = json.has("state") ? GsonHelper.getAsString(json, "state")
+                            : (json.has("id") ? GsonHelper.getAsString(json, "id")
+                                    : GsonHelper.getAsString(json, "ability"));
                     if (!id.contains(":")) {
                         id = "creraces:" + id;
                     }
-                    String operator = GsonHelper.getAsString(json, "operator", ">=");
+                    String operator = GsonHelper.getAsString(json, "operator", "<=");
                     ScalingValue value = ScalingValue.fromJson(json, "value", 0.0);
                     yield new CooldownCondition(id, operator, value);
                 }
@@ -412,6 +425,14 @@ class StateCondition implements Condition {
             ResourceLocation targetId = null;
             if ("self".equalsIgnoreCase(state) && slot != null) {
                 targetId = vars.getAbilityInSlot(slot);
+                if (targetId == null) {
+                    mc.sayda.creraces.CreRaces.LOGGER.warn(
+                            "state:self used in condition but no ability found in slot '{}' for player '{}'",
+                            slot, player.getName().getString());
+                }
+            } else if ("self".equalsIgnoreCase(state) && slot == null) {
+                mc.sayda.creraces.CreRaces.LOGGER.warn(
+                        "state:self used in condition but no ability slot context is available (used outside of an ability?)");
             } else if (state != null && !state.isEmpty()) {
                 try {
                     String sub = state.startsWith("state:") ? state.substring(6) : state;
@@ -637,7 +658,9 @@ class BiomeCondition implements Condition {
                 @SuppressWarnings("null")
                 net.minecraft.tags.TagKey<net.minecraft.world.level.biome.Biome> tagKey = net.minecraft.tags.TagKey
                         .create(net.minecraft.core.registries.Registries.BIOME, new ResourceLocation(tag));
-                return holder.is(tagKey);
+                @SuppressWarnings("null")
+                boolean isTag = holder.is(tagKey);
+                return isTag;
             } catch (Exception e) {
                 return false;
             }
@@ -688,9 +711,11 @@ class TimeCondition implements Condition {
 
 class InWaterCondition implements Condition {
     private final boolean expected;
+    private final boolean includeRain;
 
-    public InWaterCondition(boolean expected) {
+    public InWaterCondition(boolean expected, boolean includeRain) {
         this.expected = expected;
+        this.includeRain = includeRain;
     }
 
     @Override
@@ -701,7 +726,11 @@ class InWaterCondition implements Condition {
         @SuppressWarnings("null")
         boolean inBubble = player.level().getBlockState(player.blockPosition())
                 .is(net.minecraft.world.level.block.Blocks.BUBBLE_COLUMN);
-        return (player.isInWater() || inBubble) == expected;
+        boolean inWater = player.isInWater() || inBubble;
+        if (includeRain && !inWater) {
+            inWater = mc.sayda.creraces.util.WorldUtils.isExposedToRain(player);
+        }
+        return inWater == expected;
     }
 }
 
@@ -800,13 +829,31 @@ class ResourceLevelCondition implements Condition {
         return DataUtils.getVariables(player).map(vars -> {
             double current = 0.0;
             String res = resource.toLowerCase();
-            if (res.startsWith("custom:")) {
-                String key = resource.substring(7);
-                String valStr = vars.getCustomization(key);
-                try {
-                    current = (valStr != null && !valStr.isEmpty()) ? Double.parseDouble(valStr) : 0.0;
-                } catch (NumberFormatException e) {
-                    current = 0.0;
+            if (res.startsWith("custom:") || res.startsWith("state:")) {
+                String key = resource;
+                boolean isCustom = res.startsWith("custom:");
+                if (isCustom) {
+                    key = key.substring(7);
+                } else if (res.startsWith("state:")) {
+                    key = key.substring(6);
+                }
+
+                if (!key.contains(":") && !isCustom) {
+                    key = "creraces:" + key;
+                }
+
+                if (isCustom) {
+                    String valStr = vars.getCustomization(key);
+                    try {
+                        current = (valStr != null && !valStr.isEmpty()) ? Double.parseDouble(valStr) : 0.0;
+                    } catch (NumberFormatException e) {
+                        current = 0.0;
+                    }
+                } else {
+                    ResourceLocation loc = ResourceLocation.tryParse(key);
+                    if (loc != null) {
+                        current = vars.getPersistentState(loc);
+                    }
                 }
             } else {
                 current = switch (res) {
@@ -816,6 +863,12 @@ class ResourceLevelCondition implements Condition {
                     case "rage" -> vars.getRage();
                     case "karma" -> vars.getKarma();
                     case "soul" -> vars.getSoul();
+                    case "food" -> (double) ((mc.sayda.creraces.util.IFoodDataAccessor) player.getFoodData())
+                            .creraces$getFoodLevel();
+                    case "saturation" -> (double) ((mc.sayda.creraces.util.IFoodDataAccessor) player.getFoodData())
+                            .creraces$getSaturation();
+                    case "health" -> (double) player.getHealth();
+                    case "air" -> (double) player.getAirSupply();
                     case "coins" -> vars.getCoins();
                     case "ap" -> vars.getAp();
                     case "ad" -> vars.getAd();
@@ -855,7 +908,6 @@ class ExposedToRainCondition implements Condition {
     }
 }
 
-
 class IsSmeltableCondition implements Condition {
     public IsSmeltableCondition() {
     }
@@ -868,10 +920,12 @@ class IsSmeltableCondition implements Condition {
         net.minecraft.world.item.ItemStack stack = player.getMainHandItem();
         if (stack.isEmpty())
             return false;
-        return player.level().getRecipeManager()
+        @SuppressWarnings("null")
+        boolean present = player.level().getRecipeManager()
                 .getRecipeFor(net.minecraft.world.item.crafting.RecipeType.SMELTING,
                         new net.minecraft.world.SimpleContainer(stack), player.level())
                 .isPresent();
+        return present;
     }
 }
 
@@ -906,27 +960,96 @@ class DistanceCondition implements Condition {
 
 class CustomizationEqualsCondition implements Condition {
     private final String customizationId;
-    private final String[] allowedValues;
+    private final java.util.List<String> allowedValues;
 
     public CustomizationEqualsCondition(String customizationId, String[] allowedValues) {
         this.customizationId = customizationId;
-        this.allowedValues = allowedValues;
+        this.allowedValues = java.util.Arrays.asList(allowedValues);
     }
 
     @Override
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
-            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slotCtx,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
         return DataUtils.getVariables(player).map(vars -> {
-            String current = vars.getCustomization(customizationId);
-            if (current == null)
+            ResourceLocation activeRaceLoc = vars.getRace();
+            if (activeRaceLoc == null)
                 return false;
-            for (String val : allowedValues) {
-                if (current.equalsIgnoreCase(val))
+
+            mc.sayda.creraces.race.Race rd = mc.sayda.creraces.race.RaceRegistry.get(activeRaceLoc);
+            if (rd == null)
+                return false;
+
+            String val;
+            if (customizationId.equalsIgnoreCase("race")) {
+                val = activeRaceLoc.toString();
+            } else if (customizationId.equalsIgnoreCase("gstate")) {
+                val = String.valueOf(vars.getGState());
+            } else {
+                mc.sayda.creraces.race.RaceCustomization cData = rd.customization().stream()
+                        .filter(c -> c.id().equals(customizationId))
+                        .findFirst()
+                        .orElse(null);
+                if (cData == null)
+                    return false;
+
+                val = vars.getCustomization(customizationId.toLowerCase());
+                if (val == null || val.isEmpty())
+                    val = cData.defaultValue();
+            }
+
+            return allowedValues.contains(val);
+        }).orElse(false);
+    }
+}
+
+class RaceEqualsCondition implements Condition {
+    private final java.util.List<String> validRaces;
+
+    public RaceEqualsCondition(java.util.List<String> validRaces) {
+        this.validRaces = validRaces;
+    }
+
+    @Override
+    public boolean evaluate(Player player, @javax.annotation.Nullable LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slotCtx,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+        return DataUtils.getVariables(player).map(vars -> {
+            ResourceLocation activeRaceLoc = vars.getRace();
+            String activeRaceId = activeRaceLoc != null ? activeRaceLoc.toString() : null;
+            if (activeRaceId == null || activeRaceId.isEmpty())
+                return false;
+            for (String race : validRaces) {
+                if (activeRaceId.equals(race))
                     return true;
             }
             return false;
+        }).orElse(false);
+    }
+}
+
+class HasCustomizationCondition implements Condition {
+    private final String customizationId;
+
+    public HasCustomizationCondition(String customizationId) {
+        this.customizationId = customizationId;
+    }
+
+    @Override
+    public boolean evaluate(Player player, @javax.annotation.Nullable LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slotCtx,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+        return DataUtils.getVariables(player).map(vars -> {
+            ResourceLocation activeRaceLoc = vars.getRace();
+            if (activeRaceLoc == null)
+                return false;
+
+            if (customizationId.equalsIgnoreCase("race") || customizationId.equalsIgnoreCase("gstate"))
+                return true;
+
+            String val = vars.getCustomization(customizationId.toLowerCase());
+            return val != null && !val.isEmpty() && !val.equals("0.0") && !val.equals("0");
         }).orElse(false);
     }
 }
@@ -978,8 +1101,8 @@ class HasEntitiesCondition implements Condition {
     public boolean evaluate(Player player, @javax.annotation.Nullable LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
-        double r = radius.evaluate(player, target);
-        int maxAoeRadius = 100;
+        double r = radius.evaluate(player, target, slot);
+        int maxAoeRadius = mc.sayda.creraces.config.CreRacesConfig.AOE_MAX_RADIUS.get();
         if (maxAoeRadius > 0)
             r = Math.min(r, maxAoeRadius);
 
@@ -994,27 +1117,64 @@ class IsPositionCondition implements Condition {
     private final ScalingValue x;
     private final ScalingValue y;
     private final ScalingValue z;
+    private final boolean useTarget;
+    private final boolean useTargetBlock;
+    private final boolean absolute;
+    private final ScalingValue.MathOp coordinateMath;
 
-    public IsPositionCondition(ScalingValue x, ScalingValue y, ScalingValue z) {
+    public IsPositionCondition(ScalingValue x, ScalingValue y, ScalingValue z, boolean useTarget,
+            boolean useTargetBlock, boolean absolute, ScalingValue.MathOp math) {
         this.x = x;
         this.y = y;
         this.z = z;
+        this.useTarget = useTarget;
+        this.useTargetBlock = useTargetBlock;
+        this.absolute = absolute;
+        this.coordinateMath = math != null ? math : ScalingValue.MathOp.ROUND;
     }
 
     @Override
     public boolean evaluate(Player player, @javax.annotation.Nullable LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
-        double px = x.evaluate(player, target);
-        double py = y.evaluate(player, target);
-        double pz = z.evaluate(player, target);
 
-        net.minecraft.core.BlockPos pos = (interactionPos != null) ? interactionPos : player.blockPosition();
+        BlockPos basePos;
+        if (absolute) {
+            basePos = BlockPos.ZERO;
+        } else if (useTarget && target != null) {
+            basePos = target.blockPosition();
+        } else if (useTargetBlock && interactionPos != null) {
+            basePos = interactionPos;
+        } else {
+            double tx = player.getX();
+            double ty = player.getY();
+            double tz = player.getZ();
 
-        // Check if inside the block boundaries (floor comparison)
-        return pos.getX() == (int) Math.floor(px) &&
-                pos.getY() == (int) Math.floor(py) &&
-                pos.getZ() == (int) Math.floor(pz);
+            int bx = (int) Math.floor(tx);
+            int by = (int) Math.floor(ty);
+            int bz = (int) Math.floor(tz);
+
+            if (coordinateMath == ScalingValue.MathOp.ROUND) {
+                bx = (int) Math.round(tx);
+                by = (int) Math.round(ty);
+                bz = (int) Math.round(tz);
+            } else if (coordinateMath == ScalingValue.MathOp.CEIL) {
+                bx = (int) Math.ceil(tx);
+                by = (int) Math.ceil(ty);
+                bz = (int) Math.ceil(tz);
+            }
+            basePos = new BlockPos(bx, by, bz);
+        }
+
+        double px = x.evaluate(player, target, slot);
+        double py = y.evaluate(player, target, slot);
+        double pz = z.evaluate(player, target, slot);
+
+        BlockPos targetPos = basePos.offset((int) px, (int) py, (int) pz);
+
+        // This checks if the player/target/interaction position is at the specified coord
+        BlockPos currentPos = (interactionPos != null) ? interactionPos : player.blockPosition();
+        return currentPos.equals(targetPos);
     }
 }
 
@@ -1025,15 +1185,17 @@ class IsBlockCondition implements Condition {
     private final ScalingValue offsetZ;
     private final boolean useInteractionPos;
     private final boolean absolute;
+    private final ScalingValue.MathOp coordinateMath;
 
     public IsBlockCondition(String blockDefinition, ScalingValue offsetX, ScalingValue offsetY, ScalingValue offsetZ,
-            boolean useInteractionPos, boolean absolute) {
+            boolean useInteractionPos, boolean absolute, ScalingValue.MathOp math) {
         this.blockDefinition = blockDefinition;
         this.offsetX = offsetX;
         this.offsetY = offsetY;
         this.offsetZ = offsetZ;
         this.useInteractionPos = useInteractionPos;
         this.absolute = absolute;
+        this.coordinateMath = math != null ? math : ScalingValue.MathOp.ROUND;
     }
 
     @Override
@@ -1048,18 +1210,45 @@ class IsBlockCondition implements Condition {
         if (absolute) {
             finalPos = new BlockPos(ox, oy, oz);
         } else {
-            BlockPos base = (useInteractionPos && interactionPos != null) ? interactionPos : player.blockPosition();
+            BlockPos base;
+            if (useInteractionPos && interactionPos != null) {
+                base = interactionPos;
+            } else {
+                double tx = player.getX();
+                double ty = player.getY();
+                double tz = player.getZ();
+
+                int bx = (int) Math.floor(tx);
+                int by = (int) Math.floor(ty);
+                int bz = (int) Math.floor(tz);
+
+                if (coordinateMath == ScalingValue.MathOp.ROUND) {
+                    bx = (int) Math.round(tx);
+                    by = (int) Math.round(ty);
+                    bz = (int) Math.round(tz);
+                } else if (coordinateMath == ScalingValue.MathOp.CEIL) {
+                    bx = (int) Math.ceil(tx);
+                    by = (int) Math.ceil(ty);
+                    bz = (int) Math.ceil(tz);
+                }
+                base = new BlockPos(bx, by, bz);
+            }
             finalPos = base.offset(ox, oy, oz);
         }
 
         BlockState state = player.level().getBlockState(finalPos);
 
         if (blockDefinition.startsWith("#")) {
+            @SuppressWarnings("null")
             ResourceLocation tagLoc = new ResourceLocation(blockDefinition.substring(1));
-            return state.is(net.minecraft.tags.TagKey.create(java.util.Objects.requireNonNull(net.minecraft.core.registries.Registries.BLOCK), tagLoc));
+            @SuppressWarnings("null")
+            boolean isTag = state.is(net.minecraft.tags.TagKey
+                    .create(java.util.Objects.requireNonNull(net.minecraft.core.registries.Registries.BLOCK), tagLoc));
+            return isTag;
         } else {
-            return net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString()
-                    .equals(blockDefinition);
+            @SuppressWarnings("null")
+            ResourceLocation blockKey = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock());
+            return blockKey != null && blockKey.toString().equals(blockDefinition);
         }
     }
 }
@@ -1080,12 +1269,10 @@ class CooldownCondition implements Condition {
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
         return DataUtils.getVariables(player).map(vars -> {
-            ResourceLocation fullId;
-            try {
-                fullId = new ResourceLocation(id);
-            } catch (Exception e) {
+            @SuppressWarnings("null")
+            ResourceLocation fullId = ResourceLocation.tryParse(id);
+            if (fullId == null)
                 return false;
-            }
 
             double current = vars.getCooldown(fullId);
             double val = value.evaluate(player, target);
@@ -1100,5 +1287,172 @@ class CooldownCondition implements Condition {
                 default -> false;
             };
         }).orElse(false);
+    }
+}
+
+class HasEnchantmentCondition implements Condition {
+    private final String enchantmentId;
+    private final ScalingValue level;
+    private final String slot;
+    private final String operator;
+    private final boolean useTarget;
+
+    public HasEnchantmentCondition(String enchantmentId, ScalingValue level, String slot, String operator,
+            boolean useTarget) {
+        this.enchantmentId = enchantmentId;
+        this.level = level;
+        this.slot = slot;
+        this.operator = operator;
+        this.useTarget = useTarget;
+    }
+
+    @Override
+    public boolean evaluate(Player player, @javax.annotation.Nullable LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot abilitySlot,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+
+        LivingEntity actor = (useTarget && target != null) ? target : player;
+        @SuppressWarnings("null")
+        ResourceLocation id = ResourceLocation.tryParse(enchantmentId);
+        if (id == null)
+            return false;
+        @SuppressWarnings("null")
+        net.minecraft.world.item.enchantment.Enchantment enchantment = net.minecraft.core.registries.BuiltInRegistries.ENCHANTMENT
+                .get(id);
+
+        if (enchantment == null)
+            return false;
+
+        double targetLevel = level.evaluate(player, target, abilitySlot);
+
+        if (slot.equalsIgnoreCase("any")) {
+            for (ItemStack stack : actor.getAllSlots()) {
+                if (checkStack(stack, enchantment, targetLevel))
+                    return true;
+            }
+            return false;
+        }
+
+        @SuppressWarnings("null")
+        ItemStack stack = getItemInSlot(actor, slot);
+        @SuppressWarnings("null")
+        boolean result = checkStack(stack, enchantment, targetLevel);
+        return result;
+    }
+
+    private boolean checkStack(ItemStack stack, net.minecraft.world.item.enchantment.Enchantment enchantment,
+            double targetLevel) {
+        if (stack.isEmpty())
+            return false;
+        int currentLevel = net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(enchantment,
+                stack);
+
+        return switch (operator) {
+            case ">=" -> currentLevel >= targetLevel;
+            case "<=" -> currentLevel <= targetLevel;
+            case ">" -> currentLevel > targetLevel;
+            case "<" -> currentLevel < targetLevel;
+            case "==" -> Math.abs(currentLevel - targetLevel) < 0.001;
+            case "!=" -> Math.abs(currentLevel - targetLevel) >= 0.001;
+            default -> false;
+        };
+    }
+
+    private ItemStack getItemInSlot(LivingEntity entity, String slot) {
+        if (slot.equalsIgnoreCase("mainhand"))
+            return entity.getMainHandItem();
+        if (slot.equalsIgnoreCase("offhand"))
+            return entity.getOffhandItem();
+        if (slot.equalsIgnoreCase("head"))
+            return entity.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD);
+        if (slot.equalsIgnoreCase("chest"))
+            return entity.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.CHEST);
+        if (slot.equalsIgnoreCase("legs"))
+            return entity.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.LEGS);
+        if (slot.equalsIgnoreCase("feet"))
+            return entity.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.FEET);
+
+        if (entity instanceof Player player) {
+            try {
+                int index = Integer.parseInt(slot);
+                if (index >= 0 && index < player.getInventory().getContainerSize()) {
+                    return player.getInventory().getItem(index);
+                }
+            } catch (NumberFormatException ignored) {
+            }
+        }
+
+        return ItemStack.EMPTY;
+    }
+}
+
+class CanPlaceBlockCondition implements Condition {
+    private final ScalingValue offsetX;
+    private final ScalingValue offsetY;
+    private final ScalingValue offsetZ;
+    private final boolean useTarget;
+    private final boolean useTargetBlock;
+    private final boolean absolute;
+    private final ScalingValue.MathOp coordinateMath;
+
+    public CanPlaceBlockCondition(ScalingValue ox, ScalingValue oy, ScalingValue oz, boolean useTarget,
+            boolean useTargetBlock, boolean absolute, ScalingValue.MathOp math) {
+        this.offsetX = ox;
+        this.offsetY = oy;
+        this.offsetZ = oz;
+        this.useTarget = useTarget;
+        this.useTargetBlock = useTargetBlock;
+        this.absolute = absolute;
+        this.coordinateMath = math != null ? math : ScalingValue.MathOp.ROUND;
+    }
+
+    @SuppressWarnings("null")
+    @Override
+    public boolean evaluate(Player player, @javax.annotation.Nullable LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable BlockPos interactionPos) {
+        if (player == null)
+            return false;
+
+        BlockPos basePos;
+        if (absolute) {
+            basePos = BlockPos.ZERO;
+        } else if (useTarget && target != null) {
+            basePos = target.blockPosition();
+        } else if (useTargetBlock && interactionPos != null) {
+            basePos = interactionPos;
+        } else {
+            double tx = player.getX();
+            double ty = player.getY();
+            double tz = player.getZ();
+
+            int bx = (int) Math.floor(tx);
+            int by = (int) Math.floor(ty);
+            int bz = (int) Math.floor(tz);
+
+            if (coordinateMath == ScalingValue.MathOp.ROUND) {
+                bx = (int) Math.round(tx);
+                by = (int) Math.round(ty);
+                bz = (int) Math.round(tz);
+            } else if (coordinateMath == ScalingValue.MathOp.CEIL) {
+                bx = (int) Math.ceil(tx);
+                by = (int) Math.ceil(ty);
+                bz = (int) Math.ceil(tz);
+            }
+            basePos = new BlockPos(bx, by, bz);
+        }
+
+        int ox = (int) offsetX.evaluate(player, target, slot);
+        int oy = (int) offsetY.evaluate(player, target, slot);
+        int oz = (int) offsetZ.evaluate(player, target, slot);
+        BlockPos finalPos = basePos.offset(ox, oy, oz);
+
+        boolean isBlockClear = player.level().getBlockState(finalPos).isAir()
+                || player.level().getBlockState(finalPos).canBeReplaced();
+        if (!isBlockClear)
+            return false;
+
+        // Entity check
+        return player.level().getEntitiesOfClass(net.minecraft.world.entity.Entity.class, new AABB(finalPos), e -> e != player).isEmpty();
     }
 }

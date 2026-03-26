@@ -151,5 +151,7 @@ public class ActionRegistry {
         mc.sayda.creraces.engine.actions.MassSummonAction.register();
         mc.sayda.creraces.engine.actions.BindAbilityAction.register();
         mc.sayda.creraces.engine.actions.UnbindAbilityAction.register();
+        mc.sayda.creraces.engine.actions.EnchantAction.register();
+        mc.sayda.creraces.engine.actions.GetEnchantmentAction.register();
     }
 }

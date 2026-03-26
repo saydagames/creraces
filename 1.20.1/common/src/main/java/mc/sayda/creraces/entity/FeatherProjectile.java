@@ -19,6 +19,10 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.world.damagesource.DamageSource;
 
 import javax.annotation.Nonnull;
 
@@ -151,9 +155,13 @@ public class FeatherProjectile extends ThrowableItemProjectile {
                 return;
             }
 
-            net.minecraft.world.damagesource.DamageSource source = java.util.Objects.requireNonNull(this.damageSources().thrown(this, shooter));
-            living.hurt(source, this.damage); // Assuming damage is still a float, not an attribute
-            living.knockback(0.4D, java.util.Objects.requireNonNull(this.getDeltaMovement().x), java.util.Objects.requireNonNull(this.getDeltaMovement().z));
+            var registry = this.level().registryAccess().registryOrThrow(Registries.DAMAGE_TYPE);
+            var holder = registry.getHolderOrThrow(
+                    ResourceKey.create(Registries.DAMAGE_TYPE, new ResourceLocation("creraces", "feather")));
+
+            DamageSource source = new DamageSource(holder, this, shooter);
+            living.hurt(source, this.damage);
+            living.knockback(0.4D, this.getDeltaMovement().x, this.getDeltaMovement().z);
             hitEntities.add(living.getId());
             // Passthrough: NO discard() here
         }

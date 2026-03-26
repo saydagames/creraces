@@ -43,6 +43,7 @@ public class ForgeConfig {
                 public final ForgeConfigSpec.ConfigValue<Integer> doc_fetch_timeout_seconds;
                 public final ForgeConfigSpec.ConfigValue<String> doc_cache_dir;
                 public final ForgeConfigSpec.ConfigValue<String> doc_cache_filename;
+                public final ForgeConfigSpec.ConfigValue<String> developer_resource_path;
 
                 public final ForgeConfigSpec.ConfigValue<Boolean> forced_selection;
                 public final ForgeConfigSpec.ConfigValue<Double> ability_haste_cap;
@@ -54,14 +55,17 @@ public class ForgeConfig {
                 public final ForgeConfigSpec.ConfigValue<Boolean> gstate_enabled;
                 public final ForgeConfigSpec.ConfigValue<Integer> ritual_mode;
 
-                // Safety caps (0 = disabled)
-                public final ForgeConfigSpec.ConfigValue<Integer> break_blocks_max_radius;
+                // Safety caps (-1 = disabled)
                 public final ForgeConfigSpec.ConfigValue<Integer> aoe_max_radius;
                 public final ForgeConfigSpec.ConfigValue<Integer> beam_max_length;
+                public final ForgeConfigSpec.ConfigValue<Integer> break_blocks_max_radius;
+                public final ForgeConfigSpec.ConfigValue<Integer> customization_value_max_length;
+                public final ForgeConfigSpec.ConfigValue<Integer> delay_action_max_ticks;
                 public final ForgeConfigSpec.ConfigValue<Integer> entity_data_key_max_length;
-
+                public final ForgeConfigSpec.ConfigValue<Integer> give_item_max_count;
+                public final ForgeConfigSpec.ConfigValue<Integer> mass_summon_max_count;
                 public final ForgeConfigSpec.ConfigValue<Integer> network_team_name_max_len;
-                public final ForgeConfigSpec.ConfigValue<Integer> network_player_name_max_len;
+                public final ForgeConfigSpec.ConfigValue<Integer> spirit_spawn_check_radius;
 
                 public final ForgeConfigSpec.ConfigValue<Boolean> mini_build_enabled;
                 public final ForgeConfigSpec.ConfigValue<Boolean> mini_furnace_enabled;
@@ -75,7 +79,6 @@ public class ForgeConfig {
                 public final ForgeConfigSpec.ConfigValue<Double> mini_block_reach_margin;
                 public final ForgeConfigSpec.ConfigValue<Boolean> mini_block_water_resistant;
 
-                // Pocket
                 public final ForgeConfigSpec.ConfigValue<String> action_default_pocket_dim;
                 public final ForgeConfigSpec.ConfigValue<String> action_default_pocket_structure;
                 public final ForgeConfigSpec.ConfigValue<Double> action_default_pocket_spawn_x_offset;
@@ -85,19 +88,19 @@ public class ForgeConfig {
                 public final ForgeConfigSpec.ConfigValue<Double> pocket_dim_y;
                 public final ForgeConfigSpec.ConfigValue<Integer> pocket_expansion_limit;
                 public final ForgeConfigSpec.ConfigValue<Double> pocket_expansion_cost;
+                public final ForgeConfigSpec.ConfigValue<Integer> pocket_invite_max;
 
                 // Technical/Internal
                 public final ForgeConfigSpec.ConfigValue<Boolean> race_addons_enabled;
                 public final ForgeConfigSpec.ConfigValue<Boolean> lore_addons_enabled;
 
-                public final ForgeConfigSpec.ConfigValue<Integer> spirit_spawn_check_radius;
-                public final ForgeConfigSpec.ConfigValue<Integer> customization_value_max_length;
                 public final ForgeConfigSpec.ConfigValue<Integer> passive_execution_interval;
                 public final ForgeConfigSpec.ConfigValue<Double> sunlight_equipment_break_chance;
                 public final ForgeConfigSpec.ConfigValue<Integer> sunlight_burn_seconds;
                 public final ForgeConfigSpec.ConfigValue<Integer> passive_effect_buffer_ticks;
                 public final ForgeConfigSpec.ConfigValue<Integer> passive_default_max_food;
                 public final ForgeConfigSpec.ConfigValue<Double> passive_default_max_saturation;
+                public final ForgeConfigSpec.ConfigValue<Double> max_soul;
 
                 public final ForgeConfigSpec.ConfigValue<Double> rat_venom_scaling;
 
@@ -122,6 +125,8 @@ public class ForgeConfig {
                                         .define("doc_cache_dir", CreRacesConfig.DOC_CACHE_DIR.get());
                         doc_cache_filename = builder.comment("Filename for the documentation cache")
                                         .define("doc_cache_filename", CreRacesConfig.DOC_CACHE_FILENAME.get());
+                        developer_resource_path = builder.comment("Absolute path to look for race/ability JSONs in dev. (Example: H:/Github/creraces/1.20.1/common/src/main/resources/data)")
+                                        .define("developer_resource_path", CreRacesConfig.DEVELOPER_RESOURCE_PATH.get());
                         builder.pop();
 
                         builder.push("Gameplay");
@@ -159,28 +164,40 @@ public class ForgeConfig {
                         builder.pop();
 
                         builder.push("Safety");
-                        break_blocks_max_radius = builder.comment("Max radius for creraces:break_blocks. 0 = no cap.")
+                        aoe_max_radius = builder.comment(
+                                        "Max radius for creraces:aoe / creraces:apply_effect AoE. -1 = no cap.")
+                                        .defineInRange("aoe_max_radius", CreRacesConfig.AOE_MAX_RADIUS.get(), -1, 512);
+                        beam_max_length = builder.comment("Max length for creraces:beam. -1 = no cap.")
+                                        .defineInRange("beam_max_length", CreRacesConfig.BEAM_MAX_LENGTH.get(), -1,
+                                                        512);
+                        break_blocks_max_radius = builder.comment("Max radius for creraces:break_blocks. -1 = no cap.")
                                         .defineInRange("break_blocks_max_radius",
-                                                        CreRacesConfig.BREAK_BLOCKS_MAX_RADIUS.get(), 0, 256);
-                        aoe_max_radius = builder
-                                        .comment("Max radius for creraces:aoe / creraces:apply_effect AoE. 0 = no cap.")
-                                        .defineInRange("aoe_max_radius", CreRacesConfig.AOE_MAX_RADIUS.get(), 0,
-                                                        512);
-                        beam_max_length = builder.comment("Max length for creraces:beam. 0 = no cap.")
-                                        .defineInRange("beam_max_length", CreRacesConfig.BEAM_MAX_LENGTH.get(), 0,
-                                                        512);
+                                                        CreRacesConfig.BREAK_BLOCKS_MAX_RADIUS.get(), -1, 256);
+                        customization_value_max_length = builder
+                                        .comment("Max length for customization values. -1 = no cap.")
+                                        .defineInRange("customization_value_max_length",
+                                                        CreRacesConfig.CUSTOMIZATION_VALUE_MAX_LENGTH.get(), -1, 2048);
+                        delay_action_max_ticks = builder
+                                        .comment("Max delay ticks for creraces:delay actions. -1 = no cap.")
+                                        .defineInRange("delay_action_max_ticks",
+                                                        CreRacesConfig.DELAY_ACTION_MAX_TICKS.get(), -1, 72000);
                         entity_data_key_max_length = builder.comment(
-                                        "Max character length for creraces:modify_entity_data keys. 0 = no cap.")
+                                        "Max character length for creraces:modify_entity_data keys. -1 = no cap.")
                                         .defineInRange("entity_data_key_max_length",
-                                                        CreRacesConfig.ENTITY_DATA_KEY_MAX_LENGTH.get(), 0, 1024);
+                                                        CreRacesConfig.ENTITY_DATA_KEY_MAX_LENGTH.get(), -1, 1024);
+                        give_item_max_count = builder.comment("Max item count for creraces:give_item. -1 = no cap.")
+                                        .defineInRange("give_item_max_count", CreRacesConfig.GIVE_ITEM_MAX_COUNT.get(),
+                                                        -1, 6400);
+                        mass_summon_max_count = builder.comment("Max entities for creraces:mass_summon per cast. -1 = no cap.")
+                                        .defineInRange("mass_summon_max_count", CreRacesConfig.MASS_SUMMON_MAX_COUNT.get(),
+                                                        -1, 512);
                         network_team_name_max_len = builder.comment("Max length for team names.")
                                         .defineInRange("network_team_name_max_len",
                                                         CreRacesConfig.NETWORK_TEAM_NAME_MAX_LEN.get(), 1, 256);
-                        network_player_name_max_len = builder.comment("Max length for player names in teams.")
-                                        .defineInRange("network_player_name_max_len",
-                                                        CreRacesConfig.NETWORK_PLAYER_NAME_MAX_LEN.get(), 1, 64);
-                        customization_value_max_length = builder.defineInRange("customization_value_max_length",
-                                        CreRacesConfig.CUSTOMIZATION_VALUE_MAX_LENGTH.get(), 1, 2048);
+                        spirit_spawn_check_radius = builder
+                                        .comment("Radius to check for existing spirits when spawning a new one.")
+                                        .defineInRange("spirit_spawn_check_radius",
+                                                        CreRacesConfig.SPIRIT_SPAWN_CHECK_RADIUS.get(), 1, 512);
                         builder.pop();
 
                         builder.push("MiniBuild");
@@ -228,21 +245,23 @@ public class ForgeConfig {
                                         .define("action_default_pocket_structure",
                                                         CreRacesConfig.ACTION_DEFAULT_POCKET_STRUCTURE.get());
                         action_default_pocket_spawn_x_offset = builder
+                                        .comment("X offset for default pocket spawn point.")
                                         .defineInRange("action_default_pocket_spawn_x_offset",
                                                         CreRacesConfig.ACTION_DEFAULT_POCKET_SPAWN_X_OFFSET
                                                                         .get(),
                                                         -100.0, 100.0);
                         action_default_pocket_spawn_y_offset = builder
+                                        .comment("Y offset for default pocket spawn point.")
                                         .defineInRange("action_default_pocket_spawn_y_offset",
                                                         CreRacesConfig.ACTION_DEFAULT_POCKET_SPAWN_Y_OFFSET
                                                                         .get(),
                                                         -100.0, 100.0);
                         action_default_pocket_spawn_z_offset = builder
+                                        .comment("Z offset for default pocket spawn point.")
                                         .defineInRange("action_default_pocket_spawn_z_offset",
                                                         CreRacesConfig.ACTION_DEFAULT_POCKET_SPAWN_Z_OFFSET
                                                                         .get(),
                                                         -100.0, 100.0);
-
                         pocket_dim_spacing = builder.comment(
                                         "Distance between player pockets. WARNING: Do not decrease on existing worlds.")
                                         .defineInRange("pocket_dim_spacing",
@@ -251,13 +270,17 @@ public class ForgeConfig {
                         pocket_dim_y = builder.comment("Y coordinate for pocket floors.")
                                         .defineInRange("pocket_dim_y", CreRacesConfig.POCKET_DIM_Y.get(), 0.0,
                                                         255.0);
-                        pocket_expansion_limit = builder.comment("Max number of expansions allowed per player.")
-                                        .defineInRange("pocket_expansion_limit",
-                                                        CreRacesConfig.POCKET_EXPANSION_LIMIT.get(), 0, 100);
                         pocket_expansion_cost = builder.comment("Coin cost per expansion.")
                                         .defineInRange("pocket_expansion_cost",
                                                         CreRacesConfig.POCKET_EXPANSION_COST.get(), 0.0,
                                                         1000000.0);
+                        pocket_expansion_limit = builder.comment("Max number of expansions allowed per player.")
+                                        .defineInRange("pocket_expansion_limit",
+                                                        CreRacesConfig.POCKET_EXPANSION_LIMIT.get(), 0, 100);
+                        pocket_invite_max = builder
+                                        .comment("Max number of pending invitations a player can have. -1 = no cap.")
+                                        .defineInRange("pocket_invite_max", CreRacesConfig.POCKET_INVITE_MAX.get(), -1,
+                                                        1024);
                         builder.pop();
 
                         builder.push("Internal");
@@ -279,8 +302,8 @@ public class ForgeConfig {
                                         CreRacesConfig.RACE_ADDONS_ENABLED.get());
                         lore_addons_enabled = builder.define("lore_addons_enabled",
                                         CreRacesConfig.LORE_ADDONS_ENABLED.get());
-                        spirit_spawn_check_radius = builder.defineInRange("spirit_spawn_check_radius",
-                                        CreRacesConfig.SPIRIT_SPAWN_CHECK_RADIUS.get(), 1, 512);
+                        max_soul = builder.defineInRange("max_soul",
+                                        CreRacesConfig.MAX_SOUL.get(), 0.0, 100.0);
                         builder.pop();
 
                         builder.push("Social");
@@ -534,6 +557,7 @@ public class ForgeConfig {
                 CreRacesConfig.DOC_FETCH_TIMEOUT_SECONDS = () -> COMMON.doc_fetch_timeout_seconds.get();
                 CreRacesConfig.DOC_CACHE_DIR = () -> COMMON.doc_cache_dir.get();
                 CreRacesConfig.DOC_CACHE_FILENAME = () -> COMMON.doc_cache_filename.get();
+                CreRacesConfig.DEVELOPER_RESOURCE_PATH = () -> COMMON.developer_resource_path.get();
 
                 CreRacesConfig.FORCED_SELECTION = () -> COMMON.forced_selection.get();
                 CreRacesConfig.ABILITY_HASTE_CAP = () -> COMMON.ability_haste_cap.get();
@@ -542,9 +566,13 @@ public class ForgeConfig {
                 CreRacesConfig.BREAK_BLOCKS_MAX_RADIUS = () -> COMMON.break_blocks_max_radius.get();
                 CreRacesConfig.AOE_MAX_RADIUS = () -> COMMON.aoe_max_radius.get();
                 CreRacesConfig.BEAM_MAX_LENGTH = () -> COMMON.beam_max_length.get();
+                CreRacesConfig.CUSTOMIZATION_VALUE_MAX_LENGTH = () -> COMMON.customization_value_max_length.get();
+                CreRacesConfig.DELAY_ACTION_MAX_TICKS = () -> COMMON.delay_action_max_ticks.get();
                 CreRacesConfig.ENTITY_DATA_KEY_MAX_LENGTH = () -> COMMON.entity_data_key_max_length.get();
+                CreRacesConfig.GIVE_ITEM_MAX_COUNT = () -> COMMON.give_item_max_count.get();
+                CreRacesConfig.MASS_SUMMON_MAX_COUNT = () -> COMMON.mass_summon_max_count.get();
                 CreRacesConfig.NETWORK_TEAM_NAME_MAX_LEN = () -> COMMON.network_team_name_max_len.get();
-                CreRacesConfig.NETWORK_PLAYER_NAME_MAX_LEN = () -> COMMON.network_player_name_max_len.get();
+                CreRacesConfig.SPIRIT_SPAWN_CHECK_RADIUS = () -> COMMON.spirit_spawn_check_radius.get();
 
                 CreRacesConfig.MINI_BUILD_ENABLED = () -> COMMON.mini_build_enabled.get();
                 CreRacesConfig.MINI_FURNACE_ENABLED = () -> COMMON.mini_furnace_enabled.get();
@@ -567,6 +595,7 @@ public class ForgeConfig {
                 CreRacesConfig.POCKET_DIM_Y = () -> COMMON.pocket_dim_y.get();
                 CreRacesConfig.POCKET_EXPANSION_LIMIT = () -> COMMON.pocket_expansion_limit.get();
                 CreRacesConfig.POCKET_EXPANSION_COST = () -> COMMON.pocket_expansion_cost.get();
+                CreRacesConfig.POCKET_INVITE_MAX = () -> COMMON.pocket_invite_max.get();
 
                 CreRacesConfig.ACTION_DEFAULT_POCKET_DIM = () -> COMMON.action_default_pocket_dim.get();
                 CreRacesConfig.ACTION_DEFAULT_POCKET_STRUCTURE = () -> COMMON.action_default_pocket_structure.get();
@@ -577,16 +606,16 @@ public class ForgeConfig {
                 CreRacesConfig.ACTION_DEFAULT_POCKET_SPAWN_Z_OFFSET = () -> COMMON.action_default_pocket_spawn_z_offset
                                 .get();
 
-                CreRacesConfig.SPIRIT_SPAWN_CHECK_RADIUS = () -> COMMON.spirit_spawn_check_radius.get();
-                CreRacesConfig.CUSTOMIZATION_VALUE_MAX_LENGTH = () -> COMMON.customization_value_max_length.get();
+                CreRacesConfig.RACE_ADDONS_ENABLED = () -> COMMON.race_addons_enabled.get();
+                CreRacesConfig.LORE_ADDONS_ENABLED = () -> COMMON.lore_addons_enabled.get();
+                CreRacesConfig.MAX_SOUL = () -> COMMON.max_soul.get();
+
                 CreRacesConfig.PASSIVE_EXECUTION_INTERVAL = () -> COMMON.passive_execution_interval.get();
                 CreRacesConfig.SUNLIGHT_EQUIPMENT_BREAK_CHANCE = () -> COMMON.sunlight_equipment_break_chance.get();
                 CreRacesConfig.SUNLIGHT_BURN_SECONDS = () -> COMMON.sunlight_burn_seconds.get();
                 CreRacesConfig.PASSIVE_EFFECT_BUFFER_TICKS = () -> COMMON.passive_effect_buffer_ticks.get();
                 CreRacesConfig.PASSIVE_DEFAULT_MAX_FOOD = () -> COMMON.passive_default_max_food.get();
                 CreRacesConfig.PASSIVE_DEFAULT_MAX_SATURATION = () -> COMMON.passive_default_max_saturation.get();
-                CreRacesConfig.RACE_ADDONS_ENABLED = () -> COMMON.race_addons_enabled.get();
-                CreRacesConfig.LORE_ADDONS_ENABLED = () -> COMMON.lore_addons_enabled.get();
 
                 CreRacesConfig.RAT_VENOM_SCALING = () -> COMMON.rat_venom_scaling.get();
 

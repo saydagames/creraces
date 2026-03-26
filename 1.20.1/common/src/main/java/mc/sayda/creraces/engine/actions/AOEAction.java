@@ -51,7 +51,7 @@ public class AOEAction implements ActionRegistry.RaceAction {
             return true;
 
         double r = radius.evaluate(player, target, slot);
-        int maxRadius = 100;
+        int maxRadius = mc.sayda.creraces.config.CreRacesConfig.AOE_MAX_RADIUS.get();
         if (maxRadius > 0)
             r = Math.min(r, maxRadius);
 
@@ -75,12 +75,12 @@ public class AOEAction implements ActionRegistry.RaceAction {
 
         if (hitTargets.isEmpty()) {
             if (failIfEmpty) {
-                mc.sayda.creraces.CreRaces.LOGGER.info("AOEAction: No targets found, fail_if_empty is true - returning false.");
+                mc.sayda.creraces.CreRaces.LOGGER.debug("AOEAction: No targets found, fail_if_empty is true - returning false.");
             }
             return !failIfEmpty;
         }
 
-        mc.sayda.creraces.CreRaces.LOGGER.info("AOEAction: Found {} valid targets.", hitTargets.size());
+        mc.sayda.creraces.CreRaces.LOGGER.debug("AOEAction: Found {} valid targets.", hitTargets.size());
 
         for (LivingEntity e : hitTargets) {
             for (ActionRegistry.RaceAction action : actions) {
@@ -92,9 +92,9 @@ public class AOEAction implements ActionRegistry.RaceAction {
         return true;
     }
 
-    @SuppressWarnings("null")
     public static void register() {
         ActionRegistry.register(ID, json -> {
+            if (json == null) return null;
             mc.sayda.creraces.engine.ScalingValue radius = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
                     "radius", 5.0);
             mc.sayda.creraces.engine.TargetFilter targets = mc.sayda.creraces.engine.TargetFilter.fromJson(json,

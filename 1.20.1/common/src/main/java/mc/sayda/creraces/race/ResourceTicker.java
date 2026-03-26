@@ -1,6 +1,7 @@
 package mc.sayda.creraces.race;
 
 import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.config.CreRacesConfig;
 import mc.sayda.creraces.capability.IPlayerVariables;
 import mc.sayda.creraces.network.BoundaryHandler;
 import mc.sayda.creraces.registry.ModAttributes;
@@ -172,8 +173,12 @@ public class ResourceTicker {
 
         // 6. Sunlight Burning Logic (Every 20 ticks)
         Race.Passives passives = race.passives();
-        if (passives != null && passives.burnsInSunlight() && player.tickCount % 20 == 0 && player.level().isDay()
-                && !player.level().isRaining() 
+        if (passives == null)
+            return;
+
+        int interval = passives.sunlightBurnInterval();
+        if (interval >= 0 && player.level().isDay()
+                && !player.level().isRaining()
                 && player.level().canSeeSky(player.blockPosition())) {
 
             boolean immune = passives.immuneToDamageTypes().contains("minecraft:fire")
@@ -188,19 +193,15 @@ public class ResourceTicker {
                                 mc.sayda.creraces.registry.ModEnchantments.SUN_PROTECTION.get(), player) > 0;
 
                 if (!headItem.isEmpty()) {
-                    if (headItem.isDamageableItem() && !hasProtection) {
-                        if (player.getRandom()
-                                .nextFloat() < mc.sayda.creraces.config.CreRacesConfig.SUNLIGHT_EQUIPMENT_BREAK_CHANCE
-                                        .get()) {
-                            headItem.setDamageValue(headItem.getDamageValue() + 1);
-                            if (headItem.getDamageValue() >= headItem.getMaxDamage()) {
-                                player.broadcastBreakEvent(net.minecraft.world.entity.EquipmentSlot.HEAD);
-                                player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD,
-                                        net.minecraft.world.item.ItemStack.EMPTY);
-                            }
+                    if (interval > 0 && player.tickCount % interval == 0 && headItem.isDamageableItem() && !hasProtection) {
+                        headItem.setDamageValue(headItem.getDamageValue() + 1);
+                        if (headItem.getDamageValue() >= headItem.getMaxDamage()) {
+                            player.broadcastBreakEvent(net.minecraft.world.entity.EquipmentSlot.HEAD);
+                            player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD,
+                                    net.minecraft.world.item.ItemStack.EMPTY);
                         }
                     }
-                } else {
+                } else if (player.tickCount % 20 == 0 && !hasProtection) {
                     player.setSecondsOnFire(mc.sayda.creraces.config.CreRacesConfig.SUNLIGHT_BURN_SECONDS.get());
                 }
             }
@@ -216,9 +217,9 @@ public class ResourceTicker {
 
             if (passives.noHunger()) {
                 player.getFoodData()
-                        .setFoodLevel(20);
+                        .setFoodLevel(CreRacesConfig.PASSIVE_DEFAULT_MAX_FOOD.get());
                 player.getFoodData()
-                        .setSaturation(20.0f);
+                        .setSaturation(CreRacesConfig.PASSIVE_DEFAULT_MAX_SATURATION.get().floatValue());
             } else if (passives.fixedHunger() != null) {
                 double fixedH = passives.fixedHunger().evaluate(player);
                 if (fixedH > 0) {

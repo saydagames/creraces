@@ -51,10 +51,16 @@ public class AbilityIncidents {
                 return;
             }
 
-            // 4. Execute Logic
+            // 4. Evaluate Condition
+            if (ability.condition() != null && !ability.condition().evaluate(player, null, slot, null)) {
+                player.displayClientMessage(Component.translatable("msg.creraces.condition_failed"), true);
+                return;
+            }
+
+            // 5. Execute Logic
             try {
                 if (executor.execute(player, ability, slot)) {
-                    // 5. Post-Cast (Consume cost and set cooldown)
+                    // 6. Post-Cast (Consume cost and set cooldown)
                     consumeResource(vars, race, ability.cost());
 
                     double haste = player
@@ -63,12 +69,15 @@ public class AbilityIncidents {
                     double effectiveHaste = Math.min(haste, cap);
                     double multiplier = 1.0 - (effectiveHaste / 100.0);
                     int cooledTicks = (int) (ability.cooldown() * multiplier);
-                    vars.setCooldown(abilityId, Math.max(0, cooledTicks));
+
+                    if (vars.getCooldown(abilityId) <= 0) {
+                        vars.setCooldown(abilityId, Math.max(0, cooledTicks));
+                    }
 
                     // Sync to client
                     BoundaryHandler.resyncVariables(player, player);
 
-                    // 6. Trigger traits
+                    // 7. Trigger traits
                     if (race.traits() != null) {
                         for (mc.sayda.creraces.engine.TraitRegistry.RaceTrait trait : race.traits()) {
                             trait.onAbilityUse(player, ability);
@@ -103,8 +112,6 @@ public class AbilityIncidents {
             case ENERGY -> vars.setEnergy(Math.max(0, vars.getEnergy() - cost));
             case GRIT -> vars.setGrit(Math.max(0, vars.getGrit() - cost));
             case SOUL -> vars.setSoul(Math.max(0, vars.getSoul() - cost));
-            case NONE -> {
-            }
             default -> {
             }
         }

@@ -152,6 +152,14 @@ public class MiniPlacePacket {
 
             ServerLevel level = serverPlayer.serverLevel();
 
+            // Validate reach distance to prevent arbitrary remote placement
+            double reachSq = mc.sayda.creraces.config.CreRacesConfig.MINI_CRAFTING_DISTANCE_SQR.get();
+            if (serverPlayer.distanceToSqr(hostPos.getX() + 0.5, hostPos.getY() + 0.5, hostPos.getZ() + 0.5) > reachSq) {
+                CreRaces.LOGGER.warn("MiniPlacePacket: Rejected - player {} too far from hostPos {}",
+                        serverPlayer.getName().getString(), hostPos);
+                return;
+            }
+
             // Validate slot
             if (slotX < 0 || slotX >= 4 || slotY < 0 || slotY >= 4 || slotZ < 0 || slotZ >= 4)
                 return;
@@ -266,6 +274,11 @@ public class MiniPlacePacket {
                 int headSlotX = slotX + facing.getStepX();
                 int headSlotZ = slotZ + facing.getStepZ();
 
+                if (headSlotX < 0 || headSlotX >= 4 || headSlotZ < 0 || headSlotZ >= 4) {
+                    CreRaces.LOGGER.warn("MiniPlacePacket: Bed placement rejected: Head slot out of bounds at {},{}",
+                            headSlotX, headSlotZ);
+                    return;
+                }
                 if (!MicroBlockEntity.getSlotGlobal(level, hostPos, headSlotX, slotY, headSlotZ).isAir())
                     return;
 
@@ -279,7 +292,7 @@ public class MiniPlacePacket {
                 MicroBlockEntity.setSlotGlobal(level, hostPos, slotX, slotY, slotZ, placementState);
             }
 
-            mc.sayda.creraces.CreRaces.LOGGER.info("MiniPlacePacket: Placing {} for {} at {} slot {},{},{}", blockId,
+            CreRaces.LOGGER.debug("MiniPlacePacket: Placing {} for {} at {} slot {},{},{}", blockId,
                     serverPlayer.getName().getString(), hostPos, slotX, slotY, slotZ);
 
             // Consume item

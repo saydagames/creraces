@@ -92,7 +92,7 @@ public class ApplyEffectAction implements ActionRegistry.RaceAction {
             return true;
 
         double r = radius.evaluate(player, target, slot);
-        int maxAoeRadius = 100;
+        int maxAoeRadius = mc.sayda.creraces.config.CreRacesConfig.AOE_MAX_RADIUS.get();
         if (maxAoeRadius > 0)
             r = Math.min(r, maxAoeRadius);
         if (r > 0) {

@@ -24,6 +24,9 @@ public class SubRaceScreen extends Screen {
     private static final ResourceLocation ARROW_LEFT = new ResourceLocation("creraces",
             "textures/screens/atlas/arrow_left.png");
     private static final ResourceLocation RACE_SLOT = new ResourceLocation("creraces", "textures/screens/race.png");
+    private static final ResourceLocation PORTRAIT_WARNING = new ResourceLocation("creraces", "textures/screens/portrait_warning.png");
+    private static final ResourceLocation PORTRAIT_ERROR = new ResourceLocation("creraces", "textures/screens/portrait_error.png");
+    private static final ResourceLocation PORTRAIT_INFO = new ResourceLocation("creraces", "textures/screens/portrait_info.png");
 
     // Legacy positioning
     private static final int[] PORTRAIT_COLS = { 8, 67, 124 };
@@ -94,6 +97,7 @@ public class SubRaceScreen extends Screen {
         graphics.blit(SELECTION_BORDER, this.leftPos + -25, this.topPos + -47, 0, 0, 225, 264, 225, 264);
 
         // 2. Portraits
+        Component hoverTooltip = null;
         for (int i = 0; i < 9; i++) {
             int rowIdx = i / 3;
             int colIdx = i % 3;
@@ -105,6 +109,25 @@ public class SubRaceScreen extends Screen {
                 if (race.portrait() != null) {
                     graphics.blit(race.portrait(), portraitX, portraitY, 0, 0, PORTRAIT_SIZE, PORTRAIT_SIZE,
                             PORTRAIT_SIZE, PORTRAIT_SIZE);
+                    
+                    // Render State Overlays
+                    Race.RaceState state = race.state();
+                    if (state != Race.RaceState.FINISHED) {
+                        ResourceLocation overlay = switch (state) {
+                            case NEW -> PORTRAIT_INFO;
+                            case EXPERIMENTAL -> PORTRAIT_ERROR;
+                            case UNFINISHED -> PORTRAIT_WARNING;
+                            default -> null;
+                        };
+                        if (overlay != null) {
+                            graphics.blit(overlay, portraitX, portraitY, 0, 0, PORTRAIT_SIZE, PORTRAIT_SIZE, PORTRAIT_SIZE, PORTRAIT_SIZE);
+                            
+                            // Check for hover
+                            if (mouseX >= portraitX && mouseX < portraitX + PORTRAIT_SIZE && mouseY >= portraitY && mouseY < portraitY + PORTRAIT_SIZE) {
+                                hoverTooltip = Component.translatable("gui.creraces.status." + state.name().toLowerCase());
+                            }
+                        }
+                    }
                 } else {
                     graphics.blit(RACE_SLOT, portraitX, portraitY, 0, 0, PORTRAIT_SIZE, PORTRAIT_SIZE, PORTRAIT_SIZE,
                             PORTRAIT_SIZE);
@@ -120,6 +143,10 @@ public class SubRaceScreen extends Screen {
         // this.topPos + -38, 0xFFCC00);
 
         super.render(graphics, mouseX, mouseY, partialTick);
+
+        if (hoverTooltip != null) {
+            graphics.renderTooltip(this.font, hoverTooltip, mouseX, mouseY);
+        }
     }
 
     @Override

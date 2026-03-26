@@ -3,6 +3,7 @@ package mc.sayda.creraces.race;
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.network.BoundaryHandler;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.resources.ResourceLocation;
 
 public class RaceIncidents {
@@ -63,14 +64,18 @@ public class RaceIncidents {
             vars.setAh(race.baseAh());
             vars.setCr(race.baseCr());
 
-            // Initialize resources to max
-            vars.setMana(race.maxResource());
-            vars.setGrit(race.maxResource());
-            vars.setEnergy(race.maxResource());
-            vars.setRage(0);
-
             // Apply Eiki's Judgment (Sync attributes to Vanilla)
             AttributeIncidents.eikiJudgment(player);
+
+            // Initialize resources to max
+            vars.setMana((int) player
+                    .getAttributeValue(java.util.Objects.requireNonNull(mc.sayda.creraces.registry.ModAttributes
+                            .resolve(mc.sayda.creraces.registry.ModAttributes.MAX_MANA))));
+            vars.setGrit(0);
+            vars.setEnergy((int) player
+                    .getAttributeValue(java.util.Objects.requireNonNull(mc.sayda.creraces.registry.ModAttributes
+                            .resolve(mc.sayda.creraces.registry.ModAttributes.MAX_ENERGY))));
+            vars.setRage(0);
 
             // Apply Default Customizations
             if (race.customization() != null) {
@@ -84,7 +89,6 @@ public class RaceIncidents {
             CosmeticIncidents.applyGStateCosmetics(player, race, vars);
 
             CosmeticIncidents.applyCustomizations(player, vars.getCustomizations(), race);
-
 
             // Grant Starting Abilities
             if (race.startingAbilities() != null) {
@@ -106,8 +110,10 @@ public class RaceIncidents {
             // Grant Starting Items (Server side only)
             if (race.startingItems() != null && !player.level().isClientSide()) {
                 for (ResourceLocation itemId : race.startingItems()) {
-                    if (itemId == null) continue;
-                    net.minecraft.world.item.Item item = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(itemId);
+                    if (itemId == null)
+                        continue;
+                    net.minecraft.world.item.Item item = net.minecraft.core.registries.BuiltInRegistries.ITEM
+                            .get(itemId);
                     if (item != null && item != net.minecraft.world.item.Items.AIR) {
                         player.getInventory().add(new net.minecraft.world.item.ItemStack(item));
                     }
@@ -167,21 +173,28 @@ public class RaceIncidents {
             return;
 
         try {
-            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.BASE, (float) scale.base().evaluate(player));
-            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.WIDTH, (float) scale.width().evaluate(player));
-            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.HEIGHT, (float) scale.height().evaluate(player));
+            float multiplier = 1.0f;
+            Player playerFromEntity = entity instanceof Player ? (Player) entity : null;
+            mc.sayda.creraces.capability.IPlayerVariables vars = DataUtils.getVariables(playerFromEntity).orElse(null);
+            if (vars != null && vars.isTiny()) {
+                multiplier = 0.5f;
+            }
+
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.BASE, (float) scale.base().evaluate(player) * multiplier);
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.WIDTH, (float) scale.width().evaluate(player) * multiplier);
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.HEIGHT, (float) scale.height().evaluate(player) * multiplier);
             applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.HITBOX_WIDTH,
-                    (float) scale.hitboxWidth().evaluate(player));
+                    (float) scale.hitboxWidth().evaluate(player) * multiplier);
             applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.HITBOX_HEIGHT,
-                    (float) scale.hitboxHeight().evaluate(player));
+                    (float) scale.hitboxHeight().evaluate(player) * multiplier);
             applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.EYE_HEIGHT,
-                    (float) scale.eyeHeight().evaluate(player));
-            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.REACH, (float) scale.reach().evaluate(player));
+                    (float) scale.eyeHeight().evaluate(player) * multiplier);
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.REACH, (float) scale.reach().evaluate(player) * multiplier);
             applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.MINING_SPEED,
                     (float) scale.miningSpeed().evaluate(player));
             applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.MOTION, (float) scale.motion().evaluate(player));
             applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.STEP_HEIGHT,
-                    (float) scale.stepHeight().evaluate(player));
+                    (float) scale.stepHeight().evaluate(player) * multiplier);
             applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.JUMP_HEIGHT,
                     (float) scale.jumpHeight().evaluate(player));
             applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.KNOCKBACK,
@@ -190,7 +203,7 @@ public class RaceIncidents {
         } catch (Throwable e) {
             // Pehkui may be absent or throw on unsupported scale types, not fatal, but log
             // it
-            mc.sayda.creraces.CreRaces.LOGGER.warn("[CreRaces] Failed to apply scale for entity {}: {}",
+            mc.sayda.creraces.CreRaces.LOGGER.warn("Failed to apply scale for entity {}: {}",
                     entity.getName().getString(), e.getMessage());
         }
     }

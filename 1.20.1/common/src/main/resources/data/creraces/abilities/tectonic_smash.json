@@ -3,7 +3,7 @@
     "creraces:description": "ability.creraces.tectonic_smash.description",
     "creraces:type": "ACTIVE",
     "creraces:icon": "minecraft:textures/item/iron_boots.png",
-    "creraces:cooldown": 0,
+    "creraces:cooldown": 15,
     "creraces:cost": 0,
     "creraces:race": [
         "creraces:giant"
@@ -65,10 +65,76 @@
                 {
                     "type": "creraces:spawn_particles",
                     "particle": "minecraft:explosion",
-                    "count": 10
+                    "count": 15
+                },
+                {
+                    "type": "creraces:spawn_particles",
+                    "particle": "minecraft:campfire_cosy_smoke",
+                    "count": 25
+                },
+                {
+                    "type": "creraces:message",
+                    "text": "&c&lTectonic Smash!",
+                    "actionbar": true
                 }
             ],
             "if_false": [
+                {
+                    "type": "creraces:conditional",
+                    "condition": {
+                        "type": "creraces:state",
+                        "state": "tectonic_smash",
+                        "value": 0
+                    },
+                    "if_true": [
+                        {
+                            "type": "creraces:message",
+                            "text": "Combo 1/5",
+                            "actionbar": true
+                        }
+                    ],
+                    "if_false": [
+                        {
+                            "type": "creraces:conditional",
+                            "condition": {
+                                "type": "creraces:state",
+                                "state": "tectonic_smash",
+                                "value": 1
+                            },
+                            "if_true": [
+                                {
+                                    "type": "creraces:message",
+                                    "text": "Combo 2/5",
+                                    "actionbar": true
+                                }
+                            ],
+                            "if_false": [
+                                {
+                                    "type": "creraces:conditional",
+                                    "condition": {
+                                        "type": "creraces:state",
+                                        "state": "tectonic_smash",
+                                        "value": 2
+                                    },
+                                    "if_true": [
+                                        {
+                                            "type": "creraces:message",
+                                            "text": "Combo 3/5",
+                                            "actionbar": true
+                                        }
+                                    ],
+                                    "if_false": [
+                                        {
+                                            "type": "creraces:message",
+                                            "text": "Combo 4/5",
+                                            "actionbar": true
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
                 {
                     "type": "creraces:aoe",
                     "radius": 4.0,
@@ -103,13 +169,25 @@
                     "sound": "minecraft:entity.iron_golem.attack",
                     "volume": 1.0,
                     "pitch": 0.7
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:block.stone.break",
+                    "volume": 1.0,
+                    "pitch": 0.8
+                },
+                {
+                    "type": "creraces:spawn_particles",
+                    "particle": "minecraft:sweep_attack",
+                    "count": 3
+                },
+                {
+                    "type": "creraces:spawn_particles",
+                    "particle": "minecraft:large_smoke",
+                    "count": 10
                 }
             ]
         }
     ],
     "creraces:wiki_page": "Ability:Tectonic_Smash"
 }
-
-
-
-

@@ -38,10 +38,10 @@ public class ApplyVelocityAction implements ActionRegistry.RaceAction {
         this.absolute = absolute;
     }
 
-    @SuppressWarnings("null")
     @Override
     public boolean execute(Player player, @javax.annotation.Nullable LivingEntity target,
             @javax.annotation.Nullable AbilitySlot slot, @javax.annotation.Nullable BlockPos interactionPos) {
+        if (player == null) return false;
         LivingEntity entity = (target != null) ? target : (useTarget ? null : player);
         if (entity == null)
             return false;
@@ -53,25 +53,37 @@ public class ApplyVelocityAction implements ActionRegistry.RaceAction {
 
         Vec3 velocity;
         if (mode.equalsIgnoreCase("pull")) {
-            Vec3 diff = player.position().subtract(entity.position());
+            Vec3 playerPos = player.position();
+            Vec3 entityPos = entity.position();
+            if (playerPos == null || entityPos == null) return false;
+            Vec3 diff = playerPos.subtract(entityPos);
             Vec3 dir = diff.lengthSqr() > 1.0E-4D ? diff.normalize() : Vec3.ZERO;
+            if (dir == null) return false;
             velocity = dir.scale(s).add(0, vy, 0); 
         } else if (mode.equalsIgnoreCase("push")) {
-            Vec3 diff = entity.position().subtract(player.position());
+            Vec3 playerPos = player.position();
+            Vec3 entityPos = entity.position();
+            if (playerPos == null || entityPos == null) return false;
+            Vec3 diff = entityPos.subtract(playerPos);
             Vec3 dir = diff.lengthSqr() > 1.0E-4D ? diff.normalize() : Vec3.ZERO;
+            if (dir == null) return false;
             velocity = dir.scale(s).add(0, vy, 0);
         } else if (relative) {
             float yaw = entity.getYRot();
             float pitch = entity.getXRot();
-            velocity = Vec3.directionFromRotation(pitch, yaw).scale(vx).add(0, vy, 0);
+            Vec3 dir = Vec3.directionFromRotation(pitch, yaw);
+            if (dir == null) return false;
+            velocity = dir.scale(vx).add(0, vy, 0);
         } else {
             velocity = new Vec3(vx, vy, vz);
         }
 
         if (absolute) {
+            if (velocity == null) return false;
             entity.setDeltaMovement(velocity);
             entity.hurtMarked = true;
         } else {
+            if (velocity == null) return false;
             entity.push(velocity.x, velocity.y, velocity.z);
             entity.hurtMarked = true;
         }

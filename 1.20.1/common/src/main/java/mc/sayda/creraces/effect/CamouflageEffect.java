@@ -27,7 +27,8 @@ public class CamouflageEffect extends TrueInvisibilityEffect {
 
         DataUtils.getVariables(player).ifPresent(vars -> {
             ResourceLocation raceId = vars.getRace();
-            if (raceId != null && "creraces:naiad".equals(raceId.toString()) && !player.isInWater()) {
+            mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(raceId);
+            if (race != null && race.isAquatic() && !player.isInWater() && !mc.sayda.creraces.util.WorldUtils.isExposedToRain(player)) {
                 player.removeEffect(this);
             }
         });

@@ -11,6 +11,19 @@ import mc.sayda.creraces.engine.TraitRegistry.RaceTrait;
  * Defined via JSON in data/creraces/races/
  */
 public class Race {
+	public enum RaceState {
+		NEW, UNFINISHED, EXPERIMENTAL, FINISHED;
+
+		public static RaceState fromString(String str) {
+			if (str == null)
+				return FINISHED;
+			try {
+				return valueOf(str.toUpperCase());
+			} catch (Exception e) {
+				return FINISHED;
+			}
+		}
+	}
         private final ResourceLocation id;
         private final net.minecraft.network.chat.Component name;
         private final net.minecraft.network.chat.Component description;
@@ -18,14 +31,13 @@ public class Race {
         private final ResourceLocation portrait;
         private final ResourceLocation splash;
         private final ResourceLocation nameTexture;
-        private final ResourceLocation parentRace;
+        private final List<ResourceLocation> parentRaces;
         private final double index;
         private final int baseAp;
         private final int baseAd;
         private final int baseAh;
         private final int baseCr;
         private final RaceScale scale;
-        private final int maxResource;
         private final ResourceType resourceType;
         private final ResourceLocation bgTexture;
         private final int difficulty;
@@ -38,7 +50,11 @@ public class Race {
         private final List<RaceTrait> traits;
         private final boolean isSpirit;
         private final boolean isTiny;
+        private final boolean isAquatic;
+        private final boolean isUndead;
+        private final boolean selectable;
         private final mc.sayda.creraces.engine.GState gState;
+        private final RaceState state;
 
         private Race(Builder builder) {
                 this.id = builder.id;
@@ -48,14 +64,13 @@ public class Race {
                 this.portrait = builder.portrait;
                 this.splash = builder.splash;
                 this.nameTexture = builder.nameTexture;
-                this.parentRace = builder.parentRace;
+                this.parentRaces = builder.parentRaces;
                 this.index = builder.index;
                 this.baseAp = builder.baseAp;
                 this.baseAd = builder.baseAd;
                 this.baseAh = builder.baseAh;
                 this.baseCr = builder.baseCr;
                 this.scale = builder.scale;
-                this.maxResource = builder.maxResource;
                 this.resourceType = builder.resourceType;
                 this.bgTexture = builder.bgTexture;
                 this.difficulty = builder.difficulty;
@@ -74,7 +89,11 @@ public class Race {
                 this.traits = builder.traits;
                 this.isSpirit = builder.isSpirit;
                 this.isTiny = builder.isTiny;
+                this.isAquatic = builder.isAquatic;
+                this.isUndead = builder.isUndead;
+                this.selectable = builder.selectable;
                 this.gState = builder.gState;
+                this.state = builder.state;
         }
 
         public static class Builder {
@@ -87,11 +106,10 @@ public class Race {
                 private ResourceLocation splash = new ResourceLocation("creraces",
                                 "textures/screens/unknown_splash.png");
                 private ResourceLocation nameTexture = null;
-                private ResourceLocation parentRace = null;
+                private List<ResourceLocation> parentRaces = new java.util.ArrayList<>();
                 private double index = Double.MAX_VALUE;
                 private int baseAp = 0, baseAd = 0, baseAh = 0, baseCr = 0;
                 private RaceScale scale = null;
-                private int maxResource = 100;
                 private ResourceType resourceType = ResourceType.NONE;
                 private ResourceLocation bgTexture = new ResourceLocation("creraces",
                                 "textures/screens/selection_bg.png");
@@ -105,7 +123,11 @@ public class Race {
                 private List<RaceTrait> traits = new java.util.ArrayList<>();
                 private boolean isSpirit = false;
                 private boolean isTiny = false;
+                private boolean isAquatic = false;
+                private boolean isUndead = false;
+                private boolean selectable = true;
                 private mc.sayda.creraces.engine.GState gState = mc.sayda.creraces.engine.GState.BOTH;
+                private RaceState state = RaceState.FINISHED;
 
                 public Builder(ResourceLocation id, net.minecraft.network.chat.Component name) {
                         this.id = id;
@@ -140,8 +162,8 @@ public class Race {
                         return this;
                 }
 
-                public Builder parentRace(@Nullable ResourceLocation parentRace) {
-                        this.parentRace = parentRace;
+                public Builder parentRaces(List<ResourceLocation> parentRaces) {
+                        this.parentRaces = parentRaces;
                         return this;
                 }
 
@@ -163,9 +185,8 @@ public class Race {
                         return this;
                 }
 
-                public Builder resource(ResourceType type, int maxResource) {
+                public Builder resource(ResourceType type) {
                         this.resourceType = type;
-                        this.maxResource = maxResource;
                         return this;
                 }
 
@@ -235,10 +256,31 @@ public class Race {
                         return this;
                 }
 
+                public Builder isAquatic(boolean isAquatic) {
+                        this.isAquatic = isAquatic;
+                        return this;
+                }
+ 
+                public Builder isUndead(boolean isUndead) {
+                        this.isUndead = isUndead;
+                        return this;
+                }
+
+                public Builder selectable(boolean selectable) {
+                        this.selectable = selectable;
+                        return this;
+                }
+
 
                 public Builder gState(mc.sayda.creraces.engine.GState gState) {
                         if (gState != null)
                                 this.gState = gState;
+                        return this;
+                }
+
+                public Builder state(RaceState state) {
+                        if (state != null)
+                                this.state = state;
                         return this;
                 }
 
@@ -281,8 +323,8 @@ public class Race {
                 return nameTexture;
         }
 
-        public @Nullable ResourceLocation parentRace() {
-                return parentRace;
+        public List<ResourceLocation> parentRaces() {
+                return parentRaces;
         }
 
         public double index() {
@@ -307,10 +349,6 @@ public class Race {
 
         public RaceScale scale() {
                 return scale;
-        }
-
-        public int maxResource() {
-                return maxResource;
         }
 
         public ResourceType resourceType() {
@@ -385,6 +423,18 @@ public class Race {
                 return isTiny;
         }
 
+        public boolean isAquatic() {
+                return isAquatic;
+        }
+ 
+        public boolean isUndead() {
+                return isUndead;
+        }
+
+
+        public boolean selectable() {
+                return selectable;
+        }
 
         /**
          * The forced gender state for this race.
@@ -393,13 +443,17 @@ public class Race {
                 return gState;
         }
 
+        public RaceState state() {
+                return state;
+        }
+
         /**
          * Static passive traits that don't require abilities/effects
          */
         public static class Passives {
                 private final boolean canBreatheUnderwater;
-                private final boolean canBreatheOnLand;
-                private final boolean burnsInSunlight;
+                private final int landSuffocationInterval;
+                private final int sunlightBurnInterval;
                 private final List<String> immuneToDamageTypes;
                 private final List<String> immuneToPotionEffects;
                 private final boolean nightVision;
@@ -426,7 +480,7 @@ public class Race {
                 private final EntitySpawnData spawnOnDeath;
                 private final boolean canCommandSocials;
 
-                public Passives(boolean canBreatheUnderwater, boolean canBreatheOnLand, boolean burnsInSunlight,
+                public Passives(boolean canBreatheUnderwater, int landSuffocationInterval, int sunlightBurnInterval,
                                 List<String> immuneToDamageTypes, List<String> immuneToPotionEffects,
                                 boolean nightVision,
                                 boolean waterVision, boolean lavaVision,
@@ -442,8 +496,8 @@ public class Race {
                                 List<String> defendedByEntities, @Nullable EntitySpawnData spawnOnDeath,
                                 boolean canCommandSocials) {
                         this.canBreatheUnderwater = canBreatheUnderwater;
-                        this.canBreatheOnLand = canBreatheOnLand;
-                        this.burnsInSunlight = burnsInSunlight;
+                        this.landSuffocationInterval = landSuffocationInterval;
+                        this.sunlightBurnInterval = sunlightBurnInterval;
                         this.immuneToDamageTypes = immuneToDamageTypes;
                         this.immuneToPotionEffects = immuneToPotionEffects;
                         this.nightVision = nightVision;
@@ -477,12 +531,16 @@ public class Race {
                         return canBreatheUnderwater;
                 }
 
-                public boolean canBreatheOnLand() {
-                        return canBreatheOnLand;
+                public int landSuffocationInterval() {
+                        return landSuffocationInterval;
                 }
 
-                public boolean burnsInSunlight() {
-                        return burnsInSunlight;
+                public boolean canBreatheOnLand() {
+                        return landSuffocationInterval <= 0;
+                }
+
+                public int sunlightBurnInterval() {
+                        return sunlightBurnInterval;
                 }
 
                 public List<String> immuneToDamageTypes() {
@@ -586,10 +644,7 @@ public class Race {
                 }
 
                 public static Passives DEFAULT = new Passives(
-                                false, true, false, new java.util.ArrayList<>(), new java.util.ArrayList<>(), // Breathing
-                                                                                                              // (+
-                                                                                                              // effect
-                                                                                                              // immunity)
+                                false, -1, -1, new java.util.ArrayList<>(), new java.util.ArrayList<>(), // Breathing (+ effect immunity)
                                 false, false, false, // Vision
                                 false, // canFly
                                 new mc.sayda.creraces.engine.ScalingValue(1.0, null, 0, new java.util.ArrayList<>()), // liquidSpeedMultiplier
@@ -600,13 +655,8 @@ public class Race {
                                 new mc.sayda.creraces.engine.ScalingValue(1.0, null, 0, new java.util.ArrayList<>()), // invulnerabilityTicksMultiplier
                                 false, false, // noHunger, noHungerDrain
                                 new mc.sayda.creraces.engine.ScalingValue(0.0, null, 0, new java.util.ArrayList<>()), // fixedHunger
-                                new java.util.ArrayList<>(), new java.util.ArrayList<>(), false, // Food (blocked,
-                                                                                                 // allowed,
-                                                                                                 // canEatWhenFull)
-                                new java.util.ArrayList<>(), new java.util.ArrayList<>(), new java.util.ArrayList<>(), // Social
-                                                                                                                       // (hated,
-                                                                                                                       // respected,
-                                                                                                                       // defended)
+                                new java.util.ArrayList<>(), new java.util.ArrayList<>(), false, // Food (blocked, allowed, canEatWhenFull)
+                                new java.util.ArrayList<>(), new java.util.ArrayList<>(), new java.util.ArrayList<>(), // Social (hated, respected, defended)
                                 null, // spawnOnDeath
                                 false // canCommandSocials
                 );

@@ -33,6 +33,8 @@ public class GiveItemAction implements ActionRegistry.RaceAction {
         Item item = BuiltInRegistries.ITEM.get(itemId);
         if (item != null) {
             int count = (int) amount.evaluate(player, target, slot);
+            int maxCount = mc.sayda.creraces.config.CreRacesConfig.GIVE_ITEM_MAX_COUNT.get();
+            if (maxCount > 0) count = Math.min(count, maxCount);
             if (count > 0) {
                 ItemStack stack = new ItemStack(item, count);
                 if (!player.getInventory().add(stack)) {

@@ -71,8 +71,9 @@ public class SetCustomizationPacket {
                         }
                         // Clamp value length to prevent exploits
                         String clampedValue = value;
-                        if (clampedValue.length() > 128) {
-                            clampedValue = clampedValue.substring(0, 128);
+                        int maxLen = mc.sayda.creraces.config.CreRacesConfig.CUSTOMIZATION_VALUE_MAX_LENGTH.get();
+                        if (maxLen > 0 && clampedValue.length() > maxLen) {
+                            clampedValue = clampedValue.substring(0, maxLen);
                         }
                         vars.setCustomization(key, clampedValue);
                     });

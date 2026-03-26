@@ -66,25 +66,35 @@ public class AttributeModifierTrait implements TraitRegistry.RaceTrait {
         TraitRegistry.register(new ResourceLocation(CreRaces.MODID, "attribute_modifier"), json -> {
             String attrId = GsonHelper.getAsString(json, "attribute");
 
-            String statKey = attrId.toLowerCase();
             Attribute attribute = null;
+            ResourceLocation rl = new ResourceLocation(attrId);
 
-            if (statKey.equals("max_health") || statKey.equals("hp"))
-                attribute = net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH;
-            else if (statKey.equals("attack_damage") || statKey.equals("ad"))
-                attribute = net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE;
-            else if (statKey.equals("movement_speed") || statKey.equals("speed"))
-                attribute = net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED;
-            else if (statKey.equals("armor"))
-                attribute = net.minecraft.world.entity.ai.attributes.Attributes.ARMOR;
-            else if (statKey.equals("ap"))
-                attribute = ModAttributes.ABILITY_POWER.get();
-            else
-                attribute = BuiltInRegistries.ATTRIBUTE.get(new ResourceLocation(attrId));
+            // 1. Direct registry lookup
+            attribute = BuiltInRegistries.ATTRIBUTE.get(rl);
+
+            // 2. Custom Aliases
+            if (attribute == null) {
+                String statKey = attrId.toLowerCase();
+                if (statKey.equals("max_health") || statKey.equals("hp"))
+                    attribute = net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH;
+                else if (statKey.equals("attack_damage") || statKey.equals("ad"))
+                    attribute = net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE;
+                else if (statKey.equals("movement_speed") || statKey.equals("speed"))
+                    attribute = net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED;
+                else if (statKey.equals("armor"))
+                    attribute = net.minecraft.world.entity.ai.attributes.Attributes.ARMOR;
+                else if (statKey.equals("ap"))
+                    attribute = ModAttributes.ABILITY_POWER.get();
+            }
+
+            // 3. Mod Resolution (Apothic/AttributesLib)
+            if (attribute != null) {
+                attribute = ModAttributes.resolve(attribute);
+            }
 
             if (attribute == null) {
                 CreRaces.LOGGER.error(
-                        "[CreRaces] AttributeModifierTrait: unknown attribute '{}', trait will be skipped", attrId);
+                        "AttributeModifierTrait: unknown attribute '{}', trait will be skipped", attrId);
                 return null;
             }
 

@@ -24,6 +24,7 @@ import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 
+@SuppressWarnings("null")
 public class ExpandPocketAction implements ActionRegistry.RaceAction {
     private final ScalingValue cost;
     private final ScalingValue limit;

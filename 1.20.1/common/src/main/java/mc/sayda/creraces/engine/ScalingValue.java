@@ -265,7 +265,7 @@ public class ScalingValue {
             }
             final ResourceLocation abilityId = ResourceLocation.tryParse(subKey);
             if (abilityId == null) {
-                mc.sayda.creraces.CreRaces.LOGGER.error("[CreRaces] Invalid state ID in ScalingValue: {}", subKey);
+                mc.sayda.creraces.CreRaces.LOGGER.error("Invalid state ID in ScalingValue: {}", subKey);
                 return (s, p, t, sl) -> 0.0;
             }
             return (s, p, t, sl) -> {
@@ -278,7 +278,7 @@ public class ScalingValue {
         final String resLocStr = finalKey.contains(":") ? finalKey : "minecraft:" + finalKey;
         final ResourceLocation attrId = ResourceLocation.tryParse(resLocStr);
         if (attrId == null) {
-            mc.sayda.creraces.CreRaces.LOGGER.error("[CreRaces] Invalid attribute/stat ID in ScalingValue: {}",
+            mc.sayda.creraces.CreRaces.LOGGER.error("Invalid attribute/stat ID in ScalingValue: {}",
                     resLocStr);
             return (s, p, t, sl) -> 0.0;
         }

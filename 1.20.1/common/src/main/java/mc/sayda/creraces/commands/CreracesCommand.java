@@ -488,11 +488,14 @@ public class CreracesCommand {
                 // reloadResources() is async - chain on the server thread so we push fresh data
                 // to clients only AFTER the reload has fully completed.
                 source.getServer().reloadResources(ids).thenRunAsync(() -> {
+                        mc.sayda.creraces.CreRaces.LOGGER.info("CreracesCommand: Reload complete, broadcasting sync packets...");
+                        
                         mc.sayda.creraces.network.SyncRacesPacket racePacket = mc.sayda.creraces.race.RaceManager
                                         .createSyncPacket();
                         mc.sayda.creraces.network.SyncAbilitiesPacket abilityPacket = mc.sayda.creraces.ability.AbilityManager
                                         .createSyncPacket();
 
+                        int playerCount = source.getServer().getPlayerList().getPlayers().size();
                         for (ServerPlayer player : source.getServer().getPlayerList().getPlayers()) {
                                 mc.sayda.creraces.network.BoundaryHandler.syncRacesToPlayer(player, racePacket);
                                 mc.sayda.creraces.network.BoundaryHandler.syncAbilitiesToPlayer(player, abilityPacket);
@@ -505,6 +508,8 @@ public class CreracesCommand {
                                         .requireNonNull(Component.translatable("creraces.command.reloaded")
                                                         .withStyle(ChatFormatting.GREEN)),
                                         true);
+                        
+                        mc.sayda.creraces.CreRaces.LOGGER.info("CreracesCommand: Synced data to {} players.", playerCount);
                 }, source.getServer()); // run on the main server thread
 
                 return 1;

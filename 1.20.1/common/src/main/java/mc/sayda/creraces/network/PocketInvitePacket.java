@@ -60,7 +60,10 @@ public class PocketInvitePacket {
                             Component.translatable("message.creraces.pocket_invite_sent", target.getName()), true);
 
                     // Also ensure the target is added to the sender's invitation list
-                    vars.inviteToPocket(target.getUUID());
+                    int maxInvites = mc.sayda.creraces.config.CreRacesConfig.POCKET_INVITE_MAX.get();
+                    if (maxInvites < 0 || vars.getPocketInvitations().size() < maxInvites) {
+                        vars.inviteToPocket(target.getUUID());
+                    }
                 } else {
                     sender.displayClientMessage(Component.translatable("message.creraces.no_pocket_error")
                             .withStyle(net.minecraft.ChatFormatting.RED), true);

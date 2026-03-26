@@ -1,48 +1,31 @@
 {
     "creraces:name": "race.creraces.naiad.name",
-    "creraces:parent_race": "creraces:nymph",
+    "creraces:parent_races": [
+        "creraces:nymph",
+        "creraces:aquatic"
+    ],
     "creraces:index": 9.2,
     "creraces:description": "race.creraces.naiad.description",
     "creraces:icon": "creraces:textures/screens/naiad_icon.png",
     "creraces:splash": "creraces:textures/screens/naiad_splash.png",
     "creraces:portrait": "creraces:textures/screens/naiad_portrait.png",
     "creraces:name_texture": "creraces:textures/screens/naiad_text.png",
-    "creraces:base_ap": 10,
-    "creraces:base_ad": 5,
-    "creraces:base_ah": 12,
-    "creraces:base_cr": 8,
     "creraces:resource_type": "MANA",
-    "creraces:max_resource": 100,
     "creraces:gstate": "FEMALE",
-    "creraces:water_vision": true,
-    "creraces:liquid_speed_multiplier": 1.5,
     "creraces:starting_abilities": [
         "creraces:tidal_wave",
         "creraces:whirlpool",
         "creraces:quick_current",
         "creraces:camouflage"
     ],
-    "aquatic": [
-        {
-            "type": "creraces:aquatic_movement",
-            "neutral_buoyancy": true
-        }
-    ],
-    "passive": [
-        {
-            "id": "mining_penalty",
-            "type": "creraces:attribute_modifier",
-            "attribute": "twilight_lib:mining_penalty",
-            "value": 0.0,
-            "operation": "multiply_total"
-        }
-    ],
     "aquatic_buffs": [
         {
+            "name": "aquatic_buffs",
             "type": "creraces:on_tick",
             "interval": 100,
             "condition": {
-                "type": "creraces:in_water"
+                "type": "creraces:in_water",
+                "include_rain": false
             },
             "actions": [
                 {

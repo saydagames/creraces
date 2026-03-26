@@ -6,13 +6,8 @@
     "creraces:splash": "creraces:textures/screens/lycanthrope_splash.png",
     "creraces:portrait": "creraces:textures/screens/lycanthrope_portrait.png",
     "creraces:name_texture": "creraces:textures/screens/lycanthrope_text.png",
-    "creraces:base_ap": 10,
-    "creraces:base_ad": 8,
-    "creraces:base_ah": 15,
-    "creraces:base_cr": 10,
-    "creraces:resource_type": "ENERGY",
-    "creraces:max_resource": 100,
-    "creraces:difficulty": 2,
+    "creraces:resource_type": "RAGE",
+    "creraces:difficulty": 1,
     "creraces:night_vision": true,
     "creraces:regeneration_multiplier": 1.2,
     "creraces:starting_abilities": [
@@ -33,61 +28,71 @@
             }
         },
         {
-            "type": "creraces:on_tick",
-            "interval": 100,
+            "id": "lunar_width",
+            "type": "creraces:attribute_modifier",
+            "attribute": "pehkui:width",
+            "value": 0.2,
+            "operation": "addition",
             "condition": {
-                "type": "not",
-                "condition": {
-                    "type": "creraces:in_sunlight"
-                }
-            },
-            "actions": [
-                {
-                    "type": "creraces:apply_effect",
-                    "effect": "minecraft:strength",
-                    "duration": 200,
-                    "amplifier": {
-                        "base": 0,
-                        "scales_with": "state:creraces:stacks",
-                        "factor": 0.5
-                    }
-                }
-            ]
+                "type": "creraces:time",
+                "min": 13000,
+                "max": 23000
+            }
+        },
+        {
+            "id": "lunar_height",
+            "type": "creraces:attribute_modifier",
+            "attribute": "pehkui:height",
+            "value": 0.2,
+            "operation": "addition",
+            "condition": {
+                "type": "creraces:time",
+                "min": 13000,
+                "max": 23000
+            }
+        },
+        {
+            "id": "lunar_life_steal",
+            "type": "creraces:attribute_modifier",
+            "attribute": "attributeslib:life_steal",
+            "value": 0.2,
+            "operation": "addition",
+            "condition": {
+                "type": "creraces:time",
+                "min": 13000,
+                "max": 23000
+            }
         }
     ],
     "hunt_mechanics": [
         {
             "type": "creraces:on_hit",
             "condition": {
-                "type": "creraces:and",
-                "conditions": [
-                    {
-                        "type": "creraces:attack_charged"
-                    },
-                    {
-                        "type": "creraces:state",
-                        "state": "wild_hunt",
-                        "value": 1.0
-                    }
-                ]
+                "type": "creraces:state",
+                "state": "wild_hunt",
+                "value": 1.0
             },
             "actions": [
                 {
                     "type": "creraces:damage",
                     "amount": {
-                        "base": 2.0,
+                        "base": 1.0,
                         "scales_with": "state:creraces:stacks",
-                        "factor": 0.5
+                        "factor": 0.1
                     },
                     "damage_type": "minecraft:player_attack"
                 },
                 {
-                    "type": "creraces:heal",
-                    "amount": {
-                        "base": 0.5,
-                        "scales_with": "state:creraces:stacks",
-                        "factor": 0.1
-                    }
+                    "type": "creraces:apply_effect",
+                    "effect": "creraces:bleeding",
+                    "duration": 20,
+                    "amplifier": 0,
+                    "visible": true
+                },
+                {
+                    "type": "creraces:set_state",
+                    "state": "wild_hunt",
+                    "value": 0
                 }
             ]
         },

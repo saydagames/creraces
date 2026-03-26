@@ -16,10 +16,10 @@ public class TeamRequestPacket {
 
     private final Action action;
     private String data; // Team name or player name
-    private UUID teamId;
+    private UUID targetUuid; // Target player's UUID for role actions
 
     public enum Action {
-        CREATE, JOIN, LEAVE, INVITE, TOGGLE_FRIENDLY_FIRE, PROMOTE, DEMOTE
+        CREATE, JOIN, LEAVE, INVITE, TOGGLE_FRIENDLY_FIRE, PROMOTE, DEMOTE, KICK
     }
 
     public TeamRequestPacket(Action action, String data) {
@@ -27,25 +27,17 @@ public class TeamRequestPacket {
         this.data = data;
     }
 
-    public TeamRequestPacket(Action action, UUID teamId) {
+    public TeamRequestPacket(Action action, UUID targetUuid) {
         this.action = action;
-        this.teamId = teamId;
+        this.targetUuid = targetUuid;
     }
 
     public TeamRequestPacket(FriendlyByteBuf buf) {
         this.action = buf.readEnum(Action.class);
         if (buf.readBoolean())
-            this.data = buf.readUtf(32767); // Safe
-                                            // upper
-                                            // bound
-                                            // for
-                                            // reading,
-                                            // validated
-                                            // further
-                                            // in
-                                            // handle()
+            this.data = buf.readUtf(256);
         if (buf.readBoolean())
-            this.teamId = buf.readUUID();
+            this.targetUuid = buf.readUUID();
     }
 
     public void encode(FriendlyByteBuf buf) {
@@ -53,9 +45,9 @@ public class TeamRequestPacket {
         buf.writeBoolean(data != null);
         if (data != null)
             buf.writeUtf(data);
-        buf.writeBoolean(teamId != null);
-        if (teamId != null)
-            buf.writeUUID(teamId);
+        buf.writeBoolean(targetUuid != null);
+        if (targetUuid != null)
+            buf.writeUUID(targetUuid);
     }
 
     public void handle(Supplier<dev.architectury.networking.NetworkManager.PacketContext> contextSupplier) {
@@ -67,7 +59,7 @@ public class TeamRequestPacket {
                 case CREATE -> {
                     if (data == null || data.isBlank())
                         return;
-                    int teamMax = 16;
+                    int teamMax = mc.sayda.creraces.config.CreRacesConfig.NETWORK_TEAM_NAME_MAX_LEN.get();
                     if (data.length() > teamMax) {
                         CreRaces.LOGGER.warn("Player {} tried to create team with oversized name ({} chars)",
                                 player.getName().getString(), data.length());
@@ -76,16 +68,19 @@ public class TeamRequestPacket {
                     RaceTeamManager.createTeam(player, data);
                 }
                 case JOIN -> {
-                    RaceTeamManager.getPendingInvite(player.getUUID()).ifPresent(teamId -> {
-                        RaceTeamManager.joinTeam(player, teamId);
+                    var invite = RaceTeamManager.getPendingInvite(player.getUUID());
+                    if (invite.isPresent()) {
+                        RaceTeamManager.joinTeam(player, invite.get());
                         RaceTeamManager.clearInvite(player.getUUID());
-                    });
+                    } else {
+                        player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("msg.creraces.team.no_invite"));
+                    }
                 }
                 case LEAVE -> RaceTeamManager.leaveTeam(player);
                 case INVITE -> {
                     if (data == null || data.isBlank())
                         return;
-                    int playerMax = 16;
+                    int playerMax = mc.sayda.creraces.config.CreRacesConfig.NETWORK_TEAM_NAME_MAX_LEN.get();
                     if (data.length() > playerMax) {
                         CreRaces.LOGGER.warn("Player {} tried to invite oversized name ({} chars)",
                                 player.getName().getString(), data.length());
@@ -96,17 +91,24 @@ public class TeamRequestPacket {
                         RaceTeamManager.getPlayerTeam(player).ifPresent(team -> {
                             RaceTeamManager.invitePlayer(player, target, team.getId());
                         });
+                    } else {
+                        player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("msg.creraces.team.player_not_found", data));
                     }
                 }
                 case TOGGLE_FRIENDLY_FIRE -> RaceTeamManager.toggleFriendlyFire(player);
                 case PROMOTE -> {
-                    if (teamId != null) {
-                        RaceTeamManager.promoteMember(player, teamId, player.getServer());
+                    if (targetUuid != null) {
+                        RaceTeamManager.promoteMember(player, targetUuid, player.getServer());
                     }
                 }
                 case DEMOTE -> {
-                    if (teamId != null) {
-                        RaceTeamManager.demoteMember(player, teamId, player.getServer());
+                    if (targetUuid != null) {
+                        RaceTeamManager.demoteMember(player, targetUuid, player.getServer());
+                    }
+                }
+                case KICK -> {
+                    if (targetUuid != null) {
+                        RaceTeamManager.kickMember(player, targetUuid, player.getServer());
                     }
                 }
             }

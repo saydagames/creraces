@@ -19,6 +19,10 @@ public class AbilityExecutionRegistry {
         if (exec == null) {
             // Fallback to JSON actions
             return (player, ability, slot) -> {
+                if (ability.condition() != null && !ability.condition().evaluate(player, null, slot, null)) {
+                    player.displayClientMessage(net.minecraft.network.chat.Component.translatable("msg.creraces.condition_failed"), true);
+                    return false;
+                }
                 if (ability.onActivate() != null && !ability.onActivate().isEmpty()) {
                     // Raytrace the block the player is looking at so actions using
                     // use_target_block (e.g. rat_tunnels place_block) get a meaningful pos.

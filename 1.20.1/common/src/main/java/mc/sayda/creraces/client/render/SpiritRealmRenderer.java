@@ -3,6 +3,7 @@ package mc.sayda.creraces.client.render;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.config.CreRacesConfig;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -29,7 +30,7 @@ public class SpiritRealmRenderer {
                 RenderSystem.depthMask(false);
                 RenderSystem.enableBlend();
                 RenderSystem.defaultBlendFunc();
-                graphics.fill(0, 0, width, height, 0x4400FF); // SPIRIT_REALM_TINT_COLOR default
+                graphics.fill(0, 0, width, height, CreRacesConfig.SPIRIT_REALM_TINT_COLOR.get()); 
                 RenderSystem.disableBlend();
                 RenderSystem.depthMask(true);
                 RenderSystem.enableDepthTest();
@@ -51,8 +52,7 @@ public class SpiritRealmRenderer {
                 RenderSystem.defaultBlendFunc();
                 RenderSystem.setShader(GameRenderer::getPositionTexShader);
                 RenderSystem.setShaderTexture(0, BLUE_MOON);
-                @SuppressWarnings("null")
-                float moonAlpha = 0.5f; // SPIRIT_REALM_MOON_ALPHA default
+                float moonAlpha = CreRacesConfig.SPIRIT_REALM_MOON_ALPHA.get();
                 RenderSystem.setShaderColor(0.6f, 0.8f, 1.0f, moonAlpha);
 
                 poseStack.pushPose();
@@ -69,8 +69,7 @@ public class SpiritRealmRenderer {
                 @SuppressWarnings("null")
                 BufferBuilder bufferBuilder = tesselator.getBuilder();
 
-                @SuppressWarnings("null")
-                float moonSize = 20.0f; // SPIRIT_REALM_MOON_SIZE default
+                float moonSize = CreRacesConfig.SPIRIT_REALM_MOON_SIZE.get();
                 @SuppressWarnings("null")
                 var mode = VertexFormat.Mode.QUADS;
                 bufferBuilder.begin(mode, DefaultVertexFormat.POSITION_TEX);

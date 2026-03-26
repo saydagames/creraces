@@ -34,7 +34,7 @@ public class PlaySoundAction implements ActionRegistry.RaceAction {
             @Nullable net.minecraft.core.BlockPos interactionPos) {
         SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(soundId);
         if (sound == null) {
-            CreRaces.LOGGER.error("[CreRaces] PlaySoundAction: unknown sound event '{}'", soundId);
+            CreRaces.LOGGER.error("PlaySoundAction: unknown sound event '{}'", soundId);
             return true;
         }
 

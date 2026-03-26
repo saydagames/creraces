@@ -7,12 +7,7 @@
     "creraces:description": "race.creraces.giant.description",
     "creraces:icon": "creraces:textures/screens/giant_icon.png",
     "creraces:splash": "creraces:textures/screens/giant_splash.png",
-    "creraces:base_ap": 10,
-    "creraces:base_ad": 15,
-    "creraces:base_ah": 25,
-    "creraces:base_cr": 5,
     "creraces:resource_type": "GRIT",
-    "creraces:max_resource": 100,
     "creraces:difficulty": 3,
     "creraces:immune_to_knockback": true,
     "creraces:negate_effects": [

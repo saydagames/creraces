@@ -36,7 +36,7 @@ public class ConditionalAction implements ActionRegistry.RaceAction {
         List<ActionRegistry.RaceAction> actions = result ? ifTrue : ifFalse;
 
         if (actions.isEmpty()) {
-            return result;
+            return true;
         }
 
         for (ActionRegistry.RaceAction action : actions) {

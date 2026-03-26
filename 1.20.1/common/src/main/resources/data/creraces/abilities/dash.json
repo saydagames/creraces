@@ -4,7 +4,7 @@
     "creraces:type": "ACTIVE",
     "creraces:icon": "minecraft:textures/item/feather.png",
     "creraces:cooldown": 240,
-    "creraces:cost": 3,
+    "creraces:cost": 10,
     "creraces:actions": [
         {
             "type": "creraces:dash",
@@ -32,4 +32,3 @@
     ],
     "creraces:wiki_page": "Ability:Dash"
 }
-

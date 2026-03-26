@@ -37,7 +37,8 @@ public class SpiritMobilityHandler {
         if (entity.level().isClientSide())
             return;
 
-        if (entity instanceof Player player) {
+        if (entity instanceof Player) {
+            Player player = (Player) entity;
             DataUtils.getVariables(player).ifPresent(vars -> {
                 var speedAttr = player.getAttribute(Attributes.MOVEMENT_SPEED);
                 if (speedAttr != null) {
@@ -71,8 +72,9 @@ public class SpiritMobilityHandler {
     }
 
     public static boolean isSpirit(LivingEntity entity) {
-        if (entity instanceof Player player) {
-            return DataUtils.getVariables(player).map(mc.sayda.creraces.capability.IPlayerVariables::isInSpiritRealm)
+        if (entity instanceof Player) {
+            Player player = (Player) entity;
+            return DataUtils.getVariables(player).map(v -> v.isInSpiritRealm() || v.isSpirit())
                     .orElse(false);
         }
         return entity.getTags().contains("creraces:spirit");

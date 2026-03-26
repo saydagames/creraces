@@ -60,12 +60,24 @@ public class RaceRegistry {
 
     public static List<Race> getSubRaces(ResourceLocation parentId) {
         return RACES.values().stream()
-                .filter(r -> parentId.equals(r.parentRace()))
+                .filter(r -> r.selectable() && r.parentRaces().contains(parentId))
                 .toList();
     }
 
+    public static boolean isSelectableRoot(Race r) {
+        if (!r.selectable())
+            return false;
+        if (r.parentRaces().isEmpty())
+            return true;
+        // If all parents are non-selectable, this race is a root entry
+        return r.parentRaces().stream().allMatch(pId -> {
+            Race p = get(pId);
+            return p != null && !p.selectable();
+        });
+    }
+
     public static boolean isParent(ResourceLocation id) {
-        return RACES.values().stream().anyMatch(r -> id.equals(r.parentRace()));
+        return RACES.values().stream().anyMatch(r -> r.parentRaces().contains(id));
     }
 
     public static boolean exists(ResourceLocation id) {

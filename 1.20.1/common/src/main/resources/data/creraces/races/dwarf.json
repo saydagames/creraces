@@ -1,6 +1,7 @@
 {
     "creraces:name": "race.creraces.dwarf.name",
     "creraces:index": 2.0,
+    "creraces:state": "UNFINISHED",
     "creraces:scale": {
         "base": 1.0,
         "height": 0.86,
@@ -12,7 +13,6 @@
     "creraces:portrait": "creraces:textures/screens/dwarf_portrait.png",
     "creraces:name_texture": "creraces:textures/screens/dwarf_text.png",
     "creraces:resource_type": "ENERGY",
-    "creraces:max_resource": 100,
     "creraces:difficulty": 1,
     "creraces:negate_effects": [
         "minecraft:mining_fatigue",

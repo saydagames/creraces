@@ -1,57 +1,56 @@
 {
-    "creraces:name":  "race.creraces.orc.name",
-    "creraces:index":  16.0,
-    "creraces:description":  "race.creraces.orc.description",
-    "creraces:icon":  "creraces:textures/screens/orc_icon.png",
-    "creraces:splash":  "creraces:textures/screens/orc_splash.png",
-    "creraces:resource_type":  "RAGE",
-    "creraces:max_resource":  100,
-    "creraces:difficulty":  1,
-    "orc_attributes":  [
-                           {
-                               "id":  "orc_damage",
-                               "type":  "creraces:attribute_modifier",
-                               "attribute":  "minecraft:generic.attack_damage",
-                               "value":  5.0,
-                               "operation":  "addition"
-                           }
-                       ],
-    "rage_mechanics":  [
-                           {
-                               "id":  "rage_damage",
-                               "type":  "creraces:attribute_modifier",
-                               "attribute":  "minecraft:generic.attack_damage",
-                               "value":  {
-                                             "base":  1.0,
-                                             "scales_with":  "var:rage",
-                                             "factor":  0.05
-                                         },
-                               "operation":  "addition"
-                           },
-                           {
-                               "id":  "rage_armor_penalty",
-                               "type":  "creraces:attribute_modifier",
-                               "attribute":  "minecraft:generic.armor",
-                               "value":  {
-                                             "base":  -1.0,
-                                             "scales_with":  "var:rage",
-                                             "factor":  -0.002
-                                         },
-                               "operation":  "addition"
-                           }
-                       ],
-    "creraces:starting_abilities":  [
-                                        "creraces:bloodrage",
-                                        "creraces:rageful_bloodlust"
-                                    ],
-    "creraces:portrait":  "creraces:textures/screens/orc_portrait.png",
-    "creraces:name_texture":  "creraces:textures/screens/orc_text.png",
-    "creraces:wiki_page":  "Orc",
-    "creraces:splash_x":  10,
-    "creraces:splash_y":  -27,
-    "creraces:splash_w":  158,
-    "creraces:splash_h":  206,
-    "creraces:name_tex_x":  63,
-    "creraces:name_tex_w":  44,
-    "creraces:name_tex_h":  21
+    "creraces:name": "race.creraces.orc.name",
+    "creraces:index": 16.0,
+    "creraces:description": "race.creraces.orc.description",
+    "creraces:icon": "creraces:textures/screens/orc_icon.png",
+    "creraces:splash": "creraces:textures/screens/orc_splash.png",
+    "creraces:resource_type": "RAGE",
+    "creraces:difficulty": 1,
+    "orc_attributes": [
+        {
+            "id": "orc_damage",
+            "type": "creraces:attribute_modifier",
+            "attribute": "minecraft:generic.attack_damage",
+            "value": 5.0,
+            "operation": "addition"
+        }
+    ],
+    "rage_mechanics": [
+        {
+            "id": "rage_damage",
+            "type": "creraces:attribute_modifier",
+            "attribute": "minecraft:generic.attack_damage",
+            "value": {
+                "base": 1.0,
+                "scales_with": "var:rage",
+                "factor": 0.05
+            },
+            "operation": "addition"
+        },
+        {
+            "id": "rage_armor_penalty",
+            "type": "creraces:attribute_modifier",
+            "attribute": "minecraft:generic.armor",
+            "value": {
+                "base": -1.0,
+                "scales_with": "var:rage",
+                "factor": -0.002
+            },
+            "operation": "addition"
+        }
+    ],
+    "creraces:starting_abilities": [
+        "creraces:bloodrage",
+        "creraces:rageful_bloodlust"
+    ],
+    "creraces:portrait": "creraces:textures/screens/orc_portrait.png",
+    "creraces:name_texture": "creraces:textures/screens/orc_text.png",
+    "creraces:wiki_page": "Orc",
+    "creraces:splash_x": 10,
+    "creraces:splash_y": -27,
+    "creraces:splash_w": 158,
+    "creraces:splash_h": 206,
+    "creraces:name_tex_x": 63,
+    "creraces:name_tex_w": 44,
+    "creraces:name_tex_h": 21
 }

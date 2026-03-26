@@ -50,14 +50,13 @@ public class TeamUpdatePacket {
     public TeamUpdatePacket(FriendlyByteBuf buf) {
         int size = buf.readInt();
         this.members = new ArrayList<>(size);
-        int playerNameMax = 16;
-        int teamNameMax = 16;
+        int teamMax = mc.sayda.creraces.config.CreRacesConfig.NETWORK_TEAM_NAME_MAX_LEN.get();
         for (int i = 0; i < size; i++) {
-            this.members.add(new MemberInfo(buf.readUUID(), buf.readUtf(playerNameMax),
+            this.members.add(new MemberInfo(buf.readUUID(), buf.readUtf(teamMax),
                     buf.readEnum(mc.sayda.creraces.team.RaceTeamManager.Role.class)));
         }
         this.friendlyFire = buf.readBoolean();
-        this.invitedTeamName = buf.readUtf(teamNameMax);
+        this.invitedTeamName = buf.readUtf(teamMax);
     }
 
     public void encode(FriendlyByteBuf buf) {

@@ -1,23 +1,23 @@
 {
     "creraces:name": "race.creraces.undead.name",
     "creraces:index": 1.0,
+    "creraces:state": "EXPERIMENTAL",
     "creraces:description": "race.creraces.undead.description",
     "creraces:icon": "creraces:textures/screens/undead_icon.png",
     "creraces:splash": "creraces:textures/screens/undead_splash.png",
-    "creraces:base_ap": 10,
-    "creraces:base_ad": 5,
-    "creraces:base_ah": 10,
-    "creraces:base_cr": 5,
     "creraces:resource_type": "MANA",
-    "creraces:max_resource": 100,
-    "creraces:difficulty": 1,
+    "creraces:difficulty": 2,
     "creraces:portrait": "creraces:textures/screens/undead_portrait.png",
     "creraces:name_texture": "creraces:textures/screens/undead_text.png",
+    "creraces:is_undead": true,
     "creraces:can_breathe_underwater": true,
-    "creraces:burns_in_sunlight": true,
+    "creraces:burns_in_sunlight": 100,
     "creraces:no_natural_regeneration": true,
     "creraces:no_hunger_drain": true,
     "creraces:can_eat_when_full": true,
+    "creraces:negate_effects": [
+        "creraces:life_drain"
+    ],
     "creraces:hated_by_entities": [
         "minecraft:villager",
         "minecraft:iron_golem"

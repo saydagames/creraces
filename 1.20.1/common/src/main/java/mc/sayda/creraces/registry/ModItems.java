@@ -97,6 +97,10 @@ public class ModItems {
                         ModBlocks.RED_STRIPPED_OAK_LOG);
         public static final RegistrySupplier<Item> WEATHERED_RED_STRIPPED_OAK_LOG_ITEM = registerBlockItem(
                         ModBlocks.WEATHERED_RED_STRIPPED_OAK_LOG);
+        public static final RegistrySupplier<Item> VOLCANIC_ROCK_ITEM = registerBlockItem(
+                        ModBlocks.VOLCANIC_ROCK);
+        public static final RegistrySupplier<Item> VOLCANIC_ROCK_HARDENED_ITEM = registerBlockItem(
+                        ModBlocks.VOLCANIC_ROCK_HARDENED);
 
         // Mermaid Armor - Blue
         public static final RegistrySupplier<Item> BLUE_MERMAID_HELMET = ITEMS.register("blue_mermaid_helmet",

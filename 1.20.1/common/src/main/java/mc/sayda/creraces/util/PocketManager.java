@@ -34,9 +34,9 @@ public class PocketManager {
 
         try (Writer w = Files.newBufferedWriter(savePath)) {
             GSON.toJson(obj, w);
-            CreRaces.LOGGER.info("[CreRaces] Saved pocket registry to {}", savePath);
+            CreRaces.LOGGER.info("Saved pocket registry to {}", savePath);
         } catch (IOException e) {
-            CreRaces.LOGGER.error("[CreRaces] Failed to save pocket registry: {}", e.getMessage());
+            CreRaces.LOGGER.error("Failed to save pocket registry: {}", e.getMessage());
         }
     }
 
@@ -52,9 +52,9 @@ public class PocketManager {
             if (obj != null && obj.has("next_pocket_index")) {
                 NEXT_POCKET_INDEX.set(obj.get("next_pocket_index").getAsInt());
             }
-            CreRaces.LOGGER.info("[CreRaces] Loaded pocket registry from {}", savePath);
+            CreRaces.LOGGER.info("Loaded pocket registry from {}", savePath);
         } catch (Exception e) {
-            CreRaces.LOGGER.error("[CreRaces] Failed to load pocket registry: {}", e.getMessage());
+            CreRaces.LOGGER.error("Failed to load pocket registry: {}", e.getMessage());
         }
     }
 }

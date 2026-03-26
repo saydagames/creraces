@@ -140,6 +140,12 @@ public class ModBlocks {
                         () -> new RotatedPillarBlock(BlockBehaviour.Properties.copy(Blocks.STRIPPED_OAK_LOG)
                                         .mapColor(MapColor.COLOR_RED)));
 
+        // ─── Oread ─────────────────────────────────────────────────────────────────
+        public static final RegistrySupplier<Block> VOLCANIC_ROCK = BLOCKS.register("volcanic_rock",
+                        mc.sayda.creraces.block.VolcanicRockBlock::new);
+        public static final RegistrySupplier<Block> VOLCANIC_ROCK_HARDENED = BLOCKS.register(
+                        "volcanic_rock_hardened", mc.sayda.creraces.block.VolcanicRockHardenedBlock::new);
+
         // ─── Ratkin ────────────────────────────────────────────────────────────────
         /**
          * Placed by Ratkin's Rat Tunnels ability. Indestructible flat marker, no

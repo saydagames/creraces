@@ -66,8 +66,11 @@ public class DamageAction implements ActionRegistry.RaceAction {
             net.minecraft.world.effect.MobEffect effect = net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT
                     .get(effectId);
             if (effect != null && actualTarget.hasEffect(effect)) {
-                int amplifier = actualTarget.getEffect(effect).getAmplifier();
-                dmg += (amplifier + 1) * damagePerStack.evaluate(player, actualTarget, slot);
+                net.minecraft.world.effect.MobEffectInstance inst = actualTarget.getEffect(effect);
+                if (inst != null) {
+                    int amplifier = inst.getAmplifier();
+                    dmg += (amplifier + 1) * damagePerStack.evaluate(player, actualTarget, slot);
+                }
             }
         }
 

@@ -1,0 +1,23 @@
+{
+    "creraces:selectable": false,
+    "creraces:can_breathe_on_land": false,
+    "creraces:water_vision": true,
+    "creraces:liquid_speed_multiplier": 1.5,
+    "creraces:is_aquatic": true,
+    "creraces:can_breathe_underwater": true,
+    "aquatic": [
+        {
+            "type": "creraces:aquatic_movement",
+            "neutral_buoyancy": true
+        }
+    ],
+    "passive": [
+        {
+            "id": "aquatic_mining_penalty",
+            "type": "creraces:attribute_modifier",
+            "attribute": "twilight_lib:mining_penalty",
+            "value": 0.0,
+            "operation": "multiply_total"
+        }
+    ]
+}

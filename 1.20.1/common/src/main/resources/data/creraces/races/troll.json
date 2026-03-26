@@ -1,12 +1,13 @@
 {
     "creraces:name": "race.creraces.troll.name",
     "creraces:index": 15.0,
-    "creraces:scale": 1.2,
+    "creraces:scale": {
+        "base": 1.2
+    },
     "creraces:description": "race.creraces.troll.description",
     "creraces:icon": "creraces:textures/screens/troll_icon.png",
     "creraces:splash": "creraces:textures/screens/troll_splash.png",
     "creraces:resource_type": "RAGE",
-    "creraces:max_resource": 100,
     "creraces:difficulty": 1,
     "creraces:allowed_food_types": [
         "meat",

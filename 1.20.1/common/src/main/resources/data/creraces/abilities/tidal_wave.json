@@ -10,7 +10,8 @@
         "creraces:naiad"
     ],
     "creraces:condition": {
-        "type": "creraces:in_water"
+        "type": "creraces:in_water",
+        "include_rain": false
     },
     "creraces:actions": [
         {
@@ -34,7 +35,3 @@
     ],
     "creraces:wiki_page": "Ability:Tidal_Wave"
 }
-
-
-
-

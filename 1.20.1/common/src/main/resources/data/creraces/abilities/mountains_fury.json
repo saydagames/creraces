@@ -3,7 +3,7 @@
     "creraces:description": "ability.creraces.mountains_fury.description",
     "creraces:type": "ACTIVE",
     "creraces:icon": "minecraft:textures/item/magma_cream.png",
-    "creraces:cooldown": 360,
+    "creraces:cooldown": 0,
     "creraces:cost": 0,
     "creraces:race": [
         "creraces:oread"
@@ -19,7 +19,7 @@
             "if_true": [
                 {
                     "type": "creraces:aoe",
-                    "radius": 5.0,
+                    "radius": 4.0,
                     "targets": [
                         "enemies"
                     ],
@@ -30,11 +30,11 @@
                             "amount": {
                                 "base": 2.0,
                                 "scales_with": "creraces:ap",
-                                "factor": 0.02,
+                                "factor": 0.05,
                                 "scales": [
                                     {
-                                        "stat": "Ability:creraces:stacks",
-                                        "factor": 0.01
+                                        "stat": "state:creraces:stacks",
+                                        "factor": 0.02
                                     }
                                 ]
                             },
@@ -43,11 +43,6 @@
                         {
                             "type": "creraces:set_on_fire",
                             "duration": 5
-                        },
-                        {
-                            "type": "creraces:apply_velocity",
-                            "y": 0.5,
-                            "relative": false
                         }
                     ]
                 },
@@ -59,12 +54,12 @@
                 },
                 {
                     "type": "creraces:spawn_particles",
-                    "particle": "minecraft:lava",
-                    "count": 30
+                    "particle": "minecraft:flame",
+                    "count": 200
                 },
                 {
                     "type": "creraces:modify_resource",
-                    "resource": "Ability:creraces:stacks",
+                    "resource": "state:creraces:stacks",
                     "operation": "set",
                     "value": 0
                 },
@@ -72,6 +67,15 @@
                     "type": "creraces:set_state",
                     "state": "self",
                     "value": 0
+                },
+                {
+                    "type": "creraces:remove_effect",
+                    "effect": "minecraft:slowness"
+                },
+                {
+                    "type": "creraces:set_cooldown",
+                    "id": "creraces:mountains_fury",
+                    "value": 360
                 }
             ],
             "if_false": [
@@ -81,10 +85,17 @@
                     "value": 1
                 },
                 {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:slowness",
+                    "amplifier": 2,
+                    "duration": 999999,
+                    "visible": false
+                },
+                {
                     "type": "creraces:play_sound",
-                    "sound": "minecraft:block.fire.ambient",
+                    "sound": "minecraft:block.note_block.bell",
                     "volume": 1.0,
-                    "pitch": 1.5
+                    "pitch": 1.0
                 }
             ]
         }

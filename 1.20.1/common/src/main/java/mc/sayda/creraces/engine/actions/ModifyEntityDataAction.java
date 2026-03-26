@@ -9,6 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 
+@SuppressWarnings("null")
 public class ModifyEntityDataAction implements ActionRegistry.RaceAction {
 
     public enum Operation {
@@ -37,7 +38,6 @@ public class ModifyEntityDataAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    @SuppressWarnings("null")
     public boolean execute(Player player, @javax.annotation.Nullable LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
@@ -46,7 +46,9 @@ public class ModifyEntityDataAction implements ActionRegistry.RaceAction {
         if (entity == null)
             return true;
         CompoundTag persistentData = ((IPersistentDataAccessor) entity).creraces$getPersistentData();
+        if (persistentData == null) return true;
 
+            
         if (operation == Operation.REMOVE) {
             persistentData.remove(key);
             return true;
@@ -85,9 +87,9 @@ public class ModifyEntityDataAction implements ActionRegistry.RaceAction {
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "modify_entity_data"), json -> {
             String key = GsonHelper.getAsString(json, "key");
             // Limit key length to prevent NBT bloat via crafted race JSONs
-            int keyMaxLen = 64;
+            int keyMaxLen = mc.sayda.creraces.config.CreRacesConfig.ENTITY_DATA_KEY_MAX_LENGTH.get();
             if (keyMaxLen > 0 && key.length() > keyMaxLen) {
-                CreRaces.LOGGER.warn("[CreRaces] ModifyEntityDataAction: key '{}' exceeds {} chars, truncating", key,
+                CreRaces.LOGGER.warn("ModifyEntityDataAction: key '{}' exceeds {} chars, truncating", key,
                         keyMaxLen);
                 key = key.substring(0, keyMaxLen);
             }

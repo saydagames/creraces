@@ -25,6 +25,7 @@ public class CreRacesConfig {
     public static Supplier<Double> POCKET_DIM_Y = () -> 100.0;
     public static Supplier<Integer> POCKET_EXPANSION_LIMIT = () -> 8;
     public static Supplier<Double> POCKET_EXPANSION_COST = () -> 200.0;
+    public static Supplier<Integer> POCKET_INVITE_MAX = () -> -1;
 
     // [SECTION: ENTITY & OTHER]
     public static Supplier<Double> ENTITY_FEATHER_DAMAGE = () -> 2.0;
@@ -60,20 +61,22 @@ public class CreRacesConfig {
     public static Supplier<Integer> ENTITY_TROLL_PILLAR_CURSE_DURATION = () -> 100;
     public static Supplier<Integer> ENTITY_TROLL_PILLAR_LIFETIME_TICKS = () -> 600;
     public static Supplier<Double> ABILITY_HASTE_CAP = () -> 40.0;
-    public static Supplier<Integer> BREAK_BLOCKS_MAX_RADIUS = () -> 16;
-    public static Supplier<Integer> AOE_MAX_RADIUS = () -> 64;
-    public static Supplier<Integer> BEAM_MAX_LENGTH = () -> 64;
+    public static Supplier<Integer> BREAK_BLOCKS_MAX_RADIUS = () -> -1;
+    public static Supplier<Integer> AOE_MAX_RADIUS = () -> -1;
+    public static Supplier<Integer> BEAM_MAX_LENGTH = () -> -1;
+    public static Supplier<Integer> GIVE_ITEM_MAX_COUNT = () -> -1;
+    public static Supplier<Integer> MASS_SUMMON_MAX_COUNT = () -> -1;
+    public static Supplier<Integer> DELAY_ACTION_MAX_TICKS = () -> -1;
     public static Supplier<Integer> ENTITY_DATA_KEY_MAX_LENGTH = () -> 64;
     public static Supplier<Boolean> FORCED_SELECTION = () -> true;
     public static Supplier<Integer> MINI_MODEL_CACHE_SIZE = () -> 128;
     public static Supplier<Integer> MINI_DUMMY_CACHE_SIZE = () -> 32;
-    public static Supplier<Integer> SPIRIT_REALM_TINT_COLOR = () -> 0x4400FF;
+    public static Supplier<Integer> SPIRIT_REALM_TINT_COLOR = () -> 0x440000FF;
     public static Supplier<Float> SPIRIT_REALM_MOON_ALPHA = () -> 0.5f;
     public static Supplier<Float> SPIRIT_REALM_MOON_SIZE = () -> 20.0f;
     public static Supplier<Integer> SPIRIT_SPAWN_CHECK_RADIUS = () -> 16;
     public static Supplier<Integer> CUSTOMIZATION_VALUE_MAX_LENGTH = () -> 128;
     public static Supplier<Integer> NETWORK_TEAM_NAME_MAX_LEN = () -> 16;
-    public static Supplier<Integer> NETWORK_PLAYER_NAME_MAX_LEN = () -> 16;
     public static Supplier<Double> RACIAL_AD_MULTIPLIER = () -> 0.002;
     public static Supplier<Long> RESOURCE_DECAY_GRACE_PERIOD = () -> 400L;
     public static Supplier<Integer> PASSIVE_EXECUTION_INTERVAL = () -> 20;
@@ -110,4 +113,12 @@ public class CreRacesConfig {
     public static Supplier<Double> REMAINS_HEALTH = () -> 10.0;
     public static Supplier<Integer> REMAINS_DECAY_TIME = () -> 1200;
     public static Supplier<Double> MAX_SOUL = () -> 9.0;
+
+    // [SECTION: RESOURCE DEFAULTS]
+    public static Supplier<Double> DEFAULT_MAX_MANA = () -> 500.0;
+    public static Supplier<Double> DEFAULT_MAX_ENERGY = () -> 200.0;
+    public static Supplier<Double> DEFAULT_MAX_RAGE = () -> 100.0;
+    public static Supplier<Double> DEFAULT_MAX_GRIT = () -> 100.0;
+    /** Path to look for race/ability JSONs on the local filesystem (dev only). */
+    public static Supplier<String> DEVELOPER_RESOURCE_PATH = () -> "";
 }

@@ -93,19 +93,81 @@ public class RaceUtils {
 
     private static boolean stackMatchesFilter(net.minecraft.world.item.ItemStack stack, String filter) {
         if (stack.isEmpty()) return false;
+
+        // Check native keywords first (handles # and creraces: prefix)
+        if (stackMatchesNativeKeyword(stack, filter)) return true;
+
         net.minecraft.world.item.Item item = stack.getItem();
         net.minecraft.resources.ResourceLocation itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item);
 
-        if (filter.equalsIgnoreCase("meat")) {
-            return item.getFoodProperties() != null && item.getFoodProperties().isMeat();
-        } else if (filter.startsWith("#")) {
+        if (filter.startsWith("#")) {
             net.minecraft.resources.ResourceLocation tagId = net.minecraft.resources.ResourceLocation.tryParse(filter.substring(1));
             if (tagId != null) {
                 net.minecraft.tags.TagKey<net.minecraft.world.item.Item> tag = net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, tagId);
                 return stack.is(tag);
             }
+        } else if (filter.contains(":")) {
+            return filter.equals(itemId.toString());
         } else {
-            return filter.equals(itemId.toString()) || filter.equals(itemId.getPath());
+            return filter.equals(itemId.getPath());
+        }
+        return false;
+    }
+
+    private static boolean stackMatchesNativeKeyword(net.minecraft.world.item.ItemStack stack, String keyword) {
+        String stripped = keyword.startsWith("#") ? keyword.substring(1) : keyword;
+        if (stripped.startsWith("creraces:")) stripped = stripped.substring(9);
+
+        if (stripped.equalsIgnoreCase("meat")) {
+            return stack.getItem().getFoodProperties() != null && stack.getItem().getFoodProperties().isMeat();
+        }
+        
+        java.util.List<String> tags = new java.util.ArrayList<>();
+        switch (stripped.toLowerCase()) {
+            case "vegetable" -> {
+                tags.add("#forge:vegetables");
+                tags.add("#farmersdelight:vegetables");
+                tags.add("#forge:salad_ingredients");
+                tags.add("#c:vegetables");
+            }
+            case "fruit" -> {
+                tags.add("#forge:fruits");
+                tags.add("#farmersdelight:fruits");
+                tags.add("#forge:berries");
+                tags.add("#c:fruits");
+            }
+            case "grain" -> {
+                tags.add("#forge:grain");
+                tags.add("#forge:grains");
+                tags.add("#farmersdelight:grains");
+                tags.add("#forge:bread");
+                tags.add("#forge:pasta");
+                tags.add("#c:grains");
+            }
+            case "sweet" -> {
+                tags.add("#forge:sweets");
+                tags.add("#forge:desserts");
+                tags.add("#farmersdelight:desserts");
+                tags.add("#c:sweets");
+            }
+            case "dairy" -> {
+                tags.add("#forge:dairy");
+                tags.add("#forge:milk");
+                tags.add("#farmersdelight:milk");
+                tags.add("#c:dairy");
+            }
+            case "seafood", "fishes" -> {
+                tags.add("#minecraft:fishes");
+                tags.add("#forge:raw_fishes");
+                tags.add("#forge:cooked_fishes");
+                tags.add("#farmersdelight:fish");
+                tags.add("#c:fishes");
+            }
+        }
+        
+        for (String tagStr : tags) {
+            // Recursively call stackMatchesFilter since it handles # tags correctly
+            if (stackMatchesFilter(stack, tagStr)) return true;
         }
         return false;
     }

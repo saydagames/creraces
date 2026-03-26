@@ -8,12 +8,7 @@
     "creraces:description": "race.creraces.nymph.description",
     "creraces:name_texture": "creraces:textures/screens/nymphs_text.png",
     "creraces:portrait": "creraces:textures/screens/nymphs_portrait.png",
-    "creraces:base_ap": 10,
-    "creraces:base_ad": 5,
-    "creraces:base_ah": 10,
-    "creraces:base_cr": 5,
     "creraces:resource_type": "MANA",
-    "creraces:max_resource": 100,
     "creraces:difficulty": 1,
     "creraces:gstate": "FEMALE",
     "creraces:is_spirit": true,
@@ -28,6 +23,13 @@
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.max_health",
             "value": -4.0,
+            "operation": "addition"
+        },
+        {
+            "id": "nymph_luck",
+            "type": "creraces:attribute_modifier",
+            "attribute": "minecraft:generic.luck",
+            "value": 10.0,
             "operation": "addition"
         },
         {
@@ -57,6 +59,7 @@
             }
         },
         {
+            "name": "nymph_debuff",
             "type": "creraces:on_tick",
             "interval": 20,
             "condition": {

@@ -59,8 +59,8 @@ public class TetherTrait extends PeriodicTrait {
         if (player.level().isClientSide())
             return;
 
-        double r = radius.evaluate(player);
-        int maxAoeRadius = 100;
+        double r = radius.evaluate(player, null);
+        int maxAoeRadius = mc.sayda.creraces.config.CreRacesConfig.AOE_MAX_RADIUS.get();
         if (maxAoeRadius > 0)
             r = Math.min(r, maxAoeRadius);
 

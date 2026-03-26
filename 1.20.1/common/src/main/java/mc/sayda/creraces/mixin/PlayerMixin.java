@@ -176,7 +176,7 @@ public class PlayerMixin implements IPlayerVariables {
             // hasn't run yet (a Fabric bootstrap ordering issue). BootstrapMixin should
             // prevent this, but log it so it's visible if it ever happens.
             com.mojang.logging.LogUtils.getLogger().error(
-                    "[CreRaces] Failed to add custom attributes to Player.createAttributes: {}", e.getMessage());
+                    "Failed to add custom attributes to Player.createAttributes: {}", e.getMessage());
         }
     }
 
@@ -670,6 +670,46 @@ public class PlayerMixin implements IPlayerVariables {
     @Override
     public void setSmallBuild(boolean smallBuild) {
         creraces$variables.setSmallBuild(smallBuild);
+    }
+
+    @Override
+    public boolean isUndead() {
+        return creraces$variables.isUndead();
+    }
+
+    @Override
+    public void setUndead(boolean undead) {
+        creraces$variables.setUndead(undead);
+    }
+
+    @Override
+    public boolean isAquatic() {
+        return creraces$variables.isAquatic();
+    }
+
+    @Override
+    public void setAquatic(boolean aquatic) {
+        creraces$variables.setAquatic(aquatic);
+    }
+
+    @Override
+    public boolean isSpirit() {
+        return creraces$variables.isSpirit();
+    }
+
+    @Override
+    public void setSpirit(boolean spirit) {
+        creraces$variables.setSpirit(spirit);
+    }
+
+    @Override
+    public boolean isTiny() {
+        return creraces$variables.isTiny();
+    }
+
+    @Override
+    public void setTiny(boolean tiny) {
+        creraces$variables.setTiny(tiny);
     }
 
     @Override

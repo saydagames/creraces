@@ -46,6 +46,8 @@ public class MassSummonAction implements ActionRegistry.RaceAction {
         int min = (int) minCount.evaluate(player, target, slot);
         int max = (int) maxCount.evaluate(player, target, slot);
         int numToSummon = min + (max > min ? player.getRandom().nextInt(max - min + 1) : 0);
+        int maxCap = mc.sayda.creraces.config.CreRacesConfig.MASS_SUMMON_MAX_COUNT.get();
+        if (maxCap > 0) numToSummon = Math.min(numToSummon, maxCap);
         
         BlockPos spawnBase = interactionPos != null ? interactionPos : player.blockPosition();
         double r = range.evaluate(player, target, slot);

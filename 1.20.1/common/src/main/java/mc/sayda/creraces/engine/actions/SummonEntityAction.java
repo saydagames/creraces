@@ -1,6 +1,5 @@
 package mc.sayda.creraces.engine.actions;
 
-import com.google.gson.JsonObject;
 import java.util.Objects;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.engine.ActionRegistry;
@@ -11,7 +10,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
@@ -124,7 +122,7 @@ public class SummonEntityAction implements ActionRegistry.RaceAction {
                 .getOptional(entityId)
                 .orElse(null);
         if (type == null) {
-            CreRaces.LOGGER.error("[CreRaces] SummonEntityAction: unknown entity type '{}'", entityId);
+            CreRaces.LOGGER.error("SummonEntityAction: unknown entity type '{}'", entityId);
             return false;
         }
 
@@ -146,6 +144,10 @@ public class SummonEntityAction implements ActionRegistry.RaceAction {
             } else {
                 tamable.setOwnerUUID(Objects.requireNonNull(player.getUUID()));
             }
+        }
+
+        if (entity instanceof mc.sayda.creraces.util.IPersistentDataAccessor accessor) {
+            accessor.creraces$getPersistentData().putUUID("creraces:servant_of", player.getUUID());
         }
 
         serverLevel.addFreshEntity(entity);

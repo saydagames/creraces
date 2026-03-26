@@ -14,6 +14,9 @@ public class ModParticles {
     public static final RegistrySupplier<SimpleParticleType> MARKER_MOVE = PARTICLES.register("marker_move", () -> new SimpleParticleType(true) {});
     public static final RegistrySupplier<SimpleParticleType> MARKER_ATTACK = PARTICLES.register("marker_attack", () -> new SimpleParticleType(true) {});
     public static final RegistrySupplier<SimpleParticleType> POISON_EMITTER = PARTICLES.register("poison_emitter", () -> new SimpleParticleType(true) {});
+    public static final RegistrySupplier<SimpleParticleType> MAGIC_DAMAGE = PARTICLES.register("magic_damage", () -> new SimpleParticleType(false) {});
+    public static final RegistrySupplier<SimpleParticleType> PHYSICAL_DAMAGE = PARTICLES.register("physical_damage", () -> new SimpleParticleType(false) {});
+    public static final RegistrySupplier<SimpleParticleType> TRUE_DAMAGE = PARTICLES.register("true_damage", () -> new SimpleParticleType(false) {});
 
     public static void register() {
         PARTICLES.register();

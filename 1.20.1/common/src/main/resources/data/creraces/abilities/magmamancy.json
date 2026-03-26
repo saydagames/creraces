@@ -3,8 +3,8 @@
     "creraces:description": "ability.creraces.magmamancy.description",
     "creraces:type": "ACTIVE",
     "creraces:icon": "minecraft:textures/item/lava_bucket.png",
-    "creraces:cooldown": 20,
-    "creraces:cost": 50,
+    "creraces:cooldown": 0,
+    "creraces:cost": 0,
     "creraces:race": [
         "creraces:oread"
     ],
@@ -12,24 +12,67 @@
         {
             "type": "creraces:conditional",
             "condition": {
-                "type": "creraces:sneaking"
+                "type": "creraces:resource_level",
+                "resource": "state:creraces:stored_material",
+                "operator": ">=",
+                "value": 1
             },
             "if_true": [
                 {
-                    "type": "creraces:toggle_state",
-                    "state": "self",
-                    "on_value": 1,
-                    "off_value": 0,
-                    "on_enable": [
+                    "type": "creraces:conditional",
+                    "condition": {
+                        "type": "creraces:can_place_block",
+                        "offset_y": -1,
+                        "math": "floor"
+                    },
+                    "if_true": [
                         {
-                            "type": "creraces:message",
-                            "text": "§6Molten Being: ON"
+                            "type": "creraces:conditional",
+                            "condition": {
+                                "type": "creraces:resource_level",
+                                "resource": "mana",
+                                "operator": ">=",
+                                "value": 20
+                            },
+                            "if_true": [
+                                {
+                                    "type": "creraces:place_block",
+                                    "block": "creraces:volcanic_rock",
+                                    "offset_y": -1,
+                                    "math": "floor"
+                                },
+                                {
+                                    "type": "creraces:modify_resource",
+                                    "resource": "mana",
+                                    "operation": "add",
+                                    "value": -20
+                                },
+                                {
+                                    "type": "creraces:modify_resource",
+                                    "resource": "state:creraces:stored_material",
+                                    "operation": "add",
+                                    "value": -1
+                                },
+                                {
+                                    "type": "creraces:set_cooldown",
+                                    "id": "creraces:magmamancy",
+                                    "value": 2
+                                }
+                            ],
+                            "if_false": [
+                                {
+                                    "type": "creraces:message",
+                                    "text": "Not enough mana",
+                                    "actionbar": true
+                                }
+                            ]
                         }
                     ],
-                    "on_disable": [
+                    "if_false": [
                         {
                             "type": "creraces:message",
-                            "text": "§7Molten Being: OFF"
+                            "text": "Placement blocked",
+                            "actionbar": true
                         }
                     ]
                 }
@@ -38,38 +81,17 @@
                 {
                     "type": "creraces:conditional",
                     "condition": {
-                        "type": "creraces:and",
-                        "conditions": [
-                            {
-                                "type": "creraces:resource_level",
-                                "resource": "custom:stored_material",
-                                "operator": ">=",
-                                "value": 1
-                            },
-                            {
-                                "type": "creraces:not",
-                                "condition": {
-                                    "type": "creraces:on_ground"
-                                }
-                            }
-                        ]
+                        "type": "creraces:sneaking"
                     },
                     "if_true": [
                         {
-                            "type": "creraces:modify_resource",
-                            "resource": "custom:stored_material",
-                            "operation": "add",
-                            "value": -1
+                            "type": "creraces:toggle_state",
+                            "state": "self"
                         },
                         {
-                            "type": "creraces:place_block",
-                            "block": "minecraft:magma_block"
-                        },
-                        {
-                            "type": "creraces:play_sound",
-                            "sound": "minecraft:block.lava.ambient",
-                            "volume": 1.0,
-                            "pitch": 0.5
+                            "type": "creraces:set_cooldown",
+                            "id": "creraces:magmamancy",
+                            "value": 5
                         }
                     ]
                 }
@@ -78,7 +100,3 @@
     ],
     "creraces:wiki_page": "Ability:Magmamancy"
 }
-
-
-
-

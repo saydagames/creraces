@@ -54,15 +54,28 @@ public class ItemInteractionTrait implements TraitRegistry.RaceTrait {
                 return false;
             }
 
+            boolean success = true;
             for (ActionRegistry.RaceAction action : actions) {
-                action.execute(player, null, null, null);
+                if (!action.execute(player, null, null, null)) {
+                    success = false;
+                    mc.sayda.creraces.CreRaces.LOGGER
+                            .debug("ItemInteractionTrait: Action failed/cancelled, aborting consumption.");
+                    break;
+                }
             }
 
-            if (consumeItem && !player.isCreative()) {
+            if (success && consumeItem && !player.isCreative()) {
+                // mc.sayda.creraces.CreRaces.LOGGER.debug("ItemInteractionTrait: Actions
+                // succeeded, consuming item: {}", stack.getItem());
                 stack.shrink(1);
+            } else if (!success) {
+                mc.sayda.creraces.CreRaces.LOGGER
+                        .debug("ItemInteractionTrait: Actions failed/cancelled, skipping consumption.");
             }
-            return true;
+                        
+                return true;
         }
         return false;
+                        
     }
 }

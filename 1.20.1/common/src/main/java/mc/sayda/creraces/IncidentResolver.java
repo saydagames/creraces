@@ -285,7 +285,7 @@ public class IncidentResolver {
     }
 
     public static void onClientRequestedSync(ServerPlayer player) {
-        LOGGER.info("IncidentResolver: Client {} explicitly requested data sync.", player.getScoreboardName());
+        LOGGER.debug("IncidentResolver: Client {} explicitly requested data sync.", player.getScoreboardName());
         // Initial sync when a player joins and is ready
         BoundaryHandler.resyncVariables(player, player);
 

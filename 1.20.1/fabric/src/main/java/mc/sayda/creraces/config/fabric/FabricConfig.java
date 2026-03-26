@@ -74,6 +74,7 @@ public class FabricConfig {
         CreRacesConfig.DOC_CACHE_DIR = () -> common.documentation.doc_cache_dir;
         CreRacesConfig.DOC_CACHE_FILENAME = () -> common.documentation.doc_cache_filename;
         CreRacesConfig.WIKI_API_BASE = () -> common.documentation.wiki_api_base;
+        CreRacesConfig.DEVELOPER_RESOURCE_PATH = () -> common.documentation.developer_resource_path;
 
         // Gameplay
         CreRacesConfig.FORCED_SELECTION = () -> common.gameplay.forced_selection;
@@ -92,14 +93,19 @@ public class FabricConfig {
         CreRacesConfig.PASSIVE_DEFAULT_MAX_SATURATION = () -> common.gameplay.passive_default_max_saturation;
         CreRacesConfig.RACE_ADDONS_ENABLED = () -> common.gameplay.race_addons_enabled;
         CreRacesConfig.LORE_ADDONS_ENABLED = () -> common.gameplay.lore_addons_enabled;
+        CreRacesConfig.MAX_SOUL = () -> common.gameplay.max_soul;
 
         // Safety
-        CreRacesConfig.BREAK_BLOCKS_MAX_RADIUS = () -> common.safety.break_blocks_max_radius;
         CreRacesConfig.AOE_MAX_RADIUS = () -> common.safety.aoe_max_radius;
         CreRacesConfig.BEAM_MAX_LENGTH = () -> common.safety.beam_max_length;
+        CreRacesConfig.BREAK_BLOCKS_MAX_RADIUS = () -> common.safety.break_blocks_max_radius;
+        CreRacesConfig.CUSTOMIZATION_VALUE_MAX_LENGTH = () -> common.safety.customization_value_max_length;
+        CreRacesConfig.DELAY_ACTION_MAX_TICKS = () -> common.safety.delay_action_max_ticks;
         CreRacesConfig.ENTITY_DATA_KEY_MAX_LENGTH = () -> common.safety.entity_data_key_max_length;
+        CreRacesConfig.GIVE_ITEM_MAX_COUNT = () -> common.safety.give_item_max_count;
+        CreRacesConfig.MASS_SUMMON_MAX_COUNT = () -> common.safety.mass_summon_max_count;
         CreRacesConfig.NETWORK_TEAM_NAME_MAX_LEN = () -> common.safety.network_team_name_max_len;
-        CreRacesConfig.NETWORK_PLAYER_NAME_MAX_LEN = () -> common.safety.network_player_name_max_len;
+        CreRacesConfig.SPIRIT_SPAWN_CHECK_RADIUS = () -> common.safety.spirit_spawn_check_radius;
 
         // MiniBuild
         CreRacesConfig.MINI_BUILD_ENABLED = () -> common.minibuild.mini_build_enabled;
@@ -117,8 +123,9 @@ public class FabricConfig {
         // Pockets
         CreRacesConfig.POCKET_DIM_SPACING = () -> common.pockets.pocket_dim_spacing;
         CreRacesConfig.POCKET_DIM_Y = () -> common.pockets.pocket_dim_y;
-        CreRacesConfig.POCKET_EXPANSION_LIMIT = () -> common.pockets.pocket_expansion_limit;
         CreRacesConfig.POCKET_EXPANSION_COST = () -> common.pockets.pocket_expansion_cost;
+        CreRacesConfig.POCKET_EXPANSION_LIMIT = () -> common.pockets.pocket_expansion_limit;
+        CreRacesConfig.POCKET_INVITE_MAX = () -> common.pockets.pocket_invite_max;
         CreRacesConfig.ACTION_DEFAULT_POCKET_DIM = () -> common.pockets.action_default_pocket_dim;
         CreRacesConfig.ACTION_DEFAULT_POCKET_STRUCTURE = () -> common.pockets.action_default_pocket_structure;
         CreRacesConfig.ACTION_DEFAULT_POCKET_SPAWN_X_OFFSET = () -> common.pockets.action_default_pocket_spawn_x_offset;
@@ -194,6 +201,7 @@ public class FabricConfig {
             public String doc_cache_dir = CreRacesConfig.DOC_CACHE_DIR.get();
             public String doc_cache_filename = CreRacesConfig.DOC_CACHE_FILENAME.get();
             public String wiki_api_base = CreRacesConfig.WIKI_API_BASE.get();
+            public String developer_resource_path = CreRacesConfig.DEVELOPER_RESOURCE_PATH.get();
         }
 
         public static class Gameplay {
@@ -213,15 +221,20 @@ public class FabricConfig {
             public double passive_default_max_saturation = CreRacesConfig.PASSIVE_DEFAULT_MAX_SATURATION.get();
             public boolean race_addons_enabled = CreRacesConfig.RACE_ADDONS_ENABLED.get();
             public boolean lore_addons_enabled = CreRacesConfig.LORE_ADDONS_ENABLED.get();
+            public double max_soul = CreRacesConfig.MAX_SOUL.get();
         }
 
         public static class Safety {
-            public int break_blocks_max_radius = CreRacesConfig.BREAK_BLOCKS_MAX_RADIUS.get();
             public int aoe_max_radius = CreRacesConfig.AOE_MAX_RADIUS.get();
             public int beam_max_length = CreRacesConfig.BEAM_MAX_LENGTH.get();
+            public int break_blocks_max_radius = CreRacesConfig.BREAK_BLOCKS_MAX_RADIUS.get();
+            public int customization_value_max_length = CreRacesConfig.CUSTOMIZATION_VALUE_MAX_LENGTH.get();
+            public int delay_action_max_ticks = CreRacesConfig.DELAY_ACTION_MAX_TICKS.get();
             public int entity_data_key_max_length = CreRacesConfig.ENTITY_DATA_KEY_MAX_LENGTH.get();
+            public int give_item_max_count = CreRacesConfig.GIVE_ITEM_MAX_COUNT.get();
+            public int mass_summon_max_count = CreRacesConfig.MASS_SUMMON_MAX_COUNT.get();
             public int network_team_name_max_len = CreRacesConfig.NETWORK_TEAM_NAME_MAX_LEN.get();
-            public int network_player_name_max_len = CreRacesConfig.NETWORK_PLAYER_NAME_MAX_LEN.get();
+            public int spirit_spawn_check_radius = CreRacesConfig.SPIRIT_SPAWN_CHECK_RADIUS.get();
         }
 
         public static class MiniBuild {
@@ -241,8 +254,9 @@ public class FabricConfig {
         public static class Pockets {
             public double pocket_dim_spacing = CreRacesConfig.POCKET_DIM_SPACING.get();
             public double pocket_dim_y = CreRacesConfig.POCKET_DIM_Y.get();
-            public int pocket_expansion_limit = CreRacesConfig.POCKET_EXPANSION_LIMIT.get();
             public double pocket_expansion_cost = CreRacesConfig.POCKET_EXPANSION_COST.get();
+            public int pocket_expansion_limit = CreRacesConfig.POCKET_EXPANSION_LIMIT.get();
+            public int pocket_invite_max = CreRacesConfig.POCKET_INVITE_MAX.get();
             public String action_default_pocket_dim = CreRacesConfig.ACTION_DEFAULT_POCKET_DIM.get();
             public String action_default_pocket_structure = CreRacesConfig.ACTION_DEFAULT_POCKET_STRUCTURE.get();
             public double action_default_pocket_spawn_x_offset = CreRacesConfig.ACTION_DEFAULT_POCKET_SPAWN_X_OFFSET

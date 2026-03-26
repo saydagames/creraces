@@ -1,16 +1,12 @@
 {
     "creraces:name": "race.creraces.autumn_fairy.name",
+    "creraces:state": "UNFINISHED",
     "creraces:index": 5.5,
     "creraces:parent_race": "creraces:fairy",
     "creraces:description": "race.creraces.autumn_fairy.description",
     "creraces:icon": "creraces:textures/screens/autumn_fairy_icon.png",
     "creraces:splash": "creraces:textures/screens/autumn_fairy_splash.png",
-    "creraces:base_ap": 14,
-    "creraces:base_ad": 4,
-    "creraces:base_ah": 18,
-    "creraces:base_cr": 10,
     "creraces:resource_type": "MANA",
-    "creraces:max_resource": 100,
     "creraces:difficulty": 2,
     "creraces:starting_items": [
         "minecraft:red_mushroom"

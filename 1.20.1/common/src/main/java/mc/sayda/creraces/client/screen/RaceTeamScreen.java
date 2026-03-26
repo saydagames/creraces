@@ -29,6 +29,7 @@ public class RaceTeamScreen extends Screen {
     private EditBox invitePlayerBox;
     private Button promoteButton;
     private Button demoteButton;
+    private Button kickButton;
     private mc.sayda.creraces.team.RaceTeamManager.Role localRole = mc.sayda.creraces.team.RaceTeamManager.Role.MEMBER;
 
     public RaceTeamScreen() {
@@ -151,8 +152,20 @@ public class RaceTeamScreen extends Screen {
 
             this.addRenderableWidget(promoteButton);
             this.addRenderableWidget(demoteButton);
-            updateRoleButtons();
         }
+
+        if (this.localRole == mc.sayda.creraces.team.RaceTeamManager.Role.LEADER || this.localRole == mc.sayda.creraces.team.RaceTeamManager.Role.OFFICER) {
+            kickButton = Button.builder(Component.translatable("gui.creraces.team.kick"), b -> {
+                if (selectedMember != null) {
+                    mc.sayda.creraces.network.BoundaryHandler
+                            .sendTeamRequest(new mc.sayda.creraces.network.TeamRequestPacket(
+                                    mc.sayda.creraces.network.TeamRequestPacket.Action.KICK, selectedMember.uuid()));
+                }
+            }).bounds(centerX + 60, centerY + 70, 70, 20).build();
+
+            this.addRenderableWidget(kickButton);
+        }
+        updateRoleButtons();
 
         // Close button
         this.addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> this.minecraft.setScreen(null))
@@ -160,14 +173,28 @@ public class RaceTeamScreen extends Screen {
     }
 
     private void updateRoleButtons() {
-        if (promoteButton != null && demoteButton != null) {
-            boolean hasSelection = selectedMember != null;
-            UUID localId = Minecraft.getInstance().player != null ? Minecraft.getInstance().player.getUUID() : null;
-            boolean isSelf = hasSelection && selectedMember.uuid().equals(localId);
+        boolean hasSelection = selectedMember != null;
+        UUID localId = Minecraft.getInstance().player != null ? Minecraft.getInstance().player.getUUID() : null;
+        boolean isSelf = hasSelection && selectedMember.uuid().equals(localId);
 
+        if (promoteButton != null && demoteButton != null) {
             promoteButton.active = hasSelection && !isSelf;
             demoteButton.active = hasSelection && !isSelf
                     && selectedMember.role() != mc.sayda.creraces.team.RaceTeamManager.Role.MEMBER;
+        }
+
+        if (kickButton != null) {
+            if (hasSelection && !isSelf) {
+                if (this.localRole == mc.sayda.creraces.team.RaceTeamManager.Role.LEADER) {
+                    kickButton.active = true;
+                } else if (this.localRole == mc.sayda.creraces.team.RaceTeamManager.Role.OFFICER) {
+                    kickButton.active = selectedMember.role() == mc.sayda.creraces.team.RaceTeamManager.Role.MEMBER;
+                } else {
+                    kickButton.active = false;
+                }
+            } else {
+                kickButton.active = false;
+            }
         }
     }
 

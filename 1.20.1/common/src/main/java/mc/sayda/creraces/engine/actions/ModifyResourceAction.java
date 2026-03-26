@@ -4,6 +4,8 @@ import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.util.GsonHelper;
+import mc.sayda.creraces.util.IFoodDataAccessor;
+import mc.sayda.creraces.config.CreRacesConfig;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -41,14 +43,16 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
         double evaluatedValue = value.evaluate(player, target, slot);
 
         // Handle Vanilla Resources first (available for all/most LivingEntities)
-        if (res.equals("air") || res.equals("health") || res.equals("food")) {
+        if (res.equals("air") || res.equals("health") || res.equals("food") || res.equals("saturation")) {
             double current = 0;
             if (res.equals("air"))
                 current = entity.getAirSupply();
             else if (res.equals("health"))
                 current = entity.getHealth();
             else if (res.equals("food") && entity instanceof Player p)
-                current = p.getFoodData().getFoodLevel();
+                current = ((IFoodDataAccessor) p.getFoodData()).creraces$getFoodLevel();
+            else if (res.equals("saturation") && entity instanceof Player p)
+                current = ((IFoodDataAccessor) p.getFoodData()).creraces$getSaturation();
 
             double newValue = current;
             if (operation.equalsIgnoreCase("add"))
@@ -64,8 +68,13 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
                 entity.setAirSupply((int) Math.max(0, Math.min(newValue, entity.getMaxAirSupply())));
             else if (res.equals("health"))
                 entity.setHealth((float) Math.max(0, Math.min(newValue, entity.getMaxHealth())));
-            else if (res.equals("food") && entity instanceof Player p)
-                p.getFoodData().setFoodLevel((int) Math.max(0, Math.min(newValue, 20)));
+            else if (res.equals("food") && entity instanceof Player p) {
+                int maxFood = CreRacesConfig.PASSIVE_DEFAULT_MAX_FOOD.get();
+                ((IFoodDataAccessor) p.getFoodData()).creraces$setFoodLevel((int) Math.max(0, Math.min(newValue, maxFood)));
+            } else if (res.equals("saturation") && entity instanceof Player p) {
+                ((IFoodDataAccessor) p.getFoodData())
+                        .creraces$setSaturation((float) Math.max(0, Math.min(newValue, p.getFoodData().getFoodLevel())));
+            }
 
             return true;
         }
@@ -134,6 +143,18 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
                     current = vars.getGrit();
                 else if (res.equals("soul"))
                     current = vars.getSoul();
+                else if (res.equals("karma"))
+                    current = vars.getKarma();
+                else if (res.equals("coins"))
+                    current = vars.getCoins();
+                else if (res.equals("ap"))
+                    current = vars.getAp();
+                else if (res.equals("ad"))
+                    current = vars.getAd();
+                else if (res.equals("ah"))
+                    current = vars.getAh();
+                else if (res.equals("cr"))
+                    current = vars.getCr();
 
                 double newValue = current;
                 if (operation.equalsIgnoreCase("add"))
@@ -158,7 +179,18 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
                     if (p instanceof net.minecraft.server.level.ServerPlayer sp) {
                         mc.sayda.creraces.race.AttributeIncidents.eikiJudgment(sp);
                     }
-                }
+                } else if (res.equals("karma"))
+                    vars.setKarma(newValue);
+                else if (res.equals("coins"))
+                    vars.setCoins(newValue);
+                else if (res.equals("ap"))
+                    vars.setAp(newValue);
+                else if (res.equals("ad"))
+                    vars.setAd(newValue);
+                else if (res.equals("ah"))
+                    vars.setAh(newValue);
+                else if (res.equals("cr"))
+                    vars.setCr(newValue);
 
                 mc.sayda.creraces.network.BoundaryHandler.resyncVariables(p, p);
             }

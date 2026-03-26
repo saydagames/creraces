@@ -83,7 +83,8 @@ public class RaceTeamManager {
         }
 
         public void setName(String name) {
-            int maxLen = 16; // NETWORK_TEAM_NAME_MAX_LEN default
+            int maxLen = mc.sayda.creraces.config.CreRacesConfig.NETWORK_TEAM_NAME_MAX_LEN.get(); // NETWORK_TEAM_NAME_MAX_LEN
+                                                                                                  // default
             if (name.length() > maxLen) {
                 this.name = name.substring(0, maxLen);
             } else {
@@ -132,18 +133,22 @@ public class RaceTeamManager {
     public static boolean canHurt(net.minecraft.world.entity.LivingEntity victim,
             net.minecraft.world.entity.LivingEntity attacker) {
         if (victim == attacker) {
-            return true; // Note: Changed from false to true to allow fruitful sacrifice to target the
-                         // user themselves
+            return true;
         }
 
-        // Tame check
-        if (victim instanceof net.minecraft.world.entity.OwnableEntity ownable && ownable.getOwner() == attacker) {
-            return false;
-        }
+        // Use root owner resolution to handle players, tamed animals, and servants
+        Player vOwner = mc.sayda.creraces.util.CombatUtils.getRootOwner(victim);
+        Player aOwner = mc.sayda.creraces.util.CombatUtils.getRootOwner(attacker);
 
-        if (victim instanceof Player vPlayer && attacker instanceof Player aPlayer) {
-            IPlayerVariables vVars = DataUtils.getVariables(vPlayer).orElse(null);
-            IPlayerVariables aVars = DataUtils.getVariables(aPlayer).orElse(null);
+        if (vOwner != null && aOwner != null) {
+            // Same owner -> Allies (e.g. Player & their Servant, or two Servants of same player)
+            if (vOwner.getUUID().equals(aOwner.getUUID())) {
+                return false;
+            }
+
+            // Different owners -> Check teams
+            IPlayerVariables vVars = DataUtils.getVariables(vOwner).orElse(null);
+            IPlayerVariables aVars = DataUtils.getVariables(aOwner).orElse(null);
 
             if (vVars != null && aVars != null && vVars.getTeamId() != null
                     && vVars.getTeamId().equals(aVars.getTeamId())) {
@@ -154,19 +159,9 @@ public class RaceTeamManager {
             }
         }
 
-        // Handle tames of teammates
-        if (victim instanceof net.minecraft.world.entity.OwnableEntity ownable
-                && ownable.getOwner() instanceof Player oPlayer && attacker instanceof Player aPlayer) {
-            IPlayerVariables oVars = DataUtils.getVariables(oPlayer).orElse(null);
-            IPlayerVariables aVars = DataUtils.getVariables(aPlayer).orElse(null);
-
-            if (oVars != null && aVars != null && oVars.getTeamId() != null
-                    && oVars.getTeamId().equals(aVars.getTeamId())) {
-                RaceTeam team = TEAMS.get(oVars.getTeamId());
-                if (team != null && !team.isFriendlyFire()) {
-                    return false;
-                }
-            }
+        // Final fallback for entities with owners that aren't players (if any)
+        if (victim instanceof net.minecraft.world.entity.OwnableEntity ownable && ownable.getOwner() == attacker) {
+            return false;
         }
 
         return true;
@@ -174,13 +169,15 @@ public class RaceTeamManager {
 
     public static RaceTeam createTeam(ServerPlayer leader, String name) {
         UUID teamId = UUID.randomUUID();
-        int maxLen = 16;
+        int maxLen = mc.sayda.creraces.config.CreRacesConfig.NETWORK_TEAM_NAME_MAX_LEN.get();
         String finalName = name.length() > maxLen ? name.substring(0, maxLen) : name;
         RaceTeam team = new RaceTeam(teamId, finalName, leader.getUUID());
         TEAMS.put(teamId, team);
 
         applyTeamToPlayer(leader, team);
         broadcastUpdate(team, leader.getServer());
+        leader.sendSystemMessage(
+                net.minecraft.network.chat.Component.translatable("msg.creraces.team.created", finalName));
         return team;
     }
 
@@ -191,6 +188,8 @@ public class RaceTeamManager {
             team.setRole(player.getUUID(), Role.MEMBER);
             applyTeamToPlayer(player, team);
             broadcastUpdate(team, player.getServer());
+            player.sendSystemMessage(
+                    net.minecraft.network.chat.Component.translatable("msg.creraces.team.joined", team.getName()));
         }
     }
 
@@ -217,6 +216,7 @@ public class RaceTeamManager {
                 vars.setTeamName("");
                 mc.sayda.creraces.network.BoundaryHandler.sendTeamUpdate(player,
                         new mc.sayda.creraces.network.TeamUpdatePacket(Collections.emptyList(), false, null));
+                player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("msg.creraces.team.left"));
             }
         });
     }
@@ -245,12 +245,10 @@ public class RaceTeamManager {
         }
 
         PENDING_INVITES.put(invitee.getUUID(), new InviteData(teamId, inviter.getServer().getTickCount()));
-        String inviterName = inviter.getName().getString();
-        String teamName = team.getName();
-        invitee.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal(
-                Objects.requireNonNull(
-                        String.format("\u00A76%s invited you to join \u00A7b%s\u00A76! Use /creraces team to accept.",
-                                inviterName, teamName)))));
+        invitee.sendSystemMessage(net.minecraft.network.chat.Component.translatable("msg.creraces.team.invite_received",
+                inviter.getName().getString(), team.getName()));
+        inviter.sendSystemMessage(net.minecraft.network.chat.Component.translatable("msg.creraces.team.invited",
+                invitee.getName().getString()));
         syncInvite(invitee);
     }
 
@@ -297,6 +295,14 @@ public class RaceTeamManager {
                 team.setRole(targetId, Role.LEADER);
                 // Actor is demoted to officer by setRole(LEADER)
             }
+            String targetName = server.getPlayerList().getPlayer(targetId) != null
+                    ? server.getPlayerList().getPlayer(targetId).getName().getString()
+                    : "Unknown";
+            Role newRole = team.getRole(targetId);
+            actor.sendSystemMessage(
+                    net.minecraft.network.chat.Component.translatable("msg.creraces.team.promoted", targetName,
+                            net.minecraft.network.chat.Component
+                                    .translatable("gui.creraces.team.role." + newRole.name().toLowerCase())));
             broadcastUpdate(team, server);
         });
     }
@@ -322,7 +328,63 @@ public class RaceTeamManager {
                                 .translatable("msg.creraces.team.cannot_demote_leader")));
                 return;
             }
+            String targetName = server.getPlayerList().getPlayer(targetId) != null
+                    ? server.getPlayerList().getPlayer(targetId).getName().getString()
+                    : "Unknown";
+            Role newRole = team.getRole(targetId);
+            actor.sendSystemMessage(
+                    net.minecraft.network.chat.Component.translatable("msg.creraces.team.demoted", targetName,
+                            net.minecraft.network.chat.Component
+                                    .translatable("gui.creraces.team.role." + newRole.name().toLowerCase())));
             broadcastUpdate(team, server);
+        });
+    }
+
+    public static void kickMember(ServerPlayer actor, UUID targetId, MinecraftServer server) {
+        getPlayerTeam(actor).ifPresent(team -> {
+            Role actorRole = team.getRole(actor.getUUID());
+            Role targetRole = team.getRole(targetId);
+
+            if (actorRole == Role.MEMBER) {
+                actor.sendSystemMessage(Objects.requireNonNull(
+                        net.minecraft.network.chat.Component.translatable("msg.creraces.team.no_perm")));
+                return;
+            }
+
+            if (actorRole == Role.OFFICER && targetRole != Role.MEMBER) {
+                actor.sendSystemMessage(Objects.requireNonNull(
+                        net.minecraft.network.chat.Component.translatable("msg.creraces.team.no_perm")));
+                return;
+            }
+
+            if (actor.getUUID().equals(targetId)) {
+                return; // Use leave instead
+            }
+
+            if (!team.getMembers().contains(targetId))
+                return;
+
+            String targetName = server.getPlayerList().getPlayer(targetId) != null
+                    ? server.getPlayerList().getPlayer(targetId).getName().getString()
+                    : "Unknown";
+            team.getMembers().remove(targetId);
+            team.getMemberRoles().remove(targetId);
+            broadcastUpdate(team, server);
+
+            actor.sendSystemMessage(
+                    net.minecraft.network.chat.Component.translatable("msg.creraces.team.actor_kicked", targetName));
+
+            ServerPlayer target = server.getPlayerList().getPlayer(targetId);
+            if (target != null) {
+                DataUtils.getVariables(target).ifPresent(vars -> {
+                    vars.setTeamId(null);
+                    vars.setTeamName("");
+                });
+                mc.sayda.creraces.network.BoundaryHandler.sendTeamUpdate(target,
+                        new mc.sayda.creraces.network.TeamUpdatePacket(Collections.emptyList(), false, null));
+                target.sendSystemMessage(Objects.requireNonNull(
+                        net.minecraft.network.chat.Component.translatable("msg.creraces.team.kicked", team.getName())));
+            }
         });
     }
 
@@ -370,9 +432,9 @@ public class RaceTeamManager {
         });
         try (Writer w = Files.newBufferedWriter(savePath)) {
             GSON.toJson(teamsArray, w);
-            CreRaces.LOGGER.info("[CreRaces] Saved {} team(s) to {}", TEAMS.size(), savePath);
+            CreRaces.LOGGER.info("Saved {} team(s) to {}", TEAMS.size(), savePath);
         } catch (IOException e) {
-            CreRaces.LOGGER.error("[CreRaces] Failed to save teams: {}", e.getMessage());
+            CreRaces.LOGGER.error("Failed to save teams: {}", e.getMessage());
         }
     }
 
@@ -413,9 +475,9 @@ public class RaceTeamManager {
                         applyTeamToPlayer(online, team);
                 });
             });
-            CreRaces.LOGGER.info("[CreRaces] Loaded {} team(s) from {}", TEAMS.size(), savePath);
+            CreRaces.LOGGER.info("Loaded {} team(s) from {}", TEAMS.size(), savePath);
         } catch (Exception e) {
-            CreRaces.LOGGER.error("[CreRaces] Failed to load teams: {}", e.getMessage());
+            CreRaces.LOGGER.error("Failed to load teams: {}", e.getMessage());
         }
     }
 }

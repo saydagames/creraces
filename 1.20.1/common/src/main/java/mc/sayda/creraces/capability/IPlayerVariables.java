@@ -199,8 +199,25 @@ public interface IPlayerVariables extends ISerializableData {
     void setInSpiritRealm(boolean inSpiritRealm);
 
     boolean isSmallBuild();
-
+ 
     void setSmallBuild(boolean smallBuild);
+ 
+    boolean isUndead();
+ 
+    void setUndead(boolean undead);
+ 
+    boolean isAquatic();
+ 
+    void setAquatic(boolean aquatic);
+ 
+    boolean isSpirit();
+ 
+    void setSpirit(boolean spirit);
+ 
+    boolean isTiny();
+ 
+    void setTiny(boolean tiny);
+
 
     Map<ResourceLocation, Integer> getTraitTimers();
 

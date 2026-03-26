@@ -7,12 +7,7 @@
     "creraces:splash": "creraces:textures/screens/aurai_splash.png",
     "creraces:portrait": "creraces:textures/screens/aurai_portrait.png",
     "creraces:name_texture": "creraces:textures/screens/aurai_text.png",
-    "creraces:base_ap": 12,
-    "creraces:base_ad": 4,
-    "creraces:base_ah": 8,
-    "creraces:base_cr": 15,
     "creraces:resource_type": "MANA",
-    "creraces:max_resource": 150,
     "creraces:difficulty": 2,
     "creraces:regeneration_multiplier": 1.1,
     "creraces:negate_effects": [

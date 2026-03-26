@@ -29,6 +29,9 @@ public class RaceSelectionScreen extends Screen {
         private static final ResourceLocation ARROW_RIGHT = new ResourceLocation("creraces",
                         "textures/screens/atlas/arrow_right.png");
         private static final ResourceLocation RACE_SLOT = new ResourceLocation("creraces", "textures/screens/race.png");
+        private static final ResourceLocation PORTRAIT_WARNING = new ResourceLocation("creraces", "textures/screens/portrait_warning.png");
+        private static final ResourceLocation PORTRAIT_ERROR = new ResourceLocation("creraces", "textures/screens/portrait_error.png");
+        private static final ResourceLocation PORTRAIT_INFO = new ResourceLocation("creraces", "textures/screens/portrait_info.png");
 
         private static final ResourceLocation DECO_CHRISTMAS = new ResourceLocation("creraces",
                         "textures/screens/christmas_decoration.png");
@@ -64,12 +67,14 @@ public class RaceSelectionScreen extends Screen {
                 this.leftPos = (this.width - 176) / 2;
                 this.topPos = (this.height - 166) / 2;
 
-                raceEntries = RaceRegistry.getRaces().stream()
-                                .filter(r -> r.parentRace() == null)
+                if (this.minecraft != null) {
+                        raceEntries = RaceRegistry.getRaces().stream()
+                                .filter(RaceRegistry::isSelectableRoot)
                                 .sorted(java.util.Comparator.comparing(Race::index)
                                                 .thenComparing(r -> r.name().getString()))
-                                .map(r -> new RaceEntry(r.id(), r.name(), r.portrait(), RaceRegistry.isParent(r.id())))
-                                .collect(Collectors.toList());
+                                .map(r -> new RaceEntry(r.id(), r.name(), r.portrait(), RaceRegistry.isParent(r.id()), r.state()))
+                                .toList();
+                }
 
                 if (!raceEntries.isEmpty() && selectedRaceId == null) {
                         selectedRaceId = raceEntries.get(0).id;
@@ -170,6 +175,7 @@ public class RaceSelectionScreen extends Screen {
 
                 // 2. Portraits (or empty slots)
                 int startIndex = page * 9;
+                Component hoverTooltip = null;
                 for (int i = 0; i < 9; i++) {
                         int currentIdx = startIndex + i;
                         int rowIdx = i / 3;
@@ -181,6 +187,25 @@ public class RaceSelectionScreen extends Screen {
                                 graphics.blit(raceEntries.get(currentIdx).portrait, portraitX, portraitY, 0, 0,
                                                 PORTRAIT_SIZE,
                                                 PORTRAIT_SIZE, PORTRAIT_SIZE, PORTRAIT_SIZE);
+                                
+                                // Render State Overlays
+                                Race.RaceState state = raceEntries.get(currentIdx).state;
+                                if (state != Race.RaceState.FINISHED) {
+                                        ResourceLocation overlay = switch (state) {
+                                                case NEW -> PORTRAIT_INFO;
+                                                case EXPERIMENTAL -> PORTRAIT_ERROR;
+                                                case UNFINISHED -> PORTRAIT_WARNING;
+                                                default -> null;
+                                        };
+                                        if (overlay != null) {
+                                                graphics.blit(overlay, portraitX, portraitY, 0, 0, PORTRAIT_SIZE, PORTRAIT_SIZE, PORTRAIT_SIZE, PORTRAIT_SIZE);
+                                                
+                                                // Check for hover
+                                                if (mouseX >= portraitX && mouseX < portraitX + PORTRAIT_SIZE && mouseY >= portraitY && mouseY < portraitY + PORTRAIT_SIZE) {
+                                                        hoverTooltip = Component.translatable("gui.creraces.status." + state.name().toLowerCase());
+                                                }
+                                        }
+                                }
                         } else {
                                 graphics.blit(RACE_SLOT, portraitX, portraitY, 0, 0, PORTRAIT_SIZE, PORTRAIT_SIZE,
                                                 PORTRAIT_SIZE,
@@ -201,6 +226,10 @@ public class RaceSelectionScreen extends Screen {
 
                 super.render(graphics, mouseX, mouseY, partialTick);
 
+                if (hoverTooltip != null) {
+                        graphics.renderTooltip(this.font, hoverTooltip, mouseX, mouseY);
+                }
+
                 Component pageCounter = Component.translatable("gui.creraces.selection.page", (page + 1),
                                 ((raceEntries.size() + 8) / 9));
                 graphics.drawString(this.font, pageCounter, this.leftPos + 73, this.topPos + 205, -1, false);
@@ -216,12 +245,14 @@ public class RaceSelectionScreen extends Screen {
                 public final Component name;
                 public final ResourceLocation portrait;
                 public final boolean isParentGroup;
+                public final Race.RaceState state;
 
-                public RaceEntry(ResourceLocation id, Component name, ResourceLocation portrait, boolean isParentGroup) {
+                public RaceEntry(ResourceLocation id, Component name, ResourceLocation portrait, boolean isParentGroup, Race.RaceState state) {
                         this.id = id;
                         this.name = name;
                         this.portrait = portrait;
                         this.isParentGroup = isParentGroup;
+                        this.state = state;
                 }
         }
 }

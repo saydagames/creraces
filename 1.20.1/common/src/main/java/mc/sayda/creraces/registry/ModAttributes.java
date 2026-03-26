@@ -16,20 +16,24 @@ public class ModAttributes {
 
         // Resources
         public static final RegistrySupplier<Attribute> MAX_MANA = ATTRIBUTES.register("max_mana",
-                        () -> new RangedAttribute("attribute.creraces.max_mana", 0.0, 0.0,
+                        () -> new RangedAttribute("attribute.creraces.max_mana",
+                                        mc.sayda.creraces.config.CreRacesConfig.DEFAULT_MAX_MANA.get(), 0.0,
                                         1000.0).setSyncable(true));
 
         public static final RegistrySupplier<Attribute> MAX_RAGE = ATTRIBUTES.register("max_rage",
-                        () -> new RangedAttribute("attribute.creraces.max_rage", 0.0, 0.0,
+                        () -> new RangedAttribute("attribute.creraces.max_rage",
+                                        mc.sayda.creraces.config.CreRacesConfig.DEFAULT_MAX_RAGE.get(), 0.0,
                                         1000.0)
                                         .setSyncable(true));
 
         public static final RegistrySupplier<Attribute> MAX_ENERGY = ATTRIBUTES.register("max_energy",
-                        () -> new RangedAttribute("attribute.creraces.max_energy", 0.0, 0.0,
+                        () -> new RangedAttribute("attribute.creraces.max_energy",
+                                        mc.sayda.creraces.config.CreRacesConfig.DEFAULT_MAX_ENERGY.get(), 0.0,
                                         1000.0).setSyncable(true));
 
         public static final RegistrySupplier<Attribute> MAX_GRIT = ATTRIBUTES.register("max_grit",
-                        () -> new RangedAttribute("attribute.creraces.max_grit", 0.0, 0.0,
+                        () -> new RangedAttribute("attribute.creraces.max_grit",
+                                        mc.sayda.creraces.config.CreRacesConfig.DEFAULT_MAX_GRIT.get(), 0.0,
                                         1000.0)
                                         .setSyncable(true));
 

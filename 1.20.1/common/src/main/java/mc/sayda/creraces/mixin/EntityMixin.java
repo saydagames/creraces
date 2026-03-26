@@ -52,8 +52,8 @@ public abstract class EntityMixin implements IPersistentDataAccessor {
                     if (race != null) {
                         var passives = race.passives();
                         if (passives != null && !passives.canBreatheOnLand()) {
-                            // Prevent refill if on land and not protected
-                            if (!player.isInWaterRainOrBubble()
+                            // Prevent refill if on land and not protected, EXCEPT if it's a reset to 0
+                            if (air != 0 && !player.isInWaterRainOrBubble()
                                     && !player.hasEffect(net.minecraft.world.effect.MobEffects.WATER_BREATHING)) {
                                 ci.cancel();
                             }

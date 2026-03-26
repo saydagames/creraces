@@ -17,7 +17,8 @@
                 "race": "creraces:dryad"
             },
             {
-                "type": "creraces:in_water"
+                "type": "creraces:in_water",
+                "include_rain": true
             }
         ]
     },

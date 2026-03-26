@@ -18,7 +18,6 @@ import java.util.UUID;
 public class AttributeIncidents {
     // Unique UUID for racial AD modifier (applied from IPlayerVariables.getAd())
     private static final UUID RACE_AD_MODIFIER = UUID.fromString("c0d3b4be-0001-4000-8000-000000000001");
-    private static final UUID RESOURCE_MODIFIER = UUID.fromString("c0d3b4be-0001-4000-8000-000000000004");
     private static final UUID MANA_AP_MODIFIER = UUID.fromString("c0d3b4be-0001-4000-8000-000000000010");
     private static final UUID EQUIP_DOUBLE_JUMP_MODIFIER = UUID.fromString("c0d3b4be-0001-4000-8000-000000000005");
 
@@ -128,9 +127,6 @@ public class AttributeIncidents {
                 }
             });
 
-            // 4. Resources
-            applyResourceModifier(player, race);
-
             // 5. Double Jump
             var doubleJumpAttr = player.getAttribute(mc.sayda.creraces.registry.ModAttributes.DOUBLE_JUMP.get());
             if (doubleJumpAttr != null) {
@@ -194,69 +190,11 @@ public class AttributeIncidents {
             }
         });
 
-        clearModifier(player, ModAttributes.resolve(ModAttributes.MAX_MANA), RESOURCE_MODIFIER);
-        clearModifier(player, ModAttributes.resolve(ModAttributes.MAX_RAGE), RESOURCE_MODIFIER);
-        clearModifier(player, ModAttributes.resolve(ModAttributes.MAX_ENERGY), RESOURCE_MODIFIER);
-        clearModifier(player, ModAttributes.resolve(ModAttributes.MAX_GRIT), RESOURCE_MODIFIER);
         clearModifier(player, ModAttributes.resolve(ModAttributes.DOUBLE_JUMP),
                 EQUIP_DOUBLE_JUMP_MODIFIER);
     }
 
-    private static void applyResourceModifier(ServerPlayer player, mc.sayda.creraces.race.Race race) {
-        DataUtils.getVariables(player).ifPresent(vars -> {
-            net.minecraft.world.entity.ai.attributes.Attribute targetAttr;
-            String name;
-            double amount = race.maxResource();
 
-            switch (race.resourceType()) {
-                case MANA -> {
-                    targetAttr = ModAttributes.resolve(ModAttributes.MAX_MANA);
-                    name = "Race Mana";
-                }
-                case RAGE -> {
-                    targetAttr = ModAttributes.resolve(ModAttributes.MAX_RAGE);
-                    name = "Race Rage";
-                }
-                case ENERGY -> {
-                    targetAttr = ModAttributes.resolve(ModAttributes.MAX_ENERGY);
-                    name = "Race Energy";
-                    amount -= vars.getGrit();
-                }
-                case GRIT -> {
-                    targetAttr = ModAttributes.resolve(ModAttributes.MAX_GRIT);
-                    name = "Race Grit";
-                }
-                default -> {
-                    targetAttr = null;
-                    name = "";
-                }
-            }
-
-            // Clear from all resource attributes first
-            for (var attr : new net.minecraft.world.entity.ai.attributes.Attribute[] {
-                    ModAttributes.resolve(ModAttributes.MAX_MANA),
-                    ModAttributes.resolve(ModAttributes.MAX_RAGE),
-                    ModAttributes.resolve(ModAttributes.MAX_ENERGY),
-                    ModAttributes.resolve(ModAttributes.MAX_GRIT)
-            }) {
-                if (attr != targetAttr)
-                    clearModifier(player, attr, RESOURCE_MODIFIER);
-            }
-
-            if (targetAttr != null) {
-                AttributeInstance instance = player.getAttribute(targetAttr);
-                if (instance != null) {
-                    AttributeModifier existing = instance.getModifier(RESOURCE_MODIFIER);
-                    if (existing == null || Math.abs(existing.getAmount() - amount) > 1e-6) {
-                        if (existing != null)
-                            instance.removeModifier(RESOURCE_MODIFIER);
-                        instance.addPermanentModifier(new AttributeModifier(RESOURCE_MODIFIER, name, amount,
-                                AttributeModifier.Operation.ADDITION));
-                    }
-                }
-            }
-        });
-    }
 
     private static void clearModifier(ServerPlayer player, net.minecraft.world.entity.ai.attributes.Attribute attribute,
             UUID id) {

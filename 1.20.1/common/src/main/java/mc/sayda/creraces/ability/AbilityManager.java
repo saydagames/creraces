@@ -27,6 +27,7 @@ public class AbilityManager extends SimplePreparableReloadListener<Map<ResourceL
     @Nonnull
     protected Map<ResourceLocation, JsonElement> prepare(@Nonnull ResourceManager resourceManager,
             @Nonnull ProfilerFiller profiler) {
+        mc.sayda.creraces.CreRaces.LOGGER.info("AbilityManager: Preparing data reload...");
         Map<ResourceLocation, JsonElement> files = GsonHelper.getJsonFiles(resourceManager, FOLDER);
         return files != null ? files : new HashMap<>();
     }
@@ -34,6 +35,7 @@ public class AbilityManager extends SimplePreparableReloadListener<Map<ResourceL
     @Override
     protected void apply(@Nonnull Map<ResourceLocation, JsonElement> data, @Nonnull ResourceManager resourceManager,
             @Nonnull ProfilerFiller profiler) {
+        mc.sayda.creraces.CreRaces.LOGGER.info("AbilityManager: Applying data reload ({} files found)", data.size());
         RAW_DATA.clear();
         RAW_DATA.putAll(data);
         mc.sayda.creraces.util.RemoteDocFetcher.clearCache();

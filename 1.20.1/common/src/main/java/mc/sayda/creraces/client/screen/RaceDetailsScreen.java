@@ -36,6 +36,10 @@ public class RaceDetailsScreen extends Screen {
         private static final ResourceLocation INFO_ICON = new ResourceLocation("creraces", "textures/screens/info.png");
 
         @Nonnull
+        private static final ResourceLocation REFRESH_ICON = new ResourceLocation("creraces",
+                        "textures/screens/refresh.png");
+
+        @Nonnull
         private static final ResourceLocation DECO_CHRISTMAS = new ResourceLocation("creraces",
                         "textures/screens/christmas_decoration.png");
         @Nonnull
@@ -169,7 +173,7 @@ public class RaceDetailsScreen extends Screen {
                         // Doc Refresh Button
                         this.addRenderableWidget(new ImageButton(
                                         this.leftPos + 2, this.topPos + 16, 16, 16,
-                                        16, 0, 16, INFO_ICON, 16, 32,
+                                        16, 0, 16, REFRESH_ICON, 16, 32,
                                         btn -> {
                                                 mc.sayda.creraces.util.DocCache.clear();
                                                 mc.sayda.creraces.util.RemoteDocFetcher.clearCache();

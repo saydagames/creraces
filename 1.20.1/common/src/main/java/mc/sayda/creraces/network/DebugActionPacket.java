@@ -43,24 +43,45 @@ public class DebugActionPacket {
 
     public void handle(Supplier<NetworkManager.PacketContext> contextSupplier) {
         NetworkManager.PacketContext context = contextSupplier.get();
-        ServerPlayer player = (ServerPlayer) context.getPlayer();
-
-        if (!player.hasPermissions(2)) {
-            return;
-        }
 
         context.queue(() -> {
+            // Permission check runs on the server thread to avoid TOCTOU race.
+            if (!(context.getPlayer() instanceof ServerPlayer player) || !player.hasPermissions(2)) {
+                return;
+            }
+
             DataUtils.getVariables(player).ifPresent(vars -> {
                 try {
                     switch (action) {
-                        case "variable", "state" -> applyVariable(player, vars, key, value);
-                        case "ability_state" -> vars.setPersistentState(new ResourceLocation(key), Double.parseDouble(value));
-                        case "cooldown" -> vars.setCooldown(new ResourceLocation(key), (int) Double.parseDouble(value));
+                        case "variable", "state" -> {
+                            applyVariable(player, vars, key, value);
+                            CreRaces.LOGGER.debug("Applied debug variable/state: {} = {}", key, value);
+                        }
+                        case "ability_state" -> {
+                            vars.setPersistentState(new ResourceLocation(key), Double.parseDouble(value));
+                            CreRaces.LOGGER.debug("Applied debug ability state: {} = {}", key, value);
+                        }
+                        case "cooldown" -> {
+                            vars.setCooldown(new ResourceLocation(key), (int) Double.parseDouble(value));
+                            CreRaces.LOGGER.debug("Applied debug cooldown: {} = {}", key, value);
+                        }
                         case "race" -> {
                             ResourceLocation id = new ResourceLocation(value);
                             mc.sayda.creraces.race.RaceIncidents.transformPlayer(player, id);
+                            CreRaces.LOGGER.debug("Applied debug race transformation: {}", value);
                         }
-                        case "attribute" -> applyAttribute(player, key, value);
+                        case "attribute" -> {
+                            applyAttribute(player, key, value);
+                            CreRaces.LOGGER.debug("Applied debug attribute: {} = {}", key, value);
+                        }
+                        case "flag" -> {
+                        applyFlag(vars, key, value);
+                        // Refresh to apply scale/attribute changes immediately
+                        if (player instanceof net.minecraft.server.level.ServerPlayer) {
+                            net.minecraft.server.level.ServerPlayer sp = (net.minecraft.server.level.ServerPlayer) player;
+                            mc.sayda.creraces.race.RaceIncidents.refreshPlayer(sp);
+                        }
+                    }
                     }
                     // Sync changes back to client
                     if (!action.equals("race")) { // Race transformation already syncs
@@ -109,6 +130,16 @@ public class DebugActionPacket {
         }
     }
 
+    private void applyFlag(IPlayerVariables vars, String key, String value) {
+        boolean val = value.equalsIgnoreCase("true") || value.equals("1") || value.equals("1.0");
+        switch (key) {
+            case "isUndead" -> vars.setUndead(val);
+            case "isAquatic" -> vars.setAquatic(val);
+            case "isSpirit" -> vars.setSpirit(val);
+            case "isTiny" -> vars.setTiny(val);
+        }
+    }
+ 
     private void applyAttribute(ServerPlayer player, String attrId, String value) {
         try {
             double val = Double.parseDouble(value);

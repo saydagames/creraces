@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+@SuppressWarnings("null")
 public class BeamAction implements ActionRegistry.RaceAction {
     public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "beam");
     private static final Map<java.util.UUID, Map<ResourceLocation, BeamAction>> CACHED_INSTANCES = new ConcurrentHashMap<>();
@@ -69,6 +70,9 @@ public class BeamAction implements ActionRegistry.RaceAction {
                 int maxLen = mc.sayda.creraces.config.CreRacesConfig.BEAM_MAX_LENGTH.get();
                 if (maxLen > 0)
                     lVal = Math.min(lVal, (float) maxLen);
+                int maxRadius = mc.sayda.creraces.config.CreRacesConfig.AOE_MAX_RADIUS.get();
+                if (maxRadius > 0)
+                    rVal = Math.min(rVal, (float) maxRadius);
 
                 mc.sayda.creraces.network.SyncBeamPacket pkt = new mc.sayda.creraces.network.SyncBeamPacket(
                         player.getUUID(), true, color[0], color[1], color[2], color[3], rVal, lVal);
@@ -88,12 +92,14 @@ public class BeamAction implements ActionRegistry.RaceAction {
                 pkt::encode);
     }
 
-    @SuppressWarnings("null")
-    private void performBeamLogic(Player player, @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
+    private void performBeamLogic(Player player,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
+        if (player == null || player.level() == null)
+            return;
         Vec3 start = player.getEyePosition();
         Vec3 direction = player.getLookAngle();
         double l = length.evaluate(player, null, slot);
-        int maxLen = 64;
+        int maxLen = mc.sayda.creraces.config.CreRacesConfig.BEAM_MAX_LENGTH.get();
         if (maxLen > 0)
             l = Math.min(l, maxLen);
         double rVal = radius.evaluate(player, null, slot);
@@ -106,12 +112,22 @@ public class BeamAction implements ActionRegistry.RaceAction {
             return targets.isValid((LivingEntity) e, player);
         });
 
+        if (possibleTargets == null)
+            return;
+
         for (Entity e : possibleTargets) {
+            if (e == null)
+                continue;
             LivingEntity living = (LivingEntity) e;
             double r = radius.evaluate(player, living, slot);
-            if (isInsideBeam(start, end, living.getEyePosition(), r)) {
+            Vec3 targetEyePos = living.getEyePosition();
+            if (targetEyePos == null)
+                continue;
+            if (isInsideBeam(start, end, targetEyePos, r)) {
                 for (ActionRegistry.RaceAction action : actions) {
-                    action.execute(player, living, slot, null);
+                    if (action != null) {
+                        action.execute(player, living, slot, null);
+                    }
                 }
             }
         }
@@ -142,7 +158,7 @@ public class BeamAction implements ActionRegistry.RaceAction {
                         float rVal = (float) action.radius.evaluate(player, null, slot);
                         float lVal = (float) action.length.evaluate(player, null, slot);
                         // Clamp radius/length by configuring max
-                        int maxRadius = 100;
+                        int maxRadius = mc.sayda.creraces.config.CreRacesConfig.AOE_MAX_RADIUS.get();
                         if (maxRadius > 0)
                             rVal = Math.min(rVal, (float) maxRadius);
                         int maxLen = mc.sayda.creraces.config.CreRacesConfig.BEAM_MAX_LENGTH.get();
@@ -195,8 +211,9 @@ public class BeamAction implements ActionRegistry.RaceAction {
         }
     }
 
-    @SuppressWarnings("null")
     private boolean isInsideBeam(Vec3 start, Vec3 end, Vec3 point, double radius) {
+        if (start == null || end == null || point == null)
+            return false;
         Vec3 line = end.subtract(start);
         double lenSq = line.lengthSqr();
         if (lenSq == 0)

@@ -29,6 +29,15 @@ public class CreRacesClient {
         dev.architectury.registry.client.particle.ParticleProviderRegistry.register(
                 mc.sayda.creraces.registry.ModParticles.POISON_EMITTER,
                 mc.sayda.creraces.client.particle.PoisonEmitterParticle.Provider::new);
+        dev.architectury.registry.client.particle.ParticleProviderRegistry.register(
+                mc.sayda.creraces.registry.ModParticles.MAGIC_DAMAGE,
+                mc.sayda.creraces.client.particle.DamageCritParticle.Provider::new);
+        dev.architectury.registry.client.particle.ParticleProviderRegistry.register(
+                mc.sayda.creraces.registry.ModParticles.PHYSICAL_DAMAGE,
+                mc.sayda.creraces.client.particle.DamageCritParticle.Provider::new);
+        dev.architectury.registry.client.particle.ParticleProviderRegistry.register(
+                mc.sayda.creraces.registry.ModParticles.TRUE_DAMAGE,
+                mc.sayda.creraces.client.particle.DamageCritParticle.Provider::new);
 
         // Menu Registration (Directly in init for Fabric as requested, Forge is handled in CLIENT_SETUP below)
         if (Platform.isFabric()) {

@@ -1,0 +1,20 @@
+{
+  "replace": false,
+  "values": [
+    "creraces:dryad_log",
+    "creraces:dryad_log_core",
+    "creraces:dryad_wood",
+    "creraces:dryad_planks",
+    "creraces:dryad_lantern",
+    "creraces:dryad_stairs",
+    "creraces:dryad_slab",
+    "creraces:dryad_fence",
+    "creraces:dryad_fence_gate",
+    "creraces:dryad_button",
+    "creraces:dryad_pressure_plate",
+    "creraces:dryad_trapdoor",
+    "creraces:dryad_door",
+    "creraces:red_stripped_oak_log",
+    "creraces:weathered_red_stripped_oak_log"
+  ]
+}

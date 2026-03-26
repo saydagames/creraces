@@ -7,12 +7,7 @@
     "creraces:splash": "creraces:textures/screens/oread_splash.png",
     "creraces:portrait": "creraces:textures/screens/oread_portrait.png",
     "creraces:name_texture": "creraces:textures/screens/oread_text.png",
-    "creraces:base_ap": 12,
-    "creraces:base_ad": 6,
-    "creraces:base_ah": 8,
-    "creraces:base_cr": 10,
     "creraces:resource_type": "MANA",
-    "creraces:max_resource": 120,
     "creraces:gstate": "FEMALE",
     "creraces:lava_vision": true,
     "creraces:unaffected_by_lava": true,
@@ -31,6 +26,69 @@
     ],
     "magmatic_metabolism": [
         {
+            "type": "creraces:permanent_effect",
+            "effect": "minecraft:slowness",
+            "amplifier": 1,
+            "condition": {
+                "type": "creraces:state",
+                "state": "mountains_fury",
+                "value": 1.0
+            }
+        },
+        {
+            "name": "magmatic_strength",
+            "type": "creraces:on_tick",
+            "interval": 10,
+            "condition": {
+                "type": "creraces:is_burning",
+                "value": true
+            },
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:strength",
+                    "amplifier": 1,
+                    "duration": 20,
+                    "visible": false
+                }
+            ]
+        },
+        {
+            "name": "fury_maxed_feedback",
+            "type": "creraces:on_tick",
+            "interval": 1,
+            "condition": {
+                "type": "creraces:and",
+                "conditions": [
+                    {
+                        "type": "creraces:state",
+                        "state": "mountains_fury",
+                        "value": 1.0
+                    },
+                    {
+                        "type": "creraces:resource_level",
+                        "resource": "state:creraces:stacks",
+                        "operator": "==",
+                        "value": 999
+                    }
+                ]
+            },
+            "actions": [
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:item.flintandsteel.use",
+                    "volume": 1.0,
+                    "pitch": 1.0
+                },
+                {
+                    "type": "creraces:message",
+                    "text": "Mountain's Fury Maxed!",
+                    "actionbar": true
+                }
+            ]
+        },
+        {
+            "name": "fury_stack_accumulation",
             "type": "creraces:on_tick",
             "interval": 1,
             "condition": {
@@ -45,7 +103,7 @@
                         "type": "creraces:resource_level",
                         "resource": "state:creraces:stacks",
                         "operator": "<",
-                        "value": 500
+                        "value": 1000
                     }
                 ]
             },
@@ -59,6 +117,7 @@
             ]
         },
         {
+            "name": "magmatic_metabolism",
             "type": "creraces:on_tick",
             "interval": 10,
             "condition": {
@@ -92,7 +151,13 @@
                 },
                 {
                     "type": "creraces:modify_resource",
-                    "resource": "custom:stored_material",
+                    "resource": "saturation",
+                    "operation": "add",
+                    "value": 2
+                },
+                {
+                    "type": "creraces:modify_resource",
+                    "resource": "state:creraces:stored_material",
                     "operation": "add",
                     "value": 1
                 },
@@ -127,6 +192,7 @@
             }
         },
         {
+            "name": "hot_headed_burning",
             "type": "creraces:on_tick",
             "interval": 20,
             "condition": {

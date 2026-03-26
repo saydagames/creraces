@@ -71,6 +71,9 @@ public class CreRaces {
         // Attributes
         mc.sayda.creraces.registry.ModAttributes.init();
 
+        // GameRules
+        mc.sayda.creraces.registry.ModGameRules.init();
+
         // Enchantments
         mc.sayda.creraces.registry.ModEnchantments.register();
 

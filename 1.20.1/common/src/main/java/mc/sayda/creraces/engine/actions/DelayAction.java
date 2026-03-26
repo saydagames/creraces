@@ -34,7 +34,7 @@ public class DelayAction implements ActionRegistry.RaceAction {
 
         int t = Math.max(1, (int) ticks.evaluate(player, target, slot));
         // Safety cap: prevents scheduler bloat (0 = disabled)
-        int max = 1200;
+        int max = mc.sayda.creraces.config.CreRacesConfig.DELAY_ACTION_MAX_TICKS.get();
         if (max > 0) {
             t = Math.min(t, max);
         }

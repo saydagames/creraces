@@ -21,8 +21,11 @@ public class SleepAction implements ActionRegistry.RaceAction {
         if (player.level().isClientSide)
             return true;
 
+        net.minecraft.core.BlockPos pos = player.blockPosition();
+        if (pos == null) return false;
+
         if (setSpawn && player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
-            serverPlayer.setRespawnPosition(player.level().dimension(), player.blockPosition(), player.getYRot(), true,
+            serverPlayer.setRespawnPosition(player.level().dimension(), pos, player.getYRot(), true,
                     true);
         }
 
@@ -31,7 +34,7 @@ public class SleepAction implements ActionRegistry.RaceAction {
         player.addTag("creraces_force_sleep");
 
         // Try to sleep at current position.
-        player.startSleepInBed(player.blockPosition());
+        player.startSleepInBed(pos);
         return true;
     }
 

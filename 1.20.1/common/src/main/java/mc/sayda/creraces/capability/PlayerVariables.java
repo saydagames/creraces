@@ -63,6 +63,10 @@ public class PlayerVariables implements IPlayerVariables {
     private String returnDim = "minecraft:overworld";
     private boolean isInSpiritRealm = false;
     private boolean smallBuild = false;
+    private boolean isSpirit = false;
+    private boolean isTiny = false;
+    private boolean isAquatic = false;
+    private boolean isUndead = false;
     private long resourceTimer = 0;
 
     @Override
@@ -683,6 +687,46 @@ public class PlayerVariables implements IPlayerVariables {
             this.smallBuild = smallBuild;
         }
     }
+ 
+    @Override
+    public boolean isUndead() {
+        return isUndead;
+    }
+ 
+    @Override
+    public void setUndead(boolean undead) {
+        this.isUndead = undead;
+    }
+ 
+    @Override
+    public boolean isAquatic() {
+        return isAquatic;
+    }
+ 
+    @Override
+    public void setAquatic(boolean aquatic) {
+        this.isAquatic = aquatic;
+    }
+ 
+    @Override
+    public boolean isSpirit() {
+        return isSpirit;
+    }
+ 
+    @Override
+    public void setSpirit(boolean spirit) {
+        this.isSpirit = spirit;
+    }
+ 
+    @Override
+    public boolean isTiny() {
+        return isTiny;
+    }
+ 
+    @Override
+    public void setTiny(boolean tiny) {
+        this.isTiny = tiny;
+    }
 
     @Override
     @SuppressWarnings("null")
@@ -755,6 +799,10 @@ public class PlayerVariables implements IPlayerVariables {
         tag.put("pocketInvitations", invitationsList);
         tag.putBoolean("isInSpiritRealm", isInSpiritRealm);
         tag.putBoolean("smallBuild", smallBuild);
+        tag.putBoolean("isSpirit", isSpirit);
+        tag.putBoolean("isTiny", isTiny);
+        tag.putBoolean("isAquatic", isAquatic);
+        tag.putBoolean("isUndead", isUndead);
         tag.putBoolean("abilityActive", abilityActive);
         if (activeAbility != null) {
             tag.putString("activeAbility", activeAbility.toString());
@@ -831,16 +879,16 @@ public class PlayerVariables implements IPlayerVariables {
             }
         }
 
-        this.unlockedAbilities.clear();
         if (tag.contains("unlockedAbilities", Tag.TAG_LIST)) {
+            this.unlockedAbilities.clear();
             ListTag list = tag.getList("unlockedAbilities", Tag.TAG_STRING);
             for (int i = 0; i < list.size(); i++) {
                 this.unlockedAbilities.add(new ResourceLocation(Objects.requireNonNull(list.getString(i))));
             }
         }
 
-        this.equippedAbilities.clear();
         if (tag.contains("equippedAbilities", Tag.TAG_COMPOUND)) {
+            this.equippedAbilities.clear();
             CompoundTag equippedTag = tag.getCompound("equippedAbilities");
             for (AbilitySlot slot : AbilitySlot.values()) {
                 if (equippedTag.contains(slot.name())) {
@@ -874,7 +922,6 @@ public class PlayerVariables implements IPlayerVariables {
         }
 
         if (tag.contains("morphed"))
-
             this.morphed = tag.getBoolean("morphed");
 
         if (tag.contains("teamId"))
@@ -923,6 +970,14 @@ public class PlayerVariables implements IPlayerVariables {
             this.isInSpiritRealm = tag.getBoolean("isInSpiritRealm");
         if (tag.contains("smallBuild"))
             this.smallBuild = tag.getBoolean("smallBuild");
+        if (tag.contains("isSpirit"))
+            this.isSpirit = tag.getBoolean("isSpirit");
+        if (tag.contains("isTiny"))
+            this.isTiny = tag.getBoolean("isTiny");
+        if (tag.contains("isAquatic"))
+            this.isAquatic = tag.getBoolean("isAquatic");
+        if (tag.contains("isUndead"))
+            this.isUndead = tag.getBoolean("isUndead");
         if (tag.contains("abilityActive"))
             this.abilityActive = tag.getBoolean("abilityActive");
         if (tag.contains("activeAbility")) {

@@ -26,16 +26,24 @@ public class FoodDataMixin implements mc.sayda.creraces.util.IFoodDataAccessor {
 
     // ─── Food multiplier helpers (called from PlayerFoodMixin) ─────────────────
 
-    /** Snapshot current food level (before eat runs). */
     @Override
     public int creraces$getFoodLevel() {
         return foodLevel;
     }
 
-    /** Snapshot current saturation (before eat runs). */
+    @Override
+    public void creraces$setFoodLevel(int food) {
+        this.foodLevel = food;
+    }
+
     @Override
     public float creraces$getSaturation() {
         return saturationLevel;
+    }
+
+    @Override
+    public void creraces$setSaturation(float saturation) {
+        this.saturationLevel = saturation;
     }
 
     /**
