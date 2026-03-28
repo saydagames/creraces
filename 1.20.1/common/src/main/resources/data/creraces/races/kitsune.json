@@ -43,24 +43,6 @@
                 "base": 10.0
             },
             "operation": "addition"
-        },
-        {
-            "id": "kitsune_ap",
-            "type": "creraces:attribute_modifier",
-            "attribute": "creraces:ability_power",
-            "value": {
-                "base": 20.0
-            },
-            "operation": "addition"
-        },
-        {
-            "id": "kitsune_damage",
-            "type": "creraces:attribute_modifier",
-            "attribute": "minecraft:generic.attack_damage",
-            "value": {
-                "base": 8.0
-            },
-            "operation": "addition"
         }
     ],
     "fox_form_modifiers": [

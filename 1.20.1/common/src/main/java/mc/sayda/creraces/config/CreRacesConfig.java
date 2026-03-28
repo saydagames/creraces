@@ -73,9 +73,6 @@ public class CreRacesConfig {
     public static Supplier<Boolean> FORCED_SELECTION = () -> true;
     public static Supplier<Integer> MINI_MODEL_CACHE_SIZE = () -> 128;
     public static Supplier<Integer> MINI_DUMMY_CACHE_SIZE = () -> 32;
-    public static Supplier<Integer> SPIRIT_REALM_TINT_COLOR = () -> 0x440000FF;
-    public static Supplier<Float> SPIRIT_REALM_MOON_ALPHA = () -> 0.5f;
-    public static Supplier<Float> SPIRIT_REALM_MOON_SIZE = () -> 20.0f;
     public static Supplier<Integer> SPIRIT_SPAWN_CHECK_RADIUS = () -> 16;
     public static Supplier<Integer> CUSTOMIZATION_VALUE_MAX_LENGTH = () -> 128;
     public static Supplier<Integer> NETWORK_TEAM_NAME_MAX_LEN = () -> 16;

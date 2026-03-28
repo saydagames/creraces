@@ -331,9 +331,6 @@ public class ForgeConfig {
                 public final ForgeConfigSpec.ConfigValue<Boolean> race_overlays_enabled;
                 public final ForgeConfigSpec.ConfigValue<Boolean> engine_popups_enabled;
                 public final ForgeConfigSpec.ConfigValue<Integer> mini_dummy_cache_size;
-                public final ForgeConfigSpec.ConfigValue<Integer> spirit_realm_tint_color;
-                public final ForgeConfigSpec.ConfigValue<Double> spirit_realm_moon_alpha;
-                public final ForgeConfigSpec.ConfigValue<Double> spirit_realm_moon_size;
 
                 public Client(ForgeConfigSpec.Builder builder) {
                         builder.push("Rendering");
@@ -361,13 +358,6 @@ public class ForgeConfig {
                                                         CreRacesConfig.ENGINE_POPUPS_ENABLED.get());
                         mini_dummy_cache_size = builder.defineInRange("mini_dummy_cache_size",
                                         CreRacesConfig.MINI_DUMMY_CACHE_SIZE.get(), 1, 256);
-                        spirit_realm_tint_color = builder.defineInRange("spirit_realm_tint_color",
-                                        CreRacesConfig.SPIRIT_REALM_TINT_COLOR.get(), 0,
-                                        0xFFFFFF);
-                        spirit_realm_moon_alpha = builder.defineInRange("spirit_realm_moon_alpha",
-                                        (double) CreRacesConfig.SPIRIT_REALM_MOON_ALPHA.get(), 0.0, 1.0);
-                        spirit_realm_moon_size = builder.defineInRange("spirit_realm_moon_size",
-                                        (double) CreRacesConfig.SPIRIT_REALM_MOON_SIZE.get(), 1.0, 100.0);
                         builder.pop();
                 }
         }
@@ -636,9 +626,6 @@ public class ForgeConfig {
                 CreRacesConfig.RACE_OVERLAYS_ENABLED = () -> CLIENT.race_overlays_enabled.get();
                 CreRacesConfig.ENGINE_POPUPS_ENABLED = () -> CLIENT.engine_popups_enabled.get();
                 CreRacesConfig.MINI_DUMMY_CACHE_SIZE = () -> CLIENT.mini_dummy_cache_size.get();
-                CreRacesConfig.SPIRIT_REALM_TINT_COLOR = () -> CLIENT.spirit_realm_tint_color.get();
-                CreRacesConfig.SPIRIT_REALM_MOON_ALPHA = () -> (float) (double) CLIENT.spirit_realm_moon_alpha.get();
-                CreRacesConfig.SPIRIT_REALM_MOON_SIZE = () -> (float) (double) CLIENT.spirit_realm_moon_size.get();
 
                 CreRacesConfig.REMAINS_HEALTH = () -> ENTITIES.remains_health.get();
 

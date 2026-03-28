@@ -874,6 +874,7 @@ class ResourceLevelCondition implements Condition {
                     case "ad" -> vars.getAd();
                     case "ah" -> vars.getAh();
                     case "cr" -> vars.getCr();
+                    case "gstate" -> (double) vars.getGState();
                     default -> 0.0;
                 };
             }

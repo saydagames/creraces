@@ -140,9 +140,6 @@ public class FabricConfig {
         CreRacesConfig.RACE_OVERLAYS_ENABLED = () -> client.hud.race_overlays_enabled;
         CreRacesConfig.ENGINE_POPUPS_ENABLED = () -> client.hud.engine_popups_enabled;
         CreRacesConfig.MINI_DUMMY_CACHE_SIZE = () -> client.hud.mini_dummy_cache_size;
-        CreRacesConfig.SPIRIT_REALM_TINT_COLOR = () -> client.hud.spirit_realm_tint_color;
-        CreRacesConfig.SPIRIT_REALM_MOON_ALPHA = () -> (float) client.hud.spirit_realm_moon_alpha;
-        CreRacesConfig.SPIRIT_REALM_MOON_SIZE = () -> (float) client.hud.spirit_realm_moon_size;
 
         // Balancing
 
@@ -285,9 +282,6 @@ public class FabricConfig {
             public boolean race_overlays_enabled = CreRacesConfig.RACE_OVERLAYS_ENABLED.get();
             public boolean engine_popups_enabled = CreRacesConfig.ENGINE_POPUPS_ENABLED.get();
             public int mini_dummy_cache_size = CreRacesConfig.MINI_DUMMY_CACHE_SIZE.get();
-            public int spirit_realm_tint_color = CreRacesConfig.SPIRIT_REALM_TINT_COLOR.get();
-            public double spirit_realm_moon_alpha = CreRacesConfig.SPIRIT_REALM_MOON_ALPHA.get();
-            public double spirit_realm_moon_size = CreRacesConfig.SPIRIT_REALM_MOON_SIZE.get();
         }
     }
 

@@ -126,7 +126,6 @@ public class RaceOverlay {
 
             RenderSystem.depthMask(true);
             RenderSystem.enableDepthTest();
-            RenderSystem.disableBlend();
         });
     }
 

@@ -265,10 +265,12 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
     @Inject(method = "hurt", at = @At("HEAD"), cancellable = true)
     private void creraces$onHitLogic(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         this.creraces$lastDamageSource = source;
-        // Global Spirit Realm damage immunity
+        // TODO: Improve Global Spirit Realm damage immunity
         if (mc.sayda.creraces.engine.SpiritMobilityHandler.isSpirit((LivingEntity) (Object) this)) {
-            cir.setReturnValue(false);
-            return;
+            if (!source.is(net.minecraft.world.damagesource.DamageTypes.FELL_OUT_OF_WORLD) && !source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY)) {
+                cir.setReturnValue(false);
+                return;
+            }
         }
 
         if (amount <= 0) {
