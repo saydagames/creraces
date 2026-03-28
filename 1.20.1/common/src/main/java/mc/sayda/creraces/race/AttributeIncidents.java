@@ -90,12 +90,8 @@ public class AttributeIncidents {
                                     if (existing != null)
                                         instance.removeModifier(uuid);
 
-                                    String modifierName = "CreRaces Trait";
-                                    if (traitId != null && !traitId.isEmpty() && !traitId.contains(":")) {
-                                        modifierName = "CreRaces: " + traitId;
-                                    }
 
-                                    AttributeModifier newMod = new AttributeModifier(uuid, modifierName, newValue, newOp);
+                                    AttributeModifier newMod = new AttributeModifier(uuid, "creraces:" + traitId, newValue, newOp);
                                     instance.addPermanentModifier(newMod);
 
                                     // Verify application and log final value
@@ -119,20 +115,25 @@ public class AttributeIncidents {
                 }
             }
 
-            // 3. Clear orphaned "CreRaces Trait" modifiers
+            // 3. Clear orphaned "CreRaces:" modifiers
+            // We iterate through syncable attributes to find modifiers added by our engine.
             player.getAttributes().getSyncableAttributes().forEach(instance -> {
                 java.util.List<AttributeModifier> toRemove = new java.util.ArrayList<>();
                 for (AttributeModifier mod : instance.getModifiers()) {
                     String name = mod.getName();
-                    if ((name.startsWith("CreRaces:") || "CreRaces Trait".equals(name) || "Race Trait".equals(name))
-                            && !activeTraits.contains(mod.getId())) {
-                        toRemove.add(mod);
+                    // Identifies modifiers by the "creraces:" prefix.
+                    if (name.startsWith("creraces:")) {
+                        if (!activeTraits.contains(mod.getId())) {
+                            toRemove.add(mod);
+                        }
                     }
                 }
                 if (!toRemove.isEmpty()) {
-                    mc.sayda.creraces.CreRaces.LOGGER.debug("EikiJudgment: Clearing {} orphaned race traits from {}",
-                            toRemove.size(), player.getScoreboardName());
-                    toRemove.forEach(mod -> instance.removeModifier(mod.getId()));
+                    toRemove.forEach(mod -> {
+                        instance.removeModifier(mod.getId());
+                        mc.sayda.creraces.CreRaces.LOGGER.info("EikiJudgment: PURGED orphaned trait {} from player {}'s attribute {}", 
+                            mod.getName(), player.getScoreboardName(), instance.getAttribute().getDescriptionId());
+                    });
                 }
             });
 
@@ -180,17 +181,17 @@ public class AttributeIncidents {
     }
 
     private static void clearAllRacialModifiers(ServerPlayer player) {
-        // Clear the AD modifier (its own UUID, not the creraces:trait: pattern)
+        // Clear the AD modifier (its own UUID, not the creraces: prefix)
         clearModifier(player, Attributes.ATTACK_DAMAGE, RACE_AD_MODIFIER);
 
         // All generic trait attribute modifiers are applied via AttributeModifierTrait
         // using deterministic per-attribute-and-index UUIDs.
-        // We clear everything named "Race Trait" to ensure complete cleanup.
+        // We clear everything starting with "creraces:" to ensure complete cleanup.
         player.getAttributes().getSyncableAttributes().forEach(instance -> {
             java.util.List<AttributeModifier> toRemove = new java.util.ArrayList<>();
             for (AttributeModifier mod : instance.getModifiers()) {
                 String name = mod.getName();
-                if (name.startsWith("CreRaces:") || "CreRaces Trait".equals(name) || "Race Trait".equals(name)) {
+                if (name.startsWith("creraces:") || name.startsWith("CreRaces:") || "CreRaces Trait".equals(name) || "Race Trait".equals(name)) {
                     toRemove.add(mod);
                 }
             }

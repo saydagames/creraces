@@ -202,6 +202,10 @@ public interface Condition {
                     boolean expected = GsonHelper.getAsBoolean(json, "value", true);
                     yield new SpiritCondition(expected);
                 }
+                case "is_spirit_moon" -> {
+                    boolean expected = GsonHelper.getAsBoolean(json, "value", true);
+                    yield new IsSpiritMoonCondition(expected);
+                }
                 case "entity_data" -> {
                     yield EntityDataCondition.fromJson(json);
                 }
@@ -1455,5 +1459,21 @@ class CanPlaceBlockCondition implements Condition {
 
         // Entity check
         return player.level().getEntitiesOfClass(net.minecraft.world.entity.Entity.class, new AABB(finalPos), e -> e != player).isEmpty();
+    }
+}
+
+class IsSpiritMoonCondition implements Condition {
+    private final boolean expected;
+
+    public IsSpiritMoonCondition(boolean expected) {
+        this.expected = expected;
+    }
+
+    @Override
+    public boolean evaluate(Player player,
+            @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+        return mc.sayda.creraces.engine.WorldState.isSpiritMoon(player.level()) == expected;
     }
 }

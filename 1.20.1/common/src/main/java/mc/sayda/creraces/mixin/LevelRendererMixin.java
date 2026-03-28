@@ -47,22 +47,21 @@ public class LevelRendererMixin {
         boolean inSpirit = this.minecraft.player != null && DataUtils.getVariables(this.minecraft.player).map(v -> v.isInSpiritRealm()).orElse(false);
 
         if (inSpirit) {
-            if (location.equals(MOON_LOCATION)) {
+            if (location.getPath().contains("moon")) {
                 this.creraces$moonPass = true;
                 return;
             }
-            if (location.equals(SUN_LOCATION)) {
+            if (location.getPath().contains("sun")) {
                 this.creraces$sunPass = true;
                 return;
             }
         } else {
-            if (location.equals(MOON_LOCATION)) {
-                long day = this.minecraft.level.getDayTime() / 24000L;
-                if (day % 9 == 8) { 
-                    com.mojang.blaze3d.systems.RenderSystem.setShaderTexture(unit, SpiritRealmRenderer.SPIRIT_MOON_ATLAS);
-                    return;
-                }
+        if (location.getPath().contains("moon")) {
+            if (mc.sayda.creraces.engine.WorldState.isSpiritMoon(this.minecraft.level)) { 
+                com.mojang.blaze3d.systems.RenderSystem.setShaderTexture(unit, SpiritRealmRenderer.SPIRIT_MOON_ATLAS);
+                return;
             }
+        }
         }
         com.mojang.blaze3d.systems.RenderSystem.setShaderTexture(unit, location);
     }

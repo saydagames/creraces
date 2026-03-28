@@ -23,6 +23,7 @@ public class ResourceTicker {
             return;
 
         IPlayerVariables vars = varsOpt.get();
+
         ResourceLocation raceId = vars.getRace();
         if (raceId == null || raceId.equals(RaceRegistry.NONE))
             return;

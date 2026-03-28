@@ -56,6 +56,12 @@ public class EntityDataCondition implements Condition {
                 if (key.equalsIgnoreCase("minibuild") || key.equalsIgnoreCase("smallBuild")) {
                     return vars.isSmallBuild() ? 1.0 : 0.0;
                 }
+                if (key.equalsIgnoreCase("spirit") || key.equalsIgnoreCase("is_spirit")) {
+                    return vars.isSpirit() ? 1.0 : 0.0;
+                }
+                if (key.equalsIgnoreCase("tiny") || key.equalsIgnoreCase("is_tiny")) {
+                    return vars.isTiny() ? 1.0 : 0.0;
+                }
                 return data.getDouble(key);
             }).orElse(data.getDouble(key));
         } else {

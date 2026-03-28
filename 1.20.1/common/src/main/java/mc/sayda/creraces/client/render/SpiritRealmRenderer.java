@@ -2,6 +2,7 @@ package mc.sayda.creraces.client.render;
  
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
+import com.mojang.math.Axis;
 import mc.sayda.creraces.capability.DataUtils;
  
 import net.minecraft.client.Minecraft;
@@ -83,6 +84,9 @@ public class SpiritRealmRenderer {
 
         poseStack.pushPose();
 
+        // Universal 180-degree texture rotation for Spirit Realm moons
+        poseStack.mulPose(Axis.YP.rotationDegrees(180));
+
         if (isSecond) {
             // Align perfectly at time = 210,000 ticks (the user's perfect Night 9 point)
             double alignmentPoint = 210000.0 / 216000.0;
@@ -96,6 +100,7 @@ public class SpiritRealmRenderer {
             
             // Translate on the celestial plane (XZ)
             poseStack.translate(xOffset, 0, zOffset);
+            
             RenderSystem.setShaderColor(0.4f, 1.0f, 0.9f, MOON_ALPHA);
         } else {
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, MOON_ALPHA);
@@ -118,10 +123,19 @@ public class SpiritRealmRenderer {
         float yPos = isMirror ? 100.0F : -100.0F;
         
         bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-        bufferBuilder.vertex(matrix, -moonSize, yPos, moonSize).uv(u1, v2).endVertex();
-        bufferBuilder.vertex(matrix, moonSize, yPos, moonSize).uv(u2, v2).endVertex();
-        bufferBuilder.vertex(matrix, moonSize, yPos, -moonSize).uv(u2, v1).endVertex();
-        bufferBuilder.vertex(matrix, -moonSize, yPos, -moonSize).uv(u1, v1).endVertex();
+        if (isMirror) {
+            // Sun-pole Winding (Y = 100): Needs specific order to avoid backface culling from below
+            bufferBuilder.vertex(matrix, -moonSize, yPos, -moonSize).uv(u1, v1).endVertex();
+            bufferBuilder.vertex(matrix, moonSize, yPos, -moonSize).uv(u2, v1).endVertex();
+            bufferBuilder.vertex(matrix, moonSize, yPos, moonSize).uv(u2, v2).endVertex();
+            bufferBuilder.vertex(matrix, -moonSize, yPos, moonSize).uv(u1, v2).endVertex();
+        } else {
+            // Moon-pole Winding (Y = -100): Standard celestial order
+            bufferBuilder.vertex(matrix, -moonSize, yPos, moonSize).uv(u1, v2).endVertex();
+            bufferBuilder.vertex(matrix, moonSize, yPos, moonSize).uv(u2, v2).endVertex();
+            bufferBuilder.vertex(matrix, moonSize, yPos, -moonSize).uv(u2, v1).endVertex();
+            bufferBuilder.vertex(matrix, -moonSize, yPos, -moonSize).uv(u1, v1).endVertex();
+        }
         
         BufferUploader.drawWithShader(bufferBuilder.end());
         poseStack.popPose();

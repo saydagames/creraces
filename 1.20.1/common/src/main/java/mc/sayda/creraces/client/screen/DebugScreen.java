@@ -97,6 +97,7 @@ public class DebugScreen extends Screen {
                         return;
 
                 DataUtils.getVariables(player).ifPresent(vars -> {
+                
                         // --- IDENTITY ---
                         debugLines.add(Component.literal(""));
                         addHeader("IDENTITY");
@@ -324,6 +325,23 @@ public class DebugScreen extends Screen {
                                                         .withStyle(ChatFormatting.GREEN)));
                         lineMetadata.add(new LineMetadata(debugLines.size() - 1, "variable", "coins",
                                         String.valueOf(vars.getCoins())));
+
+                        // --- GLOBAL ---
+                        addHeader("GLOBAL");
+                        long dayTime = player.level().getDayTime();
+                        long dayCount = dayTime / 24000L;
+                        boolean sm = mc.sayda.creraces.engine.WorldState.isSpiritMoon(player.level());
+                        debugLines.add(Component.literal("  Time: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(String.valueOf(dayTime)).withStyle(ChatFormatting.WHITE)));
+                        debugLines.add(Component.literal("  Day: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(String.valueOf(dayCount)).withStyle(ChatFormatting.WHITE)));
+                        debugLines.add(Component.literal("  Spirit Moon: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(String.valueOf(sm))
+                                                        .withStyle(sm ? ChatFormatting.GREEN : ChatFormatting.RED)));
+                        debugLines.add(Component.literal("  Dimension: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(player.level().dimension().location().toString())
+                                                        .withStyle(ChatFormatting.DARK_AQUA)));
+
                         // --- FLAGS ---
                         addHeader("FLAGS");
                         if (race != null) {

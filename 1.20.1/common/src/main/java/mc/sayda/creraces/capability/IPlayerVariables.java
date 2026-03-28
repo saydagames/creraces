@@ -218,7 +218,6 @@ public interface IPlayerVariables extends ISerializableData {
  
     void setTiny(boolean tiny);
 
-
     Map<ResourceLocation, Integer> getTraitTimers();
 
     void setTraitTimer(ResourceLocation id, int ticks);
