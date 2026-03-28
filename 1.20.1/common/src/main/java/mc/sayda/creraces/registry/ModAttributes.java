@@ -174,8 +174,6 @@ public class ModAttributes {
                 if (attr == null)
                         return false;
                 ResourceLocation id = BuiltInRegistries.ATTRIBUTE.getKey(attr);
-                if (id == null || !id.getNamespace().equals(APOTHIC_ID))
-                        return false;
 
                 String path = id.getPath();
                 return switch (path) {

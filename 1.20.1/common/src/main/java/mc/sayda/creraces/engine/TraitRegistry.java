@@ -112,8 +112,6 @@ public class TraitRegistry {
     }
 
     public static void init() {
-        // Attribute Modifiers
-        mc.sayda.creraces.engine.traits.AttributeModifierTrait.register();
 
         // Passive Traits
         mc.sayda.creraces.engine.traits.AddonTrait.register();
@@ -137,5 +135,6 @@ public class TraitRegistry {
         mc.sayda.creraces.engine.traits.TetherTrait.register();
         mc.sayda.creraces.engine.traits.DomainTrait.register();
         mc.sayda.creraces.engine.traits.OnAbilityUseTrait.register();
+        mc.sayda.creraces.engine.traits.AttributeModifierTrait.register();
     }
 }

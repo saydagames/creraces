@@ -30,14 +30,15 @@
             "condition": {
                 "type": "creraces:not",
                 "condition": {
-                    "type": "creraces:in_water"
+                    "type": "creraces:in_water",
+                    "include_rain": true
                 }
             },
             "actions": [
                 {
                     "type": "creraces:apply_effect",
                     "effect": "minecraft:weakness",
-                    "duration": 60,
+                    "duration": 30,
                     "amplifier": 0,
                     "visible": true
                 }

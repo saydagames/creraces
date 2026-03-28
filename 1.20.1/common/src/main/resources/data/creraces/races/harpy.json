@@ -16,40 +16,20 @@
     "creraces:immune_to_damage": [
         "minecraft:fall"
     ],
-    "core_stats": [
-        {
-            "id": "harpy_ap",
-            "type": "creraces:attribute_modifier",
-            "attribute": "creraces:ability_power",
-            "value": {
-                "base": 10.0
-            },
-            "operation": "addition"
-        },
-        {
-            "id": "harpy_damage",
-            "type": "creraces:attribute_modifier",
-            "attribute": "minecraft:generic.attack_damage",
-            "value": {
-                "base": 5.0
-            },
-            "operation": "addition"
-        }
-    ],
     "armor_restrictions": [
         {
             "id": "no_leggings",
             "type": "creraces:attribute_modifier",
             "attribute": "twilight_lib:allow_leggings",
-            "value": 0.0,
-            "operation": "multiply_total"
+            "value": -1.0,
+            "operation": "addition"
         },
         {
             "id": "no_boots",
             "type": "creraces:attribute_modifier",
             "attribute": "twilight_lib:allow_boots",
-            "value": 0.0,
-            "operation": "multiply_total"
+            "value": -1.0,
+            "operation": "addition"
         }
     ],
     "talon_strike_logic": [

@@ -11,7 +11,8 @@
     "creraces:difficulty": 3,
     "creraces:immune_to_knockback": true,
     "creraces:negate_effects": [
-        "minecraft:levitation"
+        "minecraft:levitation",
+        "minecraft:slowness"
     ],
     "giant_attributes": [
         {

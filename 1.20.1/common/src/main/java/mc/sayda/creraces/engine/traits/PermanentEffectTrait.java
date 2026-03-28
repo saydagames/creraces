@@ -18,16 +18,18 @@ public class PermanentEffectTrait implements TraitRegistry.RaceTrait {
     private final mc.sayda.creraces.engine.ScalingValue amplifier;
     private final boolean ambient;
     private final boolean showParticles;
+    private final int duration;
     @javax.annotation.Nullable
     private final Condition condition;
 
     public PermanentEffectTrait(MobEffect effect, mc.sayda.creraces.engine.ScalingValue amplifier, boolean ambient,
-            boolean showParticles,
+            boolean showParticles, int duration,
             @javax.annotation.Nullable Condition condition) {
         this.effect = effect;
         this.amplifier = amplifier;
         this.ambient = ambient;
         this.showParticles = showParticles;
+        this.duration = duration;
         this.condition = condition;
     }
 
@@ -38,7 +40,7 @@ public class PermanentEffectTrait implements TraitRegistry.RaceTrait {
                 // Apply for moderate duration to avoid flickering, but short enough to clear if
                 // race changes
                 player.addEffect(
-                        new MobEffectInstance(effect, 10, // Half a second
+                        new MobEffectInstance(effect, duration,
                                 (int) amplifier.evaluate(player), ambient, showParticles));
             }
         }
@@ -54,12 +56,14 @@ public class PermanentEffectTrait implements TraitRegistry.RaceTrait {
             boolean ambient = GsonHelper.getAsBoolean(json, "ambient", true);
             boolean showParticles = GsonHelper.getAsBoolean(json, "visible", true);
 
+            int duration = GsonHelper.getAsInt(json, "duration", 60);
+
             mc.sayda.creraces.engine.condition.Condition condition = null;
             if (json.has("condition")) {
                 condition = mc.sayda.creraces.engine.condition.Condition.fromJson(json.getAsJsonObject("condition"));
             }
 
-            return new PermanentEffectTrait(effect, amplifier, ambient, showParticles, condition);
+            return new PermanentEffectTrait(effect, amplifier, ambient, showParticles, duration, condition);
         });
     }
 }

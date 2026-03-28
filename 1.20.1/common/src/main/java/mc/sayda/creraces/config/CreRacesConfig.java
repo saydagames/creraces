@@ -41,6 +41,8 @@ public class CreRacesConfig {
 
     // [SECTION: POTION EFFECTS]
     public static Supplier<Double> RAT_VENOM_SCALING = () -> 0.05; // from 0.2
+    public static Supplier<Double> BOILING_SCALING = () -> 5.0 / 300.0;
+    public static Supplier<Double> BLEEDING_SCALING = () -> 3.0 / 300.0;
 
     public static Supplier<Double> ENTITY_TORNADO_HEALTH = () -> 20.0;
     public static Supplier<Double> ENTITY_TORNADO_ARMOR = () -> 5.0;

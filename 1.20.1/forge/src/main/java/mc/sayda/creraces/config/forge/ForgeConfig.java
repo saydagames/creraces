@@ -103,6 +103,8 @@ public class ForgeConfig {
                 public final ForgeConfigSpec.ConfigValue<Double> max_soul;
 
                 public final ForgeConfigSpec.ConfigValue<Double> rat_venom_scaling;
+                public final ForgeConfigSpec.ConfigValue<Double> boiling_scaling;
+                public final ForgeConfigSpec.ConfigValue<Double> bleeding_scaling;
 
                 public Common(ForgeConfigSpec.Builder builder) {
                         builder.push("Documentation");
@@ -161,6 +163,12 @@ public class ForgeConfig {
                                         .comment("Damage scaling factor for Rat Venom per stack. Default 0.2.")
                                         .defineInRange("rat_venom_scaling", CreRacesConfig.RAT_VENOM_SCALING.get(), 0.0,
                                                         10.0);
+                        boiling_scaling = builder
+                                        .comment("Damage scaling factor for Boiling per point of AP. Default reaches Boiling 5 at 300 AP.")
+                                        .defineInRange("boiling_scaling", CreRacesConfig.BOILING_SCALING.get(), 0.0, 10.0);
+                        bleeding_scaling = builder
+                                        .comment("Damage scaling factor for Bleeding per point of AP. Default reaches Bleeding 3 at 300 AP.")
+                                        .defineInRange("bleeding_scaling", CreRacesConfig.BLEEDING_SCALING.get(), 0.0, 10.0);
                         builder.pop();
 
                         builder.push("Safety");
@@ -618,6 +626,8 @@ public class ForgeConfig {
                 CreRacesConfig.PASSIVE_DEFAULT_MAX_SATURATION = () -> COMMON.passive_default_max_saturation.get();
 
                 CreRacesConfig.RAT_VENOM_SCALING = () -> COMMON.rat_venom_scaling.get();
+                CreRacesConfig.BOILING_SCALING = () -> COMMON.boiling_scaling.get();
+                CreRacesConfig.BLEEDING_SCALING = () -> COMMON.bleeding_scaling.get();
 
                 CreRacesConfig.MINI_MODEL_CACHE_SIZE = () -> CLIENT.mini_model_cache_size.get();
                 CreRacesConfig.VISUAL_SYNC_DISTANCE = () -> CLIENT.visual_sync_distance.get();

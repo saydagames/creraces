@@ -8,12 +8,18 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
 
+import java.util.Objects;
+
 /**
  * Handles the casting flow for abilities on the server.
  */
 public class AbilityIncidents {
 
     public static void tryCast(ServerPlayer player, AbilitySlot slot) {
+        // Ensure player and slot are not null at the start of the method
+        Objects.requireNonNull(player, "Player cannot be null for ability casting.");
+        Objects.requireNonNull(slot, "AbilitySlot cannot be null for ability casting.");
+
         DataUtils.getVariables(player).ifPresent(vars -> {
             ResourceLocation abilityId = vars.getAbilityInSlot(slot);
             if (abilityId == null)
@@ -27,8 +33,10 @@ public class AbilityIncidents {
             // 1. Check Cooldown
             ResourceLocation cooldownId = ability.id();
             if (vars.getCooldown(cooldownId) > 0) {
-                player.displayClientMessage(
-                        (Component) Component.translatable("msg.creraces.cooldown", (Object) ability.name()), true);
+                var name = ability.name();
+                if (name != null) {
+                    player.displayClientMessage(java.util.Objects.requireNonNull(Component.translatable("msg.creraces.cooldown", (Object) name)), true);
+                }
                 return;
             }
 
@@ -38,7 +46,7 @@ public class AbilityIncidents {
                 return;
 
             if (!canAfford(vars, race, ability.cost())) {
-                player.displayClientMessage((Component) Component.translatable("msg.creraces.no_resource"), true);
+                player.displayClientMessage(java.util.Objects.requireNonNull(Component.translatable("msg.creraces.no_resource")), true);
                 return;
             }
 
@@ -46,14 +54,16 @@ public class AbilityIncidents {
             AbilityExecutor executor = AbilityExecutionRegistry.get(abilityId);
             if (executor == null) {
                 // Ability might not have logic yet, but we should still notify or log
-                player.displayClientMessage(
-                        (Component) Component.translatable("msg.creraces.no_executor", (Object) ability.name()), true);
+                var name = ability.name();
+                if (name != null) {
+                    player.displayClientMessage(java.util.Objects.requireNonNull(Component.translatable("msg.creraces.no_executor", (Object) name)), true);
+                }
                 return;
             }
 
             // 4. Evaluate Condition
             if (ability.condition() != null && !ability.condition().evaluate(player, null, slot, null)) {
-                player.displayClientMessage(Component.translatable("msg.creraces.condition_failed"), true);
+                player.displayClientMessage(java.util.Objects.requireNonNull(Component.translatable("msg.creraces.condition_failed")), true);
                 return;
             }
 
@@ -63,8 +73,8 @@ public class AbilityIncidents {
                     // 6. Post-Cast (Consume cost and set cooldown)
                     consumeResource(vars, race, ability.cost());
 
-                    double haste = player
-                            .getAttributeValue(mc.sayda.creraces.registry.ModAttributes.ABILITY_HASTE.get());
+                    var hasteAttr = mc.sayda.creraces.registry.ModAttributes.ABILITY_HASTE.get();
+                    double haste = hasteAttr != null ? player.getAttributeValue(hasteAttr) : 0.0;
                     double cap = 40.0; // ABILITY_HASTE_CAP default
                     double effectiveHaste = Math.min(haste, cap);
                     double multiplier = 1.0 - (effectiveHaste / 100.0);

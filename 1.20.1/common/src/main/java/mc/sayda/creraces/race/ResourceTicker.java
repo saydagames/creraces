@@ -209,11 +209,6 @@ public class ResourceTicker {
 
         // 6. Passive Effects
         if (passives != null) {
-            if (passives.nightVision()) {
-                player.addEffect(new net.minecraft.world.effect.MobEffectInstance(
-                        net.minecraft.world.effect.MobEffects.NIGHT_VISION,
-                        mc.sayda.creraces.config.CreRacesConfig.PASSIVE_EFFECT_BUFFER_TICKS.get(), 0, false, false));
-            }
 
             if (passives.noHunger()) {
                 player.getFoodData()

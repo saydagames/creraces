@@ -59,6 +59,14 @@ public class AttributeIncidents {
 
                     if (conditionMet) {
                         Attribute attr = amt.getAttribute();
+                        if (attr == null) {
+                            if (player.tickCount % 100 == 0)
+                                mc.sayda.creraces.CreRaces.LOGGER.warn(
+                                    "EikiJudgment: trait '{}' references attribute '{}' which is not in the registry. Is the mod loaded?",
+                                    trait.getTraitId(), amt.getAttributeId());
+                            continue;
+                        }
+
                         Attribute resolvedAttr = ModAttributes.resolve(attr);
                         ResourceLocation attrKey = net.minecraft.core.registries.BuiltInRegistries.ATTRIBUTE
                                 .getKey(resolvedAttr);
@@ -79,10 +87,6 @@ public class AttributeIncidents {
 
                                 if (existing == null || Math.abs(existing.getAmount() - newValue) > 1e-6
                                         || existing.getOperation() != newOp) {
-                                    mc.sayda.creraces.CreRaces.LOGGER.debug(
-                                            "EikiJudgment: {} trait {} for {}. Value: {}, Op: {}",
-                                            existing == null ? "Applying" : "Updating", traitId,
-                                            player.getScoreboardName(), newValue, newOp);
                                     if (existing != null)
                                         instance.removeModifier(uuid);
 
@@ -91,17 +95,22 @@ public class AttributeIncidents {
                                         modifierName = "CreRaces: " + traitId;
                                     }
 
-                                    instance.addPermanentModifier(
-                                            new AttributeModifier(uuid, modifierName, newValue, newOp));
+                                    AttributeModifier newMod = new AttributeModifier(uuid, modifierName, newValue, newOp);
+                                    instance.addPermanentModifier(newMod);
 
-                                    // Verify application
+                                    // Verify application and log final value
+                                    double finalValue = instance.getValue();
+                                    mc.sayda.creraces.CreRaces.LOGGER.info(
+                                            "EikiJudgment: SET trait {} for {}. Mod: {} ({}), Final Value: {}",
+                                            traitId, player.getScoreboardName(), newValue, newOp, finalValue);
+
                                     if (instance.getModifier(uuid) == null) {
                                         mc.sayda.creraces.CreRaces.LOGGER.error(
                                                 "EikiJudgment: FAILED to set modifier {} ({}) on {}", traitId, attrKey,
                                                 player.getScoreboardName());
                                     }
                                 }
-                            } else if (player.tickCount % 200 == 0) {
+                            } else if (player.tickCount % 20 == 0) {
                                 mc.sayda.creraces.CreRaces.LOGGER.warn("EikiJudgment: Player {} lacks attribute: {}",
                                         player.getScoreboardName(), attrKey);
                             }
@@ -128,10 +137,10 @@ public class AttributeIncidents {
             });
 
             // 5. Double Jump
-            var doubleJumpAttr = player.getAttribute(mc.sayda.creraces.registry.ModAttributes.DOUBLE_JUMP.get());
+            AttributeInstance doubleJumpAttr = player.getAttribute(mc.sayda.creraces.registry.ModAttributes.DOUBLE_JUMP.get());
             if (doubleJumpAttr != null) {
                 boolean isEquipped = false;
-                for (var slot : mc.sayda.creraces.ability.AbilitySlot.values()) {
+                for (mc.sayda.creraces.ability.AbilitySlot slot : mc.sayda.creraces.ability.AbilitySlot.values()) {
                     if (new ResourceLocation("creraces", "double_jump").equals(vars.getAbilityInSlot(slot))) {
                         isEquipped = true;
                         break;
@@ -193,8 +202,6 @@ public class AttributeIncidents {
         clearModifier(player, ModAttributes.resolve(ModAttributes.DOUBLE_JUMP),
                 EQUIP_DOUBLE_JUMP_MODIFIER);
     }
-
-
 
     private static void clearModifier(ServerPlayer player, net.minecraft.world.entity.ai.attributes.Attribute attribute,
             UUID id) {

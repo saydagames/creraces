@@ -70,7 +70,7 @@ public class ToriBellBlock extends BellBlock {
                     if (checkAndPlaceStructure((ServerLevel) level, pos, player, vars)) {
                         net.minecraft.sounds.SoundEvent ringSound = SoundEvents.BELL_BLOCK;
                         if (ringSound != null) {
-                            level.playSound(null, pos, ringSound, SoundSource.BLOCKS, 1.0f, 1.0f);
+                            level.playSound((net.minecraft.world.entity.player.Player)null, java.util.Objects.requireNonNull(pos), ringSound, SoundSource.BLOCKS, 1.0f, 1.0f);
                         }
                     } else {
                         player.displayClientMessage(Component.translatable("block.creraces.tori_bell.pattern_missing"),
@@ -180,7 +180,7 @@ public class ToriBellBlock extends BellBlock {
 
         net.minecraft.sounds.SoundEvent ringSound = SoundEvents.BELL_BLOCK;
         if (ringSound != null) {
-            level.playSound(null, pos, ringSound, SoundSource.BLOCKS, 1.0f, 1.0f);
+            level.playSound((net.minecraft.world.entity.player.Player)null, pos, ringSound, SoundSource.BLOCKS, 1.0f, 1.0f);
         }
 
         if (isGuidingSpirit) {

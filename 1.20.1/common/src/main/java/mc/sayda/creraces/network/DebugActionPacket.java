@@ -54,19 +54,19 @@ public class DebugActionPacket {
                 try {
                     switch (action) {
                         case "variable", "state" -> {
-                            applyVariable(player, vars, key, value);
+                            applyVariable(player, vars, java.util.Objects.requireNonNull(key), java.util.Objects.requireNonNull(value));
                             CreRaces.LOGGER.debug("Applied debug variable/state: {} = {}", key, value);
                         }
                         case "ability_state" -> {
-                            vars.setPersistentState(new ResourceLocation(key), Double.parseDouble(value));
+                            vars.setPersistentState(new ResourceLocation(java.util.Objects.requireNonNull(key)), Double.parseDouble(java.util.Objects.requireNonNull(value)));
                             CreRaces.LOGGER.debug("Applied debug ability state: {} = {}", key, value);
                         }
                         case "cooldown" -> {
-                            vars.setCooldown(new ResourceLocation(key), (int) Double.parseDouble(value));
+                            vars.setCooldown(new ResourceLocation(java.util.Objects.requireNonNull(key)), (int) Double.parseDouble(java.util.Objects.requireNonNull(value)));
                             CreRaces.LOGGER.debug("Applied debug cooldown: {} = {}", key, value);
                         }
                         case "race" -> {
-                            ResourceLocation id = new ResourceLocation(value);
+                            ResourceLocation id = new ResourceLocation(java.util.Objects.requireNonNull(value));
                             mc.sayda.creraces.race.RaceIncidents.transformPlayer(player, id);
                             CreRaces.LOGGER.debug("Applied debug race transformation: {}", value);
                         }
@@ -96,7 +96,7 @@ public class DebugActionPacket {
 
     private void applyVariable(ServerPlayer player, IPlayerVariables vars, String key, String value) {
         if (key.equalsIgnoreCase("race")) {
-             mc.sayda.creraces.race.RaceIncidents.transformPlayer(player, new ResourceLocation(value));
+             mc.sayda.creraces.race.RaceIncidents.transformPlayer(player, new ResourceLocation(java.util.Objects.requireNonNull(value)));
              return;
         }
 
@@ -143,7 +143,7 @@ public class DebugActionPacket {
     private void applyAttribute(ServerPlayer player, String attrId, String value) {
         try {
             double val = Double.parseDouble(value);
-            ResourceLocation id = new ResourceLocation(attrId);
+            ResourceLocation id = new ResourceLocation(java.util.Objects.requireNonNull(attrId));
             net.minecraft.world.entity.ai.attributes.Attribute attr = net.minecraft.core.registries.BuiltInRegistries.ATTRIBUTE
                     .get(id);
             if (attr != null) {

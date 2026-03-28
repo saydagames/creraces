@@ -22,7 +22,7 @@
                 {
                     "type": "creraces:apply_effect",
                     "effect": "creraces:boiling",
-                    "duration": 60,
+                    "duration": 100,
                     "amplifier": 0,
                     "visible": true
                 }
@@ -37,12 +37,21 @@
         {
             "type": "creraces:spawn_particles",
             "particle": "minecraft:bubble",
-            "count": 30
+            "count": 160,
+            "spread": 2.0
+        },
+        {
+            "type": "creraces:spawn_particles",
+            "particle": "minecraft:large_smoke",
+            "count": 10,
+            "spread": 2.0
+        },
+        {
+            "type": "creraces:spawn_particles",
+            "particle": "minecraft:flame",
+            "count": 40,
+            "spread": 2.0
         }
     ],
     "creraces:wiki_page": "Ability:Spicy_Whirlpool"
 }
-
-
-
-

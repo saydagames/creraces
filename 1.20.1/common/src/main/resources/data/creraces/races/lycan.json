@@ -8,7 +8,6 @@
     "creraces:name_texture": "creraces:textures/screens/lycanthrope_text.png",
     "creraces:resource_type": "RAGE",
     "creraces:difficulty": 1,
-    "creraces:night_vision": true,
     "creraces:regeneration_multiplier": 1.2,
     "creraces:starting_abilities": [
         "creraces:wild_hunt",

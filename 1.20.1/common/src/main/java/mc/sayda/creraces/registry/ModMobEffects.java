@@ -81,11 +81,11 @@ public class ModMobEffects {
 
         /** Applied by Mermaid's Spicy Whirlpool ability to nearby enemies in water. */
         public static final RegistrySupplier<MobEffect> BOILING = MOB_EFFECTS.register("boiling",
-                        () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.HARMFUL, 0xFF4500));
+                        () -> new mc.sayda.creraces.effect.BoilingEffect());
 
         /** Stacking bleed debuff tracked on Lycan kill chains. */
         public static final RegistrySupplier<MobEffect> BLEEDING = MOB_EFFECTS.register("bleeding",
-                        () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.HARMFUL, 0xCC0000));
+                        () -> new mc.sayda.creraces.effect.BleedingEffect());
 
         // Element effects function as simple markers/beneficial states
         public static final RegistrySupplier<MobEffect> AIR_ELEMENT = MOB_EFFECTS.register("air_element",

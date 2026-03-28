@@ -26,8 +26,8 @@ public class RatVenomEffect extends MobEffect {
         Entity source = null;
         if (entity instanceof IPersistentDataAccessor accessor) {
             var data = accessor.creraces$getPersistentData();
-            if (data.contains("creraces:venom_source")) {
-                String uuidStr = data.getString("creraces:venom_source");
+            if (data.contains("creraces:source")) {
+                String uuidStr = data.getString("creraces:source");
                 try {
                     UUID uuid = UUID.fromString(uuidStr);
                     if (entity.level() instanceof ServerLevel serverLevel) {

@@ -26,7 +26,7 @@ public class SetRacePacket {
     }
 
     public void toBytes(FriendlyByteBuf buf) {
-        buf.writeResourceLocation(this.raceId);
+        buf.writeResourceLocation(java.util.Objects.requireNonNull(this.raceId));
     }
 
     public void handle(Supplier<dev.architectury.networking.NetworkManager.PacketContext> contextSupplier) {

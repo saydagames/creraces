@@ -163,6 +163,8 @@ public class FabricConfig {
         CreRacesConfig.ENTITY_POISON_EMITTER_LIFETIME_TICKS = () -> balancing.entities.poison_emitter_lifetime_ticks;
 
         CreRacesConfig.RAT_VENOM_SCALING = () -> balancing.potion_effects.rat_venom_scaling;
+        CreRacesConfig.BOILING_SCALING = () -> balancing.potion_effects.boiling_scaling;
+        CreRacesConfig.BLEEDING_SCALING = () -> balancing.potion_effects.bleeding_scaling;
 
         CreRacesConfig.ENTITY_POISON_EMITTER_MOBILE_MAX_HEALTH = () -> balancing.entities.poison_emitter_mobile_max_health;
         CreRacesConfig.ENTITY_POISON_EMITTER_MOBILE_MOVEMENT_SPEED = () -> balancing.entities.poison_emitter_mobile_movement_speed;
@@ -296,6 +298,8 @@ public class FabricConfig {
 
         public static class PotionEffects {
             public double rat_venom_scaling = CreRacesConfig.RAT_VENOM_SCALING.get();
+            public double boiling_scaling = CreRacesConfig.BOILING_SCALING.get();
+            public double bleeding_scaling = CreRacesConfig.BLEEDING_SCALING.get();
         }
 
         public static class Entities {

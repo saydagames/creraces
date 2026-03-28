@@ -16,7 +16,7 @@
     "creraces:difficulty": 1,
     "creraces:negate_effects": [
         "minecraft:mining_fatigue",
-        "minecraft:levitation"
+        "minecraft:slowness"
     ],
     "creraces:starting_abilities": [
         "creraces:unstoppable_charge"

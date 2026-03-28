@@ -29,13 +29,15 @@ public class ScrollItem extends Item {
 
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+        java.util.Objects.requireNonNull(hand);
         ItemStack stack = player.getItemInHand(hand);
 
         if (!level.isClientSide) {
             CompoundTag tag = stack.getTag();
             if (tag != null && tag.contains("Ability")) {
-                ResourceLocation abilityId = new ResourceLocation(tag.getString("Ability"));
-                Ability ability = AbilityRegistry.get(abilityId);
+                String abilityName = java.util.Objects.requireNonNull(tag.getString("Ability"));
+                ResourceLocation abilityId = ResourceLocation.tryParse(abilityName);
+                Ability ability = abilityId != null ? AbilityRegistry.get(abilityId) : null;
 
                 if (ability != null) {
                     ServerPlayer serverPlayer = (ServerPlayer) player;
@@ -136,8 +138,8 @@ public class ScrollItem extends Item {
             TooltipFlag isAdvanced) {
         CompoundTag tag = stack.getTag();
         if (tag != null && tag.contains("Ability")) {
-            ResourceLocation abilityId = new ResourceLocation(tag.getString("Ability"));
-            Ability ability = AbilityRegistry.get(abilityId);
+            ResourceLocation abilityId = ResourceLocation.tryParse(tag.getString("Ability"));
+            Ability ability = abilityId != null ? AbilityRegistry.get(abilityId) : null;
             if (ability != null) {
                 tooltipComponents.add(Component.translatable("creraces.tooltip.scroll_ability", ability.name())
                         .withStyle(ChatFormatting.GRAY));
@@ -176,7 +178,7 @@ public class ScrollItem extends Item {
 
                         ChatFormatting color = matches ? ChatFormatting.GREEN : ChatFormatting.RED;
 
-                        raceList.append(Component.literal(name).withStyle(color));
+                        raceList.append(java.util.Objects.requireNonNull(Component.literal(name).withStyle(color)));
 
                         if (i < allowed.size() - 1) {
                             raceList.append(Component.literal(", ").withStyle(ChatFormatting.DARK_GRAY));
@@ -192,7 +194,7 @@ public class ScrollItem extends Item {
             tooltipComponents
                     .add(Component.translatable("creraces.tooltip.scroll_empty").withStyle(ChatFormatting.GRAY));
         }
-        super.appendHoverText(stack, level, tooltipComponents, isAdvanced);
+        super.appendHoverText(stack, level, tooltipComponents, java.util.Objects.requireNonNull(isAdvanced));
     }
 
     // Helper to create a scroll stack for a specific ability

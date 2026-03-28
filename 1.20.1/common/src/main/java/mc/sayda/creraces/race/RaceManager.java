@@ -333,6 +333,14 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
         });
 
         CreRaces.LOGGER.info("Loaded {} races.", count[0]);
+        RaceRegistry.getAll().forEach(race -> {
+            if (race.passives() != null) {
+                double val = race.passives().liquidSpeedMultiplier().base();
+                if (val != 1.0) {
+                    CreRaces.LOGGER.info("Race {} has liquid speed multiplier: {}", race.id(), val);
+                }
+            }
+        });
 
     }
 
@@ -442,6 +450,13 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                 merged.add(key, childVal);
             }
         }
+
+        // Debug logging for Mermaid inheritance
+        if (child.has("creraces:name") && child.get("creraces:name").getAsString().contains("mermaid")) {
+            mc.sayda.creraces.CreRaces.LOGGER.info("Merged Mermaid JSON. Liquid Multiplier: {}",
+                    merged.has("creraces:liquid_speed_multiplier") ? merged.get("creraces:liquid_speed_multiplier").toString() : "MISSING");
+        }
+
         return merged;
     }
 
@@ -556,7 +571,6 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                 negateArray != null ? negateEffects : new ArrayList<>(), // Safety check
 
                 // Vision & Perception
-                GsonHelper.getAsBoolean(p, "creraces:night_vision", false),
                 GsonHelper.getAsBoolean(p, "creraces:water_vision", false),
                 GsonHelper.getAsBoolean(p, "creraces:lava_vision", false),
 

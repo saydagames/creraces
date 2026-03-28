@@ -36,17 +36,7 @@
             "type": "creraces:permanent_effect",
             "effect": "minecraft:hero_of_the_village",
             "amplifier": 0,
-            "visible": false,
-            "condition": {
-                "type": "creraces:race_equals",
-                "races": [
-                    "creraces:nymph",
-                    "creraces:aurai",
-                    "creraces:dryad",
-                    "creraces:naiad",
-                    "creraces:oread"
-                ]
-            }
+            "visible": false
         },
         {
             "type": "creraces:permanent_effect",

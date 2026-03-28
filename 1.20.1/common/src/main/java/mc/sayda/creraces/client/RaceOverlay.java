@@ -80,23 +80,27 @@ public class RaceOverlay {
             // Resource Bar - legacy pos: 15, 49
             ResourceLocation resourceTex = UI_M;
             double currentRes = vars.getMana();
-            double maxRes = player.getAttributeValue(ModAttributes.MAX_MANA.get());
+            var maxManaAttr = ModAttributes.MAX_MANA.get();
+            double maxRes = maxManaAttr != null ? player.getAttributeValue(maxManaAttr) : 0.0;
 
             switch (race.resourceType()) {
                 case RAGE:
                     resourceTex = UI_R;
                     currentRes = vars.getRage();
-                    maxRes = player.getAttributeValue(ModAttributes.MAX_RAGE.get());
+                    var maxRageAttr = ModAttributes.MAX_RAGE.get();
+                    maxRes = maxRageAttr != null ? player.getAttributeValue(maxRageAttr) : 0.0;
                     break;
                 case ENERGY:
                     resourceTex = UI_E;
                     currentRes = vars.getEnergy();
-                    maxRes = player.getAttributeValue(ModAttributes.MAX_ENERGY.get());
+                    var maxEnergyAttr = ModAttributes.MAX_ENERGY.get();
+                    maxRes = maxEnergyAttr != null ? player.getAttributeValue(maxEnergyAttr) : 0.0;
                     break;
                 case GRIT:
                     resourceTex = UI_G;
                     currentRes = vars.getGrit();
-                    maxRes = player.getAttributeValue(ModAttributes.MAX_GRIT.get());
+                    var maxGritAttr = ModAttributes.MAX_GRIT.get();
+                    maxRes = maxGritAttr != null ? player.getAttributeValue(maxGritAttr) : 0.0;
                     break;
                 case MANA:
                 default:
@@ -157,8 +161,11 @@ public class RaceOverlay {
                             ? Math.min(1f, (float) cooldown / (float) ability.cooldown())
                             : 1f;
                     graphics.fill(x + 1, y + 1 + (int) (16 * (1 - cooldownPercent)), x + 17, y + 17, 0x80000000);
-                    String k = String.valueOf(Math.max(1, cooldown / 20));
-                    graphics.drawCenteredString(Minecraft.getInstance().font, k, x + 9, y + 5, 0xFFFFFF);
+                    String k = java.util.Objects.requireNonNull(String.valueOf(Math.max(1, cooldown / 20)));
+                    var font = Minecraft.getInstance().font;
+                    if (font != null) {
+                        graphics.drawCenteredString(font, k, x + 9, y + 5, 0xFFFFFF);
+                    }
                 }
 
                 // Draw "Unusable" or "Off" indication (Borders)
@@ -180,8 +187,11 @@ public class RaceOverlay {
         }
 
         // Draw Keybind Label
-        graphics.drawCenteredString(Minecraft.getInstance().font,
-                Component.translatable("gui.creraces.hud.slot." + slot.name().toLowerCase()), x + 9, y + 20, 0xAAAAAA);
+        var font = Minecraft.getInstance().font;
+        if (font != null) {
+            graphics.drawCenteredString(font,
+                    Component.translatable("gui.creraces.hud.slot." + slot.name().toLowerCase()), x + 9, y + 20, 0xAAAAAA);
+        }
     }
 
     private static void drawBorder(GuiGraphics graphics, int x, int y, int width, int height, int color) {

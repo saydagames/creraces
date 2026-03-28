@@ -456,7 +456,6 @@ public class Race {
                 private final int sunlightBurnInterval;
                 private final List<String> immuneToDamageTypes;
                 private final List<String> immuneToPotionEffects;
-                private final boolean nightVision;
                 private final boolean waterVision;
                 private final boolean lavaVision;
                 private final boolean canFly;
@@ -482,7 +481,6 @@ public class Race {
 
                 public Passives(boolean canBreatheUnderwater, int landSuffocationInterval, int sunlightBurnInterval,
                                 List<String> immuneToDamageTypes, List<String> immuneToPotionEffects,
-                                boolean nightVision,
                                 boolean waterVision, boolean lavaVision,
                                 boolean canFly, mc.sayda.creraces.engine.ScalingValue liquidSpeedMultiplier,
                                 boolean unaffectedByWater,
@@ -500,7 +498,6 @@ public class Race {
                         this.sunlightBurnInterval = sunlightBurnInterval;
                         this.immuneToDamageTypes = immuneToDamageTypes;
                         this.immuneToPotionEffects = immuneToPotionEffects;
-                        this.nightVision = nightVision;
                         this.waterVision = waterVision;
                         this.lavaVision = lavaVision;
                         this.canFly = canFly;
@@ -549,10 +546,6 @@ public class Race {
 
                 public List<String> immuneToPotionEffects() {
                         return immuneToPotionEffects;
-                }
-
-                public boolean nightVision() {
-                        return nightVision;
                 }
 
                 public boolean waterVision() {
@@ -645,7 +638,7 @@ public class Race {
 
                 public static Passives DEFAULT = new Passives(
                                 false, -1, -1, new java.util.ArrayList<>(), new java.util.ArrayList<>(), // Breathing (+ effect immunity)
-                                false, false, false, // Vision
+                                false, false, // Vision (Water, Lava)
                                 false, // canFly
                                 new mc.sayda.creraces.engine.ScalingValue(1.0, null, 0, new java.util.ArrayList<>()), // liquidSpeedMultiplier
                                 false, false, false, // Environmental (unaffected by water/lava, cannot sprint)

@@ -128,19 +128,20 @@ public class ApplyEffectAction implements ActionRegistry.RaceAction {
         }
 
         int finalDuration = (int) data.duration.evaluate(player, entity, slot);
-        int finalAmplifier = (int) data.amplifier.evaluate(player, entity, slot);
+        int finalAmplifier = (int) Math.round(data.amplifier.evaluate(player, entity, slot));
 
         MobEffectInstance existing = entity.getEffect(java.util.Objects.requireNonNull(data.effect));
         if (incrementAmplifier && existing != null) {
             finalAmplifier += existing.getAmplifier() + 1;
         }
 
-        // Attribution: Link player to target for effects that require a source (e.g. Rat Venom)
+        // Attribution: Link player to target for effects that require a source scaling (e.g. Rat Venom, Boiling, Bleeding)
         if (player != null && entity instanceof mc.sayda.creraces.util.IPersistentDataAccessor accessor) {
-            if (effectId != null && java.util.Objects.requireNonNull(effectId.toString()).equals("creraces:rat_venom")) {
+            String effectPath = effectId != null ? effectId.toString() : "";
+            if (effectPath.equals("creraces:rat_venom") || effectPath.equals("creraces:boiling") || effectPath.equals("creraces:bleeding")) {
                 var dataTag = accessor.creraces$getPersistentData();
                 if (dataTag != null) {
-                    dataTag.putString("creraces:venom_source", java.util.Objects.requireNonNull(player.getUUID().toString()));
+                    dataTag.putString("creraces:source", player.getUUID().toString());
                 }
             }
         }

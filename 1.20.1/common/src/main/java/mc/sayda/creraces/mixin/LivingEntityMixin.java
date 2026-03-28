@@ -22,7 +22,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectInstance;
-import mc.sayda.creraces.CreRaces;
 import net.minecraft.world.entity.MobType;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -31,6 +30,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.ModifyConstant;
+import org.spongepowered.asm.mixin.injection.Constant;
 
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityMixin extends Entity implements ISleepSlotTracker {
@@ -38,6 +39,15 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
     public LivingEntityMixin(EntityType<?> type, Level level) {
         super(type, level);
     }
+
+    @Shadow
+    protected boolean jumping;
+
+    @Shadow
+    protected int noJumpDelay;
+
+    @Shadow
+    protected abstract void jumpFromGround();
 
     @Unique
     private int creraces$sleepSlot = -1;
@@ -70,9 +80,12 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
     @Inject(method = "jumpFromGround", at = @At("HEAD"), cancellable = true)
     private void creraces$cancelJump(CallbackInfo ci) {
         LivingEntity entity = (LivingEntity) (Object) this;
-        if (entity.hasEffect(mc.sayda.creraces.registry.ModMobEffects.STUNNED.get()) ||
-                entity.hasEffect(mc.sayda.creraces.registry.ModMobEffects.ROOTED.get()) ||
-                entity.hasEffect(mc.sayda.creraces.registry.ModMobEffects.FROZEN.get())) {
+        var stunned = mc.sayda.creraces.registry.ModMobEffects.STUNNED.get();
+        var rooted = mc.sayda.creraces.registry.ModMobEffects.ROOTED.get();
+        var frozen = mc.sayda.creraces.registry.ModMobEffects.FROZEN.get();
+        if ((stunned != null && entity.hasEffect(stunned)) ||
+                (rooted != null && entity.hasEffect(rooted)) ||
+                (frozen != null && entity.hasEffect(frozen))) {
             ci.cancel();
         }
     }
@@ -80,51 +93,57 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
     @Inject(method = "baseTick", at = @At("TAIL"))
     private void creraces$landSuffocation(CallbackInfo ci) {
         mc.sayda.creraces.engine.SpiritMobilityHandler.tick((LivingEntity) (Object) this);
-        mc.sayda.creraces.engine.AquaticMovementHandler.tick((LivingEntity) (Object) this);
+        mc.sayda.creraces.engine.AquaticMovementHandler.buoyancyTick((LivingEntity) (Object) this);
         if ((Object) this instanceof Player) {
             Player player = (Player) (Object) this;
             if (player.isAlive() && !player.level().isClientSide()) {
-            DataUtils.getVariables(player).ifPresent(vars -> {
-                Race race = RaceRegistry.get(vars.getRace());
-                if (race != null) {
-                    mc.sayda.creraces.race.Race.Passives passives = race.passives();
-                    if (passives != null) {
-                    // Underwater Air Refill (Aquatic/Undead Races)
-                    boolean canBreatheWater = vars.isAquatic() || vars.isUndead() || (passives != null && passives.canBreatheUnderwater());
-                    if (canBreatheWater && player.isEyeInFluid(net.minecraft.tags.FluidTags.WATER)) {
-                        if (player.getAirSupply() < player.getMaxAirSupply()) {
-                            player.setAirSupply(this.increaseAirSupply(player.getAirSupply()));
-                        }
-                    }
+                DataUtils.getVariables(player).ifPresent(vars -> {
+                    Race race = RaceRegistry.get(vars.getRace());
+                    if (race != null) {
+                        mc.sayda.creraces.race.Race.Passives passives = race.passives();
+                        if (passives != null) {
+                            // Underwater Air Refill (Aquatic/Undead Races)
+                            boolean canBreatheWater = vars.isAquatic() || vars.isUndead()
+                                    || (passives != null && passives.canBreatheUnderwater());
+                            var waterTag = net.minecraft.tags.FluidTags.WATER;
+                            if (canBreatheWater && waterTag != null && player.isEyeInFluid(waterTag)) {
+                                if (player.getAirSupply() < player.getMaxAirSupply()) {
+                                    player.setAirSupply(this.increaseAirSupply(player.getAirSupply()));
+                                }
+                            }
 
-                    // Land Suffocation (Aquatic Races - Overridable)
-                    int airInterval = passives.landSuffocationInterval();
-                    boolean mustBeInWater = (vars.isAquatic() || airInterval > 0) && !vars.isUndead();
-                    if (mustBeInWater && !player.isInWaterRainOrBubble()
-                            && !player.hasEffect(net.minecraft.world.effect.MobEffects.WATER_BREATHING)) {
-                        
-                        // Deterministic air decay based on interval
-                        int interval = airInterval > 0 ? airInterval : 1; // Default to 1 if isAquatic was true but no interval
-                        if (player.tickCount % interval == 0) {
-                            int air = player.getAirSupply();
-                            player.setAirSupply(this.decreaseAirSupply(air));
-                        }
-                        if (player.getAirSupply() <= -20) {
-                            player.setAirSupply(0);
-                            player.hurt(player.damageSources().drown(), 2.0F);
-                        }
-                    }
-                    }
+                            // Land Suffocation (Aquatic Races - Overridable)
+                            int airInterval = passives.landSuffocationInterval();
+                            boolean mustBeInWater = (vars.isAquatic() || airInterval > 0) && !vars.isUndead();
+                            var waterBreathing = net.minecraft.world.effect.MobEffects.WATER_BREATHING;
+                            if (mustBeInWater && !player.isInWaterRainOrBubble()
+                                    && (waterBreathing == null || !player.hasEffect(waterBreathing))) {
 
-                    // Water Transition Recheck
-                    if (player instanceof ServerPlayer) {
-                        ServerPlayer sp = (ServerPlayer) player;
-                        boolean inWater = player.isInWater();
-                        boolean wasInWater = ((IPersistentDataAccessor) sp).creraces$getPersistentData()
-                                .getBoolean("creraces:was_in_water");
-                        if (inWater != wasInWater) {
-                            ((IPersistentDataAccessor) sp).creraces$getPersistentData()
-                                    .putBoolean("creraces:was_in_water", inWater);
+                                // Deterministic air decay based on interval
+                                int interval = airInterval > 0 ? airInterval : 1; // Default to 1 if isAquatic was true
+                                                                                  // but no interval
+                                if (player.tickCount % interval == 0) {
+                                    int air = player.getAirSupply();
+                                    player.setAirSupply(this.decreaseAirSupply(air));
+                                }
+                                if (player.getAirSupply() <= -20) {
+                                    player.setAirSupply(0);
+                                    var drownSource = player.damageSources().drown();
+                                    if (drownSource != null)
+                                        player.hurt(drownSource, 2.0F);
+                                }
+                            }
+                        }
+
+                        // Water Transition Recheck
+                        if (player instanceof ServerPlayer) {
+                            ServerPlayer sp = (ServerPlayer) player;
+                            boolean inWater = player.isInWater();
+                            boolean wasInWater = ((IPersistentDataAccessor) sp).creraces$getPersistentData()
+                                    .getBoolean("creraces:was_in_water");
+                            if (inWater != wasInWater) {
+                                ((IPersistentDataAccessor) sp).creraces$getPersistentData()
+                                        .putBoolean("creraces:was_in_water", inWater);
                             }
                         }
                     }
@@ -269,16 +288,21 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
         // Visual Feedback for Damage Types (LoL-style)
         if (!this.level().isClientSide()) {
             net.minecraft.core.particles.SimpleParticleType pt = null;
-            if (source.is(mc.sayda.creraces.registry.ModDamageTags.IS_MAGIC)) {
+            var magicTag = mc.sayda.creraces.registry.ModDamageTags.IS_MAGIC;
+            var physicalTag = mc.sayda.creraces.registry.ModDamageTags.IS_PHYSICAL;
+            var trueTag = mc.sayda.creraces.registry.ModDamageTags.IS_TRUE;
+
+            if (magicTag != null && source.is(magicTag)) {
                 pt = mc.sayda.creraces.registry.ModParticles.MAGIC_DAMAGE.get();
-            } else if (source.is(mc.sayda.creraces.registry.ModDamageTags.IS_PHYSICAL)) {
+            } else if (physicalTag != null && source.is(physicalTag)) {
                 pt = mc.sayda.creraces.registry.ModParticles.PHYSICAL_DAMAGE.get();
-            } else if (source.is(mc.sayda.creraces.registry.ModDamageTags.IS_TRUE)) {
+            } else if (trueTag != null && source.is(trueTag)) {
                 pt = mc.sayda.creraces.registry.ModParticles.TRUE_DAMAGE.get();
             }
 
             if (pt != null && this.level() instanceof net.minecraft.server.level.ServerLevel) {
-                net.minecraft.server.level.ServerLevel serverLevel = (net.minecraft.server.level.ServerLevel) this.level();
+                net.minecraft.server.level.ServerLevel serverLevel = (net.minecraft.server.level.ServerLevel) this
+                        .level();
                 // Spawn particles on server-side to sync with all clients
                 serverLevel.sendParticles(pt, this.getX(), this.getY(0.5), this.getZ(), 15, 0.2, 0.2, 0.2, 0.1);
             }
@@ -293,12 +317,15 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
                     if (race != null) {
                         // Gain Rage on hit if the race uses it
                         if (race.resourceType() == mc.sayda.creraces.race.ResourceType.RAGE) {
-                            double maxRage = attackerPlayer.getAttributeValue(ModAttributes.MAX_RAGE.get());
+                            var maxRageAttr = ModAttributes.MAX_RAGE.get();
+                            double maxRage = maxRageAttr != null ? attackerPlayer.getAttributeValue(maxRageAttr) : 0.0;
                             if (vars.getRage() < maxRage) {
                                 vars.setRage(Math.min(maxRage, vars.getRage() + 5.0));
                                 vars.setResourceTimer(attackerPlayer.level().getGameTime());
                                 // Full sync: resource changed by a discrete event
-                                mc.sayda.creraces.network.BoundaryHandler.resyncVariables(attackerPlayer, attackerPlayer, true);
+                                mc.sayda.creraces.network.BoundaryHandler.resyncVariables(attackerPlayer,
+                                        attackerPlayer,
+                                        true);
                             }
                         }
                     }
@@ -311,12 +338,15 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
             Player victimPlayer = (Player) (Object) this;
             if (!victimPlayer.level().isClientSide()) {
                 // THORNS Logic
-                if (victimPlayer.hasEffect(mc.sayda.creraces.registry.ModMobEffects.THORNS.get())) {
+                var thornsEffect = mc.sayda.creraces.registry.ModMobEffects.THORNS.get();
+                if (thornsEffect != null && victimPlayer.hasEffect(thornsEffect)) {
                     Entity currentAttacker = source.getEntity();
                     if (currentAttacker instanceof LivingEntity) {
                         LivingEntity le = (LivingEntity) currentAttacker;
                         if (currentAttacker != victimPlayer) {
-                            le.hurt(victimPlayer.damageSources().thorns(victimPlayer), 2.0F);
+                            var thornsSource = victimPlayer.damageSources().thorns(victimPlayer);
+                            if (thornsSource != null)
+                                le.hurt(thornsSource, 2.0F);
                         }
                     }
                 }
@@ -326,12 +356,14 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
                     if (race != null) {
                         // Gain Grit on being hit if the race uses it
                         if (race.resourceType() == mc.sayda.creraces.race.ResourceType.GRIT) {
-                            double maxGrit = victimPlayer.getAttributeValue(ModAttributes.MAX_GRIT.get());
+                            var maxGritAttr = ModAttributes.MAX_GRIT.get();
+                            double maxGrit = maxGritAttr != null ? victimPlayer.getAttributeValue(maxGritAttr) : 0.0;
                             if (vars.getGrit() < maxGrit) {
                                 vars.setGrit(Math.min(maxGrit, vars.getGrit() + 5.0));
                                 vars.setResourceTimer(victimPlayer.level().getGameTime());
                                 // Full sync: resource changed by a discrete event
-                                mc.sayda.creraces.network.BoundaryHandler.resyncVariables(victimPlayer, victimPlayer, true);
+                                mc.sayda.creraces.network.BoundaryHandler.resyncVariables(victimPlayer, victimPlayer,
+                                        true);
                             }
                         }
 
@@ -370,23 +402,24 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
         if ((Object) this instanceof Player) {
             Player player = (Player) (Object) this;
             if (!player.level().isClientSide()) {
-            var varsOpt = DataUtils.getVariables(player);
-            if (varsOpt.isPresent()) {
-                mc.sayda.creraces.capability.IPlayerVariables vars = varsOpt.get();
-                Race race = RaceRegistry.get(vars.getRace());
-                mc.sayda.creraces.race.Race.Passives passives = race != null ? race.passives() : null;
+                var varsOpt = DataUtils.getVariables(player);
+                if (varsOpt.isPresent()) {
+                    mc.sayda.creraces.capability.IPlayerVariables vars = varsOpt.get();
+                    Race race = RaceRegistry.get(vars.getRace());
+                    mc.sayda.creraces.race.Race.Passives passives = race != null ? race.passives() : null;
 
-                int airInterval = passives != null ? passives.landSuffocationInterval() : -1;
-                boolean mustBeInWater = (vars.isAquatic() || airInterval > 0) && !vars.isUndead();
-                if (mustBeInWater && !player.isInWaterRainOrBubble()
-                        && !player.hasEffect(net.minecraft.world.effect.MobEffects.WATER_BREATHING)) {
-                    // Return air unchanged - do not let vanilla refill it while we're draining on land
-                    cir.setReturnValue(air);
+                    int airInterval = passives != null ? passives.landSuffocationInterval() : -1;
+                    boolean mustBeInWater = (vars.isAquatic() || airInterval > 0) && !vars.isUndead();
+                    if (mustBeInWater && !player.isInWaterRainOrBubble()
+                            && !player.hasEffect(net.minecraft.world.effect.MobEffects.WATER_BREATHING)) {
+                        // Return air unchanged - do not let vanilla refill it while we're draining on
+                        // land
+                        cir.setReturnValue(air);
+                    }
                 }
             }
         }
     }
-}
 
     @Unique
     private DamageSource creraces$lastDamageSource;
@@ -429,7 +462,9 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
     private void creraces$microClimbable(CallbackInfoReturnable<Boolean> cir) {
         LivingEntity entity = (LivingEntity) (Object) this;
         BlockPos pos = entity.blockPosition();
-        if (entity.level().getBlockEntity(pos) instanceof mc.sayda.creraces.block.entity.MicroBlockEntity micro) {
+        var level = entity.level();
+        if (level != null
+                && level.getBlockEntity(pos) instanceof mc.sayda.creraces.block.entity.MicroBlockEntity micro) {
             // Check a 0.1m radius around the entity's position to pick up thin
             // ladders/vines
             double r = 0.1;
@@ -465,14 +500,12 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
         if (sx < 0 || sx > 3 || sy < 0 || sy > 3 || sz < 0 || sz > 3)
             return false;
 
+        if (micro == null)
+            return false;
         BlockState slotState = micro.getSlot(sx, sy, sz);
-        return slotState.is(net.minecraft.tags.BlockTags.CLIMBABLE)
+        var climbableTag = net.minecraft.tags.BlockTags.CLIMBABLE;
+        return (climbableTag != null && slotState.is(climbableTag))
                 || slotState.getBlock() instanceof net.minecraft.world.level.block.VineBlock;
-    }
-
-    @Inject(method = "travel(Lnet/minecraft/world/phys/Vec3;)V", at = @At("TAIL"))
-    private void creraces$buoyancyTravel(net.minecraft.world.phys.Vec3 travelVector, CallbackInfo ci) {
-        mc.sayda.creraces.engine.AquaticMovementHandler.buoyancyTick((LivingEntity) (Object) this);
     }
 
     @Inject(method = "getDamageAfterArmorAbsorb(Lnet/minecraft/world/damagesource/DamageSource;F)F", at = @At("HEAD"), cancellable = true)
@@ -510,21 +543,27 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
                 }
                 applied = true;
             }
-        } else if (source.is(mc.sayda.creraces.registry.ModDamageTags.IS_MAGIC)) {
-            // Environment/No-attacker magic damage (e.g. potion)
-            double mr = mc.sayda.creraces.util.CombatAttributes.getMagicResist(victim);
-            if (mr > 0) {
-                modifiedAmount *= (float) (100.0 / (100.0 + mr));
+        } else {
+            var magicTag = mc.sayda.creraces.registry.ModDamageTags.IS_MAGIC;
+            if (magicTag != null && source.is(magicTag)) {
+                // Environment/No-attacker magic damage (e.g. potion)
+                double mr = mc.sayda.creraces.util.CombatAttributes.getMagicResist(victim);
+                if (mr > 0) {
+                    modifiedAmount *= (float) (100.0 / (100.0 + mr));
+                }
+                applied = true;
             }
-            applied = true;
         }
 
         // Pehkui Defense Scale
         try {
-            float defScale = virtuoel.pehkui.api.ScaleTypes.DEFENSE.getScaleData(victim).getScale();
-            if (defScale != 1.0f && defScale > 0) {
-                modifiedAmount /= defScale;
-                applied = true;
+            var defScaleType = virtuoel.pehkui.api.ScaleTypes.DEFENSE;
+            if (defScaleType != null) {
+                float defScale = defScaleType.getScaleData(victim).getScale();
+                if (defScale != 1.0f && defScale > 0) {
+                    modifiedAmount /= defScale;
+                    applied = true;
+                }
             }
         } catch (Throwable ignored) {
         }
@@ -541,7 +580,13 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
 
     @Unique
     private void creraces$spawnUndeadRemains(LivingEntity victim) {
-        UndeadRemainsEntity remains = ModEntities.REMAINS_UNDEAD.get().create(victim.level());
+        var remainsType = ModEntities.REMAINS_UNDEAD.get();
+        if (remainsType == null)
+            return;
+        var level = victim.level();
+        if (level == null)
+            return;
+        UndeadRemainsEntity remains = remainsType.create(level);
         if (remains != null) {
             remains.moveTo(victim.getX(), victim.getY(), victim.getZ(), victim.getYRot(), 0);
 
@@ -593,13 +638,17 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
                         Race.EntitySpawnData data = passives.spawnOnDeath();
                         if (data != null) {
                             for (int i = 0; i < data.count(); i++) {
-                                Entity entity = BuiltInRegistries.ENTITY_TYPE
-                                        .get(new ResourceLocation(data.entityType()))
-                                        .create(player.level());
-                                if (entity != null) {
-                                    entity.moveTo(player.getX(), player.getY(), player.getZ(), player.getYRot(),
-                                            player.getXRot());
-                                    player.level().addFreshEntity(entity);
+                                var type = BuiltInRegistries.ENTITY_TYPE.get(new ResourceLocation(data.entityType()));
+                                if (type != null) {
+                                    var level = player.level();
+                                    if (level != null) {
+                                        Entity entity = type.create(level);
+                                        if (entity != null) {
+                                            entity.moveTo(player.getX(), player.getY(), player.getZ(), player.getYRot(),
+                                                    player.getXRot());
+                                            level.addFreshEntity(entity);
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -650,14 +699,16 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
                             victim.addEffect(new net.minecraft.world.effect.MobEffectInstance(
                                     shield, -1, (int) remaining - 1, false, true));
                         }
-                        victim.level().playSound(null, victim.getX(), victim.getY(), victim.getZ(),
+                        victim.level().playSound((net.minecraft.world.entity.player.Player) null, victim.getX(),
+                                victim.getY(), victim.getZ(),
                                 net.minecraft.sounds.SoundEvents.ITEM_BREAK,
                                 net.minecraft.sounds.SoundSource.NEUTRAL, 1.0f, 0.8f);
                         return 0.0f;
                     } else {
                         currentAmount -= shieldHp;
                         victim.removeEffect(shield);
-                        victim.level().playSound(null, victim.getX(), victim.getY(), victim.getZ(),
+                        victim.level().playSound((net.minecraft.world.entity.player.Player) null, victim.getX(),
+                                victim.getY(), victim.getZ(),
                                 net.minecraft.sounds.SoundEvents.ITEM_BREAK,
                                 net.minecraft.sounds.SoundSource.NEUTRAL, 1.0f, 0.5f);
                     }
@@ -710,5 +761,19 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
                 }
             });
         }
+    }
+
+    @ModifyConstant(method = "travel", constant = @Constant(floatValue = 0.02F))
+    private float creraces$applyLiquidSpeedMultiplier(float constant) {
+        if ((Object) this instanceof Player player) {
+            return DataUtils.getVariables(player).map(vars -> {
+                Race race = RaceRegistry.get(vars.getRace());
+                if (race != null && race.passives() != null) {
+                    return constant * (float) race.passives().liquidSpeedMultiplier().evaluate(player);
+                }
+                return constant;
+            }).orElse(constant);
+        }
+        return constant;
     }
 }

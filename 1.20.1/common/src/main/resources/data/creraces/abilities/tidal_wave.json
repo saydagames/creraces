@@ -16,7 +16,7 @@
     "creraces:actions": [
         {
             "type": "creraces:dash",
-            "power": 2.2,
+            "power": 1.2,
             "direction": "forward",
             "y_multiplier": 1.1,
             "y_boost": 0.3
@@ -31,6 +31,40 @@
             "type": "creraces:spawn_particles",
             "particle": "minecraft:splash",
             "count": 25
+        },
+        {
+            "type": "creraces:spawn_particles",
+            "particle": "minecraft:bubble",
+            "count": 80,
+            "spread": 0.8
+        },
+        {
+            "type": "creraces:spawn_particles",
+            "particle": "minecraft:large_smoke",
+            "count": 10,
+            "spread": 0.8
+        },
+        {
+            "type": "creraces:spawn_particles",
+            "particle": "minecraft:flame",
+            "count": 20,
+            "spread": 0.8
+        },
+        {
+            "type": "creraces:aoe",
+            "radius": 4.0,
+            "targets": [
+                "enemies"
+            ],
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "creraces:boiling",
+                    "duration": 60,
+                    "amplifier": 0,
+                    "visible": true
+                }
+            ]
         }
     ],
     "creraces:wiki_page": "Ability:Tidal_Wave"
