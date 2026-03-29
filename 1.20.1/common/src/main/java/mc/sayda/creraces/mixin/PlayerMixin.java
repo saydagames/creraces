@@ -26,6 +26,7 @@ import net.minecraft.server.level.ServerLevel;
 import java.util.Map;
 import java.util.Set;
 
+@SuppressWarnings("null")
 @Mixin(Player.class)
 public class PlayerMixin implements IPlayerVariables {
     @Unique
@@ -83,7 +84,8 @@ public class PlayerMixin implements IPlayerVariables {
                     return;
                 }
 
-                if (race.passives().canEatWhenFull()) {
+                mc.sayda.creraces.race.Race.Passives passives = race.passives();
+                if (passives != null && passives.canEatWhenFull()) {
                     cir.setReturnValue(true);
                 }
             }
@@ -791,6 +793,26 @@ public class PlayerMixin implements IPlayerVariables {
     @Override
     public void sync(Player player) {
         mc.sayda.creraces.network.BoundaryHandler.resyncVariables((Player) (Object) this, player);
+    }
+
+    @Override
+    public java.util.Collection<mc.sayda.creraces.engine.ManagedModifier> getManagedModifiers() {
+        return creraces$variables.getManagedModifiers();
+    }
+
+    @Override
+    public void addManagedModifier(mc.sayda.creraces.engine.ManagedModifier mod) {
+        creraces$variables.addManagedModifier(mod);
+    }
+
+    @Override
+    public void removeManagedModifier(java.util.UUID uuid) {
+        creraces$variables.removeManagedModifier(uuid);
+    }
+
+    @Override
+    public void clearManagedModifiers() {
+        creraces$variables.clearManagedModifiers();
     }
 
     @Unique

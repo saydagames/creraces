@@ -33,6 +33,26 @@
                     "value": 1.0
                 },
                 {
+                    "type": "creraces:attribute_modifier",
+                    "attribute": "minecraft:generic.movement_speed",
+                    "id": "fox_form_speed",
+                    "value": {
+                        "base": 0.02
+                    },
+                    "operation": "addition",
+                    "method": "ADD"
+                },
+                {
+                    "type": "creraces:attribute_modifier",
+                    "attribute": "minecraft:generic.attack_damage",
+                    "id": "fox_form_no_damage",
+                    "value": {
+                        "base": -100.0
+                    },
+                    "operation": "addition",
+                    "method": "ADD"
+                },
+                {
                     "type": "creraces:play_sound",
                     "sound": "minecraft:entity.fox.ambient",
                     "volume": 1.0,
@@ -61,6 +81,16 @@
                     "type": "creraces:set_state",
                     "state": "fox_form",
                     "value": 0.0
+                },
+                {
+                    "type": "creraces:attribute_modifier",
+                    "id": "fox_form_speed",
+                    "method": "REMOVE"
+                },
+                {
+                    "type": "creraces:attribute_modifier",
+                    "id": "fox_form_no_damage",
+                    "method": "REMOVE"
                 },
                 {
                     "type": "creraces:play_sound",

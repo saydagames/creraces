@@ -8,6 +8,9 @@ import net.minecraft.resources.ResourceLocation;
 
 public class RaceIncidents {
     public static void transformPlayer(ServerPlayer player, ResourceLocation raceId) {
+        // Clear all engine-managed attribute modifiers before transforming
+        AttributeIncidents.purgeRacialAttributes(player);
+
         if (raceId.equals(RaceRegistry.NONE)) {
             DataUtils.getVariables(player).ifPresent(vars -> {
                 vars.fantasySealReset();

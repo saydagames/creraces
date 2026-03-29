@@ -227,6 +227,12 @@ public interface IPlayerVariables extends ISerializableData {
     void setResourceTimer(long ticks);
 
     void resetOnDeath();
+    
+    // Managed Attribute Modifiers
+    java.util.Collection<mc.sayda.creraces.engine.ManagedModifier> getManagedModifiers();
+    void addManagedModifier(mc.sayda.creraces.engine.ManagedModifier mod);
+    void removeManagedModifier(java.util.UUID uuid);
+    void clearManagedModifiers();
 
     /** Triggers a network sync for this data. */
     void sync(net.minecraft.world.entity.player.Player player);

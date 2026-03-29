@@ -68,6 +68,7 @@ public class PlayerVariables implements IPlayerVariables {
     private boolean isAquatic = false;
     private boolean isUndead = false;
     private long resourceTimer = 0;
+    private final Map<UUID, mc.sayda.creraces.engine.ManagedModifier> managedModifiers = new ConcurrentHashMap<>();
 
     @Override
     public ResourceLocation getRace() {
@@ -810,6 +811,14 @@ public class PlayerVariables implements IPlayerVariables {
         tag.putInt("activeAbilityDuration", activeAbilityDuration);
         tag.putDouble("activeAbilityDrain", activeAbilityDrain);
 
+        if (!managedModifiers.isEmpty()) {
+            ListTag managedList = new ListTag();
+            for (mc.sayda.creraces.engine.ManagedModifier mod : managedModifiers.values()) {
+                managedList.add(mod.toNBT());
+            }
+            tag.put("managedModifiers", managedList);
+        }
+
         return tag;
     }
 
@@ -989,5 +998,34 @@ public class PlayerVariables implements IPlayerVariables {
             this.activeAbilityDuration = tag.getInt("activeAbilityDuration");
         if (tag.contains("activeAbilityDrain"))
             this.activeAbilityDrain = tag.getDouble("activeAbilityDrain");
+
+        if (tag.contains("managedModifiers", Tag.TAG_LIST)) {
+            this.managedModifiers.clear();
+            ListTag list = tag.getList("managedModifiers", Tag.TAG_COMPOUND);
+            for (int i = 0; i < list.size(); i++) {
+                mc.sayda.creraces.engine.ManagedModifier mod = mc.sayda.creraces.engine.ManagedModifier.fromNBT(list.getCompound(i));
+                this.managedModifiers.put(mod.uuid(), mod);
+            }
+        }
+    }
+
+    @Override
+    public java.util.Collection<mc.sayda.creraces.engine.ManagedModifier> getManagedModifiers() {
+        return managedModifiers.values();
+    }
+
+    @Override
+    public void addManagedModifier(mc.sayda.creraces.engine.ManagedModifier mod) {
+        managedModifiers.put(mod.uuid(), mod);
+    }
+
+    @Override
+    public void removeManagedModifier(UUID uuid) {
+        managedModifiers.remove(uuid);
+    }
+
+    @Override
+    public void clearManagedModifiers() {
+        managedModifiers.clear();
     }
 }

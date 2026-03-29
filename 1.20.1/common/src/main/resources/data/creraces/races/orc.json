@@ -12,7 +12,8 @@
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.attack_damage",
             "value": 5.0,
-            "operation": "addition"
+            "operation": "addition",
+            "managed": true
         }
     ],
     "rage_mechanics": [
@@ -25,7 +26,8 @@
                 "scales_with": "var:rage",
                 "factor": 0.05
             },
-            "operation": "addition"
+            "operation": "addition",
+            "managed": true
         },
         {
             "id": "rage_armor_penalty",
@@ -36,7 +38,8 @@
                 "scales_with": "var:rage",
                 "factor": -0.002
             },
-            "operation": "addition"
+            "operation": "addition",
+            "managed": true
         }
     ],
     "creraces:starting_abilities": [

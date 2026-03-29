@@ -27,9 +27,8 @@ public interface Condition {
 
     @SuppressWarnings("null")
     static Condition fromJson(JsonObject json) {
-        if (!json.has("type")) {
-            CreRaces.LOGGER.error("Condition missing 'type' field - skipping. JSON: {}", json);
-            return (player, target, slot, interactionPos) -> false;
+        if (json == null || json.size() == 0 || !json.has("type")) {
+            return (player, target, slot, interactionPos) -> true;
         }
         String typeStr = json.get("type").getAsString();
         @SuppressWarnings("null")

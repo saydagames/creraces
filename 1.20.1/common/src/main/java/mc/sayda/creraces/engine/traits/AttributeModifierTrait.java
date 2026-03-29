@@ -1,10 +1,10 @@
 package mc.sayda.creraces.engine.traits;
 
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.engine.AttributeMethod;
 import mc.sayda.creraces.engine.TraitRegistry;
 import mc.sayda.creraces.registry.ModAttributes;
 import mc.sayda.creraces.util.GsonHelper;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -15,26 +15,33 @@ import javax.annotation.Nullable;
 
 public class AttributeModifierTrait implements TraitRegistry.RaceTrait {
 
-    /**
-     * The raw attribute ID as specified in JSON.
-     * We store this rather than the resolved Attribute object to avoid
-     * registration-order issues: third-party mods (e.g. TwilightLib) may
-     * register their attributes after CreRaces loads its race JSONs.
-     * Resolution is deferred to {@link #getAttribute()} at runtime.
-     */
     private final ResourceLocation attributeId;
     private final ScalingValue value;
+    private final com.google.gson.JsonObject valueJson;
     private final AttributeModifier.Operation operation;
     @Nullable
     private final Condition condition;
+    @Nullable
+    private final com.google.gson.JsonObject rawCondition;
+    private final int interval;
+    private final boolean managed;
+    private final AttributeMethod method;
     private String traitId = "";
 
-    public AttributeModifierTrait(ResourceLocation attributeId, ScalingValue value,
-            AttributeModifier.Operation operation, @Nullable Condition condition) {
+    public AttributeModifierTrait(ResourceLocation attributeId, ScalingValue value, 
+            com.google.gson.JsonObject valueJson,
+            AttributeModifier.Operation operation, @Nullable Condition condition, 
+            @Nullable com.google.gson.JsonObject rawCondition, int interval, boolean managed,
+            AttributeMethod method) {
         this.attributeId = attributeId;
         this.value = value;
+        this.valueJson = valueJson;
         this.operation = operation;
         this.condition = condition;
+        this.rawCondition = rawCondition;
+        this.interval = interval;
+        this.managed = managed;
+        this.method = method;
     }
 
     @Override
@@ -43,52 +50,12 @@ public class AttributeModifierTrait implements TraitRegistry.RaceTrait {
     }
 
     /**
-     * Resolves the attribute lazily at runtime.
-     * First applies known aliases, then checks the Vanilla/Apothic registry.
+     * Resolves the attribute lazily at runtime using the centralized ModAttributes resolver.
      * Returns null if the attribute is not registered (e.g. the mod is absent).
      */
     @Nullable
     public Attribute getAttribute() {
-        if (attributeId == null) return null;
-
-        String attrIdStr = attributeId.toString();
-
-        // 1. Known Aliases (short names without namespace)
-        String path = attributeId.getPath();
-        if (attributeId.getNamespace().equals("creraces") || !attrIdStr.contains(":")) {
-            Attribute aliased = resolveAlias(path.isEmpty() ? attrIdStr : path);
-            if (aliased != null) return aliased;
-        }
-
-        // 2. Direct registry lookup (works for vanilla + any mod that's loaded)
-        Attribute attr = BuiltInRegistries.ATTRIBUTE.getOptional(attributeId).orElse(null);
-
-        // 3. Apothic/attributeslib resolution passthrough
-        if (attr != null) {
-            attr = ModAttributes.resolve(attr);
-        }
-
-        return attr;
-    }
-
-    @Nullable
-    private static Attribute resolveAlias(String statKey) {
-        return switch (statKey.toLowerCase()) {
-            case "max_health", "hp" -> net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH;
-            case "attack_damage", "ad" -> net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE;
-            case "movement_speed", "speed" -> net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED;
-            case "armor" -> net.minecraft.world.entity.ai.attributes.Attributes.ARMOR;
-            case "ap" -> ModAttributes.ABILITY_POWER.get();
-            default -> {
-                if (statKey.contains("life_steal") || statKey.contains("lifesteal")) {
-                    Attribute ls = BuiltInRegistries.ATTRIBUTE.get(new ResourceLocation("attributeslib", "life_steal"));
-                    if (ls == null)
-                        ls = BuiltInRegistries.ATTRIBUTE.get(new ResourceLocation("attributeslib", "lifesteal"));
-                    yield ls;
-                }
-                yield null;
-            }
-        };
+        return ModAttributes.getAttribute(attributeId);
     }
 
     /** The raw attribute ID as specified in the race JSON. */
@@ -109,6 +76,27 @@ public class AttributeModifierTrait implements TraitRegistry.RaceTrait {
         return condition;
     }
 
+    @Nullable
+    public com.google.gson.JsonObject getRawCondition() {
+        return rawCondition;
+    }
+
+    public int getInterval() {
+        return interval;
+    }
+
+    public boolean isManaged() {
+        return managed;
+    }
+
+    public AttributeMethod getMethod() {
+        return method;
+    }
+
+    public com.google.gson.JsonObject getValueJson() {
+        return valueJson;
+    }
+
     @Override
     public void setTraitId(String id) {
         this.traitId = id;
@@ -121,14 +109,11 @@ public class AttributeModifierTrait implements TraitRegistry.RaceTrait {
 
     public static void register() {
         TraitRegistry.register(new ResourceLocation(CreRaces.MODID, "attribute_modifier"), json -> {
-            String attrIdStr = GsonHelper.getAsString(json, "attribute");
+            String attrIdStr = GsonHelper.getAsString(json, "attribute", "minecraft:generic.attack_damage");
 
             // Store the raw ResourceLocation — do NOT resolve the Attribute here.
-            // Resolution is deferred to getAttribute() to handle mods that register
-            // attributes after race data is loaded (registration order issues).
             ResourceLocation attrId = ResourceLocation.tryParse(attrIdStr);
             if (attrId == null) {
-                // Try treating it as a plain alias (no namespace)
                 attrId = new ResourceLocation("creraces", attrIdStr.toLowerCase());
             }
 
@@ -136,12 +121,20 @@ public class AttributeModifierTrait implements TraitRegistry.RaceTrait {
             String opStr = GsonHelper.getAsString(json, "operation", "addition").toUpperCase();
             AttributeModifier.Operation op = AttributeModifier.Operation.valueOf(opStr);
 
+            com.google.gson.JsonObject valueJson = json.has("value") ? json.getAsJsonObject("value") : new com.google.gson.JsonObject();
+
             Condition condition = null;
+            com.google.gson.JsonObject rawCondition = null;
             if (json.has("condition")) {
-                condition = Condition.fromJson(json.getAsJsonObject("condition"));
+                rawCondition = json.getAsJsonObject("condition");
+                condition = Condition.fromJson(rawCondition);
             }
 
-            return new AttributeModifierTrait(attrId, value, op, condition);
+            int interval = GsonHelper.getAsInt(json, "interval", 20);
+            boolean managed = GsonHelper.getAsBoolean(json, "managed", false);
+            AttributeMethod method = AttributeMethod.fromString(GsonHelper.getAsString(json, "method", "ADD"));
+
+            return new AttributeModifierTrait(attrId, value, valueJson, op, condition, rawCondition, interval, managed, method);
         });
     }
 }

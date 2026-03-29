@@ -153,5 +153,6 @@ public class ActionRegistry {
         mc.sayda.creraces.engine.actions.UnbindAbilityAction.register();
         mc.sayda.creraces.engine.actions.EnchantAction.register();
         mc.sayda.creraces.engine.actions.GetEnchantmentAction.register();
+        mc.sayda.creraces.engine.actions.AttributeModifierAction.register();
     }
 }

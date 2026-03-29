@@ -26,7 +26,7 @@ public class AttributeIncidents {
             // Fetch Race to apply other modifiers
             mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
             if (race == null) {
-                clearAllRacialModifiers(player);
+                purgeRacialAttributes(player);
                 return;
             }
 
@@ -49,96 +49,119 @@ public class AttributeIncidents {
                 }
             }
 
-            // 2. Generic Trait Application
+            // 2. Trait Processing
             java.util.Set<UUID> activeTraits = new java.util.HashSet<>();
 
             for (mc.sayda.creraces.engine.TraitRegistry.RaceTrait trait : race.traits()) {
                 if (trait instanceof mc.sayda.creraces.engine.traits.AttributeModifierTrait amt) {
+                    Attribute attr = amt.getAttribute();
+                    if (attr == null) continue;
+
+                    Attribute resolvedAttr = ModAttributes.resolve(attr);
+                    String traitId = trait.getTraitId();
+                    UUID uuid = UUID.nameUUIDFromBytes(("creraces:" + traitId).getBytes());
+                    activeTraits.add(uuid);
+
+                    // Method: REMOVE logic
+                    if (amt.getMethod() == mc.sayda.creraces.engine.AttributeMethod.REMOVE) {
+                        AttributeInstance instance = player.getAttribute(resolvedAttr);
+                        if (instance != null && instance.getModifier(uuid) != null) {
+                            instance.removeModifier(uuid);
+                            vars.removeManagedModifier(uuid);
+                            mc.sayda.creraces.CreRaces.LOGGER.debug("AttributeIncidents: Trait REMOVED {} from {}", traitId, player.getScoreboardName());
+                        }
+                        continue;
+                    }
+
+                    // If trait is Managed (explicit flag or has condition)
+                    if (amt.isManaged() || amt.getRawCondition() != null) {
+                        vars.addManagedModifier(new mc.sayda.creraces.engine.ManagedModifier(
+                            uuid, 
+                            amt.getAttributeId(), 
+                            amt.getValueJson(),
+                            amt.getOperation(),
+                            "creraces:" + traitId,
+                            amt.getRawCondition() != null ? amt.getRawCondition() : new com.google.gson.JsonObject(), 
+                            amt.getRawCondition() != null,
+                            amt.getInterval(), 
+                            player.tickCount + amt.getInterval()
+                        ));
+                        // Managed modifiers are handled by the background loop below
+                        continue;
+                    }
+
+                    // Static Trait Application (Legacy path for unmanaged traits)
                     boolean conditionMet = amt.getCondition() == null
                             || amt.getCondition().evaluate(player, null, null, null);
 
                     if (conditionMet) {
-                        Attribute attr = amt.getAttribute();
-                        if (attr == null) {
-                            if (player.tickCount % 100 == 0)
-                                mc.sayda.creraces.CreRaces.LOGGER.warn(
-                                    "EikiJudgment: trait '{}' references attribute '{}' which is not in the registry. Is the mod loaded?",
-                                    trait.getTraitId(), amt.getAttributeId());
-                            continue;
-                        }
+                        AttributeInstance instance = player.getAttribute(resolvedAttr);
+                        if (instance != null) {
+                            double newValue = amt.getValue().evaluate(player);
+                            if (ModAttributes.isPercentAttribute(resolvedAttr))
+                                newValue /= 100.0;
 
-                        Attribute resolvedAttr = ModAttributes.resolve(attr);
-                        ResourceLocation attrKey = net.minecraft.core.registries.BuiltInRegistries.ATTRIBUTE
-                                .getKey(resolvedAttr);
-                        if (attrKey != null) {
-                            String traitId = trait.getTraitId();
-                            // Deterministic UUID based on trait ID (managed by user in JSON)
-                            UUID uuid = UUID.nameUUIDFromBytes(("creraces:" + traitId).getBytes());
-                            activeTraits.add(uuid);
+                            AttributeModifier.Operation newOp = amt.getOperation();
+                            AttributeModifier existing = instance.getModifier(uuid);
 
-                            AttributeInstance instance = player.getAttribute(resolvedAttr);
-                            if (instance != null) {
-                                double newValue = amt.getValue().evaluate(player);
-                                if (ModAttributes.isPercentAttribute(resolvedAttr))
-                                    newValue /= 100.0;
+                            if (existing == null || Math.abs(existing.getAmount() - newValue) > 1e-6
+                                    || existing.getOperation() != newOp) {
+                                if (existing != null)
+                                    instance.removeModifier(uuid);
 
-                                AttributeModifier.Operation newOp = amt.getOperation();
-                                AttributeModifier existing = instance.getModifier(uuid);
-
-                                if (existing == null || Math.abs(existing.getAmount() - newValue) > 1e-6
-                                        || existing.getOperation() != newOp) {
-                                    if (existing != null)
-                                        instance.removeModifier(uuid);
-
-
-                                    AttributeModifier newMod = new AttributeModifier(uuid, "creraces:" + traitId, newValue, newOp);
-                                    instance.addPermanentModifier(newMod);
-
-                                    // Verify application and log final value
-                                    double finalValue = instance.getValue();
-                                    mc.sayda.creraces.CreRaces.LOGGER.info(
-                                            "EikiJudgment: SET trait {} for {}. Mod: {} ({}), Final Value: {}",
-                                            traitId, player.getScoreboardName(), newValue, newOp, finalValue);
-
-                                    if (instance.getModifier(uuid) == null) {
-                                        mc.sayda.creraces.CreRaces.LOGGER.error(
-                                                "EikiJudgment: FAILED to set modifier {} ({}) on {}", traitId, attrKey,
-                                                player.getScoreboardName());
-                                    }
-                                }
-                            } else if (player.tickCount % 20 == 0) {
-                                mc.sayda.creraces.CreRaces.LOGGER.warn("EikiJudgment: Player {} lacks attribute: {}",
-                                        player.getScoreboardName(), attrKey);
+                                AttributeModifier newMod = new AttributeModifier(uuid, "creraces:" + traitId,
+                                        newValue, newOp);
+                                instance.addPermanentModifier(newMod);
+                                mc.sayda.creraces.CreRaces.LOGGER.debug("EikiJudgment: Applied static trait {} to {}", traitId, player.getScoreboardName());
                             }
+                        }
+                    } else {
+                        // Condition failed for static trait -> remove
+                        AttributeInstance instance = player.getAttribute(resolvedAttr);
+                        if (instance != null && instance.getModifier(uuid) != null) {
+                            instance.removeModifier(uuid);
                         }
                     }
                 }
             }
 
-            // 3. Clear orphaned "CreRaces:" modifiers
-            // We iterate through syncable attributes to find modifiers added by our engine.
-            player.getAttributes().getSyncableAttributes().forEach(instance -> {
-                java.util.List<AttributeModifier> toRemove = new java.util.ArrayList<>();
-                for (AttributeModifier mod : instance.getModifiers()) {
-                    String name = mod.getName();
-                    // Identifies modifiers by the "creraces:" prefix.
-                    if (name.startsWith("creraces:")) {
-                        if (!activeTraits.contains(mod.getId())) {
-                            toRemove.add(mod);
+            // 3. Managed Modifier Sync (Smart Sync)
+            java.util.List<java.util.UUID> toRemoveManaged = new java.util.ArrayList<>();
+            for (mc.sayda.creraces.engine.ManagedModifier mod : vars.getManagedModifiers()) {
+                if (mod.shouldCheck(player.tickCount)) {
+                    vars.addManagedModifier(mod.withNextCheck(player.tickCount));
+
+                    net.minecraft.world.entity.ai.attributes.Attribute attr = net.minecraft.core.registries.BuiltInRegistries.ATTRIBUTE.get(mod.attributeId());
+                    if (attr == null) continue;
+                    
+                    Attribute resolvedAttr = ModAttributes.resolve(attr);
+                    AttributeInstance instance = player.getAttribute(resolvedAttr);
+                    if (instance == null) continue;
+
+                    // A. Lifecycle Purge
+                    if (mod.hasLifecycle() && !mod.getCondition().evaluate(player, null, null, null)) {
+                        toRemoveManaged.add(mod.uuid());
+                        instance.removeModifier(mod.uuid());
+                        mc.sayda.creraces.CreRaces.LOGGER.debug("ManagedModifier: Purged lifecycle modifier {} from {}", mod.name(), player.getScoreboardName());
+                    } else {
+                        // B. Value Sync (Refresh ScalingValues)
+                        double newValue = mod.getScalingValue().evaluate(player);
+                        if (ModAttributes.isPercentAttribute(resolvedAttr)) newValue /= 100.0;
+
+                        AttributeModifier existing = instance.getModifier(mod.uuid());
+                        if (existing == null || Math.abs(existing.getAmount() - newValue) > 1e-6 || existing.getOperation() != mod.operation()) {
+                            if (existing != null) instance.removeModifier(mod.uuid());
+                            instance.addPermanentModifier(new AttributeModifier(mod.uuid(), mod.name(), newValue, mod.operation()));
+                            mc.sayda.creraces.CreRaces.LOGGER.debug("ManagedModifier: Synced value for {} on {} (val: {})", mod.name(), player.getScoreboardName(), newValue);
                         }
                     }
                 }
-                if (!toRemove.isEmpty()) {
-                    toRemove.forEach(mod -> {
-                        instance.removeModifier(mod.getId());
-                        mc.sayda.creraces.CreRaces.LOGGER.info("EikiJudgment: PURGED orphaned trait {} from player {}'s attribute {}", 
-                            mod.getName(), player.getScoreboardName(), instance.getAttribute().getDescriptionId());
-                    });
-                }
-            });
+            }
+            toRemoveManaged.forEach(vars::removeManagedModifier);
 
             // 5. Double Jump
-            AttributeInstance doubleJumpAttr = player.getAttribute(mc.sayda.creraces.registry.ModAttributes.DOUBLE_JUMP.get());
+            AttributeInstance doubleJumpAttr = player
+                    .getAttribute(mc.sayda.creraces.registry.ModAttributes.DOUBLE_JUMP.get());
             if (doubleJumpAttr != null) {
                 boolean isEquipped = false;
                 for (mc.sayda.creraces.ability.AbilitySlot slot : mc.sayda.creraces.ability.AbilitySlot.values()) {
@@ -180,28 +203,43 @@ public class AttributeIncidents {
         });
     }
 
-    private static void clearAllRacialModifiers(ServerPlayer player) {
-        // Clear the AD modifier (its own UUID, not the creraces: prefix)
+    /**
+     * Performs a one-time "Hard Purge" of all racial attributes.
+     * Should be called during race resets or transformations.
+     */
+    public static void purgeRacialAttributes(ServerPlayer player) {
+        // 1. Clear specific deterministic modifiers
+        clearModifier(player, ModAttributes.resolve(ModAttributes.DOUBLE_JUMP), EQUIP_DOUBLE_JUMP_MODIFIER);
         clearModifier(player, Attributes.ATTACK_DAMAGE, RACE_AD_MODIFIER);
+        clearModifier(player, ModAttributes.resolve(ModAttributes.MAX_MANA), MANA_AP_MODIFIER);
 
-        // All generic trait attribute modifiers are applied via AttributeModifierTrait
-        // using deterministic per-attribute-and-index UUIDs.
-        // We clear everything starting with "creraces:" to ensure complete cleanup.
-        player.getAttributes().getSyncableAttributes().forEach(instance -> {
-            java.util.List<AttributeModifier> toRemove = new java.util.ArrayList<>();
-            for (AttributeModifier mod : instance.getModifiers()) {
-                String name = mod.getName();
-                if (name.startsWith("creraces:") || name.startsWith("CreRaces:") || "CreRaces Trait".equals(name) || "Race Trait".equals(name)) {
-                    toRemove.add(mod);
+        // 2. Clear all Managed Modifiers
+        DataUtils.getVariables(player).ifPresent(vars -> {
+            for (mc.sayda.creraces.engine.ManagedModifier mod : vars.getManagedModifiers()) {
+                Attribute attr = net.minecraft.core.registries.BuiltInRegistries.ATTRIBUTE.get(mod.attributeId());
+                if (attr != null) {
+                    AttributeInstance instance = player.getAttribute(ModAttributes.resolve(attr));
+                    if (instance != null) {
+                        instance.removeModifier(mod.uuid());
+                    }
                 }
             }
-            for (AttributeModifier mod : toRemove) {
-                instance.removeModifier(mod.getId());
-            }
+            vars.clearManagedModifiers();
         });
 
-        clearModifier(player, ModAttributes.resolve(ModAttributes.DOUBLE_JUMP),
-                EQUIP_DOUBLE_JUMP_MODIFIER);
+        // 3. Global Scan & Sweep
+        // This ensures any static traits (unmanaged) are wiped clean before the new race applies its own.
+        player.getAttributes().getSyncableAttributes().forEach(instance -> {
+            java.util.List<UUID> toRemove = new java.util.ArrayList<>();
+            instance.getModifiers().forEach(mod -> {
+                if (mod.getName().startsWith("creraces:")) {
+                    toRemove.add(mod.getId());
+                }
+            });
+            toRemove.forEach(instance::removeModifier);
+        });
+        
+        mc.sayda.creraces.CreRaces.LOGGER.debug("AttributeIncidents: Performed global attribute purge for {}", player.getScoreboardName());
     }
 
     private static void clearModifier(ServerPlayer player, net.minecraft.world.entity.ai.attributes.Attribute attribute,

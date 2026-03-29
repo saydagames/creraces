@@ -182,6 +182,47 @@ public class ModAttributes {
                 };
         }
 
+        /**
+         * Resolves a ResourceLocation (often from JSON) to an Attribute, supporting aliases.
+         * Aliases: hp, ad, ap, speed, armor, luck, grit, rage, mana, energy, crit.
+         */
+        public static Attribute getAttribute(ResourceLocation id) {
+                if (id == null)
+                        return null;
+                String path = id.getPath().toLowerCase();
+
+                // 1. Resolve Aliases (Shortnames)
+                Attribute aliased = switch (path) {
+                        case "max_health", "hp" -> net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH;
+                        case "attack_damage", "ad" -> net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE;
+                        case "movement_speed", "speed" -> net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED;
+                        case "armor" -> net.minecraft.world.entity.ai.attributes.Attributes.ARMOR;
+                        case "luck" -> net.minecraft.world.entity.ai.attributes.Attributes.LUCK;
+                        case "ap", "ability_power" -> ABILITY_POWER.get();
+                        case "mana", "max_mana" -> MAX_MANA.get();
+                        case "energy", "max_energy" -> MAX_ENERGY.get();
+                        case "rage", "max_rage" -> MAX_RAGE.get();
+                        case "grit", "max_grit" -> MAX_GRIT.get();
+                        case "crit", "crit_rate" -> CRIT_RATE.get();
+                        default -> {
+                                if (path.contains("life_steal") || path.contains("lifesteal")) {
+                                        Attribute ls = BuiltInRegistries.ATTRIBUTE.get(new ResourceLocation(APOTHIC_ID, "life_steal"));
+                                        if (ls == null)
+                                                ls = BuiltInRegistries.ATTRIBUTE.get(new ResourceLocation(APOTHIC_ID, "lifesteal"));
+                                        yield ls;
+                                }
+                                yield null;
+                        }
+                };
+
+                if (aliased != null)
+                        return resolve(aliased);
+
+                // 2. Direct registry lookup + Apothic resolution
+                Attribute direct = BuiltInRegistries.ATTRIBUTE.getOptional(id).orElse(null);
+                return resolve(direct);
+        }
+
         public static void init() {
                 if (initialized)
                         return;
