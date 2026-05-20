@@ -40,7 +40,6 @@ public class DebugActionPacket {
         buf.writeUtf(java.util.Objects.requireNonNull(value));
     }
 
-
     public void handle(Supplier<NetworkManager.PacketContext> contextSupplier) {
         NetworkManager.PacketContext context = contextSupplier.get();
 
@@ -54,15 +53,23 @@ public class DebugActionPacket {
                 try {
                     switch (action) {
                         case "variable", "state" -> {
-                            applyVariable(player, vars, java.util.Objects.requireNonNull(key), java.util.Objects.requireNonNull(value));
+                            applyVariable(player, vars, java.util.Objects.requireNonNull(key),
+                                    java.util.Objects.requireNonNull(value));
                             CreRaces.LOGGER.debug("Applied debug variable/state: {} = {}", key, value);
                         }
+                        case "customization" -> {
+                            vars.setCustomization(java.util.Objects.requireNonNull(key),
+                                    java.util.Objects.requireNonNull(value));
+                            CreRaces.LOGGER.debug("Applied debug customization: {} = {}", key, value);
+                        }
                         case "ability_state" -> {
-                            vars.setPersistentState(new ResourceLocation(java.util.Objects.requireNonNull(key)), Double.parseDouble(java.util.Objects.requireNonNull(value)));
+                            vars.setPersistentState(new ResourceLocation(java.util.Objects.requireNonNull(key)),
+                                    Double.parseDouble(java.util.Objects.requireNonNull(value)));
                             CreRaces.LOGGER.debug("Applied debug ability state: {} = {}", key, value);
                         }
                         case "cooldown" -> {
-                            vars.setCooldown(new ResourceLocation(java.util.Objects.requireNonNull(key)), (int) Double.parseDouble(java.util.Objects.requireNonNull(value)));
+                            vars.setCooldown(new ResourceLocation(java.util.Objects.requireNonNull(key)),
+                                    (int) Double.parseDouble(java.util.Objects.requireNonNull(value)));
                             CreRaces.LOGGER.debug("Applied debug cooldown: {} = {}", key, value);
                         }
                         case "race" -> {
@@ -75,13 +82,13 @@ public class DebugActionPacket {
                             CreRaces.LOGGER.debug("Applied debug attribute: {} = {}", key, value);
                         }
                         case "flag" -> {
-                        applyFlag(vars, key, value);
-                        // Refresh to apply scale/attribute changes immediately
-                        if (player instanceof net.minecraft.server.level.ServerPlayer) {
-                            net.minecraft.server.level.ServerPlayer sp = (net.minecraft.server.level.ServerPlayer) player;
-                            mc.sayda.creraces.race.RaceIncidents.refreshPlayer(sp);
+                            applyFlag(vars, key, value);
+                            // Refresh to apply scale/attribute changes immediately
+                            if (player instanceof net.minecraft.server.level.ServerPlayer) {
+                                net.minecraft.server.level.ServerPlayer sp = (net.minecraft.server.level.ServerPlayer) player;
+                                mc.sayda.creraces.race.RaceIncidents.refreshPlayer(sp);
+                            }
                         }
-                    }
                     }
                     // Sync changes back to client
                     if (!action.equals("race")) { // Race transformation already syncs
@@ -96,8 +103,9 @@ public class DebugActionPacket {
 
     private void applyVariable(ServerPlayer player, IPlayerVariables vars, String key, String value) {
         if (key.equalsIgnoreCase("race")) {
-             mc.sayda.creraces.race.RaceIncidents.transformPlayer(player, new ResourceLocation(java.util.Objects.requireNonNull(value)));
-             return;
+            mc.sayda.creraces.race.RaceIncidents.transformPlayer(player,
+                    new ResourceLocation(java.util.Objects.requireNonNull(value)));
+            return;
         }
 
         double val = 0;
@@ -105,9 +113,12 @@ public class DebugActionPacket {
             val = Double.parseDouble(value);
         } catch (NumberFormatException e) {
             // Check for boolean strings
-            if (value.equalsIgnoreCase("true")) val = 1.0;
-            else if (value.equalsIgnoreCase("false")) val = 0.0;
-            else return;
+            if (value.equalsIgnoreCase("true"))
+                val = 1.0;
+            else if (value.equalsIgnoreCase("false"))
+                val = 0.0;
+            else
+                return;
         }
 
         switch (key.toLowerCase()) {
@@ -122,11 +133,12 @@ public class DebugActionPacket {
             case "cr" -> vars.setCr(val);
             case "coins" -> vars.setCoins(val);
             case "soul" -> vars.setSoul(val);
-            case "morphed" -> vars.setMorphed(val > 0.5);
             case "gstate" -> vars.setGState((int) val);
-            case "smallbuild" -> vars.setSmallBuild(val > 0.5);
-            case "spirit" -> vars.setInSpiritRealm(val > 0.5);
             case "returndim" -> vars.setReturnDim(value);
+            case "pocketx" -> vars.setPocketX(val);
+            case "pockety" -> vars.setPocketY(val);
+            case "pocketz" -> vars.setPocketZ(val);
+            case "pocketsize" -> vars.setPocketSize(val);
         }
     }
 
@@ -137,9 +149,12 @@ public class DebugActionPacket {
             case "isAquatic" -> vars.setAquatic(val);
             case "isSpirit" -> vars.setSpirit(val);
             case "isTiny" -> vars.setTiny(val);
+            case "inSpirit" -> vars.setInSpiritRealm(val);
+            case "morphed" -> vars.setMorphed(val);
+            case "smallBuild" -> vars.setSmallBuild(val);
         }
     }
- 
+
     private void applyAttribute(ServerPlayer player, String attrId, String value) {
         try {
             double val = Double.parseDouble(value);

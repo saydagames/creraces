@@ -147,6 +147,8 @@ public class SubRaceScreen extends Screen {
         if (hoverTooltip != null) {
             graphics.renderTooltip(this.font, hoverTooltip, mouseX, mouseY);
         }
+
+        RenderSystem.disableBlend();
     }
 
     @Override

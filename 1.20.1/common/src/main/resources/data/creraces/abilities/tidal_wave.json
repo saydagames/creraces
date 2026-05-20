@@ -2,7 +2,7 @@
     "creraces:name": "ability.creraces.tidal_wave.name",
     "creraces:description": "ability.creraces.tidal_wave.description",
     "creraces:type": "ACTIVE",
-    "creraces:icon": "minecraft:textures/item/nautilus_shell.png",
+    "creraces:icon": "creraces:textures/icons/wave.png",
     "creraces:cooldown": 180,
     "creraces:cost": 0,
     "creraces:race": [

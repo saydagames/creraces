@@ -39,7 +39,7 @@ public class MassSummonAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot slot, @Nullable BlockPos interactionPos) {
+    public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot slot, @Nullable BlockPos interact_pos) {
         if (player.level().isClientSide) return true;
 
         ServerLevel level = (ServerLevel) player.level();
@@ -49,7 +49,7 @@ public class MassSummonAction implements ActionRegistry.RaceAction {
         int maxCap = mc.sayda.creraces.config.CreRacesConfig.MASS_SUMMON_MAX_COUNT.get();
         if (maxCap > 0) numToSummon = Math.min(numToSummon, maxCap);
         
-        BlockPos spawnBase = interactionPos != null ? interactionPos : player.blockPosition();
+        BlockPos spawnBase = interact_pos != null ? interact_pos : player.blockPosition();
         double r = range.evaluate(player, target, slot);
 
         for (int i = 0; i < numToSummon; i++) {
@@ -109,7 +109,7 @@ public class MassSummonAction implements ActionRegistry.RaceAction {
             ScalingValue min = json.has("min_count") ? ScalingValue.fromJson(json, "min_count", 1) : new ScalingValue(1, null, 0, new ArrayList<>());
             ScalingValue max = json.has("max_count") ? ScalingValue.fromJson(json, "max_count", 3) : new ScalingValue(3, null, 0, new ArrayList<>());
             ScalingValue range = ScalingValue.fromJson(json, "range", 6.0);
-            boolean servant = !json.has("mark_as_servant") || json.get("mark_as_servant").getAsBoolean();
+            boolean servant = json.has("mark_as_servant") && json.get("mark_as_servant").getAsBoolean();
             
             List<WeightedEntity> pool = new ArrayList<>();
             if (json.has("pool")) {

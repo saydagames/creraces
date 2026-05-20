@@ -2,7 +2,7 @@
     "creraces:name": "ability.creraces.kitsune_sleep.name",
     "creraces:description": "ability.creraces.kitsune_sleep.description",
     "creraces:type": "ACTIVE",
-    "creraces:icon": "minecraft:textures/item/white_bed.png",
+    "creraces:icon": "minecraft:white_bed",
     "creraces:cooldown": 200,
     "creraces:cost": 10,
     "creraces:persistent": false,

@@ -97,12 +97,12 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
     @Override
     public boolean execute(Player player, @Nullable net.minecraft.world.entity.LivingEntity target,
             @Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @Nullable BlockPos interactionPos) {
-        if (player.level().isClientSide() || interactionPos == null)
+            @Nullable BlockPos interact_pos) {
+        if (player.level().isClientSide() || interact_pos == null)
             return true;
 
         ServerLevel world = (ServerLevel) player.level();
-        BlockState state = world.getBlockState(interactionPos);
+        BlockState state = world.getBlockState(interact_pos);
 
         Direction facing;
         if (state.hasProperty(BlockStateProperties.FACING)) {
@@ -110,7 +110,7 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
         } else if (state.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
             facing = state.getValue(BlockStateProperties.HORIZONTAL_FACING);
         } else {
-            CreRaces.LOGGER.warn("ExpandPocketAction: Block at {} does not have FACING property.", interactionPos);
+            CreRaces.LOGGER.warn("ExpandPocketAction: Block at {} does not have FACING property.", interact_pos);
             return false;
         }
 
@@ -118,7 +118,7 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
         if (rule == null) {
             CreRaces.LOGGER.warn("ExpandPocketAction: No expansion rule defined for face {}.", facing);
             player.displayClientMessage(
-                    net.minecraft.network.chat.Component.literal("You feel a strange tingling sensation..."), true);
+                    net.minecraft.network.chat.Component.translatable("msg.creraces.expand_pocket.not_supported"), true);
             return false;
         }
 
@@ -126,13 +126,30 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
             double currentCost = cost.evaluate(player, target, slot);
             int maxLimit = (int) Math.round(limit.evaluate(player, target, slot));
 
+            // Boundary check: prevent expanding into other pockets
+            double originX = vars.getPocketX();
+            double originZ = vars.getPocketZ();
+            double dx_boundary = interact_pos.getX() - originX;
+            double dz_boundary = interact_pos.getZ() - originZ;
+            double distSq = dx_boundary * dx_boundary + dz_boundary * dz_boundary;
+            double boundary = mc.sayda.creraces.config.CreRacesConfig.POCKET_BOUNDARY.get();
+
+            if (distSq > boundary * boundary) {
+                world.playSound(null, interact_pos, net.minecraft.sounds.SoundEvents.NOTE_BLOCK_BASS.value(),
+                        net.minecraft.sounds.SoundSource.NEUTRAL, 1.0f, 1.0f);
+                player.displayClientMessage(
+                        net.minecraft.network.chat.Component.translatable("message.creraces.pocket.boundary"),
+                        true);
+                return;
+            }
+
             Block doorMatchBlock = BuiltInRegistries.BLOCK.get(doorBlock);
 
             // -----------------------------------------------------------------------
             // Pre-check: is there already a room on the other side of this panel?
             // Uses the floor-of-new-room check position (matching legacy logic):
-            // floor IS petrified_wood → room already placed → door-only mode
-            // floor IS AIR / void → no room yet → full expansion
+            // floor IS petrified_wood ↁEroom already placed ↁEdoor-only mode
+            // floor IS AIR / void ↁEno room yet ↁEfull expansion
             // -----------------------------------------------------------------------
             boolean roomAlreadyExists = false;
             if (!"SHELL".equalsIgnoreCase(rule.mode) && rule.checkBlock != null) {
@@ -142,9 +159,9 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
                     int cx = rule.checkX != null ? rule.checkX : 0;
                     int cy = rule.checkY != null ? rule.checkY : 0;
                     int cz = rule.checkZ != null ? rule.checkZ : 0;
-                    checkPos = interactionPos.offset(cx, cy, cz);
+                    checkPos = interact_pos.offset(cx, cy, cz);
                 } else {
-                    checkPos = interactionPos.relative(facing.getOpposite(), 1);
+                    checkPos = interact_pos.relative(facing.getOpposite(), 1);
                 }
                 // Room exists when the floor block IS the expected wall material
                 roomAlreadyExists = world.getBlockState(checkPos).getBlock() == expectedBlock;
@@ -153,32 +170,32 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
             // If room already exists, open the door for free regardless of limit/coins
             if (roomAlreadyExists) {
                 if (defaultDoorwayClearance) {
-                    WorldUtils.removeDoor(world, interactionPos,
+                    WorldUtils.removeDoor(world, interact_pos,
                             doorMatchBlock.defaultBlockState(), facing, doorWidth, doorHeight, doorDepth);
                 }
-                world.playSound(null, interactionPos,
+                world.playSound(null, interact_pos,
                         net.minecraft.sounds.SoundEvents.NOTE_BLOCK_CHIME.value(),
                         net.minecraft.sounds.SoundSource.NEUTRAL, 1.0f, 1.0f);
                 player.displayClientMessage(
-                        net.minecraft.network.chat.Component.literal("Connected to existing room!"), true);
+                        net.minecraft.network.chat.Component.translatable("msg.creraces.expand_pocket.existing"), true);
                 return; // no cost, no counter
             }
 
             // Normal expansion: apply limit and coin gates
             if (vars.getPocketSize() >= maxLimit) {
-                world.playSound(null, interactionPos, net.minecraft.sounds.SoundEvents.NOTE_BLOCK_BASS.value(),
+                world.playSound(null, interact_pos, net.minecraft.sounds.SoundEvents.NOTE_BLOCK_BASS.value(),
                         net.minecraft.sounds.SoundSource.NEUTRAL, 1.0f, 1.0f);
                 player.displayClientMessage(
-                        net.minecraft.network.chat.Component.literal("Max room expansion reached! ("
-                                + (int) vars.getPocketSize() + " / " + maxLimit + ")"),
+                        net.minecraft.network.chat.Component.translatable("msg.creraces.expand_pocket.max_limit",
+                                (int) vars.getPocketSize(), maxLimit),
                         true);
                 return;
             }
 
             if (vars.getCoins() < currentCost) {
                 player.displayClientMessage(net.minecraft.network.chat.Component
-                        .literal("You don't have enough Coins to expand! (Coins: "
-                                + (int) vars.getCoins() + " / " + (int) currentCost + ")"),
+                        .translatable("msg.creraces.expand_pocket.no_coins",
+                                (int) vars.getCoins(), (int) currentCost),
                         false);
                 return;
             }
@@ -192,8 +209,8 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
                 }
 
                 int r = rule.shellRadius;
-                BlockPos p1 = interactionPos.offset(r, 5, r);
-                BlockPos p2 = interactionPos.offset(-r, -2, -r);
+                BlockPos p1 = interact_pos.offset(r, 5, r);
+                BlockPos p2 = interact_pos.offset(-r, -2, -r);
 
                 // Fill logic: box outline
                 for (BlockPos p : BlockPos.betweenClosed(p1, p2)) {
@@ -213,12 +230,12 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
                 // Step 1: Remove the door panel BEFORE placing the structure (matches legacy
                 // RemoveDoorProcedure first call)
                 if (defaultDoorwayClearance) {
-                    WorldUtils.removeDoor(world, interactionPos, doorMatchBlock.defaultBlockState(),
+                    WorldUtils.removeDoor(world, interact_pos, doorMatchBlock.defaultBlockState(),
                             facing, doorWidth, doorHeight, doorDepth);
                 }
 
                 @SuppressWarnings("null")
-                BlockPos targetPos = java.util.Objects.requireNonNull(interactionPos.offset(dx, dy, dz));
+                BlockPos targetPos = java.util.Objects.requireNonNull(interact_pos.offset(dx, dy, dz));
                 StructureTemplate template = world.getStructureManager().getOrCreate(rule.structure);
                 if (template != null) {
                     template.placeInWorld(world, targetPos, targetPos, new StructurePlaceSettings(), world.random, 3);
@@ -231,22 +248,22 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
                 // wall
                 // (matches legacy RemoveDoorProcedure second call)
                 if (defaultDoorwayClearance) {
-                    WorldUtils.removeDoor(world, interactionPos, doorMatchBlock.defaultBlockState(),
+                    WorldUtils.removeDoor(world, interact_pos, doorMatchBlock.defaultBlockState(),
                             facing, doorWidth, doorHeight, doorDepth);
                 }
             }
 
-            world.playSound(null, interactionPos, net.minecraft.sounds.SoundEvents.NOTE_BLOCK_CHIME.value(),
+            world.playSound(null, interact_pos, net.minecraft.sounds.SoundEvents.NOTE_BLOCK_CHIME.value(),
                     net.minecraft.sounds.SoundSource.NEUTRAL, 1.0f, 1.0f);
 
             vars.setCoins(vars.getCoins() - currentCost);
             vars.setPocketSize(vars.getPocketSize() + 1);
 
             player.displayClientMessage(net.minecraft.network.chat.Component
-                    .literal("Expansions remaining: (" + (int) vars.getPocketSize() + " / " + maxLimit + ")"), true);
+                    .translatable("msg.creraces.expand_pocket.remaining", (int) vars.getPocketSize(), maxLimit), true);
         }, () -> {
             player.displayClientMessage(
-                    net.minecraft.network.chat.Component.literal("You feel a strange tingling sensation..."), true);
+                    net.minecraft.network.chat.Component.translatable("msg.creraces.expand_pocket.not_supported"), true);
         });
 
         return true;

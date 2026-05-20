@@ -28,7 +28,7 @@ public class DashAction implements ActionRegistry.RaceAction {
     @Override
     public boolean execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         double p = power.evaluate(player, target, slot);
         double ym = yMultiplier.evaluate(player, target, slot);
         double yb = yBoost.evaluate(player, target, slot);

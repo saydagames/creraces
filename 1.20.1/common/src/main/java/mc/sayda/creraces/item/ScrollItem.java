@@ -65,6 +65,14 @@ public class ScrollItem extends Item {
                                         isAllowed = true;
                                         break;
                                     }
+                                    if (rId.toString().equals("creraces:aquatic") && playerRace.isAquatic()) {
+                                        isAllowed = true;
+                                        break;
+                                    }
+                                    if (rId.toString().equals("creraces:undead") && playerRace.isUndead()) {
+                                        isAllowed = true;
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -78,6 +86,10 @@ public class ScrollItem extends Item {
                                     name = "Spirit";
                                 } else if (rId.toString().equals("creraces:tiny")) {
                                     name = "Tiny";
+                                } else if (rId.toString().equals("creraces:aquatic")) {
+                                    name = "Aquatic";
+                                } else if (rId.toString().equals("creraces:undead")) {
+                                    name = "Undead";
                                 } else {
                                     Race r = RaceRegistry.get(rId);
                                     name = (r != null) ? r.name().getString() : rId.getPath();
@@ -91,7 +103,10 @@ public class ScrollItem extends Item {
                             return;
                         }
 
-                        if (vars.isAbilityUnlocked(abilityId)) {
+                        int scrollLevel = tag.contains("Level") ? tag.getInt("Level") : 1;
+                        int currentLevel = vars.getAbilityLevel(abilityId);
+
+                        if (vars.isAbilityUnlocked(abilityId) && currentLevel >= scrollLevel) {
                             serverPlayer.sendSystemMessage(
                                     Component.translatable("creraces.message.ability_already_learned")
                                             .withStyle(ChatFormatting.YELLOW));
@@ -101,18 +116,24 @@ public class ScrollItem extends Item {
                                 stack.shrink(1);
                             }
                             vars.unlockAbility(abilityId);
-                            serverPlayer.sendSystemMessage(Component
-                                    .translatable("creraces.message.ability_learned", ability.name().getString())
-                                    .withStyle(ChatFormatting.GREEN));
+                            vars.setAbilityLevel(abilityId, scrollLevel);
+                            
+                            Component learnedMsg = currentLevel < scrollLevel && vars.isAbilityUnlocked(abilityId)
+                                    ? Component.translatable("creraces.message.ability_upgraded", ability.name().getString(), scrollLevel)
+                                    : Component.translatable("creraces.message.ability_learned", ability.name().getString());
+
+                            serverPlayer.sendSystemMessage(((MutableComponent)learnedMsg).withStyle(ChatFormatting.GREEN));
 
                             // Fun Effects: Knowledge flowing into the player
-                            serverPlayer.serverLevel().sendParticles(net.minecraft.core.particles.ParticleTypes.ENCHANT,
-                                    serverPlayer.getX(), serverPlayer.getY() + 1.5, serverPlayer.getZ(),
-                                    50, 0.5, 0.5, 0.5, 0.1);
-                            serverPlayer.serverLevel().sendParticles(
-                                    net.minecraft.core.particles.ParticleTypes.ENCHANTED_HIT,
-                                    serverPlayer.getX(), serverPlayer.getY() + 1.2, serverPlayer.getZ(),
-                                    20, 0.3, 0.3, 0.3, 0.1);
+                            if (serverPlayer.level() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+                                serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.ENCHANT,
+                                        serverPlayer.getX(), serverPlayer.getY() + 1.5, serverPlayer.getZ(),
+                                        50, 0.5, 0.5, 0.5, 0.1);
+                                serverLevel.sendParticles(
+                                        net.minecraft.core.particles.ParticleTypes.ENCHANTED_HIT,
+                                        serverPlayer.getX(), serverPlayer.getY() + 1.2, serverPlayer.getZ(),
+                                        20, 0.3, 0.3, 0.3, 0.1);
+                            }
 
                             level.playSound(null, serverPlayer.getX(), serverPlayer.getY(), serverPlayer.getZ(),
                                     net.minecraft.sounds.SoundEvents.PLAYER_LEVELUP,
@@ -170,6 +191,12 @@ public class ScrollItem extends Item {
                         } else if (rId.toString().equals("creraces:tiny")) {
                             name = "Tiny";
                             matches = (playerRace != null && playerRace.isTiny());
+                        } else if (rId.toString().equals("creraces:aquatic")) {
+                            name = "Aquatic";
+                            matches = (playerRace != null && playerRace.isAquatic());
+                        } else if (rId.toString().equals("creraces:undead")) {
+                            name = "Undead";
+                            matches = (playerRace != null && playerRace.isUndead());
                         } else {
                             Race r = RaceRegistry.get(rId);
                             name = (r != null) ? r.name().getString() : rId.getPath();
@@ -190,19 +217,29 @@ public class ScrollItem extends Item {
             } else {
                 tooltipComponents.add(Component.literal("Unknown Ability: " + abilityId).withStyle(ChatFormatting.RED));
             }
-        } else {
             tooltipComponents
                     .add(Component.translatable("creraces.tooltip.scroll_empty").withStyle(ChatFormatting.GRAY));
         }
-        super.appendHoverText(stack, level, tooltipComponents, java.util.Objects.requireNonNull(isAdvanced));
+        if (level != null)
+            super.appendHoverText(stack, level, tooltipComponents, isAdvanced);
     }
 
     // Helper to create a scroll stack for a specific ability
-    public static ItemStack create(ResourceLocation abilityId) {
+    public static ItemStack create(ResourceLocation abilityId, int level) {
         ItemStack stack = new ItemStack(mc.sayda.creraces.registry.ModItems.ABILITY_SCROLL.get());
         CompoundTag tag = new CompoundTag();
         tag.putString("Ability", abilityId.toString());
+        tag.putInt("Level", level);
         stack.setTag(tag);
         return stack;
+    }
+
+    public static ItemStack create(ResourceLocation abilityId) {
+        return create(abilityId, 1);
+    }
+
+    public static int getLevel(ItemStack stack) {
+        CompoundTag tag = stack.getTag();
+        return (tag != null && tag.contains("Level")) ? tag.getInt("Level") : 0;
     }
 }

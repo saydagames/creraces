@@ -2,7 +2,7 @@
     "creraces:name": "ability.creraces.tornado.name",
     "creraces:description": "ability.creraces.tornado.description",
     "creraces:type": "ACTIVE",
-    "creraces:icon": "minecraft:cobweb",
+    "creraces:icon": "creraces:textures/icons/tornado.png",
     "creraces:cooldown": 320,
     "creraces:cost": 35,
     "creraces:race": [
@@ -11,7 +11,7 @@
     "creraces:actions": [
         {
             "type": "creraces:aoe",
-            "radius": 6,
+            "radius": 3,
             "targets": [
                 "enemies"
             ],
@@ -45,7 +45,3 @@
     ],
     "creraces:wiki_page": "Ability:Tornado"
 }
-
-
-
-

@@ -2,7 +2,7 @@
     "creraces:name": "ability.creraces.spicy_whirlpool.name",
     "creraces:description": "ability.creraces.spicy_whirlpool.description",
     "creraces:type": "ACTIVE",
-    "creraces:icon": "minecraft:textures/item/magma_cream.png",
+    "creraces:icon": "creraces:textures/mob_effect/boiling.png",
     "creraces:cooldown": 600,
     "creraces:cost": 0,
     "creraces:race": [

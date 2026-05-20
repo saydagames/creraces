@@ -34,7 +34,8 @@ public class LevelRendererMixin {
     private static final ResourceLocation MOON_LOCATION = new ResourceLocation("textures/environment/moon_phases.png");
 
     @Inject(method = "renderSky", at = @At("HEAD"))
-    private void creraces$storeLocals(PoseStack poseStack, Matrix4f matrix4f, float f, Camera camera, boolean bl, Runnable runnable, CallbackInfo ci) {
+    private void creraces$storeLocals(PoseStack poseStack, Matrix4f matrix4f, float f, Camera camera, boolean bl,
+            Runnable runnable, CallbackInfo ci) {
         this.creraces$currentPoseStack = poseStack;
         this.creraces$currentMatrix = matrix4f;
         this.creraces$currentDelta = f;
@@ -44,9 +45,12 @@ public class LevelRendererMixin {
 
     @Redirect(method = "renderSky", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderTexture(ILnet/minecraft/resources/ResourceLocation;)V"))
     private void creraces$overrideCelestialTexture(int unit, ResourceLocation location) {
-        boolean inSpirit = this.minecraft.player != null && DataUtils.getVariables(this.minecraft.player).map(v -> v.isInSpiritRealm()).orElse(false);
+        boolean inSpirit = this.minecraft.player != null
+                && DataUtils.getVariables(this.minecraft.player).map(v -> v.isInSpiritRealm()).orElse(false);
 
         if (inSpirit) {
+            // Suppress vanilla celestial rendering in spirit realm; custom draw handled by
+            // hijackCelestialDraw
             if (location.getPath().contains("moon")) {
                 this.creraces$moonPass = true;
                 return;
@@ -56,12 +60,12 @@ public class LevelRendererMixin {
                 return;
             }
         } else {
-        if (location.getPath().contains("moon")) {
-            if (mc.sayda.creraces.engine.WorldState.isSpiritMoon(this.minecraft.level)) { 
+            // In the overworld: replace moon texture when a spirit moon is active
+            if (location.getPath().contains("moon")
+                    && mc.sayda.creraces.engine.WorldState.isSpiritMoon(this.minecraft.level)) {
                 com.mojang.blaze3d.systems.RenderSystem.setShaderTexture(unit, SpiritRealmRenderer.SPIRIT_MOON_ATLAS);
                 return;
             }
-        }
         }
         com.mojang.blaze3d.systems.RenderSystem.setShaderTexture(unit, location);
     }
@@ -70,24 +74,27 @@ public class LevelRendererMixin {
     private void creraces$hijackCelestialDraw(com.mojang.blaze3d.vertex.BufferBuilder.RenderedBuffer buffer) {
         if (this.creraces$moonPass) {
             this.creraces$moonPass = false;
-            SpiritRealmRenderer.renderSecondMoon(this.creraces$currentPoseStack, this.creraces$currentMatrix, this.creraces$currentDelta, false);
+            SpiritRealmRenderer.renderSecondMoon(this.creraces$currentPoseStack, this.creraces$currentMatrix,
+                    this.creraces$currentDelta, false);
             return;
         }
         if (this.creraces$sunPass) {
             this.creraces$sunPass = false;
-            SpiritRealmRenderer.renderSecondMoon(this.creraces$currentPoseStack, this.creraces$currentMatrix, this.creraces$currentDelta, true);
+            SpiritRealmRenderer.renderSecondMoon(this.creraces$currentPoseStack, this.creraces$currentMatrix,
+                    this.creraces$currentDelta, true);
             return;
         }
         com.mojang.blaze3d.vertex.BufferUploader.drawWithShader(buffer);
     }
 
-
     /**
      * Force Absolute Night color in Spirit Realm.
      */
     @Redirect(method = "renderSky", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/ClientLevel;getSkyColor(Lnet/minecraft/world/phys/Vec3;F)Lnet/minecraft/world/phys/Vec3;"))
-    private net.minecraft.world.phys.Vec3 creraces$spiritSkyColor(net.minecraft.client.multiplayer.ClientLevel level, net.minecraft.world.phys.Vec3 pos, float f) {
-        if (this.minecraft.player != null && DataUtils.getVariables(this.minecraft.player).map(v -> v.isInSpiritRealm()).orElse(false)) {
+    private net.minecraft.world.phys.Vec3 creraces$spiritSkyColor(net.minecraft.client.multiplayer.ClientLevel level,
+            net.minecraft.world.phys.Vec3 pos, float f) {
+        if (this.minecraft.player != null
+                && DataUtils.getVariables(this.minecraft.player).map(v -> v.isInSpiritRealm()).orElse(false)) {
             return new net.minecraft.world.phys.Vec3(0, 0, 0);
         }
         return level.getSkyColor(pos, f);
@@ -95,12 +102,13 @@ public class LevelRendererMixin {
 
     @Redirect(method = "renderSky", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/ClientLevel;getStarBrightness(F)F"))
     private float creraces$spiritStarBrightness(net.minecraft.client.multiplayer.ClientLevel level, float f) {
-        if (this.minecraft.player != null && DataUtils.getVariables(this.minecraft.player).map(v -> v.isInSpiritRealm()).orElse(false)) {
+        if (this.minecraft.player != null
+                && DataUtils.getVariables(this.minecraft.player).map(v -> v.isInSpiritRealm()).orElse(false)) {
             return 1.0f; // Stars visible at all times
         }
         return level.getStarBrightness(f);
     }
- 
+
     @Inject(method = "renderLevel", at = @At("TAIL"))
     private void creraces$renderBeams(com.mojang.blaze3d.vertex.PoseStack poseStack, float partialTick, long gameTime,
             boolean renderBlockOutline, net.minecraft.client.Camera camera,

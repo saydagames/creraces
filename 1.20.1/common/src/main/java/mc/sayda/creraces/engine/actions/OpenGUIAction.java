@@ -37,7 +37,7 @@ public class OpenGUIAction implements ActionRegistry.RaceAction {
     public boolean execute(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable BlockPos interactionPos) {
+            @javax.annotation.Nullable BlockPos interact_pos) {
 
         if (!(player instanceof ServerPlayer sp))
             return false;
@@ -47,7 +47,7 @@ public class OpenGUIAction implements ActionRegistry.RaceAction {
             case "ender_chest", "enderchest" -> openEnderChest(sp);
             case "inventory", "chest", "barrel", "furnace", "smoker", "blast_furnace", "loom", "cartography",
                     "grindstone", "stonecutter", "anvil" ->
-                openNearestContainer(sp, interactionPos, slot);
+                openNearestContainer(sp, interact_pos, slot);
             case "race_selection", "race_menu" -> {
                 mc.sayda.creraces.network.BoundaryHandler.sendOpenSelection(sp);
                 yield true;
@@ -102,7 +102,7 @@ public class OpenGUIAction implements ActionRegistry.RaceAction {
     }
 
     /**
-     * Opens a full 3×3 crafting grid for the player without requiring a nearby
+     * Opens a full 3ÁE crafting grid for the player without requiring a nearby
      * CraftingTable block - equivalent to right-clicking a crafting table but
      * available anywhere.
      */
@@ -127,7 +127,7 @@ public class OpenGUIAction implements ActionRegistry.RaceAction {
     /**
      * Scans nearby blocks for a valid container and opens it.
      */
-    private boolean openNearestContainer(ServerPlayer player, @javax.annotation.Nullable BlockPos interactionPos, @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
+    private boolean openNearestContainer(ServerPlayer player, @javax.annotation.Nullable BlockPos interact_pos, @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
         Level level = player.level();
         BlockPos origin = player.blockPosition();
 
@@ -135,15 +135,15 @@ public class OpenGUIAction implements ActionRegistry.RaceAction {
         double bestDist = Double.MAX_VALUE;
         boolean foundContainer = false;
 
-        if (interactionPos != null) {
-            net.minecraft.world.level.block.state.BlockState state = level.getBlockState(interactionPos);
+        if (interact_pos != null) {
+            net.minecraft.world.level.block.state.BlockState state = level.getBlockState(interact_pos);
             if (state != null && isMatchingContainer(state)) {
-                best = interactionPos;
+                best = interact_pos;
                 foundContainer = true;
             }
         }
 
-        if (!foundContainer && interactionPos == null) {
+        if (!foundContainer && interact_pos == null) {
             int rad = Math.max(1, (int) radius.evaluate(player, null, slot));
             BlockPos min = java.util.Objects.requireNonNull(origin.offset(-rad, -rad, -rad));
             BlockPos max = java.util.Objects.requireNonNull(origin.offset(rad, rad, rad));

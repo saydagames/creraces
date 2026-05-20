@@ -8,6 +8,15 @@
     "creraces:portrait": "creraces:textures/screens/velox_portrait.png",
     "creraces:name_texture": "creraces:textures/screens/velox_text.png",
     "creraces:difficulty": 3,
+    "combat_buffs": [
+        {
+            "id": "race_attack_speed",
+            "type": "creraces:attribute_modifier",
+            "attribute": "minecraft:generic.attack_speed",
+            "value": 2.0,
+            "operation": "addition"
+        }
+    ],
     "stealth_mechanics": [
         {
             "type": "creraces:on_tick",

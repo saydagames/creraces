@@ -40,7 +40,7 @@ public class ApplyVelocityAction implements ActionRegistry.RaceAction {
 
     @Override
     public boolean execute(Player player, @javax.annotation.Nullable LivingEntity target,
-            @javax.annotation.Nullable AbilitySlot slot, @javax.annotation.Nullable BlockPos interactionPos) {
+            @javax.annotation.Nullable AbilitySlot slot, @javax.annotation.Nullable BlockPos interact_pos) {
         if (player == null) return false;
         LivingEntity entity = (target != null) ? target : (useTarget ? null : player);
         if (entity == null)

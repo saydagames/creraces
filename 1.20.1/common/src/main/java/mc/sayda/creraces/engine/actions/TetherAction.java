@@ -52,7 +52,7 @@ public class TetherAction implements ActionRegistry.RaceAction {
     @Override
     public boolean execute(Player player, @javax.annotation.Nullable LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable BlockPos interactionPos) {
+            @javax.annotation.Nullable BlockPos interact_pos) {
         if (player.level().isClientSide() || target == null)
             return false;
 

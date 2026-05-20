@@ -39,6 +39,7 @@ public class PlayerVariables implements IPlayerVariables {
     private final Map<String, String> customizations = new ConcurrentHashMap<>();
 
     private final Map<ResourceLocation, Double> abilityStates = new ConcurrentHashMap<>();
+    private final Map<ResourceLocation, Integer> abilityLevels = new ConcurrentHashMap<>();
     private boolean morphed = false;
     private UUID teamId = null;
     private String teamName = "";
@@ -69,6 +70,7 @@ public class PlayerVariables implements IPlayerVariables {
     private boolean isUndead = false;
     private long resourceTimer = 0;
     private final Map<UUID, mc.sayda.creraces.engine.ManagedModifier> managedModifiers = new ConcurrentHashMap<>();
+    private final Set<ResourceLocation> persistentStateIds = ConcurrentHashMap.newKeySet();
 
     @Override
     public ResourceLocation getRace() {
@@ -265,6 +267,9 @@ public class PlayerVariables implements IPlayerVariables {
     @Override
     public void unlockAbility(ResourceLocation abilityId) {
         unlockedAbilities.add(abilityId);
+        if (!abilityLevels.containsKey(abilityId)) {
+            abilityLevels.put(abilityId, 1);
+        }
     }
 
     @Override
@@ -277,6 +282,18 @@ public class PlayerVariables implements IPlayerVariables {
     @Override
     public boolean isAbilityUnlocked(ResourceLocation abilityId) {
         return unlockedAbilities.contains(abilityId);
+    }
+
+    @Override
+    public int getAbilityLevel(ResourceLocation abilityId) {
+        return abilityLevels.getOrDefault(abilityId, 1);
+    }
+
+    @Override
+    public void setAbilityLevel(ResourceLocation abilityId, int level) {
+        if (abilityId == null)
+            return;
+        abilityLevels.put(abilityId, Math.max(1, level));
     }
 
     @Override
@@ -319,6 +336,8 @@ public class PlayerVariables implements IPlayerVariables {
         this.equippedAbilities.clear();
         this.customizations.clear();
         this.abilityStates.clear();
+        this.persistentStateIds.clear();
+        this.abilityLevels.clear();
         this.traitTimers.clear();
         this.morphed = false;
         this.teamId = null;
@@ -370,7 +389,10 @@ public class PlayerVariables implements IPlayerVariables {
 
         // Clear non-persistent ability states
         abilityStates.entrySet().removeIf(entry -> {
-            mc.sayda.creraces.ability.Ability ability = mc.sayda.creraces.ability.AbilityRegistry.get(entry.getKey());
+            ResourceLocation id = entry.getKey();
+            if (persistentStateIds.contains(id))
+                return false;
+            mc.sayda.creraces.ability.Ability ability = mc.sayda.creraces.ability.AbilityRegistry.get(id);
             return ability == null || !ability.persistent();
         });
 
@@ -416,6 +438,21 @@ public class PlayerVariables implements IPlayerVariables {
             abilityStates.remove(id);
         else
             abilityStates.put(id, value);
+    }
+
+    @Override
+    public void setStatePersistent(ResourceLocation id, boolean persistent) {
+        if (id == null)
+            return;
+        if (persistent)
+            persistentStateIds.add(id);
+        else
+            persistentStateIds.remove(id);
+    }
+
+    @Override
+    public boolean isStatePersistent(ResourceLocation id) {
+        return persistentStateIds.contains(id);
     }
 
     @Override
@@ -688,42 +725,42 @@ public class PlayerVariables implements IPlayerVariables {
             this.smallBuild = smallBuild;
         }
     }
- 
+
     @Override
     public boolean isUndead() {
         return isUndead;
     }
- 
+
     @Override
     public void setUndead(boolean undead) {
         this.isUndead = undead;
     }
- 
+
     @Override
     public boolean isAquatic() {
         return isAquatic;
     }
- 
+
     @Override
     public void setAquatic(boolean aquatic) {
         this.isAquatic = aquatic;
     }
- 
+
     @Override
     public boolean isSpirit() {
         return isSpirit;
     }
- 
+
     @Override
     public void setSpirit(boolean spirit) {
         this.isSpirit = spirit;
     }
- 
+
     @Override
     public boolean isTiny() {
         return isTiny;
     }
- 
+
     @Override
     public void setTiny(boolean tiny) {
         this.isTiny = tiny;
@@ -770,6 +807,15 @@ public class PlayerVariables implements IPlayerVariables {
         CompoundTag statesTag = new CompoundTag();
         abilityStates.forEach((id, val) -> statesTag.putDouble(Objects.requireNonNull(id.toString()), val));
         tag.put("abilityStates", statesTag);
+
+        ListTag persistentList = new ListTag();
+        persistentStateIds.forEach(
+                id -> persistentList.add(net.minecraft.nbt.StringTag.valueOf(Objects.requireNonNull(id.toString()))));
+        tag.put("persistentStateIds", persistentList);
+
+        CompoundTag levelsTag = new CompoundTag();
+        abilityLevels.forEach((id, val) -> levelsTag.putInt(Objects.requireNonNull(id.toString()), val));
+        tag.put("abilityLevels", levelsTag);
 
         CompoundTag traitTimersTag = new CompoundTag();
         traitTimers.forEach((id, val) -> traitTimersTag.putInt(Objects.requireNonNull(id.toString()), val));
@@ -849,8 +895,11 @@ public class PlayerVariables implements IPlayerVariables {
     @Override
     @SuppressWarnings("null")
     public void deserialize(CompoundTag tag) {
-        if (tag.contains("race"))
-            this.race = new ResourceLocation(Objects.requireNonNull(tag.getString("race")));
+        if (tag.contains("race")) {
+            ResourceLocation parsedRace = ResourceLocation.tryParse(tag.getString("race"));
+            if (parsedRace != null)
+                this.race = parsedRace;
+        }
         if (tag.contains("hasChosenRace"))
             this.hasChosenRace = tag.getBoolean("hasChosenRace");
         if (tag.contains("resourceTimer"))
@@ -884,7 +933,9 @@ public class PlayerVariables implements IPlayerVariables {
             this.cooldowns.clear();
             CompoundTag cooldownsTag = tag.getCompound("cooldowns");
             for (String key : cooldownsTag.getAllKeys()) {
-                this.cooldowns.put(new ResourceLocation(key), cooldownsTag.getInt(key));
+                ResourceLocation id = ResourceLocation.tryParse(key);
+                if (id != null)
+                    this.cooldowns.put(id, cooldownsTag.getInt(key));
             }
         }
 
@@ -892,7 +943,9 @@ public class PlayerVariables implements IPlayerVariables {
             this.unlockedAbilities.clear();
             ListTag list = tag.getList("unlockedAbilities", Tag.TAG_STRING);
             for (int i = 0; i < list.size(); i++) {
-                this.unlockedAbilities.add(new ResourceLocation(Objects.requireNonNull(list.getString(i))));
+                ResourceLocation id = ResourceLocation.tryParse(list.getString(i));
+                if (id != null)
+                    this.unlockedAbilities.add(id);
             }
         }
 
@@ -901,8 +954,9 @@ public class PlayerVariables implements IPlayerVariables {
             CompoundTag equippedTag = tag.getCompound("equippedAbilities");
             for (AbilitySlot slot : AbilitySlot.values()) {
                 if (equippedTag.contains(slot.name())) {
-                    this.equippedAbilities.put(slot,
-                            new ResourceLocation(Objects.requireNonNull(equippedTag.getString(slot.name()))));
+                    ResourceLocation id = ResourceLocation.tryParse(equippedTag.getString(slot.name()));
+                    if (id != null)
+                        this.equippedAbilities.put(slot, id);
                 }
             }
         }
@@ -916,9 +970,22 @@ public class PlayerVariables implements IPlayerVariables {
         }
         this.abilityStates.clear();
         if (tag.contains("abilityStates", Tag.TAG_COMPOUND)) {
+            this.abilityStates.clear();
             CompoundTag statesTag = tag.getCompound("abilityStates");
             for (String key : statesTag.getAllKeys()) {
-                this.abilityStates.put(new ResourceLocation(key), statesTag.getDouble(key));
+                ResourceLocation id = ResourceLocation.tryParse(key);
+                if (id != null)
+                    this.abilityStates.put(id, statesTag.getDouble(key));
+            }
+        }
+
+        if (tag.contains("persistentStateIds", Tag.TAG_LIST)) {
+            this.persistentStateIds.clear();
+            ListTag list = tag.getList("persistentStateIds", Tag.TAG_STRING);
+            for (int i = 0; i < list.size(); i++) {
+                ResourceLocation id = ResourceLocation.tryParse(list.getString(i));
+                if (id != null)
+                    this.persistentStateIds.add(id);
             }
         }
 
@@ -926,17 +993,27 @@ public class PlayerVariables implements IPlayerVariables {
         if (tag.contains("traitTimers", Tag.TAG_COMPOUND)) {
             CompoundTag traitTimersTag = tag.getCompound("traitTimers");
             for (String key : traitTimersTag.getAllKeys()) {
-                this.traitTimers.put(new ResourceLocation(key), traitTimersTag.getInt(key));
+                ResourceLocation id = ResourceLocation.tryParse(key);
+                if (id != null)
+                    this.traitTimers.put(id, traitTimersTag.getInt(key));
             }
         }
 
         if (tag.contains("morphed"))
             this.morphed = tag.getBoolean("morphed");
 
-        if (tag.contains("teamId"))
+        // TODO: Ensure this is correct
+        if (tag.contains("teamId")) {
             this.teamId = tag.getUUID("teamId");
-        if (tag.contains("teamName"))
+        } else {
+            this.teamId = null;
+        }
+
+        if (tag.contains("teamName")) {
             this.teamName = Objects.requireNonNull(tag.getString("teamName"));
+        } else {
+            this.teamName = "";
+        }
         if (tag.contains("gState"))
             this.gState = tag.getInt("gState");
         if (tag.contains("hasPocket"))
@@ -991,8 +1068,11 @@ public class PlayerVariables implements IPlayerVariables {
             this.abilityActive = tag.getBoolean("abilityActive");
         if (tag.contains("activeAbility")) {
             String activeId = tag.getString("activeAbility");
-            if (!activeId.isEmpty())
-                this.activeAbility = new ResourceLocation(activeId);
+            if (!activeId.isEmpty()) {
+                ResourceLocation parsed = ResourceLocation.tryParse(activeId);
+                if (parsed != null)
+                    this.activeAbility = parsed;
+            }
         }
         if (tag.contains("activeAbilityDuration"))
             this.activeAbilityDuration = tag.getInt("activeAbilityDuration");
@@ -1003,8 +1083,19 @@ public class PlayerVariables implements IPlayerVariables {
             this.managedModifiers.clear();
             ListTag list = tag.getList("managedModifiers", Tag.TAG_COMPOUND);
             for (int i = 0; i < list.size(); i++) {
-                mc.sayda.creraces.engine.ManagedModifier mod = mc.sayda.creraces.engine.ManagedModifier.fromNBT(list.getCompound(i));
+                mc.sayda.creraces.engine.ManagedModifier mod = mc.sayda.creraces.engine.ManagedModifier
+                        .fromNBT(list.getCompound(i));
                 this.managedModifiers.put(mod.uuid(), mod);
+            }
+        }
+
+        if (tag.contains("abilityLevels", Tag.TAG_COMPOUND)) {
+            this.abilityLevels.clear();
+            CompoundTag levelsTag = tag.getCompound("abilityLevels");
+            for (String key : levelsTag.getAllKeys()) {
+                ResourceLocation id = ResourceLocation.tryParse(key);
+                if (id != null)
+                    this.abilityLevels.put(id, levelsTag.getInt(key));
             }
         }
     }
@@ -1012,6 +1103,11 @@ public class PlayerVariables implements IPlayerVariables {
     @Override
     public java.util.Collection<mc.sayda.creraces.engine.ManagedModifier> getManagedModifiers() {
         return managedModifiers.values();
+    }
+
+    @Override
+    public java.util.Optional<mc.sayda.creraces.engine.ManagedModifier> getManagedModifier(UUID uuid) {
+        return java.util.Optional.ofNullable(managedModifiers.get(uuid));
     }
 
     @Override

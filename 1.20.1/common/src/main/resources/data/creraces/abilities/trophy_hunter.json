@@ -2,17 +2,18 @@
     "creraces:name": "ability.creraces.trophy_hunter.name",
     "creraces:description": "ability.creraces.trophy_hunter.description",
     "creraces:type": "ACTIVE",
-    "creraces:icon": "minecraft:textures/item/rabbit_foot.png",
-    "creraces:cooldown": 380,
+    "creraces:icon": "creraces:textures/icons/note.png",
+    "creraces:cooldown": 20,
     "creraces:cost": 0,
     "creraces:race": [
         "creraces:lycan"
     ],
     "creraces:actions": [
         {
-            "type": "creraces:display_resource",
-            "resource": "Ability:creraces:stacks",
-            "message": "ability.creraces.trophy_hunter.stacks"
+            "type": "creraces:message",
+            "text": "ability.creraces.trophy_hunter.stacks",
+            "value": "state:creraces:stacks",
+            "actionbar": true
         },
         {
             "type": "creraces:play_sound",
@@ -23,7 +24,3 @@
     ],
     "creraces:wiki_page": "Ability:Trophy_Hunter"
 }
-
-
-
-

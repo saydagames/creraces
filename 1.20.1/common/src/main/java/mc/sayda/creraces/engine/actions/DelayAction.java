@@ -28,7 +28,7 @@ public class DelayAction implements ActionRegistry.RaceAction {
     @Override
     public boolean execute(Player player, @javax.annotation.Nullable LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         if (player.level().isClientSide())
             return true;
 
@@ -45,7 +45,7 @@ public class DelayAction implements ActionRegistry.RaceAction {
 
         final UUID playerUUID = player.getUUID();
         final UUID targetUUID = target != null ? target.getUUID() : null;
-        final net.minecraft.core.BlockPos immutablePos = interactionPos != null ? interactionPos.immutable() : null;
+        final net.minecraft.core.BlockPos immutablePos = interact_pos != null ? interact_pos.immutable() : null;
 
         mc.sayda.creraces.util.Scheduler.delay(t, () -> {
             ServerPlayer delayedPlayer = server.getPlayerList().getPlayer(Objects.requireNonNull(playerUUID));

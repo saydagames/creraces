@@ -36,7 +36,8 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
     protected Map<ResourceLocation, JsonElement> prepare(@Nonnull ResourceManager resourceManager,
             @Nonnull ProfilerFiller profiler) {
         mc.sayda.creraces.CreRaces.LOGGER.info("RaceManager: Preparing data reload...");
-        return (Map<ResourceLocation, JsonElement>) (Map<?, ?>) GsonHelper.getJsonFiles(resourceManager, FOLDER);
+        Map<?, ?> files = GsonHelper.getJsonFiles(resourceManager, FOLDER);
+        return files != null ? (Map<ResourceLocation, JsonElement>) files : new java.util.HashMap<>();
     }
 
     @Override
@@ -196,7 +197,7 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
 
                 // Starting Items/Abilities
                 List<ResourceLocation> startingAbilities = new ArrayList<>();
-                JsonArray abilArray = jsonObject.has("creraces:starting_abilities")
+                JsonArray abilArray = jsonObject.has("creraces:starting_abilities") && jsonObject.get("creraces:starting_abilities").isJsonArray()
                         ? jsonObject.getAsJsonArray("creraces:starting_abilities")
                         : null;
                 if (abilArray != null) {
@@ -209,7 +210,7 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                 }
 
                 List<ResourceLocation> startingItems = new ArrayList<>();
-                JsonArray itemArray = jsonObject.has("creraces:starting_items")
+                JsonArray itemArray = jsonObject.has("creraces:starting_items") && jsonObject.get("creraces:starting_items").isJsonArray()
                         ? jsonObject.getAsJsonArray("creraces:starting_items")
                         : null;
                 if (itemArray != null) {
@@ -273,7 +274,7 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                             "race.creraces." + id.getPath() + ".description"));
                 }
 
-                if (jsonObject.has("creraces:remote_passive")) {
+                if (jsonObject.has("creraces:remote_passive") && jsonObject.get("creraces:remote_passive").isJsonObject()) {
                     JsonObject rpObj = jsonObject.getAsJsonObject("creraces:remote_passive");
                     mc.sayda.creraces.util.RemoteDocConfig remoteConfig = mc.sayda.creraces.util.RemoteDocConfig
                             .fromJson(rpObj);
@@ -328,7 +329,7 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                 RaceRegistry.register(race);
                 count[0]++;
             } catch (Exception e) {
-                CreRaces.LOGGER.error("Failed to load race {}: {}", id, e);
+                CreRaces.LOGGER.error("Failed to load race {}: ", id, e);
             }
         });
 
@@ -385,6 +386,13 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
 
     private static JsonObject mergeRaces(JsonObject parent, JsonObject child) {
         JsonObject merged = parent.deepCopy();
+        
+        // Exclude parent-specific metadata that should not be inherited
+        merged.remove("creraces:selectable");
+        merged.remove("creraces:parent_race");
+        merged.remove("creraces:parent_races");
+        merged.remove("creraces:index");
+        
         for (java.util.Map.Entry<String, JsonElement> entry : child.entrySet()) {
             String key = entry.getKey();
             JsonElement childVal = entry.getValue();
@@ -463,7 +471,8 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
     private static mc.sayda.creraces.race.Race.Passives parsePassives(JsonObject p) {
         // Support both creraces: prefixed and legacy flat keys
         List<String> immuneToDamageTypes = new ArrayList<>();
-        JsonArray immuneArray = p.has("creraces:immune_to_damage") ? p.getAsJsonArray("creraces:immune_to_damage")
+        JsonArray immuneArray = p.has("creraces:immune_to_damage") && p.get("creraces:immune_to_damage").isJsonArray()
+                ? p.getAsJsonArray("creraces:immune_to_damage")
                 : null;
         if (immuneArray != null) {
             for (JsonElement e : immuneArray) {
@@ -472,7 +481,8 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
         }
 
         List<String> negateEffects = new ArrayList<>();
-        JsonArray negateArray = p.has("creraces:negate_effects") ? p.getAsJsonArray("creraces:negate_effects") : null;
+        JsonArray negateArray = p.has("creraces:negate_effects") && p.get("creraces:negate_effects").isJsonArray()
+                ? p.getAsJsonArray("creraces:negate_effects") : null;
         if (negateArray != null) {
             for (JsonElement e : negateArray) {
                 negateEffects.add(standardizeId(e.getAsString()));
@@ -480,7 +490,8 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
         }
 
         List<String> hatedBy = new ArrayList<>();
-        JsonArray hatedArray = p.has("creraces:hated_by_entities") ? p.getAsJsonArray("creraces:hated_by_entities")
+        JsonArray hatedArray = p.has("creraces:hated_by_entities") && p.get("creraces:hated_by_entities").isJsonArray()
+                ? p.getAsJsonArray("creraces:hated_by_entities")
                 : null;
         if (hatedArray != null) {
             for (JsonElement e : hatedArray) {
@@ -489,7 +500,7 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
         }
 
         List<String> respectedBy = new ArrayList<>();
-        JsonArray respectedArray = p.has("creraces:respected_by_entities")
+        JsonArray respectedArray = p.has("creraces:respected_by_entities") && p.get("creraces:respected_by_entities").isJsonArray()
                 ? p.getAsJsonArray("creraces:respected_by_entities")
                 : null;
         if (respectedArray != null) {
@@ -499,7 +510,7 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
         }
 
         List<String> defendedBy = new ArrayList<>();
-        JsonArray defendedArray = p.has("creraces:defended_by_entities")
+        JsonArray defendedArray = p.has("creraces:defended_by_entities") && p.get("creraces:defended_by_entities").isJsonArray()
                 ? p.getAsJsonArray("creraces:defended_by_entities")
                 : null;
         if (defendedArray != null) {
@@ -521,7 +532,8 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
 
         // Food & Hunger
         List<String> blockedFoodTypes = new ArrayList<>();
-        JsonArray blockedArray = p.has("creraces:blocked_food_types") ? p.getAsJsonArray("creraces:blocked_food_types")
+        JsonArray blockedArray = p.has("creraces:blocked_food_types") && p.get("creraces:blocked_food_types").isJsonArray()
+                ? p.getAsJsonArray("creraces:blocked_food_types")
                 : null;
         if (blockedArray != null) {
             for (JsonElement e : blockedArray) {
@@ -530,7 +542,8 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
         }
 
         List<String> allowedFoodTypes = new ArrayList<>();
-        JsonArray allowedArray = p.has("creraces:allowed_food_types") ? p.getAsJsonArray("creraces:allowed_food_types")
+        JsonArray allowedArray = p.has("creraces:allowed_food_types") && p.get("creraces:allowed_food_types").isJsonArray()
+                ? p.getAsJsonArray("creraces:allowed_food_types")
                 : null;
         if (allowedArray != null) {
             for (JsonElement e : allowedArray) {

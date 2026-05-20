@@ -9,14 +9,30 @@
     ],
     "creraces:actions": [
         {
-            "type": "creraces:dash",
-            "power": 2,
-            "y_multiplier": 1.0,
-            "y_boost": 0.2
+            "type": "creraces:play_sound",
+            "sound": "minecraft:block.anvil.hit",
+            "volume": 1,
+            "pitch": 1
         },
         {
-            "type": "creraces:delay",
-            "ticks": 10
+            "type": "creraces:spawn_particles",
+            "particle": "minecraft:witch",
+            "shape": "disc",
+            "radius": 2.0,
+            "count": 25
+        },
+        {
+            "type": "creraces:spawn_particles",
+            "particle": "minecraft:sweep_attack",
+            "shape": "disc",
+            "radius": 2.0,
+            "count": 10
+        },
+        {
+            "type": "creraces:dash",
+            "power": 1.5,
+            "y_multiplier": 1.0,
+            "y_boost": 0.2
         },
         {
             "type": "creraces:aoe",
@@ -36,19 +52,7 @@
                     "damage_type": "minecraft:player_attack"
                 }
             ]
-        },
-        {
-            "type": "creraces:play_sound",
-            "sound": "minecraft:block.anvil.hit",
-            "volume": 1,
-            "pitch": 1
-        },
-        {
-            "type": "creraces:spawn_particles",
-            "particle": "minecraft:witch",
-            "count": 10
         }
     ],
     "creraces:wiki_page": "Ability:Slash_N_Dash"
 }
-

@@ -103,18 +103,16 @@
                     "spin": {
                         "base": 0.1
                     },
-                    "pattern": {
-                        "type": "circle",
-                        "radius": {
-                            "base": 1.2
-                        },
-                        "count": {
-                            "base": 0.0,
-                            "scales_with": "custom:tail_count",
-                            "factor": 2.0
-                        },
-                        "axis": "Y"
-                    }
+                    "shape": "circle",
+                    "radius": {
+                        "base": 1.2
+                    },
+                    "points": {
+                        "base": 0.0,
+                        "scales_with": "custom:tail_count",
+                        "factor": 2.0
+                    },
+                    "axis": "Y"
                 }
             ]
         }

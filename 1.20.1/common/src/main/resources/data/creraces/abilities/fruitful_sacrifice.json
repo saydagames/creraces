@@ -2,7 +2,7 @@
     "creraces:name": "ability.creraces.fruitful_sacrifice.name",
     "creraces:description": "ability.creraces.fruitful_sacrifice.description",
     "creraces:type": "ACTIVE",
-    "creraces:icon": "minecraft:textures/item/ghast_tear.png",
+    "creraces:icon": "creraces:textures/mob_effect/life_drain.png",
     "creraces:cooldown": 420,
     "creraces:cost": 15,
     "creraces:race": [
@@ -49,7 +49,9 @@
             "effect": "minecraft:speed",
             "duration": 160,
             "amplifier": 0,
-            "targets": ["self"],
+            "targets": [
+                "self"
+            ],
             "visible": true
         },
         {
@@ -92,7 +94,3 @@
     ],
     "creraces:wiki_page": "Ability:Fruitful_Sacrifice"
 }
-
-
-
-

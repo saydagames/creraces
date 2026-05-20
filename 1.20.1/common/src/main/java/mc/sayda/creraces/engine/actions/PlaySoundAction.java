@@ -31,7 +31,7 @@ public class PlaySoundAction implements ActionRegistry.RaceAction {
     @Override
     public boolean execute(Player player, @Nullable net.minecraft.world.entity.LivingEntity target,
             @Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @Nullable net.minecraft.core.BlockPos interactionPos) {
+            @Nullable net.minecraft.core.BlockPos interact_pos) {
         SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(soundId);
         if (sound == null) {
             CreRaces.LOGGER.error("PlaySoundAction: unknown sound event '{}'", soundId);

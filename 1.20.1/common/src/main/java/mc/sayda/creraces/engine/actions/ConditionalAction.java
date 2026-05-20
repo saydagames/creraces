@@ -31,8 +31,8 @@ public class ConditionalAction implements ActionRegistry.RaceAction {
     @Override
     public boolean execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
-        boolean result = condition.evaluate(player, target, slot, interactionPos);
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
+        boolean result = condition.evaluate(player, target, slot, interact_pos);
         List<ActionRegistry.RaceAction> actions = result ? ifTrue : ifFalse;
 
         if (actions.isEmpty()) {
@@ -40,7 +40,7 @@ public class ConditionalAction implements ActionRegistry.RaceAction {
         }
 
         for (ActionRegistry.RaceAction action : actions) {
-            if (!action.execute(player, target, slot, interactionPos)) {
+            if (!action.execute(player, target, slot, interact_pos)) {
                 return false;
             }
         }
@@ -52,7 +52,7 @@ public class ConditionalAction implements ActionRegistry.RaceAction {
             JsonElement condEl = json.get("condition");
             if (condEl == null) {
                 CreRaces.LOGGER.error("ConditionalAction missing 'condition' - skipping execution core.");
-                return (player, target, slot, interactionPos) -> true;
+                return (player, target, slot, interact_pos) -> true;
             }
             Condition condition = Condition.fromJson(condEl.getAsJsonObject());
 

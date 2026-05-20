@@ -2,7 +2,7 @@
     "creraces:name": "ability.creraces.entanglement.name",
     "creraces:description": "ability.creraces.entanglement.description",
     "creraces:type": "ACTIVE",
-    "creraces:icon": "minecraft:vines",
+    "creraces:icon": "creraces:textures/icons/entanglement.png",
     "creraces:cooldown": 480,
     "creraces:cost": 25,
     "creraces:race": [
@@ -39,7 +39,3 @@
     ],
     "creraces:wiki_page": "Ability:Entanglement"
 }
-
-
-
-

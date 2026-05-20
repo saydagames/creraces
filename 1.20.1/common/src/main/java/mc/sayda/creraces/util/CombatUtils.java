@@ -30,6 +30,21 @@ public class CombatUtils {
             if (owner instanceof Player player) {
                 return player;
             }
+            // Recurse in case of nested owners (e.g. projectile shot by a tame)
+            if (owner != null && owner != entity) {
+                return getRootOwner(owner);
+            }
+        }
+
+        if (entity instanceof net.minecraft.world.entity.projectile.Projectile projectile) {
+            Entity owner = projectile.getOwner();
+            if (owner instanceof Player player) {
+                return player;
+            }
+            // Recurse for projectiles shot by tames/servants
+            if (owner != null && owner != entity) {
+                return getRootOwner(owner);
+            }
         }
 
         if (entity instanceof LivingEntity le && entity instanceof IPersistentDataAccessor accessor) {

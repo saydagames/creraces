@@ -62,7 +62,7 @@ public class AttributeIncidents {
                     UUID uuid = UUID.nameUUIDFromBytes(("creraces:" + traitId).getBytes());
                     activeTraits.add(uuid);
 
-                    // Method: REMOVE logic
+                    // (Optional) Method: REMOVE logic
                     if (amt.getMethod() == mc.sayda.creraces.engine.AttributeMethod.REMOVE) {
                         AttributeInstance instance = player.getAttribute(resolvedAttr);
                         if (instance != null && instance.getModifier(uuid) != null) {
@@ -73,24 +73,36 @@ public class AttributeIncidents {
                         continue;
                     }
 
-                    // If trait is Managed (explicit flag or has condition)
-                    if (amt.isManaged() || amt.getRawCondition() != null) {
-                        vars.addManagedModifier(new mc.sayda.creraces.engine.ManagedModifier(
-                            uuid, 
-                            amt.getAttributeId(), 
-                            amt.getValueJson(),
-                            amt.getOperation(),
-                            "creraces:" + traitId,
-                            amt.getRawCondition() != null ? amt.getRawCondition() : new com.google.gson.JsonObject(), 
-                            amt.getRawCondition() != null,
-                            amt.getInterval(), 
-                            player.tickCount + amt.getInterval()
-                        ));
-                        // Managed modifiers are handled by the background loop below
+                    // A. Managed Traits (Live sync/scaling)
+                    if (amt.isManaged()) {
+                        // Check if we actually need to update the managed list entry (to avoid resetting the timer)
+                        vars.getManagedModifier(uuid).ifPresentOrElse(mod -> {
+                            if (!mod.valueJson().equals(amt.getValueJson()) || 
+                                (amt.getRawCondition() != null && !mod.conditionJson().equals(amt.getRawCondition()))) {
+                                // Update existing (resets timer if JSON changed, which is correct)
+                                vars.addManagedModifier(new mc.sayda.creraces.engine.ManagedModifier(
+                                    uuid, amt.getAttributeId(), amt.getValueJson(), amt.getOperation(),
+                                    "creraces:" + traitId, 
+                                    amt.getRawCondition() != null ? amt.getRawCondition() : new com.google.gson.JsonObject(),
+                                    amt.getRawCondition() != null, amt.getInterval(), player.tickCount + amt.getInterval()
+                                ));
+                                mc.sayda.creraces.CreRaces.LOGGER.debug("AttributeIncidents: Updated data for Managed modifier {}", traitId);
+                            }
+                        }, () -> {
+                            // First time application
+                            vars.addManagedModifier(new mc.sayda.creraces.engine.ManagedModifier(
+                                uuid, amt.getAttributeId(), amt.getValueJson(), amt.getOperation(),
+                                "creraces:" + traitId, 
+                                amt.getRawCondition() != null ? amt.getRawCondition() : new com.google.gson.JsonObject(),
+                                amt.getRawCondition() != null, amt.getInterval(), player.tickCount + amt.getInterval()
+                            ));
+                            mc.sayda.creraces.CreRaces.LOGGER.debug("AttributeIncidents: Registered new Managed modifier {}", traitId);
+                        });
                         continue;
                     }
 
-                    // Static Trait Application (Legacy path for unmanaged traits)
+                    // B. Static Traits (Innate stats)
+                    // If not managed, the scanner handles application every 20 ticks.
                     boolean conditionMet = amt.getCondition() == null
                             || amt.getCondition().evaluate(player, null, null, null);
 
@@ -104,6 +116,7 @@ public class AttributeIncidents {
                             AttributeModifier.Operation newOp = amt.getOperation();
                             AttributeModifier existing = instance.getModifier(uuid);
 
+                            // Only update if the value or operation has actually changed (avoid redundant entity updates)
                             if (existing == null || Math.abs(existing.getAmount() - newValue) > 1e-6
                                     || existing.getOperation() != newOp) {
                                 if (existing != null)
@@ -120,6 +133,7 @@ public class AttributeIncidents {
                         AttributeInstance instance = player.getAttribute(resolvedAttr);
                         if (instance != null && instance.getModifier(uuid) != null) {
                             instance.removeModifier(uuid);
+                            mc.sayda.creraces.CreRaces.LOGGER.debug("EikiJudgment: Removed static trait {} from {} (Condition failed)", traitId, player.getScoreboardName());
                         }
                     }
                 }

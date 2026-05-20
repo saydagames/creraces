@@ -34,13 +34,13 @@ public class BreakBlocksAction implements ActionRegistry.RaceAction {
         this.useTarget = useTarget;
         this.useTargetBlock = useTargetBlock;
         this.absolute = absolute;
-        this.coordinateMath = coordinateMath != null ? coordinateMath : ScalingValue.MathOp.ROUND;
+        this.coordinateMath = coordinateMath != null ? coordinateMath : ScalingValue.MathOp.FLOOR;
     }
 
     @Override
     public boolean execute(Player player, @javax.annotation.Nullable LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         if (player == null || player.level() == null) return false;
 
         if (!player.level().getGameRules().getBoolean(ModGameRules.RULE_RACEGRIEFING)) {
@@ -53,8 +53,8 @@ public class BreakBlocksAction implements ActionRegistry.RaceAction {
             basePos = BlockPos.ZERO;
         } else if (useTarget && target != null) {
             basePos = target.blockPosition();
-        } else if (useTargetBlock && interactionPos != null) {
-            basePos = interactionPos;
+        } else if (useTargetBlock && interact_pos != null) {
+            basePos = interact_pos;
         } else {
             double tx = player.getX();
             double ty = player.getY();
@@ -118,10 +118,16 @@ public class BreakBlocksAction implements ActionRegistry.RaceAction {
             boolean useTargetBlock = GsonHelper.getAsBoolean(json, "use_target_block", false);
             boolean absolute = GsonHelper.getAsBoolean(json, "absolute", false);
 
-            ScalingValue.MathOp coordinateMath = ScalingValue.MathOp.ROUND;
+            ScalingValue.MathOp coordinateMath = ScalingValue.MathOp.FLOOR;
             if (json.has("math")) {
                 try {
-                    coordinateMath = ScalingValue.MathOp.valueOf(json.get("math").getAsString().toUpperCase());
+                    String mode = json.get("math").getAsString().toUpperCase();
+                    for (ScalingValue.MathOp op : ScalingValue.MathOp.values()) {
+                        if (op.name().equals(mode)) {
+                            coordinateMath = op;
+                            break;
+                        }
+                    }
                 } catch (Exception e) {
                     mc.sayda.creraces.CreRaces.LOGGER.warn("Invalid math mode in BreakBlocksAction: {}",
                             json.get("math").getAsString());

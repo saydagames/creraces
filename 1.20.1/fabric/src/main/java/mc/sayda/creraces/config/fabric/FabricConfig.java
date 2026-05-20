@@ -99,13 +99,17 @@ public class FabricConfig {
         CreRacesConfig.AOE_MAX_RADIUS = () -> common.safety.aoe_max_radius;
         CreRacesConfig.BEAM_MAX_LENGTH = () -> common.safety.beam_max_length;
         CreRacesConfig.BREAK_BLOCKS_MAX_RADIUS = () -> common.safety.break_blocks_max_radius;
+        CreRacesConfig.REMOVE_BLOCK_HARDNESS_LIMIT = () -> common.safety.remove_block_hardness_limit;
         CreRacesConfig.CUSTOMIZATION_VALUE_MAX_LENGTH = () -> common.safety.customization_value_max_length;
         CreRacesConfig.DELAY_ACTION_MAX_TICKS = () -> common.safety.delay_action_max_ticks;
         CreRacesConfig.ENTITY_DATA_KEY_MAX_LENGTH = () -> common.safety.entity_data_key_max_length;
         CreRacesConfig.GIVE_ITEM_MAX_COUNT = () -> common.safety.give_item_max_count;
         CreRacesConfig.MASS_SUMMON_MAX_COUNT = () -> common.safety.mass_summon_max_count;
         CreRacesConfig.NETWORK_TEAM_NAME_MAX_LEN = () -> common.safety.network_team_name_max_len;
+        CreRacesConfig.TEAM_MAX_SIZE = () -> common.safety.team_max_size;
+        CreRacesConfig.DOUBLE_JUMP_COOLDOWN_TICKS = () -> common.safety.double_jump_cooldown_ticks;
         CreRacesConfig.SPIRIT_SPAWN_CHECK_RADIUS = () -> common.safety.spirit_spawn_check_radius;
+        CreRacesConfig.MAX_RAT_TUNNELS = () -> common.safety.max_rat_tunnels;
 
         // MiniBuild
         CreRacesConfig.MINI_BUILD_ENABLED = () -> common.minibuild.mini_build_enabled;
@@ -126,6 +130,7 @@ public class FabricConfig {
         CreRacesConfig.POCKET_EXPANSION_COST = () -> common.pockets.pocket_expansion_cost;
         CreRacesConfig.POCKET_EXPANSION_LIMIT = () -> common.pockets.pocket_expansion_limit;
         CreRacesConfig.POCKET_INVITE_MAX = () -> common.pockets.pocket_invite_max;
+        CreRacesConfig.POCKET_BOUNDARY = () -> common.pockets.pocket_boundary;
         CreRacesConfig.ACTION_DEFAULT_POCKET_DIM = () -> common.pockets.action_default_pocket_dim;
         CreRacesConfig.ACTION_DEFAULT_POCKET_STRUCTURE = () -> common.pockets.action_default_pocket_structure;
         CreRacesConfig.ACTION_DEFAULT_POCKET_SPAWN_X_OFFSET = () -> common.pockets.action_default_pocket_spawn_x_offset;
@@ -227,13 +232,17 @@ public class FabricConfig {
             public int aoe_max_radius = CreRacesConfig.AOE_MAX_RADIUS.get();
             public int beam_max_length = CreRacesConfig.BEAM_MAX_LENGTH.get();
             public int break_blocks_max_radius = CreRacesConfig.BREAK_BLOCKS_MAX_RADIUS.get();
+            public double remove_block_hardness_limit = CreRacesConfig.REMOVE_BLOCK_HARDNESS_LIMIT.get();
             public int customization_value_max_length = CreRacesConfig.CUSTOMIZATION_VALUE_MAX_LENGTH.get();
             public int delay_action_max_ticks = CreRacesConfig.DELAY_ACTION_MAX_TICKS.get();
             public int entity_data_key_max_length = CreRacesConfig.ENTITY_DATA_KEY_MAX_LENGTH.get();
             public int give_item_max_count = CreRacesConfig.GIVE_ITEM_MAX_COUNT.get();
             public int mass_summon_max_count = CreRacesConfig.MASS_SUMMON_MAX_COUNT.get();
             public int network_team_name_max_len = CreRacesConfig.NETWORK_TEAM_NAME_MAX_LEN.get();
+            public int team_max_size = CreRacesConfig.TEAM_MAX_SIZE.get();
+            public int double_jump_cooldown_ticks = CreRacesConfig.DOUBLE_JUMP_COOLDOWN_TICKS.get();
             public int spirit_spawn_check_radius = CreRacesConfig.SPIRIT_SPAWN_CHECK_RADIUS.get();
+            public int max_rat_tunnels = CreRacesConfig.MAX_RAT_TUNNELS.get();
         }
 
         public static class MiniBuild {
@@ -256,6 +265,7 @@ public class FabricConfig {
             public double pocket_expansion_cost = CreRacesConfig.POCKET_EXPANSION_COST.get();
             public int pocket_expansion_limit = CreRacesConfig.POCKET_EXPANSION_LIMIT.get();
             public int pocket_invite_max = CreRacesConfig.POCKET_INVITE_MAX.get();
+            public double pocket_boundary = CreRacesConfig.POCKET_BOUNDARY.get();
             public String action_default_pocket_dim = CreRacesConfig.ACTION_DEFAULT_POCKET_DIM.get();
             public String action_default_pocket_structure = CreRacesConfig.ACTION_DEFAULT_POCKET_STRUCTURE.get();
             public double action_default_pocket_spawn_x_offset = CreRacesConfig.ACTION_DEFAULT_POCKET_SPAWN_X_OFFSET

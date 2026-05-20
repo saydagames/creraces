@@ -2,7 +2,7 @@
     "creraces:name": "ability.creraces.fox_form.name",
     "creraces:description": "ability.creraces.fox_form.description",
     "creraces:type": "ACTIVE",
-    "creraces:icon": "creraces:textures/screens/kitsune_icon.png",
+    "creraces:icon": "creraces:textures/icons/mirror.png",
     "creraces:cooldown": 60,
     "creraces:cost": 20,
     "creraces:persistent": false,

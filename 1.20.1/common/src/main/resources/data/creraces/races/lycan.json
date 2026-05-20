@@ -99,7 +99,8 @@
             "type": "creraces:on_kill",
             "condition": {
                 "type": "creraces:has_effect",
-                "effect": "creraces:bleeding"
+                "effect": "creraces:bleeding",
+                "use_target": true
             },
             "actions": [
                 {
@@ -116,7 +117,8 @@
                 "type": "not",
                 "condition": {
                     "type": "creraces:has_effect",
-                    "effect": "creraces:bleeding"
+                    "effect": "creraces:bleeding",
+                    "use_target": true
                 }
             },
             "actions": [

@@ -2,7 +2,7 @@
     "creraces:name": "ability.creraces.deadly_venom.name",
     "creraces:description": "ability.creraces.deadly_venom.description",
     "creraces:type": "ACTIVE",
-    "creraces:icon": "minecraft:textures/item/spider_eye.png",
+    "creraces:icon": "creraces:textures/mob_effect/rat_venom.png",
     "creraces:cooldown": 1200,
     "creraces:cost": 20,
     "creraces:race": [
@@ -49,7 +49,3 @@
     ],
     "creraces:wiki_page": "Ability:Deadly_Venom"
 }
-
-
-
-

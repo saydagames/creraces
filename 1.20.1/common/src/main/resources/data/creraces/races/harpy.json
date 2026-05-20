@@ -16,6 +16,15 @@
     "creraces:immune_to_damage": [
         "minecraft:fall"
     ],
+    "harpy_effects": [
+        {
+            "type": "creraces:permanent_effect",
+            "effect": "minecraft:night_vision",
+            "amplifier": 0,
+            "duration": 210,
+            "visible": false
+        }
+    ],
     "armor_restrictions": [
         {
             "id": "no_leggings",

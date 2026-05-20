@@ -11,6 +11,7 @@ import net.minecraft.world.level.material.PushReaction;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 
+@SuppressWarnings("null")
 public class ModBlocks {
         public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(CreRaces.MODID, Registries.BLOCK);
 
@@ -164,6 +165,7 @@ public class ModBlocks {
                         .create(CreRaces.MODID, net.minecraft.core.registries.Registries.BLOCK_ENTITY_TYPE);
 
         public static dev.architectury.registry.registries.RegistrySupplier<net.minecraft.world.level.block.entity.BlockEntityType<mc.sayda.creraces.block.entity.MicroBlockEntity>> MICRO_BLOCK_ENTITY;
+        public static dev.architectury.registry.registries.RegistrySupplier<net.minecraft.world.level.block.entity.BlockEntityType<mc.sayda.creraces.block.entity.RatHoleBlockEntity>> RAT_HOLE_ENTITY;
         public static dev.architectury.registry.registries.RegistrySupplier<net.minecraft.world.level.block.entity.BlockEntityType<net.minecraft.world.level.block.entity.BellBlockEntity>> TORI_BELL_ENTITY;
 
         public static void register() {
@@ -177,6 +179,12 @@ public class ModBlocks {
                                 () -> BlockEntityType.Builder
                                                 .of(mc.sayda.creraces.block.entity.MicroBlockEntity::new,
                                                                 MICRO_BLOCK.get())
+                                                .build(null));
+
+                RAT_HOLE_ENTITY = BLOCK_ENTITIES.register("rat_hole",
+                                () -> BlockEntityType.Builder
+                                                .of(mc.sayda.creraces.block.entity.RatHoleBlockEntity::new,
+                                                                RAT_HOLE.get())
                                                 .build(null));
 
                 TORI_BELL_ENTITY = BLOCK_ENTITIES.register("tori_bell",

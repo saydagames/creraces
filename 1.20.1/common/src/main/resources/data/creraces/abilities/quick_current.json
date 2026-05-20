@@ -2,7 +2,7 @@
     "creraces:name": "ability.creraces.quick_current.name",
     "creraces:description": "ability.creraces.quick_current.description",
     "creraces:type": "ACTIVE",
-    "creraces:icon": "minecraft:kelp",
+    "creraces:icon": "creraces:textures/mob_effect/rooted.png",
     "creraces:cooldown": 480,
     "creraces:cost": 15,
     "creraces:race": [

@@ -43,4 +43,13 @@ public class Scheduler {
             this.runnable = runnable;
         }
     }
+
+    /**
+     * Clears all pending and active tasks. Must be called on server shutdown
+     * to prevent stale tasks from executing in a new singleplayer session.
+     */
+    public static void clear() {
+        TASKS.clear();
+        PENDING.clear();
+    }
 }

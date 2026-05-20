@@ -3,7 +3,7 @@
     "creraces:description": "ability.creraces.camouflage.description",
     "creraces:type": "ACTIVE",
     "creraces:cooldown": 720,
-    "creraces:icon": "minecraft:fern",
+    "creraces:icon": "creraces:textures/mob_effect/camouflage.png",
     "creraces:cost": 1,
     "creraces:race": [
         "creraces:dryad",

@@ -2,7 +2,7 @@
     "creraces:name": "ability.creraces.searing_charge.name",
     "creraces:description": "ability.creraces.searing_charge.description",
     "creraces:type": "ACTIVE",
-    "creraces:icon": "minecraft:textures/item/blaze_rod.png",
+    "creraces:icon": "minecraft:textures/item/blaze_powder.png",
     "creraces:cooldown": 240,
     "creraces:cost": 0,
     "creraces:race": [

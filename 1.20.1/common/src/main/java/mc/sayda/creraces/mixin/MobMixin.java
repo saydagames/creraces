@@ -45,8 +45,9 @@ public abstract class MobMixin {
     private void creraces$hateRaces(CallbackInfo ci) {
         Mob mob = (Mob) (Object) this;
 
-        // Only check occasionally to avoid performance issues
-        if (mob.level().getGameTime() % 20 != 0)
+        // Stagger by entity ID so mobs don't all scan on the same tick (thundering
+        // herd)
+        if (mob.level().getGameTime() % 20 != mob.getId() % 20)
             return;
 
         // If already has a target, don't force a new one

@@ -2,7 +2,7 @@
     "creraces:name": "ability.creraces.rampant_growth.name",
     "creraces:description": "ability.creraces.rampant_growth.description",
     "creraces:type": "ACTIVE",
-    "creraces:icon": "minecraft:oak_sapling",
+    "creraces:icon": "creraces:textures/mob_effect/thorns.png",
     "creraces:cooldown": 240,
     "creraces:cost": 40,
     "creraces:race": [
@@ -58,7 +58,3 @@
     ],
     "creraces:wiki_page": "Ability:Rampant_Growth"
 }
-
-
-
-

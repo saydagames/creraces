@@ -2,7 +2,7 @@
     "creraces:name": "ability.creraces.thorn_shackles.name",
     "creraces:description": "ability.creraces.thorn_shackles.description",
     "creraces:type": "ACTIVE",
-    "creraces:icon": "minecraft:textures/block/vine.png",
+    "creraces:icon": "creraces:textures/icons/thorn_shackles.png",
     "creraces:cooldown": 400,
     "creraces:cost": 20,
     "creraces:race": [
@@ -84,7 +84,3 @@
     ],
     "creraces:wiki_page": "Ability:Thorn_Shackles"
 }
-
-
-
-

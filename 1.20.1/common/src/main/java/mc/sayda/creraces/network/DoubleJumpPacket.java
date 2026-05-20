@@ -33,6 +33,20 @@ public class DoubleJumpPacket {
         NetworkManager.PacketContext context = contextSupplier.get();
         context.queue(() -> {
             if (context.getPlayer() instanceof ServerPlayer player) {
+                // Rate limit: enforce a per-player cooldown to prevent packet spam
+                var data = ((mc.sayda.creraces.util.IPersistentDataAccessor) player).creraces$getPersistentData();
+                long now = player.level().getGameTime();
+                long lastJump = data.getLong("creraces:last_double_jump");
+                if (now - lastJump < mc.sayda.creraces.config.CreRacesConfig.DOUBLE_JUMP_COOLDOWN_TICKS.get()) {
+                    return;
+                }
+                data.putLong("creraces:last_double_jump", now);
+
+                // Validate: player must not be on the ground
+                if (player.onGround()) {
+                    return;
+                }
+
                 ServerLevel level = player.serverLevel();
                 
                 // Broadcast sound to trackers (except the jumper, who plays it locally)

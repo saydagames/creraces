@@ -2,7 +2,7 @@
     "creraces:name": "ability.creraces.hot_headed.name",
     "creraces:description": "ability.creraces.hot_headed.description",
     "creraces:type": "ACTIVE",
-    "creraces:icon": "minecraft:textures/item/fire_charge.png",
+    "creraces:icon": "creraces:textures/icons/rage.png",
     "creraces:cooldown": 100,
     "creraces:cost": 0,
     "creraces:race": [
@@ -47,7 +47,3 @@
     ],
     "creraces:wiki_page": "Ability:Hot_Headed"
 }
-
-
-
-

@@ -15,38 +15,36 @@
                 "type": "creraces:and",
                 "conditions": [
                     {
-                        "type": "creraces:has_customization",
-                        "id": "tx"
+                        "type": "creraces:state",
+                        "state": "state:tx",
+                        "operator": "!=",
+                        "value": 0.0
                     },
                     {
-                        "type": "creraces:has_customization",
-                        "id": "ty"
+                        "type": "creraces:state",
+                        "state": "state:ty",
+                        "operator": "!=",
+                        "value": 0.0
                     },
                     {
-                        "type": "creraces:has_customization",
-                        "id": "tz"
+                        "type": "creraces:state",
+                        "state": "state:tz",
+                        "operator": "!=",
+                        "value": 0.0
                     }
                 ]
             },
             "if_true": [
                 {
                     "type": "creraces:teleport",
-                    "x": {
-                        "base": 0.5,
-                        "scales_with": "custom:tx",
-                        "factor": 1.0
-                    },
+                    "x": "state:tx",
                     "y": {
                         "base": 1.0,
-                        "scales_with": "custom:ty",
+                        "scales_with": "state:ty",
                         "factor": 1.0
                     },
-                    "z": {
-                        "base": -0.5,
-                        "scales_with": "custom:tz",
-                        "factor": 1.0
-                    },
-                    "dimension_key": "td"
+                    "z": "state:tz",
+                    "dimension": "minecraft:overworld"
                 },
                 {
                     "type": "creraces:play_sound",
@@ -56,7 +54,7 @@
             "if_false": [
                 {
                     "type": "creraces:message",
-                    "text": "msg.creraces.no_tree_set",
+                    "text": "message.creraces.dryad.no_tree",
                     "actionbar": true
                 },
                 {

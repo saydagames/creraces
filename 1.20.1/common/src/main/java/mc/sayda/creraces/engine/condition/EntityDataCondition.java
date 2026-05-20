@@ -41,7 +41,7 @@ public class EntityDataCondition implements Condition {
     @SuppressWarnings("null")
     public boolean evaluate(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         // Smart Targeting: Prefer target if present, otherwise respect useTarget flag
         net.minecraft.world.entity.LivingEntity entity = (target != null) ? target : (useTarget ? target : player);
         if (entity == null)

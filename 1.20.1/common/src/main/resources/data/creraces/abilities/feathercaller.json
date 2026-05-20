@@ -2,7 +2,7 @@
     "creraces:name": "ability.creraces.feathercaller.name",
     "creraces:description": "ability.creraces.feathercaller.description",
     "creraces:type": "ACTIVE",
-    "creraces:icon": "minecraft:textures/item/feather.png",
+    "creraces:icon": "creraces:textures/item/harpy_feather.png",
     "creraces:cooldown": 200,
     "creraces:cost": 15,
     "creraces:actions": [

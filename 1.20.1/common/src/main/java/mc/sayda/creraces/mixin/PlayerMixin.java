@@ -465,6 +465,16 @@ public class PlayerMixin implements IPlayerVariables {
     }
 
     @Override
+    public void setStatePersistent(ResourceLocation id, boolean persistent) {
+        creraces$variables.setStatePersistent(id, persistent);
+    }
+
+    @Override
+    public boolean isStatePersistent(ResourceLocation id) {
+        return creraces$variables.isStatePersistent(id);
+    }
+
+    @Override
     public AbilitySlot getSlotForAbility(ResourceLocation abilityId) {
         return creraces$variables.getSlotForAbility(abilityId);
     }
@@ -798,6 +808,21 @@ public class PlayerMixin implements IPlayerVariables {
     @Override
     public java.util.Collection<mc.sayda.creraces.engine.ManagedModifier> getManagedModifiers() {
         return creraces$variables.getManagedModifiers();
+    }
+
+    @Override
+    public int getAbilityLevel(ResourceLocation abilityId) {
+        return creraces$variables.getAbilityLevel(abilityId);
+    }
+
+    @Override
+    public void setAbilityLevel(ResourceLocation abilityId, int level) {
+        creraces$variables.setAbilityLevel(abilityId, level);
+    }
+
+    @Override
+    public java.util.Optional<mc.sayda.creraces.engine.ManagedModifier> getManagedModifier(java.util.UUID uuid) {
+        return creraces$variables.getManagedModifier(uuid);
     }
 
     @Override

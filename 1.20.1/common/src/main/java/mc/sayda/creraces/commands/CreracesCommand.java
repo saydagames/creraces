@@ -419,10 +419,16 @@ public class CreracesCommand {
         }
 
         private static int executeSet(CommandSourceStack source, ServerPlayer target, ResourceLocation raceId) {
-                Race race = RaceRegistry.get(raceId);
+                // Default to creraces namespace if the race is not found in minecraft (default)
+                ResourceLocation actualId = raceId;
+                if (raceId.getNamespace().equals("minecraft") && mc.sayda.creraces.race.RaceRegistry.get(raceId) == null) {
+                        actualId = new ResourceLocation("creraces", raceId.getPath());
+                }
+
+                Race race = RaceRegistry.get(actualId);
 
                 if (race == null) {
-                        source.sendFailure(Component.literal("Unknown race: " + raceId).withStyle(ChatFormatting.RED));
+                        source.sendFailure(Component.literal("Unknown race: " + actualId.toString()).withStyle(ChatFormatting.RED));
                         return 0;
                 }
 
@@ -670,22 +676,29 @@ public class CreracesCommand {
                 if (player == null)
                         return 0;
                 if (player == target) {
-                        source.sendFailure(Component.literal("You cannot invite yourself."));
+                        source.sendFailure(Component.translatable("message.creraces.pocket.cannot_invite_self"));
                         return 0;
                 }
 
                 return mc.sayda.creraces.capability.DataUtils.getVariables(player).map(vars -> {
                         if (!vars.hasPocket()) {
-                                source.sendFailure(Component.literal("You do not have a pocket to manage."));
+                                source.sendFailure(Component.translatable("message.creraces.pocket.no_pocket_to_manage"));
                                 return 0;
                         }
+
+                        int maxInvites = mc.sayda.creraces.config.CreRacesConfig.POCKET_INVITE_MAX.get();
+                        if (maxInvites >= 0 && vars.getPocketInvitations().size() >= maxInvites) {
+                                source.sendFailure(Component.translatable("message.creraces.pocket.max_invites_reached", maxInvites));
+                                return 0;
+                        }
+
                         vars.inviteToPocket(target.getUUID());
-                        source.sendSuccess(() -> Component
-                                        .literal("Invited " + target.getGameProfile().getName() + " to your pocket.")
+                        source.sendSuccess(() -> Component.translatable("message.creraces.pocket.invite_success", target.getDisplayName())
                                         .withStyle(ChatFormatting.GREEN), true);
-                        target.sendSystemMessage(Component.literal(player.getGameProfile().getName()
-                                        + " has invited you to their pocket! Type /creraces pocket join "
-                                        + player.getGameProfile().getName() + " to enter.")
+                        
+                        target.sendSystemMessage(Component.translatable("message.creraces.pocket.invite_received", player.getDisplayName())
+                                        .append("\n")
+                                        .append(Component.translatable("message.creraces.pocket.join_command_hint", player.getGameProfile().getName()))
                                         .withStyle(ChatFormatting.GOLD));
                         return 1;
                 }).orElse(0);
@@ -698,12 +711,11 @@ public class CreracesCommand {
 
                 return mc.sayda.creraces.capability.DataUtils.getVariables(player).map(vars -> {
                         if (!vars.hasPocket()) {
-                                source.sendFailure(Component.literal("You do not have a pocket to manage."));
+                                source.sendFailure(Component.translatable("message.creraces.pocket.no_pocket_to_manage"));
                                 return 0;
                         }
                         vars.revokePocketInvitation(target.getUUID());
-                        source.sendSuccess(() -> Component
-                                        .literal("Revoked " + target.getGameProfile().getName() + "'s invitation.")
+                        source.sendSuccess(() -> Component.translatable("message.creraces.pocket.revoke_success", target.getDisplayName())
                                         .withStyle(ChatFormatting.YELLOW), true);
                         return 1;
                 }).orElse(0);
@@ -715,47 +727,50 @@ public class CreracesCommand {
                         return 0;
 
                 // Check if target is in the player's pocket
-                String pocketDim = "creraces:pocket";
+                String pocketDim = mc.sayda.creraces.config.CreRacesConfig.ACTION_DEFAULT_POCKET_DIM.get();
                 if (!target.level().dimension().location().toString().equals(pocketDim)) {
-                        source.sendFailure(Component.literal("Target is not in a pocket dimension."));
+                        source.sendFailure(Component.translatable("message.creraces.pocket.not_in_pocket_dim"));
                         return 0;
                 }
 
-                return mc.sayda.creraces.capability.DataUtils.getVariables(player).map(vars -> {
-                        if (!vars.hasPocket()) {
-                                source.sendFailure(Component.literal("You do not have a pocket to manage."));
+                return mc.sayda.creraces.capability.DataUtils.getVariables(player).map(hostVars -> {
+                        if (!hostVars.hasPocket()) {
+                                source.sendFailure(Component.translatable("message.creraces.pocket.no_pocket_to_manage"));
                                 return 0;
                         }
-                        double tx = vars.getPocketX();
-                        double tz = vars.getPocketZ();
-                        double range = 500; // Pocket boundary
 
-                        if (Math.abs(target.getX() - tx) < range && Math.abs(target.getZ() - tz) < range) {
-                                // Kick them out
-                                ResourceLocation returnDimName = new ResourceLocation(vars.getReturnDim());
-                                net.minecraft.server.level.ServerLevel world = player.server.getLevel(
-                                                net.minecraft.resources.ResourceKey.create(
-                                                                net.minecraft.core.registries.Registries.DIMENSION,
-                                                                returnDimName));
-                                if (world == null)
-                                        world = player.server.overworld();
+                        return mc.sayda.creraces.capability.DataUtils.getVariables(target).map(targetVars -> {
+                                double tx = hostVars.getPocketX();
+                                double tz = hostVars.getPocketZ();
+                                double range = mc.sayda.creraces.config.CreRacesConfig.POCKET_BOUNDARY.get();
 
-                                target.teleportTo(world, world.getSharedSpawnPos().getX(),
-                                                world.getSharedSpawnPos().getY(), world.getSharedSpawnPos().getZ(), 0,
-                                                0);
-                                source.sendSuccess(() -> Component
-                                                .literal("Kicked " + target.getGameProfile().getName()
-                                                                + " from your pocket.")
-                                                .withStyle(ChatFormatting.RED), true);
-                                target.sendSystemMessage(Component
-                                                .literal("You have been kicked from "
-                                                                + player.getGameProfile().getName() + "'s pocket.")
-                                                .withStyle(ChatFormatting.RED));
-                                return 1;
-                        } else {
-                                source.sendFailure(Component.literal("Target is not inside your pocket area."));
-                                return 0;
-                        }
+                                if (Math.abs(target.getX() - tx) < range && Math.abs(target.getZ() - tz) < range) {
+                                        // Kick them out using their OWN return coordinates
+                                        String returnDimName = targetVars.getReturnDim();
+                                        if (returnDimName == null || returnDimName.isEmpty() || returnDimName.contains("pocket")) {
+                                            returnDimName = "minecraft:overworld";
+                                        }
+
+                                        net.minecraft.server.level.ServerLevel world = player.server.getLevel(
+                                                        net.minecraft.resources.ResourceKey.create(
+                                                                        net.minecraft.core.registries.Registries.DIMENSION,
+                                                                        new ResourceLocation(returnDimName)));
+
+                                        if (world == null)
+                                                world = player.server.overworld();
+
+                                        target.teleportTo(world, targetVars.getReturnX(), targetVars.getReturnY(), targetVars.getReturnZ(), target.getYRot(), target.getXRot());
+
+                                        source.sendSuccess(() -> Component.translatable("message.creraces.pocket.kick_success_server", target.getDisplayName())
+                                                        .withStyle(ChatFormatting.RED), true);
+                                        target.sendSystemMessage(Component.translatable("message.creraces.pocket.kick_success_client", player.getDisplayName())
+                                                        .withStyle(ChatFormatting.RED));
+                                        return 1;
+                                } else {
+                                        source.sendFailure(Component.translatable("message.creraces.pocket.kick_not_in_area"));
+                                        return 0;
+                                }
+                        }).orElse(0);
                 }).orElse(0);
         }
 
@@ -766,17 +781,23 @@ public class CreracesCommand {
 
                 return mc.sayda.creraces.capability.DataUtils.getVariables(player).map(vars -> {
                         if (!vars.hasPocket()) {
-                                source.sendFailure(Component.literal("You do not have a pocket to manage."));
+                                source.sendFailure(Component.translatable("message.creraces.pocket.no_pocket_to_manage"));
                                 return 0;
                         }
                         java.util.Set<java.util.UUID> invites = vars.getPocketInvitations();
                         if (invites.isEmpty()) {
-                                source.sendSuccess(() -> Component.literal("No active invitations."), false);
+                                source.sendSuccess(() -> Component.translatable("message.creraces.pocket.list_empty"), false);
                         } else {
-                                source.sendSuccess(() -> Component.literal("Invited players: ")
+                                source.sendSuccess(() -> Component.translatable("message.creraces.pocket.list_header")
                                                 .withStyle(ChatFormatting.GOLD), false);
                                 for (java.util.UUID uuid : invites) {
-                                        source.sendSuccess(() -> Component.literal("- " + uuid.toString())
+                                        String name = uuid.toString();
+                                        ServerPlayer target = player.server.getPlayerList().getPlayer(uuid);
+                                        if (target != null) {
+                                            name = target.getGameProfile().getName();
+                                        }
+                                        final String finalName = name;
+                                        source.sendSuccess(() -> Component.literal("- " + finalName)
                                                         .withStyle(ChatFormatting.GRAY), false);
                                 }
                         }
@@ -789,14 +810,14 @@ public class CreracesCommand {
                 if (player == null)
                         return 0;
 
-                String pocketDimName = "creraces:pocket";
+                String pocketDimName = mc.sayda.creraces.config.CreRacesConfig.ACTION_DEFAULT_POCKET_DIM.get();
                 net.minecraft.server.level.ServerLevel pocketWorld = player.server.getLevel(
                                 net.minecraft.resources.ResourceKey.create(
                                                 net.minecraft.core.registries.Registries.DIMENSION,
                                                 new ResourceLocation(pocketDimName)));
 
                 if (pocketWorld == null) {
-                        source.sendFailure(Component.literal("Pocket dimension not found."));
+                        source.sendFailure(Component.translatable("message.creraces.pocket.not_found"));
                         return 0;
                 }
 
@@ -806,9 +827,7 @@ public class CreracesCommand {
 
                 player.teleportTo(pocketWorld, tx + 0.5, ty + 1.0, tz + 0.5, 0, 0);
 
-                source.sendSuccess(() -> Component
-                                .literal("Teleported to pocket index " + index + " at " + (int) tx + ", " + (int) ty
-                                                + ", " + (int) tz)
+                source.sendSuccess(() -> Component.translatable("message.creraces.pocket.teleport_success", index, (int) tx, (int) ty, (int) tz)
                                 .withStyle(ChatFormatting.GREEN), false);
                 return 1;
         }
@@ -827,49 +846,55 @@ public class CreracesCommand {
 
                 // Ensure pocket exists
                 if (!hostVars.hasPocket()) {
-                        source.sendFailure(Component.literal(
-                                        host.getGameProfile().getName() + " does not have an initialized pocket."));
+                        source.sendFailure(Component.translatable("message.creraces.pocket.no_pocket_initialized", host.getDisplayName()));
                         return 0;
                 }
 
                 // Check permissions: always allow if self, if invited, or if OP
-                if (player != host && !hostVars.getPocketInvitations().contains(player.getUUID())
+                if (!player.getUUID().equals(host.getUUID()) && !hostVars.getPocketInvitations().contains(player.getUUID())
                                 && !source.hasPermission(2)) {
-                        source.sendFailure(Component.literal("You have not been invited to "
-                                        + host.getGameProfile().getName() + "'s pocket."));
+                        source.sendFailure(Component.translatable("message.creraces.pocket.no_invite_to_join", host.getDisplayName()));
                         return 0;
                 }
 
                 // Dryad Restriction: block entry to own pocket if tree is not set
                 if (player == host && hostVars.getRace().toString().equals("creraces:dryad")) {
-                        double dryadTx = hostVars.getPersistentState(new ResourceLocation("dryad:tx"));
-                        if (dryadTx == 0.0) {
-                                source.sendFailure(Component.literal(
-                                                "You must set your soul tree before you can enter your pocket."));
-                                return 0;
-                        }
+                    double tx = hostVars.getPersistentState(new ResourceLocation("creraces", "tx"));
+                    double ty = hostVars.getPersistentState(new ResourceLocation("creraces", "ty"));
+                    double tz = hostVars.getPersistentState(new ResourceLocation("creraces", "tz"));
+                    if (tx == 0 && ty == 0 && tz == 0) {
+                        source.sendFailure(Component.translatable("message.creraces.dryad.no_tree"));
+                        return 0;
+                    }
                 }
 
                 // Teleport to host's pocket
-                String pocketDimName = "creraces:pocket";
+                String pocketDimName = mc.sayda.creraces.config.CreRacesConfig.ACTION_DEFAULT_POCKET_DIM.get();
                 net.minecraft.server.level.ServerLevel pocketWorld = player.server.getLevel(
                                 net.minecraft.resources.ResourceKey.create(
                                                 net.minecraft.core.registries.Registries.DIMENSION,
                                                 new ResourceLocation(pocketDimName)));
 
                 if (pocketWorld == null) {
-                        source.sendFailure(Component.literal("Pocket dimension not found."));
+                        source.sendFailure(Component.translatable("message.creraces.pocket.not_found"));
                         return 0;
                 }
+
+                // Store return point for the player joining
+                mc.sayda.creraces.capability.DataUtils.getVariables(player).ifPresent(pVars -> {
+                        pVars.setReturnX(player.getX());
+                        pVars.setReturnY(player.getY());
+                        pVars.setReturnZ(player.getZ());
+                        pVars.setReturnDim(java.util.Objects.requireNonNull(player.level().dimension().location()).toString());
+                });
 
                 double tx = hostVars.getPocketSpawnX();
                 double ty = hostVars.getPocketSpawnY();
                 double tz = hostVars.getPocketSpawnZ();
 
-                player.teleportTo(pocketWorld, tx, ty, tz, 0.0f, 0.0f);
+                player.teleportTo(pocketWorld, tx, ty, tz, player.getYRot(), player.getXRot());
 
-                source.sendSuccess(() -> Component
-                                .literal("Joined " + host.getGameProfile().getName() + "'s pocket.")
+                source.sendSuccess(() -> Component.translatable("message.creraces.pocket.joined", host.getDisplayName())
                                 .withStyle(ChatFormatting.GREEN), false);
                 return 1;
         }

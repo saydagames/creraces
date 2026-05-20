@@ -23,7 +23,7 @@ public class RecallProjectilesAction implements ActionRegistry.RaceAction {
     @Override
     public boolean execute(Player player, @Nullable net.minecraft.world.entity.LivingEntity target,
             @Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @Nullable net.minecraft.core.BlockPos interactionPos) {
+            @Nullable net.minecraft.core.BlockPos interact_pos) {
         double r = radius.evaluate(player, target, slot);
         AABB area = java.util.Objects.requireNonNull(player.getBoundingBox().inflate(r));
         List<FeatherProjectile> feathers = player.level().getEntitiesOfClass(FeatherProjectile.class, area,

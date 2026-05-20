@@ -27,7 +27,8 @@
         "MiniBlockPlaceMixin",
         "HumanoidModelMixin",
         "FogRendererMixin",
-        "LiquidOverlayMixin"
+        "LiquidOverlayMixin",
+        "GuiGraphicsMixin"
     ],
     "injectors": {
         "defaultRequire": 1

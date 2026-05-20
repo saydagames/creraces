@@ -50,13 +50,18 @@ public class PocketEntryAction implements ActionRegistry.RaceAction {
     @Override
     public boolean execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         if (!(player instanceof ServerPlayer serverPlayer))
             return true;
 
         ServerLevel pocketWorld = serverPlayer.server.getLevel(ResourceKey.create(Registries.DIMENSION, java.util.Objects.requireNonNull(dimension)));
         if (pocketWorld == null) {
             CreRaces.LOGGER.error("Could not find pocket dimension: {}", dimension);
+            return true;
+        }
+
+        if (structure == null) {
+            CreRaces.LOGGER.error("Pocket structure is null!");
             return true;
         }
 
@@ -72,9 +77,11 @@ public class PocketEntryAction implements ActionRegistry.RaceAction {
 
             // Dryad Restriction
             if (vars.getRace().toString().equals("creraces:dryad")) {
-                double tx = vars.getPersistentState(new ResourceLocation("dryad:tx"));
-                if (tx == 0.0) {
-                    serverPlayer.displayClientMessage(net.minecraft.network.chat.Component.literal("You must set your soul tree before you can enter your pocket."), true);
+                double tx = vars.getPersistentState(new ResourceLocation("creraces", "tx"));
+                double ty = vars.getPersistentState(new ResourceLocation("creraces", "ty"));
+                double tz = vars.getPersistentState(new ResourceLocation("creraces", "tz"));
+                if (tx == 0 && ty == 0 && tz == 0) {
+                    serverPlayer.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.creraces.dryad.no_tree"), true);
                     return;
                 }
             }
@@ -140,7 +147,10 @@ public class PocketEntryAction implements ActionRegistry.RaceAction {
 
     public static void teleport(ServerPlayer player, String dimension, double x, double y, double z) {
         String dimName = (dimension == null || dimension.isEmpty()) ? "minecraft:overworld" : dimension;
-        ResourceLocation dimLoc = new ResourceLocation(dimName);
+        ResourceLocation dimLoc = ResourceLocation.tryParse(dimName);
+        if (dimLoc == null)
+            dimLoc = new ResourceLocation("minecraft:overworld");
+        
         ResourceKey<net.minecraft.world.level.Level> dimKey = ResourceKey
                 .create(net.minecraft.core.registries.Registries.DIMENSION, dimLoc);
         ServerLevel level = player.server.getLevel(dimKey);

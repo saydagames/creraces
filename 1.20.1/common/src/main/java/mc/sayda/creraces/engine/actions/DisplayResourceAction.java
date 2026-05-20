@@ -15,7 +15,7 @@ public class DisplayResourceAction implements ActionRegistry.RaceAction {
     @Override
     public boolean execute(Player player, @Nullable LivingEntity target,
             @Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @Nullable net.minecraft.core.BlockPos interactionPos) {
+            @Nullable net.minecraft.core.BlockPos interact_pos) {
         // Implement display logic or act as a NoOp since UI shows resource natively.
         return true;
     }

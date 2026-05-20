@@ -38,7 +38,7 @@ public class SetCustomizationAction implements ActionRegistry.RaceAction {
     @Override
     public boolean execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         DataUtils.getVariables(player).ifPresent(vars -> {
             String valToSet = value;
             double ox = offsetX.evaluate(player, target, slot);
@@ -66,8 +66,8 @@ public class SetCustomizationAction implements ActionRegistry.RaceAction {
                         valToSet = String.valueOf(target.getZ() + oz);
                 }
                 case "TARGET_BLOCK_X" -> {
-                    if (interactionPos != null) {
-                        valToSet = String.valueOf(interactionPos.getX() + (int) ox);
+                    if (interact_pos != null) {
+                        valToSet = String.valueOf(interact_pos.getX() + (int) ox);
                     } else {
                         net.minecraft.world.phys.HitResult hit = player.pick(5.0, 0.0F, false);
                         if (hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
@@ -77,8 +77,8 @@ public class SetCustomizationAction implements ActionRegistry.RaceAction {
                     }
                 }
                 case "TARGET_BLOCK_Y" -> {
-                    if (interactionPos != null) {
-                        valToSet = String.valueOf(interactionPos.getY() + (int) oy);
+                    if (interact_pos != null) {
+                        valToSet = String.valueOf(interact_pos.getY() + (int) oy);
                     } else {
                         net.minecraft.world.phys.HitResult hit = player.pick(5.0, 0.0F, false);
                         if (hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
@@ -88,8 +88,8 @@ public class SetCustomizationAction implements ActionRegistry.RaceAction {
                     }
                 }
                 case "TARGET_BLOCK_Z" -> {
-                    if (interactionPos != null) {
-                        valToSet = String.valueOf(interactionPos.getZ() + (int) oz);
+                    if (interact_pos != null) {
+                        valToSet = String.valueOf(interact_pos.getZ() + (int) oz);
                     } else {
                         net.minecraft.world.phys.HitResult hit = player.pick(5.0, 0.0F, false);
                         if (hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {

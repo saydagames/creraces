@@ -27,7 +27,7 @@ public class MorphAction implements ActionRegistry.RaceAction {
     @Override
     public boolean execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         DataUtils.getVariables(player).ifPresent(vars -> {
             // Get Twilight Lib morph data
             mc.sayda.twilight_lib.capabilities.IMorph morphData = mc.sayda.twilight_lib.capabilities.DataUtils

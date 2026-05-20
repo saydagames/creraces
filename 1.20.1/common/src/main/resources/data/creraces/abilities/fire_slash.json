@@ -2,7 +2,7 @@
     "creraces:name": "ability.creraces.fire_slash.name",
     "creraces:description": "ability.creraces.fire_slash.description",
     "creraces:type": "ACTIVE",
-    "creraces:icon": "minecraft:textures/item/blaze_powder.png",
+    "creraces:icon": "creraces:textures/icons/ignition.png",
     "creraces:cooldown": 60,
     "creraces:cost": 5,
     "creraces:actions": [
@@ -29,7 +29,3 @@
     ],
     "creraces:wiki_page": "Ability:Fire_Slash"
 }
-
-
-
-

@@ -23,19 +23,19 @@ import net.minecraft.world.item.ItemStack;
 public interface Condition {
     boolean evaluate(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos);
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos);
 
     @SuppressWarnings("null")
     static Condition fromJson(JsonObject json) {
         if (json == null || json.size() == 0 || !json.has("type")) {
-            return (player, target, slot, interactionPos) -> true;
+            return (player, target, slot, interact_pos) -> true;
         }
         String typeStr = json.get("type").getAsString();
         @SuppressWarnings("null")
         ResourceLocation typeLoc = ResourceLocation.tryParse(typeStr);
         if (typeLoc == null) {
             CreRaces.LOGGER.error("Malformed condition type '{}' - skipping.", typeStr);
-            return (player, target, slot, interactionPos) -> false;
+            return (player, target, slot, interact_pos) -> false;
         }
         String type = typeLoc.getPath();
 
@@ -155,11 +155,32 @@ public interface Condition {
                 }
                 case "has_effect" -> {
                     String id = GsonHelper.getAsString(json, "effect");
+                    ResourceLocation effectId = ResourceLocation.tryParse(id);
+                    if (effectId == null) {
+                        CreRaces.LOGGER.error("has_effect condition has malformed effect ID: '{}'", id);
+                        yield (Condition) (player, target, slot, interact_pos) -> false;
+                    }
                     ScalingValue amp = ScalingValue.fromJson(json, "amplifier", 0);
                     boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
-                    @SuppressWarnings("null")
-                    Condition c = new HasEffectCondition(new ResourceLocation(id), amp, useTarget);
-                    yield c;
+                    yield new HasEffectCondition(effectId, amp, useTarget);
+                }
+                case "modulo" -> {
+                    String stateKey = json.has("state") ? GsonHelper.getAsString(json, "state")
+                            : (json.has("id") ? GsonHelper.getAsString(json, "id")
+                                    : GsonHelper.getAsString(json, "ability"));
+                    if (!stateKey.contains(":")) {
+                        stateKey = "creraces:" + stateKey;
+                    }
+                    ResourceLocation stateId = ResourceLocation.tryParse(stateKey);
+                    ScalingValue divisor = ScalingValue.fromJson(json, "divisor", 2.0);
+                    ScalingValue remainder = ScalingValue.fromJson(json, "remainder", 0.0);
+                    yield new ModuloCondition(stateId, divisor, remainder);
+                }
+                case "scaling_compare" -> {
+                    ScalingValue first = ScalingValue.fromJson(json, "first", 0.0);
+                    ScalingValue second = ScalingValue.fromJson(json, "second", 0.0);
+                    String operator = GsonHelper.getAsString(json, "operator", "==");
+                    yield new ScalingCompareCondition(first, second, operator);
                 }
                 case "can_place_block" -> {
                     ScalingValue ox = ScalingValue.fromJson(json, "offset_x", 0.0);
@@ -205,6 +226,16 @@ public interface Condition {
                     boolean expected = GsonHelper.getAsBoolean(json, "value", true);
                     yield new IsSpiritMoonCondition(expected);
                 }
+                case "block_data" -> {
+                    ScalingValue ox = ScalingValue.fromJson(json, "offset_x", 0.0);
+                    ScalingValue oy = ScalingValue.fromJson(json, "offset_y", 0.0);
+                    ScalingValue oz = ScalingValue.fromJson(json, "offset_z", 0.0);
+                    String key = GsonHelper.getAsString(json, "key");
+                    ScalingValue value = ScalingValue.fromJson(json, "value", 0.0);
+                    String operator = GsonHelper.getAsString(json, "operator", "==");
+                    boolean useInteractPos = GsonHelper.getAsBoolean(json, "use_interact_pos", true);
+                    yield new BlockDataCondition(ox, oy, oz, key, value, operator, useInteractPos);
+                }
                 case "entity_data" -> {
                     yield EntityDataCondition.fromJson(json);
                 }
@@ -233,7 +264,7 @@ public interface Condition {
                     boolean useTargetBlock = GsonHelper.getAsBoolean(json, "use_target_block", false);
                     boolean absolute = GsonHelper.getAsBoolean(json, "absolute", true);
 
-                    ScalingValue.MathOp math = ScalingValue.MathOp.ROUND;
+                    ScalingValue.MathOp math = ScalingValue.MathOp.FLOOR;
                     if (json.has("math")) {
                         try {
                             math = ScalingValue.MathOp.valueOf(json.get("math").getAsString().toUpperCase());
@@ -251,8 +282,12 @@ public interface Condition {
                 case "customization_equals" -> {
                     String id = GsonHelper.getAsString(json, "id");
                     java.util.List<String> validVals = new java.util.ArrayList<>();
-                    for (com.google.gson.JsonElement e : json.getAsJsonArray("values")) {
-                        validVals.add(e.getAsString());
+                    if (json.has("values") && json.get("values").isJsonArray()) {
+                        for (com.google.gson.JsonElement e : json.getAsJsonArray("values")) {
+                            validVals.add(e.getAsString());
+                        }
+                    } else {
+                        CreRaces.LOGGER.error("customization_equals condition missing 'values' array");
                     }
                     yield new CustomizationEqualsCondition(id, validVals.toArray(new String[0]));
                 }
@@ -283,7 +318,7 @@ public interface Condition {
                     ScalingValue ox = ScalingValue.fromJson(json, "offset_x", 0.0);
                     ScalingValue oy = ScalingValue.fromJson(json, "offset_y", 0.0);
                     ScalingValue oz = ScalingValue.fromJson(json, "offset_z", 0.0);
-                    boolean useInteractionPos = GsonHelper.getAsBoolean(json, "use_interaction_pos", true);
+                    boolean useinteract_pos = GsonHelper.getAsBoolean(json, "use_interact_pos", true);
                     boolean absolute = GsonHelper.getAsBoolean(json, "absolute", false);
 
                     ScalingValue.MathOp math = ScalingValue.MathOp.ROUND;
@@ -296,7 +331,7 @@ public interface Condition {
                         }
                     }
 
-                    yield new IsBlockCondition(blockStr, ox, oy, oz, useInteractionPos, absolute, math);
+                    yield new IsBlockCondition(blockStr, ox, oy, oz, useinteract_pos, absolute, math);
                 }
                 case "cooldown" -> {
                     String id = json.has("state") ? GsonHelper.getAsString(json, "state")
@@ -309,6 +344,12 @@ public interface Condition {
                     ScalingValue value = ScalingValue.fromJson(json, "value", 0.0);
                     yield new CooldownCondition(id, operator, value);
                 }
+                case "ability_level" -> {
+                    String id = json.has("ability") ? GsonHelper.getAsString(json, "ability") : "self";
+                    String operator = GsonHelper.getAsString(json, "operator", ">=");
+                    ScalingValue value = ScalingValue.fromJson(json, "value", 1.0);
+                    yield new AbilityLevelCondition(id, operator, value);
+                }
                 default ->
                     throw new IllegalArgumentException("Unknown condition type '" + typeStr + "' - check your JSON");
             };
@@ -316,7 +357,7 @@ public interface Condition {
             mc.sayda.creraces.CreRaces.LOGGER.error(
                     "Failed to parse condition '{}': {} - condition will always return false. JSON: {}",
                     typeStr, e.getMessage(), json);
-            return (player, target, slot, interactionPos) -> false;
+            return (player, target, slot, interact_pos) -> false;
         }
     }
 }
@@ -334,7 +375,7 @@ class WearingArmorCondition implements Condition {
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot abilitySlot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
 
         Iterable<net.minecraft.world.item.ItemStack> items;
         if (slot.equalsIgnoreCase("head")) {
@@ -373,7 +414,7 @@ class ItemInteractionCondition implements Condition {
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         return ItemUtils.matches(player.getMainHandItem(), definition)
                 || ItemUtils.matches(player.getOffhandItem(), definition);
     }
@@ -392,7 +433,7 @@ class HoldingItemCondition implements Condition {
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         // Smart Targeting: Prefer target if present, otherwise respect useTarget flag
         net.minecraft.world.entity.LivingEntity entity = (target != null) ? target : (useTarget ? null : player);
         if (entity == null || definition == null)
@@ -423,7 +464,7 @@ class StateCondition implements Condition {
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         return DataUtils.getVariables(player).map(vars -> {
             ResourceLocation targetId = null;
             if ("self".equalsIgnoreCase(state) && slot != null) {
@@ -477,7 +518,7 @@ class MorphedCondition implements Condition {
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         return DataUtils.getVariables(player)
                 .map(vars -> vars.isMorphed() == expected)
                 .orElse(false);
@@ -495,7 +536,7 @@ class FlyingCondition implements Condition {
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         boolean isFlying = player.getAbilities().flying || player.isFallFlying();
         return isFlying == expected;
     }
@@ -512,7 +553,7 @@ class SneakingCondition implements Condition {
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         return player.isShiftKeyDown() == expected;
     }
 }
@@ -528,7 +569,7 @@ class OnGroundCondition implements Condition {
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         return player.onGround() == expected;
     }
 }
@@ -544,7 +585,7 @@ class AttackChargedCondition implements Condition {
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         return player.getAttackStrengthScale(0.5f) >= threshold.evaluate(player, target);
     }
 }
@@ -564,7 +605,7 @@ class HasEffectCondition implements Condition {
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         @SuppressWarnings("null")
         net.minecraft.world.effect.MobEffect effect = net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT
                 .get(effectId);
@@ -591,9 +632,9 @@ class AndCondition implements Condition {
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         for (Condition c : conditions) {
-            if (!c.evaluate(player, target, slot, interactionPos))
+            if (!c.evaluate(player, target, slot, interact_pos))
                 return false;
         }
         return true;
@@ -611,9 +652,9 @@ class OrCondition implements Condition {
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         for (Condition c : conditions) {
-            if (c.evaluate(player, target, slot, interactionPos))
+            if (c.evaluate(player, target, slot, interact_pos))
                 return true;
         }
         return false;
@@ -631,8 +672,8 @@ class NotCondition implements Condition {
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
-        return !condition.evaluate(player, target, slot, interactionPos);
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
+        return !condition.evaluate(player, target, slot, interact_pos);
     }
 }
 
@@ -649,7 +690,7 @@ class BiomeCondition implements Condition {
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         @SuppressWarnings("null")
         net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> holder = player.level()
                 .getBiome(player.blockPosition());
@@ -683,7 +724,7 @@ class WeatherCondition implements Condition {
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         return switch (type.toLowerCase()) {
             case "rain" -> player.level().isRaining();
             case "thunder" -> player.level().isThundering();
@@ -706,7 +747,7 @@ class TimeCondition implements Condition {
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         long time = player.level().getDayTime() % 24000;
         return time >= (long) min.evaluate(player, target) && time <= (long) max.evaluate(player, target);
     }
@@ -725,7 +766,7 @@ class InWaterCondition implements Condition {
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         @SuppressWarnings("null")
         boolean inBubble = player.level().getBlockState(player.blockPosition())
                 .is(net.minecraft.world.level.block.Blocks.BUBBLE_COLUMN);
@@ -748,7 +789,7 @@ class InSunlightCondition implements Condition {
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         @SuppressWarnings("null")
         boolean inSun = player.level().isDay() &&
                 !player.level().isRaining() &&
@@ -770,7 +811,7 @@ class AltitudeCondition implements Condition {
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         double y = player.getY();
         return y >= min.evaluate(player, target) && y <= max.evaluate(player, target);
     }
@@ -787,7 +828,7 @@ class IsBurningCondition implements Condition {
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         return player.isOnFire() == expected;
     }
 }
@@ -805,7 +846,7 @@ class IsMovingCondition implements Condition {
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         net.minecraft.world.phys.Vec3 vel = player.getDeltaMovement();
         double t = threshold.evaluate(player, target);
         boolean isMoving = (vel.x * vel.x + vel.z * vel.z) > (t * t);
@@ -828,7 +869,7 @@ class ResourceLevelCondition implements Condition {
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         return DataUtils.getVariables(player).map(vars -> {
             double current = 0.0;
             String res = resource.toLowerCase();
@@ -907,7 +948,7 @@ class ExposedToRainCondition implements Condition {
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         return mc.sayda.creraces.util.WorldUtils.isExposedToRain(player) == expected;
     }
 }
@@ -920,7 +961,7 @@ class IsSmeltableCondition implements Condition {
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         net.minecraft.world.item.ItemStack stack = player.getMainHandItem();
         if (stack.isEmpty())
             return false;
@@ -950,7 +991,7 @@ class DistanceCondition implements Condition {
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         double tx = x.evaluate(player, target);
         double ty = y.evaluate(player, target);
         double tz = z.evaluate(player, target);
@@ -975,7 +1016,7 @@ class CustomizationEqualsCondition implements Condition {
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slotCtx,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         return DataUtils.getVariables(player).map(vars -> {
             ResourceLocation activeRaceLoc = vars.getRace();
             if (activeRaceLoc == null)
@@ -1018,7 +1059,7 @@ class RaceEqualsCondition implements Condition {
     @Override
     public boolean evaluate(Player player, @javax.annotation.Nullable LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slotCtx,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         return DataUtils.getVariables(player).map(vars -> {
             ResourceLocation activeRaceLoc = vars.getRace();
             String activeRaceId = activeRaceLoc != null ? activeRaceLoc.toString() : null;
@@ -1043,7 +1084,7 @@ class HasCustomizationCondition implements Condition {
     @Override
     public boolean evaluate(Player player, @javax.annotation.Nullable LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slotCtx,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         return DataUtils.getVariables(player).map(vars -> {
             ResourceLocation activeRaceLoc = vars.getRace();
             if (activeRaceLoc == null)
@@ -1069,7 +1110,7 @@ class DimensionCondition implements Condition {
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         return player.level().dimension().location().toString().equals(dimension);
     }
 }
@@ -1085,7 +1126,7 @@ class SpiritCondition implements Condition {
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         return DataUtils.getVariables(player)
                 .map(vars -> vars.isInSpiritRealm() == expected)
                 .orElse(false);
@@ -1104,7 +1145,7 @@ class HasEntitiesCondition implements Condition {
     @Override
     public boolean evaluate(Player player, @javax.annotation.Nullable LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         double r = radius.evaluate(player, target, slot);
         int maxAoeRadius = mc.sayda.creraces.config.CreRacesConfig.AOE_MAX_RADIUS.get();
         if (maxAoeRadius > 0)
@@ -1140,15 +1181,15 @@ class IsPositionCondition implements Condition {
     @Override
     public boolean evaluate(Player player, @javax.annotation.Nullable LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
 
         BlockPos basePos;
         if (absolute) {
             basePos = BlockPos.ZERO;
         } else if (useTarget && target != null) {
             basePos = target.blockPosition();
-        } else if (useTargetBlock && interactionPos != null) {
-            basePos = interactionPos;
+        } else if (useTargetBlock && interact_pos != null) {
+            basePos = interact_pos;
         } else {
             double tx = player.getX();
             double ty = player.getY();
@@ -1177,7 +1218,7 @@ class IsPositionCondition implements Condition {
         BlockPos targetPos = basePos.offset((int) px, (int) py, (int) pz);
 
         // This checks if the player/target/interaction position is at the specified coord
-        BlockPos currentPos = (interactionPos != null) ? interactionPos : player.blockPosition();
+        BlockPos currentPos = (interact_pos != null) ? interact_pos : player.blockPosition();
         return currentPos.equals(targetPos);
     }
 }
@@ -1187,25 +1228,25 @@ class IsBlockCondition implements Condition {
     private final ScalingValue offsetX;
     private final ScalingValue offsetY;
     private final ScalingValue offsetZ;
-    private final boolean useInteractionPos;
+    private final boolean useinteract_pos;
     private final boolean absolute;
     private final ScalingValue.MathOp coordinateMath;
 
     public IsBlockCondition(String blockDefinition, ScalingValue offsetX, ScalingValue offsetY, ScalingValue offsetZ,
-            boolean useInteractionPos, boolean absolute, ScalingValue.MathOp math) {
+            boolean useinteract_pos, boolean absolute, ScalingValue.MathOp math) {
         this.blockDefinition = blockDefinition;
         this.offsetX = offsetX;
         this.offsetY = offsetY;
         this.offsetZ = offsetZ;
-        this.useInteractionPos = useInteractionPos;
+        this.useinteract_pos = useinteract_pos;
         this.absolute = absolute;
-        this.coordinateMath = math != null ? math : ScalingValue.MathOp.ROUND;
+        this.coordinateMath = math != null ? math : ScalingValue.MathOp.FLOOR;
     }
 
     @Override
     public boolean evaluate(Player player, @javax.annotation.Nullable LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable BlockPos interactionPos) {
+            @javax.annotation.Nullable BlockPos interact_pos) {
         int ox = (int) offsetX.evaluate(player, target);
         int oy = (int) offsetY.evaluate(player, target);
         int oz = (int) offsetZ.evaluate(player, target);
@@ -1215,8 +1256,8 @@ class IsBlockCondition implements Condition {
             finalPos = new BlockPos(ox, oy, oz);
         } else {
             BlockPos base;
-            if (useInteractionPos && interactionPos != null) {
-                base = interactionPos;
+            if (useinteract_pos && interact_pos != null) {
+                base = interact_pos;
             } else {
                 double tx = player.getX();
                 double ty = player.getY();
@@ -1271,7 +1312,7 @@ class CooldownCondition implements Condition {
     @Override
     public boolean evaluate(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         return DataUtils.getVariables(player).map(vars -> {
             @SuppressWarnings("null")
             ResourceLocation fullId = ResourceLocation.tryParse(id);
@@ -1313,7 +1354,7 @@ class HasEnchantmentCondition implements Condition {
     @Override
     public boolean evaluate(Player player, @javax.annotation.Nullable LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot abilitySlot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
 
         LivingEntity actor = (useTarget && target != null) ? target : player;
         @SuppressWarnings("null")
@@ -1407,14 +1448,14 @@ class CanPlaceBlockCondition implements Condition {
         this.useTarget = useTarget;
         this.useTargetBlock = useTargetBlock;
         this.absolute = absolute;
-        this.coordinateMath = math != null ? math : ScalingValue.MathOp.ROUND;
+        this.coordinateMath = math != null ? math : ScalingValue.MathOp.FLOOR;
     }
 
     @SuppressWarnings("null")
     @Override
     public boolean evaluate(Player player, @javax.annotation.Nullable LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable BlockPos interactionPos) {
+            @javax.annotation.Nullable BlockPos interact_pos) {
         if (player == null)
             return false;
 
@@ -1423,8 +1464,8 @@ class CanPlaceBlockCondition implements Condition {
             basePos = BlockPos.ZERO;
         } else if (useTarget && target != null) {
             basePos = target.blockPosition();
-        } else if (useTargetBlock && interactionPos != null) {
-            basePos = interactionPos;
+        } else if (useTargetBlock && interact_pos != null) {
+            basePos = interact_pos;
         } else {
             double tx = player.getX();
             double ty = player.getY();
@@ -1472,7 +1513,108 @@ class IsSpiritMoonCondition implements Condition {
     public boolean evaluate(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         return mc.sayda.creraces.engine.WorldState.isSpiritMoon(player.level()) == expected;
+    }
+}
+
+class AbilityLevelCondition implements Condition {
+    private final String ability;
+    private final String operator;
+    private final ScalingValue value;
+
+    public AbilityLevelCondition(String ability, String operator, ScalingValue value) {
+        this.ability = ability;
+        this.operator = operator;
+        this.value = value;
+    }
+
+    @Override
+    public boolean evaluate(Player player,
+            @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
+        return DataUtils.getVariables(player).map(vars -> {
+            ResourceLocation targetId = null;
+            if ("self".equalsIgnoreCase(ability) && slot != null) {
+                targetId = vars.getAbilityInSlot(slot);
+            } else if (ability != null && !ability.equalsIgnoreCase("self")) {
+                String sub = ability;
+                if (!sub.contains(":")) {
+                    sub = "creraces:" + sub;
+                }
+                targetId = ResourceLocation.tryParse(sub);
+            }
+
+            if (targetId == null)
+                return false;
+
+            double current = vars.getAbilityLevel(targetId);
+            double val = value.evaluate(player, target, slot);
+
+            return switch (operator) {
+                case "!=" -> Math.abs(current - val) >= 0.001;
+                case ">" -> current > val;
+                case ">=" -> current >= val;
+                case "<" -> current < val;
+                case "<=" -> current <= val;
+                default -> Math.abs(current - val) < 0.001;
+            };
+        }).orElse(false);
+    }
+}
+
+class BlockDataCondition implements Condition {
+    private final ScalingValue ox, oy, oz;
+    private final String key;
+    private final ScalingValue value;
+    private final String operator;
+    private final boolean useInteractPos;
+
+    public BlockDataCondition(ScalingValue ox, ScalingValue oy, ScalingValue oz, String key, ScalingValue value,
+            String operator, boolean useInteractPos) {
+        this.ox = ox;
+        this.oy = oy;
+        this.oz = oz;
+        this.key = key;
+        this.value = value;
+        this.operator = operator;
+        this.useInteractPos = useInteractPos;
+    }
+
+    @Override
+    public boolean evaluate(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
+        net.minecraft.core.BlockPos pos = useInteractPos && interact_pos != null ? interact_pos : player.blockPosition();
+        pos = pos.offset((int) ox.evaluate(player, target, slot, interact_pos),
+                (int) oy.evaluate(player, target, slot, interact_pos),
+                (int) oz.evaluate(player, target, slot, interact_pos));
+
+        net.minecraft.world.level.block.entity.BlockEntity be = player.level().getBlockEntity(pos);
+        if (be == null)
+            return false;
+
+        net.minecraft.nbt.CompoundTag tag = be.saveWithFullMetadata();
+        if (key.equalsIgnoreCase("owner")) {
+            return tag.hasUUID("owner") && tag.getUUID("owner").equals(player.getUUID());
+        }
+
+        if (tag.contains(key)) {
+            double actual = tag.getDouble(key);
+            double expected = value.evaluate(player, target, slot, interact_pos);
+
+            return switch (operator) {
+                case "==" -> actual == expected;
+                case "!=" -> actual != expected;
+                case ">" -> actual > expected;
+                case ">=" -> actual >= expected;
+                case "<" -> actual < expected;
+                case "<=" -> actual <= expected;
+                default -> false;
+            };
+        }
+
+        return false;
     }
 }

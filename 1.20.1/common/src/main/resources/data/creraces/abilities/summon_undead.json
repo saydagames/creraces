@@ -11,15 +11,35 @@
     "creraces:actions": [
         {
             "type": "creraces:mass_summon",
-            "min_count": { "base": 3 },
-            "max_count": { "base": 5 },
+            "min_count": {
+                "base": 3
+            },
+            "max_count": {
+                "base": 5
+            },
             "range": 6.0,
+            "mark_as_servant": true,
             "pool": [
-                { "entity": "minecraft:zombie", "weight": 40 },
-                { "entity": "minecraft:skeleton", "weight": 30 },
-                { "entity": "minecraft:husk", "weight": 15 },
-                { "entity": "minecraft:stray", "weight": 10 },
-                { "entity": "minecraft:wither_skeleton", "weight": 5 }
+                {
+                    "entity": "minecraft:zombie",
+                    "weight": 40
+                },
+                {
+                    "entity": "minecraft:skeleton",
+                    "weight": 30
+                },
+                {
+                    "entity": "minecraft:husk",
+                    "weight": 15
+                },
+                {
+                    "entity": "minecraft:stray",
+                    "weight": 10
+                },
+                {
+                    "entity": "minecraft:wither_skeleton",
+                    "weight": 5
+                }
             ]
         },
         {
@@ -31,8 +51,3 @@
     ],
     "creraces:wiki_page": "Ability:Summon_Undead"
 }
-
-
-
-
-

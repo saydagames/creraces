@@ -3,7 +3,7 @@
     "creraces:description": "ability.creraces.crescent_swivel.description",
     "creraces:type": "ACTIVE",
     "creraces:icon": "minecraft:netherite_sword",
-    "creraces:cost": 80,
+    "creraces:cost": 60,
     "creraces:race": [
         "creraces:velox"
     ],
@@ -69,14 +69,19 @@
         {
             "type": "creraces:spawn_particles",
             "particle": "minecraft:witch",
-            "count": 5
+            "count": 45,
+            "radius": 2.0,
+            "shape": "disc",
+            "speed": 0.0
         },
         {
             "type": "creraces:spawn_particles",
             "particle": "minecraft:sweep_attack",
-            "count": 5
+            "count": 10,
+            "radius": 2.0,
+            "shape": "disc",
+            "speed": 0.0
         }
     ],
     "creraces:wiki_page": "Ability:Crescent_Swivel"
 }
-

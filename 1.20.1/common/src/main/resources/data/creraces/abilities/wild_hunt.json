@@ -2,7 +2,7 @@
     "creraces:name": "ability.creraces.wild_hunt.name",
     "creraces:description": "ability.creraces.wild_hunt.description",
     "creraces:type": "ACTIVE",
-    "creraces:icon": "minecraft:textures/item/bone.png",
+    "creraces:icon": "creraces:textures/mob_effect/wild_hunt.png",
     "creraces:cooldown": 380,
     "creraces:cost": 0,
     "creraces:race": [

@@ -20,9 +20,11 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Manages race teams and party logic on the server.
  */
+@SuppressWarnings("null")
 public class RaceTeamManager {
     private static final Map<UUID, RaceTeam> TEAMS = new ConcurrentHashMap<>();
     private static final Map<UUID, InviteData> PENDING_INVITES = new ConcurrentHashMap<>(); // Invitee -> InviteData
+    private static final Set<UUID> PENDING_REMOVALS = ConcurrentHashMap.newKeySet(); // Players kicked while offline
 
     public enum Role {
         MEMBER, OFFICER, LEADER
@@ -141,21 +143,34 @@ public class RaceTeamManager {
         Player aOwner = mc.sayda.creraces.util.CombatUtils.getRootOwner(attacker);
 
         if (vOwner != null && aOwner != null) {
-            // Same owner -> Allies (e.g. Player & their Servant, or two Servants of same player)
+            // Same instance -> Allied (handled by Minecraft usually, but good to be explicit for servants)
             if (vOwner.getUUID().equals(aOwner.getUUID())) {
                 return false;
             }
 
-            // Different owners -> Check teams
             IPlayerVariables vVars = DataUtils.getVariables(vOwner).orElse(null);
             IPlayerVariables aVars = DataUtils.getVariables(aOwner).orElse(null);
 
-            if (vVars != null && aVars != null && vVars.getTeamId() != null
-                    && vVars.getTeamId().equals(aVars.getTeamId())) {
-                RaceTeam team = TEAMS.get(vVars.getTeamId());
-                if (team != null && !team.isFriendlyFire()) {
-                    return false;
+            if (vVars != null && aVars != null) {
+                UUID vTeam = vVars.getTeamId();
+                UUID aTeam = aVars.getTeamId();
+
+                if (vTeam != null && vTeam.equals(aTeam)) {
+                    // Shared Team ID: Follow Friendly Fire toggle
+                    RaceTeam team = TEAMS.get(vTeam);
+                    if (team != null && team.isFriendlyFire()) {
+                        return true; // Friendly Fire is ON, they are enemies
+                    }
+                    return false; // Friendly Fire is OFF, they are allies
+                } else {
+                    // Different teams or missing team: Absolute Authority (Treat as enemies)
+                    return true;
                 }
+            }
+
+            // Fallback for cases without variables (should not happen for players)
+            if (vOwner.isAlliedTo(aOwner)) {
+                return false;
             }
         }
 
@@ -168,6 +183,9 @@ public class RaceTeamManager {
     }
 
     public static RaceTeam createTeam(ServerPlayer leader, String name) {
+        // Force leave current team if any
+        leaveTeam(leader);
+
         UUID teamId = UUID.randomUUID();
         int maxLen = mc.sayda.creraces.config.CreRacesConfig.NETWORK_TEAM_NAME_MAX_LEN.get();
         String finalName = name.length() > maxLen ? name.substring(0, maxLen) : name;
@@ -176,6 +194,7 @@ public class RaceTeamManager {
 
         applyTeamToPlayer(leader, team);
         broadcastUpdate(team, leader.getServer());
+        save(leader.getServer());
         leader.sendSystemMessage(
                 net.minecraft.network.chat.Component.translatable("msg.creraces.team.created", finalName));
         return team;
@@ -184,10 +203,19 @@ public class RaceTeamManager {
     public static void joinTeam(ServerPlayer player, UUID teamId) {
         RaceTeam team = TEAMS.get(teamId);
         if (team != null) {
+            if (team.getMembers().size() >= mc.sayda.creraces.config.CreRacesConfig.TEAM_MAX_SIZE.get()) {
+                player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("msg.creraces.team.full"));
+                return;
+            }
+
+            // Force leave current team if any
+            leaveTeam(player);
+
             team.getMembers().add(player.getUUID());
             team.setRole(player.getUUID(), Role.MEMBER);
             applyTeamToPlayer(player, team);
             broadcastUpdate(team, player.getServer());
+            save(player.getServer());
             player.sendSystemMessage(
                     net.minecraft.network.chat.Component.translatable("msg.creraces.team.joined", team.getName()));
         }
@@ -205,12 +233,24 @@ public class RaceTeamManager {
                         TEAMS.remove(teamId);
                     } else {
                         if (team.getLeader().equals(player.getUUID())) {
-                            UUID next = team.getMembers().iterator().next();
-                            team.setLeader(next);
-                            team.setRole(next, Role.LEADER);
+                            // Prioritize promoting an OFFICER (excluding the leaving player)
+                            UUID next = team.getMemberRoles().entrySet().stream()
+                                    .filter(e -> e.getValue() == Role.OFFICER && !e.getKey().equals(player.getUUID()))
+                                    .map(Map.Entry::getKey)
+                                    .findFirst()
+                                    .orElseGet(() -> team.getMembers().stream()
+                                            .filter(m -> !m.equals(player.getUUID()))
+                                            .findFirst()
+                                            .orElse(null)); // Should not happen as members is not empty
+                            
+                            if (next != null) {
+                                team.setLeader(next);
+                                team.setRole(next, Role.LEADER);
+                            }
                         }
                         broadcastUpdate(team, player.getServer());
                     }
+                    save(player.getServer());
                 }
                 vars.setTeamId(null);
                 vars.setTeamName("");
@@ -271,6 +311,7 @@ public class RaceTeamManager {
             if (role == Role.LEADER || role == Role.OFFICER) {
                 team.setFriendlyFire(!team.isFriendlyFire());
                 broadcastUpdate(team, player.getServer());
+                save(player.getServer());
             } else {
                 player.sendSystemMessage(Objects.requireNonNull(
                         net.minecraft.network.chat.Component.translatable("msg.creraces.team.no_perm")));
@@ -304,6 +345,7 @@ public class RaceTeamManager {
                             net.minecraft.network.chat.Component
                                     .translatable("gui.creraces.team.role." + newRole.name().toLowerCase())));
             broadcastUpdate(team, server);
+            save(server);
         });
     }
 
@@ -337,6 +379,7 @@ public class RaceTeamManager {
                             net.minecraft.network.chat.Component
                                     .translatable("gui.creraces.team.role." + newRole.name().toLowerCase())));
             broadcastUpdate(team, server);
+            save(server);
         });
     }
 
@@ -361,37 +404,53 @@ public class RaceTeamManager {
                 return; // Use leave instead
             }
 
-            if (!team.getMembers().contains(targetId))
-                return;
-
-            String targetName = server.getPlayerList().getPlayer(targetId) != null
-                    ? server.getPlayerList().getPlayer(targetId).getName().getString()
-                    : "Unknown";
             team.getMembers().remove(targetId);
             team.getMemberRoles().remove(targetId);
-            broadcastUpdate(team, server);
-
-            actor.sendSystemMessage(
-                    net.minecraft.network.chat.Component.translatable("msg.creraces.team.actor_kicked", targetName));
 
             ServerPlayer target = server.getPlayerList().getPlayer(targetId);
             if (target != null) {
                 DataUtils.getVariables(target).ifPresent(vars -> {
                     vars.setTeamId(null);
                     vars.setTeamName("");
+                    mc.sayda.creraces.network.BoundaryHandler.sendTeamUpdate(target,
+                            new mc.sayda.creraces.network.TeamUpdatePacket(Collections.emptyList(), false, null));
                 });
-                mc.sayda.creraces.network.BoundaryHandler.sendTeamUpdate(target,
-                        new mc.sayda.creraces.network.TeamUpdatePacket(Collections.emptyList(), false, null));
-                target.sendSystemMessage(Objects.requireNonNull(
-                        net.minecraft.network.chat.Component.translatable("msg.creraces.team.kicked", team.getName())));
+                target.sendSystemMessage(net.minecraft.network.chat.Component.translatable("msg.creraces.team.kicked"));
+            } else {
+                // target is offline, mark for removal on next join
+                PENDING_REMOVALS.add(targetId);
             }
+
+            String targetName = target != null ? target.getName().getString() : targetId.toString();
+            actor.sendSystemMessage(net.minecraft.network.chat.Component.translatable("msg.creraces.team.actor_kicked",
+                    targetName));
+            broadcastUpdate(team, server);
+            save(server);
         });
     }
 
     public static void tick(MinecraftServer server) {
-        int currentTick = server.getTickCount();
-        // Clear invites older than 5 minutes (6000 ticks)
-        PENDING_INVITES.entrySet().removeIf(entry -> (currentTick - entry.getValue().timestamp) > 6000);
+        if (server.getTickCount() % 20 == 0) {
+            int currentTick = server.getTickCount();
+            PENDING_INVITES.entrySet().removeIf(entry -> currentTick - entry.getValue().timestamp > 1200);
+        }
+    }
+
+    public static void handlePlayerJoin(ServerPlayer player) {
+        if (PENDING_REMOVALS.remove(player.getUUID())) {
+            DataUtils.getVariables(player).ifPresent(vars -> {
+                vars.setTeamId(null);
+                vars.setTeamName("");
+                mc.sayda.creraces.network.BoundaryHandler.sendTeamUpdate(player,
+                        new mc.sayda.creraces.network.TeamUpdatePacket(Collections.emptyList(), false, null));
+                CreRaces.LOGGER.info("Cleared stale team data for kicked player: {}", player.getName().getString());
+            });
+        }
+        
+        // Broadcast arrival to team
+        getPlayerTeam(player).ifPresent(team -> {
+            broadcastUpdate(team, player.getServer());
+        });
     }
 
     private static class InviteData {

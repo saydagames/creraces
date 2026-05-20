@@ -2,7 +2,7 @@
     "creraces:name": "ability.creraces.low_pressure_area.name",
     "creraces:description": "ability.creraces.low_pressure_area.description",
     "creraces:type": "ACTIVE",
-    "creraces:icon": "minecraft:feather",
+    "creraces:icon": "creraces:textures/icons/low_pressure.png",
     "creraces:cooldown": 1200,
     "creraces:cost": 20,
     "creraces:race": [
@@ -38,7 +38,3 @@
     ],
     "creraces:wiki_page": "Ability:Low_Pressure_Area"
 }
-
-
-
-

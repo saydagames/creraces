@@ -32,10 +32,10 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
     @Override
     public boolean execute(Player player, @javax.annotation.Nullable LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         // Targeting: use the explicit target if provided; otherwise fall back to player
         // unless use_target forces null
-        LivingEntity entity = (target != null) ? target : (useTarget ? null : player);
+        LivingEntity entity = useTarget ? target : player;
         if (entity == null || !targets.isValid(entity, player))
             return true;
 
@@ -155,6 +155,8 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
                     current = vars.getAh();
                 else if (res.equals("cr"))
                     current = vars.getCr();
+                else if (res.equals("passive_cd"))
+                    current = vars.getPassiveCooldown();
 
                 double newValue = current;
                 if (operation.equalsIgnoreCase("add"))
@@ -191,6 +193,8 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
                     vars.setAh(newValue);
                 else if (res.equals("cr"))
                     vars.setCr(newValue);
+                else if (res.equals("passive_cd"))
+                    vars.setPassiveCooldown(newValue);
 
                 mc.sayda.creraces.network.BoundaryHandler.resyncVariables(p, p);
             }

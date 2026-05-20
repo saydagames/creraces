@@ -37,6 +37,7 @@ public class RaceOverlay {
         if (player == null || mc.options.hideGui)
             return;
 
+        graphics.pose().pushPose();
         DataUtils.getVariables(player).ifPresent(vars -> {
             ResourceLocation raceId = vars.getRace();
             if (raceId.equals(RaceRegistry.NONE))
@@ -46,11 +47,7 @@ public class RaceOverlay {
             if (race == null)
                 return;
 
-            RenderSystem.disableDepthTest();
-            RenderSystem.depthMask(false);
-            RenderSystem.enableBlend();
-            RenderSystem.setShader(GameRenderer::getPositionTexShader);
-            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+            // Modern 1.20.1 HUD rendering uses GuiGraphics state management
 
             // Legacy Portrait Base (Based on UI Overlay legacy code)
             int basePosX = 14;
@@ -124,9 +121,10 @@ public class RaceOverlay {
                 }
             }
 
-            RenderSystem.depthMask(true);
-            RenderSystem.enableDepthTest();
+            // graphics.blit handled the state
         });
+        
+        graphics.pose().popPose();
     }
 
     private static void renderSteppedBar(@Nonnull GuiGraphics graphics, ResourceLocation texture, int x, int y,
@@ -151,6 +149,10 @@ public class RaceOverlay {
             if (ability != null) {
                 // Unified icon rendering: handles both item IDs and texture paths
                 mc.sayda.creraces.client.AbilityIconRenderer.render(graphics, ability.icon(), x + 1, y + 1, 16);
+
+                // Push Z so overlays render above 3D block icons
+                graphics.pose().pushPose();
+                graphics.pose().translate(0, 0, 200);
 
                 // Draw Cooldown
                 int cooldown = vars.getCooldown(abilityId);
@@ -181,6 +183,14 @@ public class RaceOverlay {
                     if (ability.onDeactivate() != null && !ability.onDeactivate().isEmpty()) {
                         drawBorder(graphics, x - 1, y - 1, 20, 20, 0x88AAAAAA); // Translucent Gray
                     }
+                }
+
+                graphics.pose().popPose();
+
+                // Draw Level Overlay
+                int level = vars.getAbilityLevel(abilityId);
+                if (level > 0) {
+                    mc.sayda.creraces.client.AbilityIconRenderer.renderLevel(graphics, level, x + 1, y + 1, 16);
                 }
             }
         }

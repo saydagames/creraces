@@ -52,6 +52,7 @@ public class IncidentResolver {
         dev.architectury.event.events.common.LifecycleEvent.SERVER_STOPPING.register(server -> {
             mc.sayda.creraces.team.RaceTeamManager.save(server);
             mc.sayda.creraces.util.PocketManager.save(server);
+            mc.sayda.creraces.util.Scheduler.clear();
         });
 
         // Social Passives (defendedByEntities)
@@ -292,6 +293,9 @@ public class IncidentResolver {
         // Sync race and ability definitions
         BoundaryHandler.syncRacesToPlayer(player, mc.sayda.creraces.race.RaceManager.createSyncPacket());
         BoundaryHandler.syncAbilitiesToPlayer(player, mc.sayda.creraces.ability.AbilityManager.createSyncPacket());
+        
+        // Handle team logic (offline kicks, etc.)
+        mc.sayda.creraces.team.RaceTeamManager.handlePlayerJoin(player);
     }
 
     private static void onIncidentTransition(ServerPlayer player) {

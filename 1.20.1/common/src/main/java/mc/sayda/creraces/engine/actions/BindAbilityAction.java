@@ -27,7 +27,7 @@ public class BindAbilityAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot triggerSlot, @Nullable BlockPos interactionPos) {
+    public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot triggerSlot, @Nullable BlockPos interact_pos) {
         DataUtils.getVariables(player).ifPresent(vars -> {
             if (saveTo != null && !saveTo.isEmpty()) {
                 ResourceLocation current = vars.getAbilityInSlot(slot);

@@ -104,7 +104,7 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
                         if (passives != null) {
                             // Underwater Air Refill (Aquatic/Undead Races)
                             boolean canBreatheWater = vars.isAquatic() || vars.isUndead()
-                                    || (passives != null && passives.canBreatheUnderwater());
+                                    || passives.canBreatheUnderwater();
                             var waterTag = net.minecraft.tags.FluidTags.WATER;
                             if (canBreatheWater && waterTag != null && player.isEyeInFluid(waterTag)) {
                                 if (player.getAirSupply() < player.getMaxAirSupply()) {
@@ -267,7 +267,8 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
         this.creraces$lastDamageSource = source;
         // TODO: Improve Global Spirit Realm damage immunity
         if (mc.sayda.creraces.engine.SpiritMobilityHandler.isSpirit((LivingEntity) (Object) this)) {
-            if (!source.is(net.minecraft.world.damagesource.DamageTypes.FELL_OUT_OF_WORLD) && !source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY)) {
+            if (!source.is(net.minecraft.world.damagesource.DamageTypes.FELL_OUT_OF_WORLD)
+                    && !source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY)) {
                 cir.setReturnValue(false);
                 return;
             }
@@ -370,13 +371,11 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
                         }
 
                         // Camouflage Interrupt
-                        @SuppressWarnings("null")
-                        boolean hasCamouflage = victimPlayer.hasEffect(java.util.Objects
-                                .requireNonNull(mc.sayda.creraces.registry.ModMobEffects.CAMOUFLAGE.get()));
-                        if (hasCamouflage) {
-                            victimPlayer.removeEffect(java.util.Objects
-                                    .requireNonNull(mc.sayda.creraces.registry.ModMobEffects.CAMOUFLAGE.get()));
-                            vars.setCooldown(new net.minecraft.resources.ResourceLocation("creraces:camouflage"), 220);
+                        var camouflageEffect = mc.sayda.creraces.registry.ModMobEffects.CAMOUFLAGE.get();
+                        if (camouflageEffect != null && victimPlayer.hasEffect(camouflageEffect)) {
+                            victimPlayer.removeEffect(camouflageEffect);
+                            vars.setCooldown(new net.minecraft.resources.ResourceLocation("creraces", "camouflage"),
+                                    220);
                             mc.sayda.creraces.network.BoundaryHandler.resyncVariables(victimPlayer, victimPlayer, true);
                         }
 
@@ -412,8 +411,10 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
 
                     int airInterval = passives != null ? passives.landSuffocationInterval() : -1;
                     boolean mustBeInWater = (vars.isAquatic() || airInterval > 0) && !vars.isUndead();
+                    // Null-check WATER_BREATHING for consistency with baseTick pattern
+                    var waterBreathing = net.minecraft.world.effect.MobEffects.WATER_BREATHING;
                     if (mustBeInWater && !player.isInWaterRainOrBubble()
-                            && !player.hasEffect(net.minecraft.world.effect.MobEffects.WATER_BREATHING)) {
+                            && (waterBreathing == null || !player.hasEffect(waterBreathing))) {
                         // Return air unchanged - do not let vanilla refill it while we're draining on
                         // land
                         cir.setReturnValue(air);
@@ -557,13 +558,17 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
             }
         }
 
-        // Pehkui Defense Scale
+        // Pehkui Defense Scale (applied independently, does NOT set 'applied'
+        // to avoid bypassing vanilla armor for untagged damage sources)
         try {
             var defScaleType = virtuoel.pehkui.api.ScaleTypes.DEFENSE;
             if (defScaleType != null) {
                 float defScale = defScaleType.getScaleData(victim).getScale();
                 if (defScale != 1.0f && defScale > 0) {
                     modifiedAmount /= defScale;
+                    // Always return when Pehkui modifies, since the value is now different
+                    // from vanilla's calculation. If 'applied' was already true from
+                    // physical/magic reduction, this stacks correctly.
                     applied = true;
                 }
             }
@@ -621,7 +626,7 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
         LivingEntity victim = (LivingEntity) (Object) this;
 
         // 1. SERVANT PRIORITY (Legacy remains for specifically tagged servants)
-        if (creraces$isServant(victim)) {
+        if (creraces$isServant(victim) && victim.getMobType() == net.minecraft.world.entity.MobType.UNDEAD) {
             creraces$spawnUndeadRemains(victim);
             return;
         }
@@ -639,8 +644,12 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
                     if (passives != null) {
                         Race.EntitySpawnData data = passives.spawnOnDeath();
                         if (data != null) {
+                            // LEM-1: use tryParse so malformed JSON entity type strings don't crash the
+                            // death handler
+                            ResourceLocation entityTypeKey = ResourceLocation.tryParse(data.entityType());
                             for (int i = 0; i < data.count(); i++) {
-                                var type = BuiltInRegistries.ENTITY_TYPE.get(new ResourceLocation(data.entityType()));
+                                var type = entityTypeKey != null ? BuiltInRegistries.ENTITY_TYPE.get(entityTypeKey)
+                                        : null;
                                 if (type != null) {
                                     var level = player.level();
                                     if (level != null) {

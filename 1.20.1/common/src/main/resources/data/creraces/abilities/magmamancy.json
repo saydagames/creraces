@@ -2,7 +2,7 @@
     "creraces:name": "ability.creraces.magmamancy.name",
     "creraces:description": "ability.creraces.magmamancy.description",
     "creraces:type": "ACTIVE",
-    "creraces:icon": "minecraft:textures/item/lava_bucket.png",
+    "creraces:icon": "creraces:volcanic_rock",
     "creraces:cooldown": 0,
     "creraces:cost": 0,
     "creraces:race": [
@@ -12,86 +12,86 @@
         {
             "type": "creraces:conditional",
             "condition": {
-                "type": "creraces:resource_level",
-                "resource": "state:creraces:stored_material",
-                "operator": ">=",
-                "value": 1
+                "type": "creraces:sneaking"
             },
             "if_true": [
                 {
-                    "type": "creraces:conditional",
-                    "condition": {
-                        "type": "creraces:can_place_block",
-                        "offset_y": -1,
-                        "math": "floor"
-                    },
-                    "if_true": [
-                        {
-                            "type": "creraces:conditional",
-                            "condition": {
-                                "type": "creraces:resource_level",
-                                "resource": "mana",
-                                "operator": ">=",
-                                "value": 20
-                            },
-                            "if_true": [
-                                {
-                                    "type": "creraces:place_block",
-                                    "block": "creraces:volcanic_rock",
-                                    "offset_y": -1,
-                                    "math": "floor"
-                                },
-                                {
-                                    "type": "creraces:modify_resource",
-                                    "resource": "mana",
-                                    "operation": "add",
-                                    "value": -20
-                                },
-                                {
-                                    "type": "creraces:modify_resource",
-                                    "resource": "state:creraces:stored_material",
-                                    "operation": "add",
-                                    "value": -1
-                                },
-                                {
-                                    "type": "creraces:set_cooldown",
-                                    "id": "creraces:magmamancy",
-                                    "value": 2
-                                }
-                            ],
-                            "if_false": [
-                                {
-                                    "type": "creraces:message",
-                                    "text": "Not enough mana",
-                                    "actionbar": true
-                                }
-                            ]
-                        }
-                    ],
-                    "if_false": [
-                        {
-                            "type": "creraces:message",
-                            "text": "Placement blocked",
-                            "actionbar": true
-                        }
-                    ]
+                    "type": "creraces:toggle_state",
+                    "state": "self"
+                },
+                {
+                    "type": "creraces:set_cooldown",
+                    "id": "creraces:magmamancy",
+                    "value": 5
                 }
             ],
             "if_false": [
                 {
                     "type": "creraces:conditional",
                     "condition": {
-                        "type": "creraces:sneaking"
+                        "type": "creraces:resource_level",
+                        "resource": "state:creraces:stored_material",
+                        "operator": ">=",
+                        "value": 1
                     },
                     "if_true": [
                         {
-                            "type": "creraces:toggle_state",
-                            "state": "self"
-                        },
-                        {
-                            "type": "creraces:set_cooldown",
-                            "id": "creraces:magmamancy",
-                            "value": 5
+                            "type": "creraces:conditional",
+                            "condition": {
+                                "type": "creraces:can_place_block",
+                                "offset_y": -1,
+                                "math": "floor"
+                            },
+                            "if_true": [
+                                {
+                                    "type": "creraces:conditional",
+                                    "condition": {
+                                        "type": "creraces:resource_level",
+                                        "resource": "mana",
+                                        "operator": ">=",
+                                        "value": 20
+                                    },
+                                    "if_true": [
+                                        {
+                                            "type": "creraces:place_block",
+                                            "block": "creraces:volcanic_rock",
+                                            "offset_y": -1,
+                                            "math": "floor"
+                                        },
+                                        {
+                                            "type": "creraces:modify_resource",
+                                            "resource": "mana",
+                                            "operation": "add",
+                                            "value": -20
+                                        },
+                                        {
+                                            "type": "creraces:modify_resource",
+                                            "resource": "state:creraces:stored_material",
+                                            "operation": "add",
+                                            "value": -1
+                                        },
+                                        {
+                                            "type": "creraces:set_cooldown",
+                                            "id": "creraces:magmamancy",
+                                            "value": 2
+                                        }
+                                    ],
+                                    "if_false": [
+                                        {
+                                            "type": "creraces:message",
+                                            "text": "Not enough mana",
+                                            "actionbar": true
+                                        }
+                                    ]
+                                }
+                            ],
+                            "if_false": [
+                                {
+                                    "type": "creraces:message",
+                                    "text": "Placement blocked",
+                                    "actionbar": true
+                                }
+                            ]
                         }
                     ]
                 }

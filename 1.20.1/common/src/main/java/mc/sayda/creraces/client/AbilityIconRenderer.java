@@ -81,4 +81,18 @@ public final class AbilityIconRenderer {
         String path = icon.getPath();
         return path.contains("textures/") || path.endsWith(".png");
     }
+
+    /**
+     * Render a level overlay on top of an icon.
+     */
+    public static void renderLevel(GuiGraphics graphics, int level, int x, int y, int size) {
+        if (level < 1 || level > 5)
+            return;
+        ResourceLocation overlay = new ResourceLocation("creraces", "textures/item/upgrade_" + level + ".png");
+        var pose = graphics.pose();
+        pose.pushPose();
+        pose.translate(0, 0, 200);
+        graphics.blit(overlay, x, y, 0, 0, size, size, size, size);
+        pose.popPose();
+    }
 }

@@ -33,7 +33,7 @@ public class ActionRegistry {
     public interface RaceAction {
         boolean execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
                 @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-                @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos);
+                @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos);
     }
 
     public interface ActionFactory {
@@ -51,25 +51,25 @@ public class ActionRegistry {
     public static RaceAction fromJson(JsonObject json) {
         if (!json.has("type")) {
             CreRaces.LOGGER.error("Action missing 'type' field - skipping. JSON: {}", json);
-            return (player, target, slot, interactionPos) -> true;
+            return (player, target, slot, interact_pos) -> true;
         }
         String typeStr = json.get("type").getAsString();
         ResourceLocation type = ResourceLocation.tryParse(typeStr);
         if (type == null) {
             CreRaces.LOGGER.error("Malformed action type '{}' - skipping.", typeStr);
-            return (player, target, slot, interactionPos) -> true;
+            return (player, target, slot, interact_pos) -> true;
         }
         ActionFactory factory = REGISTRY.get(type);
         if (factory == null) {
             CreRaces.LOGGER.error("Unknown action type '{}' - skipping. Did you forget to register it?", type);
-            return (player, target, slot, interactionPos) -> true;
+            return (player, target, slot, interact_pos) -> true;
         }
         try {
             RaceAction action = factory.create(json);
 
             ScalingValue chance = json.has("chance") ? ScalingValue.fromJson(json, "chance", 1.0) : null;
 
-            return (player, target, slot, interactionPos) -> {
+            return (player, target, slot, interact_pos) -> {
                 int depth = RECURSION_DEPTH.get();
                 if (depth >= MAX_RECURSION_DEPTH) {
                     CreRaces.LOGGER.warn(
@@ -83,7 +83,7 @@ public class ActionRegistry {
 
                 RECURSION_DEPTH.set(depth + 1);
                 try {
-                    return action.execute(player, target, slot, interactionPos);
+                    return action.execute(player, target, slot, interact_pos);
                 } finally {
                     RECURSION_DEPTH.set(depth);
                 }
@@ -92,13 +92,11 @@ public class ActionRegistry {
             CreRaces.LOGGER.error(
                     "Failed to parse action '{}': {} - action will be skipped at runtime. JSON: {}",
                     type, e.getMessage(), json);
-            return (player, target, slot, interactionPos) -> true;
+            return (player, target, slot, interact_pos) -> true;
         }
     }
 
     public static void init() {
-        // Traits
-        mc.sayda.creraces.engine.traits.OnAbilityUseTrait.register();
         // Core Actions will be registered here by their classes
         mc.sayda.creraces.engine.actions.ApplyEffectAction.register();
         mc.sayda.creraces.engine.actions.DelayAction.register();
@@ -153,6 +151,8 @@ public class ActionRegistry {
         mc.sayda.creraces.engine.actions.UnbindAbilityAction.register();
         mc.sayda.creraces.engine.actions.EnchantAction.register();
         mc.sayda.creraces.engine.actions.GetEnchantmentAction.register();
+        mc.sayda.creraces.engine.actions.UpdateBlockAction.register();
         mc.sayda.creraces.engine.actions.AttributeModifierAction.register();
+        mc.sayda.creraces.engine.actions.InteractBlockAction.register();
     }
 }

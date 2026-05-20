@@ -36,7 +36,7 @@ public class ToggleStateAction implements ActionRegistry.RaceAction {
     @Override
     public boolean execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         boolean[] success = { true };
         DataUtils.getVariables(player).ifPresent(vars -> {
             ResourceLocation targetAbilityId = abilityId;
@@ -66,7 +66,7 @@ public class ToggleStateAction implements ActionRegistry.RaceAction {
             if (Math.abs(current - off) < 0.001) {
                 vars.setPersistentState(targetAbilityId, on);
                 for (ActionRegistry.RaceAction a : onEnable) {
-                    if (!a.execute(player, target, slot, interactionPos)) {
+                    if (!a.execute(player, target, slot, interact_pos)) {
                         success[0] = false;
                         break;
                     }
@@ -74,7 +74,7 @@ public class ToggleStateAction implements ActionRegistry.RaceAction {
             } else {
                 vars.setPersistentState(targetAbilityId, off);
                 for (ActionRegistry.RaceAction a : onDisable) {
-                    if (!a.execute(player, target, slot, interactionPos)) {
+                    if (!a.execute(player, target, slot, interact_pos)) {
                         success[0] = false;
                         break;
                     }

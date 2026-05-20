@@ -25,7 +25,7 @@ public class UnbindAbilityAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot triggerSlot, @Nullable BlockPos interactionPos) {
+    public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot triggerSlot, @Nullable BlockPos interact_pos) {
         DataUtils.getVariables(player).ifPresent(vars -> {
             ResourceLocation toRestore = null;
             if (restoreFrom != null && !restoreFrom.isEmpty()) {

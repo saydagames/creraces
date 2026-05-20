@@ -270,6 +270,7 @@ public class RaceDetailsScreen extends Screen {
                 renderInfoPanel(graphics);
 
                 super.render(graphics, mouseX, mouseY, partialTick);
+                RenderSystem.disableBlend();
         }
 
         @SuppressWarnings("null")

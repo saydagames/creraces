@@ -60,6 +60,15 @@ public class MiniRemovePacket {
             }
 
             ServerLevel level = serverPlayer.serverLevel();
+
+            // Validate reach distance to prevent arbitrary remote removal
+            double reachSq = mc.sayda.creraces.config.CreRacesConfig.MINI_CRAFTING_DISTANCE_SQR.get();
+            if (serverPlayer.distanceToSqr(hostPos.getX() + 0.5, hostPos.getY() + 0.5, hostPos.getZ() + 0.5) > reachSq) {
+                CreRaces.LOGGER.warn("MiniRemovePacket: Rejected - player {} too far from hostPos {}",
+                        serverPlayer.getName().getString(), hostPos);
+                return;
+            }
+
             if (!(level.getBlockEntity(hostPos) instanceof MicroBlockEntity micro))
                 return;
 

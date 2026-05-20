@@ -12,7 +12,6 @@ import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix4f;
  
 public class SpiritRealmRenderer {
-    private static final BufferBuilder SPIRIT_MOON_BUILDER = new BufferBuilder(256);
 
     @SuppressWarnings("null")
     public static final ResourceLocation SPIRIT_MOON_ATLAS = new ResourceLocation("creraces",
@@ -107,7 +106,7 @@ public class SpiritRealmRenderer {
         }
 
         Matrix4f matrix = poseStack.last().pose();
-        BufferBuilder bufferBuilder = SPIRIT_MOON_BUILDER;
+        BufferBuilder bufferBuilder = Tesselator.getInstance().getBuilder();
 
         // Standard Moon Phase UV Mapping
         int phase = mc.level.getMoonPhase();

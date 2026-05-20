@@ -37,7 +37,7 @@ public class GetEnchantmentAction implements ActionRegistry.RaceAction {
     @Override
     public boolean execute(Player player, @Nullable LivingEntity target,
             @Nullable mc.sayda.creraces.ability.AbilitySlot abilitySlot,
-            @Nullable net.minecraft.core.BlockPos interactionPos) {
+            @Nullable net.minecraft.core.BlockPos interact_pos) {
         
         LivingEntity actor = (useTarget && target != null) ? target : player;
         ItemStack stack = getItemInSlot(actor, slot);

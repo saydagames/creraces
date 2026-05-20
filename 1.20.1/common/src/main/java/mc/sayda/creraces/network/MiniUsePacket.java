@@ -65,6 +65,14 @@ public class MiniUsePacket {
 
             var level = player.serverLevel();
 
+            // Validate reach distance to prevent arbitrary remote interaction
+            double reachSq = mc.sayda.creraces.config.CreRacesConfig.MINI_CRAFTING_DISTANCE_SQR.get();
+            if (player.distanceToSqr(hostPos.getX() + 0.5, hostPos.getY() + 0.5, hostPos.getZ() + 0.5) > reachSq) {
+                mc.sayda.creraces.CreRaces.LOGGER.warn("MiniUsePacket: Rejected - player {} too far from hostPos {}",
+                        player.getName().getString(), hostPos);
+                return;
+            }
+
             var blockState = level.getBlockState(hostPos);
 
             if (!blockState.is(ModBlocks.MICRO_BLOCK.get()))

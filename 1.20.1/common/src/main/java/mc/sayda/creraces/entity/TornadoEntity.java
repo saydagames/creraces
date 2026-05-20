@@ -141,12 +141,12 @@ public class TornadoEntity extends TamableAnimal {
                             || pOwner == null;
                 });
         for (net.minecraft.world.entity.projectile.Projectile p : projectiles) {
-            Vec3 away = p.position().subtract(center).normalize().scale(0.5);
-            p.setDeltaMovement(p.getDeltaMovement().add(away));
+            Vec3 away = p.position().subtract(center).normalize().scale(1.2);
+            p.setDeltaMovement(away);
             p.hasImpulse = true;
         }
 
-        List<LivingEntity> targets = level().getEntitiesOfClass(LivingEntity.class, getBoundingBox().inflate(radius),
+        List<LivingEntity> targets = level().getEntitiesOfClass(LivingEntity.class, area,
                 entity -> entity != this && entity != owner && (owner == null || RaceTeamManager.canHurt(entity, owner))
                         && !mc.sayda.creraces.util.RaceUtils.isImmuneToEffect(entity, dizzinessId));
 
@@ -188,6 +188,16 @@ public class TornadoEntity extends TamableAnimal {
     @Override
     public boolean canCollideWith(net.minecraft.world.entity.Entity entity) {
         return false;
+    }
+
+    @Override
+    protected void doPush(net.minecraft.world.entity.Entity entity) {
+        // Do not push entities
+    }
+
+    @Override
+    protected void pushEntities() {
+        // Do not push entities
     }
 
     @Override

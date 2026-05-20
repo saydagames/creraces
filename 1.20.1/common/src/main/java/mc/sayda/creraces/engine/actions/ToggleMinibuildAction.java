@@ -17,7 +17,7 @@ public class ToggleMinibuildAction implements ActionRegistry.RaceAction {
 
     @Override
     public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
-            @Nullable BlockPos interactionPos) {
+            @Nullable BlockPos interact_pos) {
         DataUtils.getVariables(player).ifPresent(vars -> {
             boolean newState = !vars.isSmallBuild();
             mc.sayda.creraces.CreRaces.LOGGER.info("ToggleMinibuildAction: Toggling smallBuild for {} to {}",

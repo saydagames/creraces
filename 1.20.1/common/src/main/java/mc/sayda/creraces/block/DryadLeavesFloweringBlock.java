@@ -19,7 +19,7 @@ public class DryadLeavesFloweringBlock extends LeavesBlock {
     }
 
     @Override
-    public void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+    public void randomTick(@javax.annotation.Nonnull BlockState state, @javax.annotation.Nonnull ServerLevel level, @javax.annotation.Nonnull BlockPos pos, @javax.annotation.Nonnull RandomSource random) {
         super.randomTick(state, level, pos, random);
 
         // 4% chance scaled by randomTickSpeed

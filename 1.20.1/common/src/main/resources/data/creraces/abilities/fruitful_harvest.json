@@ -2,7 +2,7 @@
     "creraces:name": "ability.creraces.fruitful_harvest.name",
     "creraces:description": "ability.creraces.fruitful_harvest.description",
     "creraces:type": "ACTIVE",
-    "creraces:icon": "minecraft:textures/item/glistering_melon_slice.png",
+    "creraces:icon": "creraces:textures/icons/blood.png",
     "creraces:cooldown": 420,
     "creraces:cost": 10,
     "creraces:race": [
@@ -69,7 +69,3 @@
     ],
     "creraces:wiki_page": "Ability:Fruitful_Harvest"
 }
-
-
-
-

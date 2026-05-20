@@ -39,9 +39,9 @@
                 "conditions": [
                     {
                         "type": "distance",
-                        "x": "state:dryad:tx",
-                        "y": "state:dryad:ty",
-                        "z": "state:dryad:tz",
+                        "x": "state:tx",
+                        "y": "state:ty",
+                        "z": "state:tz",
                         "range": 64.0
                     },
                     {
@@ -59,10 +59,10 @@
             "condition": {
                 "type": "not",
                 "condition": {
-                    "type": "creraces:state",
-                    "state": "state:dryad:tx",
-                    "operator": "!=",
-                    "value": 0.0
+                "type": "creraces:state",
+                "state": "state:tx",
+                "operator": "!=",
+                "value": 0.0
                 }
             },
             "actions": [
@@ -83,24 +83,22 @@
                     "if_false": [
                         {
                             "type": "creraces:set_state",
-                            "state": "state:dryad:tx",
-                            "mode": "TARGET_BLOCK_X"
+                            "state": "state:tx",
+                            "mode": "TARGET_BLOCK_X",
+                            "persistent": true
                         },
                         {
                             "type": "creraces:set_state",
-                            "state": "state:dryad:ty",
+                            "state": "state:ty",
                             "mode": "TARGET_BLOCK_Y",
-                            "offset_y": -1
+                            "offset_y": -1,
+                            "persistent": true
                         },
                         {
                             "type": "creraces:set_state",
-                            "state": "state:dryad:tz",
-                            "mode": "TARGET_BLOCK_Z"
-                        },
-                        {
-                            "type": "creraces:set_state",
-                            "state": "state:dryad:td",
-                            "mode": "POS_DIM"
+                            "state": "state:tz",
+                            "mode": "TARGET_BLOCK_Z",
+                            "persistent": true
                         },
                         {
                             "type": "creraces:place_block",
@@ -127,7 +125,7 @@
                         },
                         {
                             "type": "creraces:message",
-                            "text": "Dryad Sapling \u0026aClaimed\u0026f!",
+                            "text": "message.creraces.dryad.sapling_claimed_success",
                             "actionbar": true
                         }
                     ]
@@ -149,9 +147,10 @@
                             },
                             {
                                 "type": "creraces:is_position",
-                                "x": "state:dryad:tx",
-                                "y": "state:dryad:ty",
-                                "z": "state:dryad:tz"
+                                "use_target_block": true,
+                                "x": "state:tx",
+                                "y": "state:ty",
+                                "z": "state:tz"
                             }
                         ]
                     },
@@ -179,23 +178,21 @@
                         },
                         {
                             "type": "creraces:set_state",
-                            "state": "state:dryad:tx",
-                            "value": 0.0
+                            "state": "state:tx",
+                            "value": 0.0,
+                            "persistent": true
                         },
                         {
                             "type": "creraces:set_state",
-                            "state": "state:dryad:ty",
-                            "value": 0.0
+                            "state": "state:ty",
+                            "value": 0.0,
+                            "persistent": true
                         },
                         {
                             "type": "creraces:set_state",
-                            "state": "state:dryad:tz",
-                            "value": 0.0
-                        },
-                        {
-                            "type": "creraces:set_state",
-                            "state": "state:dryad:td",
-                            "value": 0.0
+                            "state": "state:tz",
+                            "value": 0.0,
+                            "persistent": true
                         },
                         {
                             "type": "creraces:message",
@@ -215,9 +212,10 @@
                                     },
                                     {
                                         "type": "creraces:is_position",
-                                        "x": "state:dryad:tx",
-                                        "y": "state:dryad:ty",
-                                        "z": "state:dryad:tz"
+                                        "use_target_block": true,
+                                        "x": "state:tx",
+                                        "y": "state:ty",
+                                        "z": "state:tz"
                                     }
                                 ]
                             },

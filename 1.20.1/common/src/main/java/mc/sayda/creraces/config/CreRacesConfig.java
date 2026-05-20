@@ -23,6 +23,7 @@ public class CreRacesConfig {
     public static Supplier<Double> ACTION_DEFAULT_POCKET_SPAWN_Z_OFFSET = () -> 6.5;
     public static Supplier<Double> POCKET_DIM_SPACING = () -> 1000.0;
     public static Supplier<Double> POCKET_DIM_Y = () -> 100.0;
+    public static Supplier<Double> POCKET_BOUNDARY = () -> 450.0;
     public static Supplier<Integer> POCKET_EXPANSION_LIMIT = () -> 8;
     public static Supplier<Double> POCKET_EXPANSION_COST = () -> 200.0;
     public static Supplier<Integer> POCKET_INVITE_MAX = () -> -1;
@@ -49,8 +50,8 @@ public class CreRacesConfig {
     public static Supplier<Double> ENTITY_TORNADO_ATTACK_DAMAGE = () -> 3.0;
     public static Supplier<Double> ENTITY_TORNADO_FLYING_SPEED = () -> 0.1;
     public static Supplier<Double> ENTITY_TORNADO_MOVEMENT_SPEED = () -> 0.3;
-    public static Supplier<Integer> ENTITY_TORNADO_LIFETIME_TICKS = () -> 200;
-    public static Supplier<Float> ENTITY_TORNADO_RADIUS = () -> 4.0f;
+    public static Supplier<Integer> ENTITY_TORNADO_LIFETIME_TICKS = () -> 2400;
+    public static Supplier<Float> ENTITY_TORNADO_RADIUS = () -> 2.5f;
     public static Supplier<Integer> ENTITY_TORNADO_DIZZINESS_DURATION = () -> 60;
     public static Supplier<Double> ENTITY_TORNADO_PULL_FORCE = () -> 0.05;
     public static Supplier<Double> ENTITY_TORNADO_FOLLOW_RANGE = () -> 16.0;
@@ -63,7 +64,9 @@ public class CreRacesConfig {
     public static Supplier<Integer> ENTITY_TROLL_PILLAR_CURSE_DURATION = () -> 100;
     public static Supplier<Integer> ENTITY_TROLL_PILLAR_LIFETIME_TICKS = () -> 600;
     public static Supplier<Double> ABILITY_HASTE_CAP = () -> 40.0;
+    public static Supplier<Integer> MAX_RAT_TUNNELS = () -> 1;
     public static Supplier<Integer> BREAK_BLOCKS_MAX_RADIUS = () -> -1;
+    public static Supplier<Double> REMOVE_BLOCK_HARDNESS_LIMIT = () -> -1.0;
     public static Supplier<Integer> AOE_MAX_RADIUS = () -> -1;
     public static Supplier<Integer> BEAM_MAX_LENGTH = () -> -1;
     public static Supplier<Integer> GIVE_ITEM_MAX_COUNT = () -> -1;
@@ -76,6 +79,8 @@ public class CreRacesConfig {
     public static Supplier<Integer> SPIRIT_SPAWN_CHECK_RADIUS = () -> 16;
     public static Supplier<Integer> CUSTOMIZATION_VALUE_MAX_LENGTH = () -> 128;
     public static Supplier<Integer> NETWORK_TEAM_NAME_MAX_LEN = () -> 16;
+    public static Supplier<Integer> TEAM_MAX_SIZE = () -> 16;
+    public static Supplier<Integer> DOUBLE_JUMP_COOLDOWN_TICKS = () -> 10;
     public static Supplier<Double> RACIAL_AD_MULTIPLIER = () -> 0.002;
     public static Supplier<Long> RESOURCE_DECAY_GRACE_PERIOD = () -> 400L;
     public static Supplier<Integer> PASSIVE_EXECUTION_INTERVAL = () -> 20;

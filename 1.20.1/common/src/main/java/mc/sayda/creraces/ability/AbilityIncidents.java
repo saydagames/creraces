@@ -62,6 +62,7 @@ public class AbilityIncidents {
             }
 
             // 4. Evaluate Condition
+            // TODO: Add support for custom failure messages in ability requirements
             if (ability.condition() != null && !ability.condition().evaluate(player, null, slot, null)) {
                 player.displayClientMessage(java.util.Objects.requireNonNull(Component.translatable("msg.creraces.condition_failed")), true);
                 return;

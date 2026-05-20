@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.race.Race;
 import mc.sayda.creraces.race.RaceRegistry;
+import mc.sayda.creraces.config.CreRacesConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -97,7 +98,7 @@ public class DebugScreen extends Screen {
                         return;
 
                 DataUtils.getVariables(player).ifPresent(vars -> {
-                
+
                         // --- IDENTITY ---
                         debugLines.add(Component.literal(""));
                         addHeader("IDENTITY");
@@ -332,9 +333,11 @@ public class DebugScreen extends Screen {
                         long dayCount = dayTime / 24000L;
                         boolean sm = mc.sayda.creraces.engine.WorldState.isSpiritMoon(player.level());
                         debugLines.add(Component.literal("  Time: ").withStyle(ChatFormatting.GRAY)
-                                        .append(Component.literal(String.valueOf(dayTime)).withStyle(ChatFormatting.WHITE)));
+                                        .append(Component.literal(String.valueOf(dayTime))
+                                                        .withStyle(ChatFormatting.WHITE)));
                         debugLines.add(Component.literal("  Day: ").withStyle(ChatFormatting.GRAY)
-                                        .append(Component.literal(String.valueOf(dayCount)).withStyle(ChatFormatting.WHITE)));
+                                        .append(Component.literal(String.valueOf(dayCount))
+                                                        .withStyle(ChatFormatting.WHITE)));
                         debugLines.add(Component.literal("  Spirit Moon: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component.literal(String.valueOf(sm))
                                                         .withStyle(sm ? ChatFormatting.GREEN : ChatFormatting.RED)));
@@ -350,7 +353,7 @@ public class DebugScreen extends Screen {
                                                 .append(Component.literal(String.valueOf(effectiveUndead))
                                                                 .withStyle(effectiveUndead ? ChatFormatting.GREEN
                                                                                 : ChatFormatting.RED)));
-                                lineMetadata.add(new LineMetadata(debugLines.size() - 1, "flag", "race_undead",
+                                lineMetadata.add(new LineMetadata(debugLines.size() - 1, "flag", "isUndead",
                                                 String.valueOf(vars.isUndead())));
 
                                 boolean effectiveAquatic = vars.isAquatic() || race.isAquatic();
@@ -358,7 +361,7 @@ public class DebugScreen extends Screen {
                                                 .append(Component.literal(String.valueOf(effectiveAquatic))
                                                                 .withStyle(effectiveAquatic ? ChatFormatting.GREEN
                                                                                 : ChatFormatting.RED)));
-                                lineMetadata.add(new LineMetadata(debugLines.size() - 1, "flag", "race_aquatic",
+                                lineMetadata.add(new LineMetadata(debugLines.size() - 1, "flag", "isAquatic",
                                                 String.valueOf(vars.isAquatic())));
 
                                 boolean effectiveSpirit = vars.isSpirit() || race.isSpirit();
@@ -366,7 +369,7 @@ public class DebugScreen extends Screen {
                                                 .append(Component.literal(String.valueOf(effectiveSpirit))
                                                                 .withStyle(effectiveSpirit ? ChatFormatting.GREEN
                                                                                 : ChatFormatting.RED)));
-                                lineMetadata.add(new LineMetadata(debugLines.size() - 1, "flag", "race_spirit_flag",
+                                lineMetadata.add(new LineMetadata(debugLines.size() - 1, "flag", "isSpirit",
                                                 String.valueOf(vars.isSpirit())));
 
                                 boolean effectiveTiny = vars.isTiny() || race.isTiny();
@@ -374,9 +377,16 @@ public class DebugScreen extends Screen {
                                                 .append(Component.literal(String.valueOf(effectiveTiny))
                                                                 .withStyle(effectiveTiny ? ChatFormatting.GREEN
                                                                                 : ChatFormatting.RED)));
-                                lineMetadata.add(new LineMetadata(debugLines.size() - 1, "flag", "race_tiny",
+                                lineMetadata.add(new LineMetadata(debugLines.size() - 1, "flag", "isTiny",
                                                 String.valueOf(vars.isTiny())));
                         }
+
+                        debugLines.add(Component.literal("    inSpirit: ").withStyle(ChatFormatting.GRAY)
+                                        .append(Component.literal(String.valueOf(vars.isInSpiritRealm()))
+                                                        .withStyle(vars.isInSpiritRealm() ? ChatFormatting.GREEN
+                                                                        : ChatFormatting.RED)));
+                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "flag", "inSpirit",
+                                        String.valueOf(vars.isInSpiritRealm())));
 
                         debugLines.add(Component.literal("    Morphed: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component.literal(String.valueOf(vars.isMorphed()))
@@ -385,18 +395,11 @@ public class DebugScreen extends Screen {
                         lineMetadata.add(new LineMetadata(debugLines.size() - 1, "flag", "morphed",
                                         String.valueOf(vars.isMorphed())));
 
-                        debugLines.add(Component.literal("    In Spirit: ").withStyle(ChatFormatting.GRAY)
-                                        .append(Component.literal(String.valueOf(vars.isInSpiritRealm()))
-                                                        .withStyle(vars.isInSpiritRealm() ? ChatFormatting.GREEN
-                                                                        : ChatFormatting.RED)));
-                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "flag", "spirit",
-                                        String.valueOf(vars.isInSpiritRealm())));
-
-                        debugLines.add(Component.literal("    Small Build: ").withStyle(ChatFormatting.GRAY)
+                        debugLines.add(Component.literal("    smallBuild: ").withStyle(ChatFormatting.GRAY)
                                         .append(Component.literal(String.valueOf(vars.isSmallBuild()))
                                                         .withStyle(vars.isSmallBuild() ? ChatFormatting.GREEN
                                                                         : ChatFormatting.RED)));
-                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "flag", "smallbuild",
+                        lineMetadata.add(new LineMetadata(debugLines.size() - 1, "flag", "smallBuild",
                                         String.valueOf(vars.isSmallBuild())));
 
                         debugLines.add(Component.literal("    gState: ").withStyle(ChatFormatting.GRAY)
@@ -508,15 +511,32 @@ public class DebugScreen extends Screen {
                                                                                         : ChatFormatting.RED)));
 
                         if (vars.hasPocket()) {
-                                debugLines.add(Component.literal("    Pocket Pos: ").withStyle(ChatFormatting.GRAY)
-                                                .append(Component
-                                                                .literal(String.format("%.1f, %.1f, %.1f",
-                                                                                vars.getPocketX(),
-                                                                                vars.getPocketY(), vars.getPocketZ()))
-                                                                .withStyle(ChatFormatting.WHITE))
-                                                .append(Component.literal(" | Size: ").withStyle(ChatFormatting.GRAY))
-                                                .append(Component.literal(String.valueOf(vars.getPocketSize()))
+                                debugLines.add(Component.literal("    Pocket X: ").withStyle(ChatFormatting.GRAY)
+                                                .append(Component.literal(String.format("%.1f", vars.getPocketX()))
                                                                 .withStyle(ChatFormatting.WHITE)));
+                                lineMetadata.add(new LineMetadata(debugLines.size() - 1, "variable", "pocketx",
+                                                String.valueOf(vars.getPocketX())));
+
+                                debugLines.add(Component.literal("    Pocket Y: ").withStyle(ChatFormatting.GRAY)
+                                                .append(Component.literal(String.format("%.1f", vars.getPocketY()))
+                                                                .withStyle(ChatFormatting.WHITE)));
+                                lineMetadata.add(new LineMetadata(debugLines.size() - 1, "variable", "pockety",
+                                                String.valueOf(vars.getPocketY())));
+
+                                debugLines.add(Component.literal("    Pocket Z: ").withStyle(ChatFormatting.GRAY)
+                                                .append(Component.literal(String.format("%.1f", vars.getPocketZ()))
+                                                                .withStyle(ChatFormatting.WHITE)));
+                                lineMetadata.add(new LineMetadata(debugLines.size() - 1, "variable", "pocketz",
+                                                String.valueOf(vars.getPocketZ())));
+
+                                double maxSize = CreRacesConfig.POCKET_EXPANSION_LIMIT.get();
+                                debugLines.add(Component.literal("    Size: ").withStyle(ChatFormatting.GRAY)
+                                                .append(Component
+                                                                .literal(String.format("%.1f / %.1f",
+                                                                                vars.getPocketSize(), maxSize))
+                                                                .withStyle(ChatFormatting.WHITE)));
+                                lineMetadata.add(new LineMetadata(debugLines.size() - 1, "variable", "pocketsize",
+                                                String.valueOf(vars.getPocketSize())));
 
                                 debugLines.add(Component.literal("    Host Spawn: ").withStyle(ChatFormatting.GRAY)
                                                 .append(Component.literal(String.format("%.1f, %.1f, %.1f",
@@ -552,6 +572,8 @@ public class DebugScreen extends Screen {
                                                         .withStyle(ChatFormatting.GRAY)
                                                         .append(Component.literal(v)
                                                                         .withStyle(ChatFormatting.LIGHT_PURPLE)));
+                                        lineMetadata.add(
+                                                        new LineMetadata(debugLines.size() - 1, "customization", k, v));
                                 }
                         }
 

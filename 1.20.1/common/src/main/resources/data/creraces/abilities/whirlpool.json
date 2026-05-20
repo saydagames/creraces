@@ -2,7 +2,7 @@
     "creraces:name": "ability.creraces.whirlpool.name",
     "creraces:description": "ability.creraces.whirlpool.description",
     "creraces:type": "ACTIVE",
-    "creraces:icon": "minecraft:nautilus_shell",
+    "creraces:icon": "creraces:textures/icons/bubbles.png",
     "creraces:cooldown": 240,
     "creraces:cost": 20,
     "creraces:race": [

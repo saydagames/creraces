@@ -46,7 +46,7 @@ public class AOEAction implements ActionRegistry.RaceAction {
     public boolean execute(Player player,
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         if (player.level() == null)
             return true;
 
@@ -84,7 +84,7 @@ public class AOEAction implements ActionRegistry.RaceAction {
 
         for (LivingEntity e : hitTargets) {
             for (ActionRegistry.RaceAction action : actions) {
-                if (!action.execute(player, e, slot, interactionPos)) {
+                if (!action.execute(player, e, slot, interact_pos)) {
                     return false;
                 }
             }
@@ -94,7 +94,7 @@ public class AOEAction implements ActionRegistry.RaceAction {
 
     public static void register() {
         ActionRegistry.register(ID, json -> {
-            if (json == null) return null;
+            if (json == null) return (player, target, slot, interact_pos) -> true;
             mc.sayda.creraces.engine.ScalingValue radius = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
                     "radius", 5.0);
             mc.sayda.creraces.engine.TargetFilter targets = mc.sayda.creraces.engine.TargetFilter.fromJson(json,

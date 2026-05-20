@@ -44,11 +44,18 @@ public class PocketInvitePacket {
 
             DataUtils.getVariables(sender).ifPresent(vars -> {
                 if (vars.hasPocket()) {
+                    int maxInvites = mc.sayda.creraces.config.CreRacesConfig.POCKET_INVITE_MAX.get();
+                    if (maxInvites >= 0 && vars.getPocketInvitations().size() >= maxInvites) {
+                        sender.displayClientMessage(Component.translatable("message.creraces.pocket.max_invites_reached", maxInvites)
+                                .withStyle(net.minecraft.ChatFormatting.RED), true);
+                        return;
+                    }
+
                     // Send a clickable invitation message to the target
-                    var inviteMsg = Component.translatable("message.creraces.pocket_invite_received", sender.getName())
+                    var inviteMsg = Component.translatable("message.creraces.pocket.invite_received", sender.getDisplayName())
                             .withStyle(net.minecraft.ChatFormatting.GOLD)
                             .append("\n")
-                            .append(Component.translatable("message.creraces.pocket_invite_click_here")
+                            .append(Component.translatable("message.creraces.pocket.invite_click_here", sender.getGameProfile().getName())
                                     .withStyle(s -> s.withColor(net.minecraft.ChatFormatting.YELLOW)
                                             .withClickEvent(new net.minecraft.network.chat.ClickEvent(
                                                     net.minecraft.network.chat.ClickEvent.Action.RUN_COMMAND,
@@ -57,15 +64,12 @@ public class PocketInvitePacket {
 
                     target.sendSystemMessage(inviteMsg);
                     sender.displayClientMessage(
-                            Component.translatable("message.creraces.pocket_invite_sent", target.getName()), true);
+                            Component.translatable("message.creraces.pocket.invite_success", target.getDisplayName()), true);
 
-                    // Also ensure the target is added to the sender's invitation list
-                    int maxInvites = mc.sayda.creraces.config.CreRacesConfig.POCKET_INVITE_MAX.get();
-                    if (maxInvites < 0 || vars.getPocketInvitations().size() < maxInvites) {
-                        vars.inviteToPocket(target.getUUID());
-                    }
+                    // Add to invitation list
+                    vars.inviteToPocket(target.getUUID());
                 } else {
-                    sender.displayClientMessage(Component.translatable("message.creraces.no_pocket_error")
+                    sender.displayClientMessage(Component.translatable("message.creraces.pocket.no_pocket_to_manage")
                             .withStyle(net.minecraft.ChatFormatting.RED), true);
                 }
             });

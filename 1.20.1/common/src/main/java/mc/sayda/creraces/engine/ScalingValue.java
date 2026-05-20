@@ -98,11 +98,16 @@ public class ScalingValue {
 
     public static final ScalingValue ZERO = new ScalingValue(0, null, 0, new ArrayList<>());
 
+    public static ScalingValue fixed(double value) {
+        return new ScalingValue(value, null, 0, false, new ArrayList<>(), MathOp.NONE, null, null);
+    }
+
     @FunctionalInterface
     public interface Evaluator {
         double evaluate(net.minecraft.world.entity.LivingEntity subject, Player player,
                 @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
-                @javax.annotation.Nullable AbilitySlot slot);
+                @javax.annotation.Nullable AbilitySlot slot,
+                @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos);
     }
 
     public double evaluate(Player player) {
@@ -115,16 +120,21 @@ public class ScalingValue {
 
     public double evaluate(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable AbilitySlot slot) {
+        return evaluate(player, target, slot, null);
+    }
+
+    public double evaluate(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
+            @javax.annotation.Nullable AbilitySlot slot, @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         double result = base;
         if (evaluator != null) {
             net.minecraft.world.entity.LivingEntity subject = (useTarget && target != null) ? target : player;
-            result += evaluator.evaluate(subject, player, target, slot) * factor;
+            result += evaluator.evaluate(subject, player, target, slot, interact_pos) * factor;
         }
 
         for (int i = 0; i < additionalScales.size(); i++) {
             ScalingComponent comp = additionalScales.get(i);
             net.minecraft.world.entity.LivingEntity subject = (comp.useTarget() && target != null) ? target : player;
-            result += comp.evaluator().evaluate(subject, player, target, slot) * comp.factor();
+            result += comp.evaluator().evaluate(subject, player, target, slot, interact_pos) * comp.factor();
         }
 
         switch (math) {
@@ -147,25 +157,25 @@ public class ScalingValue {
 
     private static Evaluator parseEvaluator(String statKey) {
         if (statKey == null || statKey.isEmpty())
-            return (s, p, t, sl) -> 0.0;
+            return (s, p, t, sl, ip) -> 0.0;
 
         final String finalKey = statKey.toLowerCase();
 
         // Hardcoded Attributes
         if (finalKey.equals("creraces:ap") || finalKey.equals("creraces:ability_power")) {
-            return (s, p, t, sl) -> {
+            return (s, p, t, sl, ip) -> {
                 Attribute attr = ModAttributes.resolve(ModAttributes.ABILITY_POWER);
                 return attr != null ? s.getAttributeValue(attr) : 0.0;
             };
         }
         if (finalKey.equals("creraces:ad") || finalKey.equals("creraces:attack_damage")) {
-            return (s, p, t, sl) -> {
+            return (s, p, t, sl, ip) -> {
                 Attribute attr = ModAttributes.resolve(ModAttributes.ATTACK_DAMAGE);
                 return attr != null ? s.getAttributeValue(attr) : 0.0;
             };
         }
         if (finalKey.equals("creraces:crit") || finalKey.equals("creraces:crit_rate")) {
-            return (s, p, t, sl) -> {
+            return (s, p, t, sl, ip) -> {
                 Attribute attr = ModAttributes.resolve(ModAttributes.CRIT_RATE);
                 if (attr == null)
                     return 0.0;
@@ -176,13 +186,13 @@ public class ScalingValue {
             };
         }
         if (finalKey.equals("creraces:health")) {
-            return (s, p, t, sl) -> s.getHealth();
+            return (s, p, t, sl, ip) -> s.getHealth();
         }
         if (finalKey.equals("creraces:max_health")) {
-            return (s, p, t, sl) -> s.getMaxHealth();
+            return (s, p, t, sl, ip) -> s.getMaxHealth();
         }
         if (finalKey.equals("creraces:ability_haste")) {
-            return (s, p, t, sl) -> {
+            return (s, p, t, sl, ip) -> {
                 Attribute attr = ModAttributes.resolve(ModAttributes.ABILITY_HASTE);
                 if (attr == null)
                     return 0.0;
@@ -194,7 +204,7 @@ public class ScalingValue {
             };
         }
         if (finalKey.equals("creraces:armor_shred")) {
-            return (s, p, t, sl) -> {
+            return (s, p, t, sl, ip) -> {
                 Attribute attr = ModAttributes.resolve(ModAttributes.ARMOR_SHRED);
                 if (attr == null)
                     return 0.0;
@@ -208,7 +218,7 @@ public class ScalingValue {
         // Custom Variables
         if (finalKey.startsWith("custom:")) {
             final String key = finalKey.substring(7);
-            return (s, p, t, sl) -> {
+            return (s, p, t, sl, ip) -> {
                 if (s instanceof Player sp) {
                     mc.sayda.creraces.capability.IPlayerVariables vars = DataUtils.getVariables(sp).orElse(null);
                     if (vars != null) {
@@ -225,7 +235,7 @@ public class ScalingValue {
 
         if (finalKey.startsWith("var:")) {
             final String key = finalKey.substring(4);
-            return (s, p, t, sl) -> {
+            return (s, p, t, sl, ip) -> {
                 if (s instanceof Player sp) {
                     mc.sayda.creraces.capability.IPlayerVariables vars = DataUtils.getVariables(sp).orElse(null);
                     if (vars != null) {
@@ -237,7 +247,28 @@ public class ScalingValue {
                             case "karma" -> vars.getKarma();
                             case "soul" -> vars.getSoul();
                             case "coins" -> vars.getCoins();
+                            case "passive_cd" -> vars.getPassiveCooldown();
                             case "gstate" -> (double) vars.getGState();
+                            case "pos_x" -> ip != null ? (double) ip.getX() : sp.getX();
+                            case "pos_y" -> ip != null ? (double) ip.getY() : sp.getY();
+                            case "pos_z" -> ip != null ? (double) ip.getZ() : sp.getZ();
+                            case "player_x" -> sp.getX();
+                            case "player_y" -> sp.getY();
+                            case "player_z" -> sp.getZ();
+                            case "target_x" -> t != null ? t.getX() : sp.getX();
+                            case "target_y" -> t != null ? t.getY() : sp.getY();
+                            case "target_z" -> t != null ? t.getZ() : sp.getZ();
+                            case "level" -> {
+                                if (sl != null) {
+                                    ResourceLocation id = vars.getAbilityInSlot(sl);
+                                    yield id != null ? (double) vars.getAbilityLevel(id) : 1.0;
+                                }
+                                if (vars.isAbilityActive()) {
+                                    ResourceLocation id = vars.getActiveAbility();
+                                    yield id != null ? (double) vars.getAbilityLevel(id) : 1.0;
+                                }
+                                yield 1.0;
+                            }
                             default -> 0.0;
                         };
                     }
@@ -249,7 +280,7 @@ public class ScalingValue {
         if (finalKey.startsWith("state:")) {
             String subKey = finalKey.substring(6);
             if (subKey.equals("self")) {
-                return (s, p, t, sl) -> {
+                return (s, p, t, sl, ip) -> {
                     if (sl != null) {
                         mc.sayda.creraces.capability.IPlayerVariables vars = DataUtils.getVariables(p).orElse(null);
                         if (vars != null) {
@@ -266,11 +297,63 @@ public class ScalingValue {
             final ResourceLocation abilityId = ResourceLocation.tryParse(subKey);
             if (abilityId == null) {
                 mc.sayda.creraces.CreRaces.LOGGER.error("Invalid state ID in ScalingValue: {}", subKey);
-                return (s, p, t, sl) -> 0.0;
+                return (s, p, t, sl, ip) -> 0.0;
             }
-            return (s, p, t, sl) -> {
+            return (s, p, t, sl, ip) -> {
                 mc.sayda.creraces.capability.IPlayerVariables vars = DataUtils.getVariables(p).orElse(null);
                 return vars != null ? vars.getPersistentState(abilityId) : 0.0;
+            };
+        }
+
+        if (finalKey.startsWith("effect(") && finalKey.endsWith(")")) {
+            String content = finalKey.substring(7, finalKey.length() - 1);
+            String[] parts = content.split(",", 2);
+            if (parts.length == 2) {
+                String idStr = parts[0].trim();
+                final String property = parts[1].trim().toLowerCase();
+                if (!idStr.contains(":")) {
+                    idStr = "minecraft:" + idStr;
+                }
+                final ResourceLocation effectId = ResourceLocation.tryParse(idStr);
+                if (effectId != null) {
+                    return (s, p, t, sl, ip) -> {
+                        net.minecraft.world.effect.MobEffect effect = net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.get(effectId);
+                        if (effect != null && s.hasEffect(effect)) {
+                            net.minecraft.world.effect.MobEffectInstance inst = s.getEffect(effect);
+                            if (inst != null) {
+                                return switch (property) {
+                                    case "duration" -> (double) inst.getDuration();
+                                    case "amplifier" -> (double) inst.getAmplifier();
+                                    case "visible" -> inst.isVisible() ? 1.0 : 0.0;
+                                    case "ambient" -> inst.isAmbient() ? 1.0 : 0.0;
+                                    default -> 0.0;
+                                };
+                            }
+                        }
+                        return 0.0;
+                    };
+                }
+            }
+        }
+
+        if (finalKey.startsWith("config:")) {
+            final String configKey = finalKey.substring(7).toUpperCase();
+            return (s, p, t, sl, ip) -> {
+                try {
+                    java.lang.reflect.Field field = mc.sayda.creraces.config.CreRacesConfig.class.getField(configKey);
+                    Object val = field.get(null);
+                    if (val instanceof java.util.function.Supplier<?> supplier) {
+                        Object result = supplier.get();
+                        if (result instanceof Number num) {
+                            return num.doubleValue();
+                        } else if (result instanceof Boolean bool) {
+                            return bool ? 1.0 : 0.0;
+                        }
+                    }
+                } catch (Exception e) {
+                    mc.sayda.creraces.CreRaces.LOGGER.error("Failed to read config value '{}' in ScalingValue", configKey);
+                }
+                return 0.0;
             };
         }
 
@@ -280,10 +363,10 @@ public class ScalingValue {
         if (attrId == null) {
             mc.sayda.creraces.CreRaces.LOGGER.error("Invalid attribute/stat ID in ScalingValue: {}",
                     resLocStr);
-            return (s, p, t, sl) -> 0.0;
+            return (s, p, t, sl, ip) -> 0.0;
         }
 
-        return (s, p, t, sl) -> {
+        return (s, p, t, sl, ip) -> {
             Attribute attr = BuiltInRegistries.ATTRIBUTE.get(attrId);
             if (attr != null && s.getAttributes().hasAttribute(attr)) {
                 double val = s.getAttributeValue(attr);
@@ -301,7 +384,7 @@ public class ScalingValue {
         }
 
         if (json.get(key).isJsonObject()) {
-            JsonObject obj = json.getAsJsonObject(key);
+            JsonObject obj = json.get(key).getAsJsonObject();
             double base = GsonHelper.getAsDouble(obj, "base", defaultBase);
             String stat = GsonHelper.getNullableString(obj, "scales_with", null);
             double factor = GsonHelper.getAsDouble(obj, "factor", 1.0);
@@ -312,6 +395,8 @@ public class ScalingValue {
             if (obj.has("scales") && obj.get("scales").isJsonArray()) {
                 com.google.gson.JsonArray array = obj.getAsJsonArray("scales");
                 for (int i = 0; i < array.size(); i++) {
+                    if (!array.get(i).isJsonObject())
+                        continue;
                     JsonObject scaleObj = array.get(i).getAsJsonObject();
                     String s = GsonHelper.getNullableString(scaleObj, "stat", null);
                     double f = GsonHelper.getAsDouble(scaleObj, "factor", 1.0);
@@ -323,9 +408,12 @@ public class ScalingValue {
             }
 
             if (obj.has("scaling") && obj.get("scaling").isJsonObject()) {
-                JsonObject scalingObj = obj.getAsJsonObject("scaling");
+                JsonObject scalingObj = obj.get("scaling").getAsJsonObject();
                 for (String sKey : scalingObj.keySet()) {
-                    additional.add(new ScalingComponent(parseEvaluator(sKey), scalingObj.get(sKey).getAsDouble()));
+                    if (scalingObj.get(sKey).isJsonPrimitive()
+                            && scalingObj.get(sKey).getAsJsonPrimitive().isNumber()) {
+                        additional.add(new ScalingComponent(parseEvaluator(sKey), scalingObj.get(sKey).getAsDouble()));
+                    }
                 }
             }
 
@@ -352,12 +440,16 @@ public class ScalingValue {
             Double max = obj.has("max") ? obj.get("max").getAsDouble() : null;
 
             return new ScalingValue(base, parseEvaluator(stat), factor, useTargetRoot, additional, math, min, max);
-        } else if (json.get(key).isJsonPrimitive() && json.get(key).getAsJsonPrimitive().isString()) {
-            return new ScalingValue(0.0, parseEvaluator(json.get(key).getAsString()), 1.0, false, new ArrayList<>(),
-                    MathOp.NONE, null, null);
-        } else {
-            return new ScalingValue(json.get(key).getAsDouble(), null, 0, false, new ArrayList<>(), MathOp.NONE, null,
-                    null);
+        } else if (json.get(key).isJsonPrimitive()) {
+            com.google.gson.JsonPrimitive primitive = json.get(key).getAsJsonPrimitive();
+            if (primitive.isString()) {
+                return new ScalingValue(0.0, parseEvaluator(primitive.getAsString()), 1.0, false, new ArrayList<>(),
+                        MathOp.NONE, null, null);
+            } else if (primitive.isNumber()) {
+                return new ScalingValue(primitive.getAsDouble(), null, 0, false, new ArrayList<>(), MathOp.NONE, null,
+                        null);
+            }
         }
+        return new ScalingValue(defaultBase, null, 0, false, new ArrayList<>(), MathOp.NONE, null, null);
     }
 }

@@ -2,6 +2,7 @@ package mc.sayda.creraces.engine.actions;
 
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.engine.ActionRegistry;
+import mc.sayda.creraces.engine.ScalingValue;
 import mc.sayda.creraces.util.GsonHelper;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -15,27 +16,46 @@ public class MessageAction implements ActionRegistry.RaceAction {
 
     private final String text;
     private final boolean actionbar;
+    private final ScalingValue value;
 
-    public MessageAction(String text, boolean actionbar) {
+    public MessageAction(String text, boolean actionbar, ScalingValue value) {
         this.text = text;
         this.actionbar = actionbar;
+        this.value = value;
     }
 
     @Override
     public boolean execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interactionPos) {
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         if (text == null || text.isEmpty()) {
             return true;
         }
 
+        double evaluated = value != null ? value.evaluate(player, target, slot) : 0;
+        Object arg = (evaluated == (int) evaluated) ? (int) evaluated : evaluated;
+
         Component msg;
-        // Detect translation keys: no spaces and no '&' color codes → translatable
-        // Literal strings (chat messages with colors/spaces) stay as literal.
+        // Detect translation keys: no spaces and no '&' color codes ↁEtranslatable
         if (!text.contains(" ") && !text.contains("&")) {
-            msg = Component.translatable(text);
+            if (value != null) {
+                msg = Component.translatable(text, arg);
+            } else {
+                msg = Component.translatable(text);
+            }
         } else {
-            msg = Component.literal(text.replace("&", "§"));
+            String processed = text.replace("&", "§");
+            if (value != null) {
+                try {
+                    if (processed.contains("%s") || processed.contains("%d") || processed.contains("%.f")) {
+                        processed = String.format(processed, arg);
+                    } else {
+                        processed += arg.toString();
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+            msg = Component.literal(processed);
         }
 
         player.displayClientMessage(msg, actionbar);
@@ -46,7 +66,8 @@ public class MessageAction implements ActionRegistry.RaceAction {
         ActionRegistry.register(ID, json -> {
             String text = GsonHelper.getAsString(json, "text", "");
             boolean actionbar = GsonHelper.getAsBoolean(json, "actionbar", false);
-            return new MessageAction(text, actionbar);
+            ScalingValue value = json.has("value") ? ScalingValue.fromJson(json, "value", 0) : null;
+            return new MessageAction(text, actionbar, value);
         });
     }
 }

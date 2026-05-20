@@ -51,7 +51,7 @@ public class AttributeModifierAction implements ActionRegistry.RaceAction {
     @Override
     public boolean execute(Player player, @Nullable LivingEntity target,
                            @Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-                           @Nullable net.minecraft.core.BlockPos interactionPos) {
+                           @Nullable net.minecraft.core.BlockPos interact_pos) {
         
         // Resolve attribute (same logic as Trait)
         Attribute attr = ModAttributes.getAttribute(attributeId);
@@ -74,7 +74,7 @@ public class AttributeModifierAction implements ActionRegistry.RaceAction {
         }
 
         // ADD logic (Condition is a one-time gate)
-        boolean conditionMet = condition == null || mc.sayda.creraces.engine.condition.Condition.fromJson(condition).evaluate(player, target, slot, interactionPos);
+        boolean conditionMet = condition == null || mc.sayda.creraces.engine.condition.Condition.fromJson(condition).evaluate(player, target, slot, interact_pos);
         if (!conditionMet) return true;
 
         double newValue = value.evaluate(player, target, slot);
@@ -93,12 +93,24 @@ public class AttributeModifierAction implements ActionRegistry.RaceAction {
             // Register as Managed if 'managed' flag is present
             if (managed) {
                 mc.sayda.creraces.capability.DataUtils.getVariables(player).ifPresent(vars -> {
-                    vars.addManagedModifier(new mc.sayda.creraces.engine.ManagedModifier(
-                        uuid, attributeId, rawValue, operation, "creraces:" + id, 
-                        condition != null ? condition : new com.google.gson.JsonObject(), 
-                        condition != null, interval, player.tickCount + interval
-                    ));
-                    CreRaces.LOGGER.debug("AttributeModifierAction: REGISTERED Managed Modifier {} for {}", id, player.getScoreboardName());
+                    vars.getManagedModifier(uuid).ifPresentOrElse(mod -> {
+                        if (!mod.valueJson().equals(rawValue) || 
+                            (condition != null && !mod.conditionJson().equals(condition))) {
+                            vars.addManagedModifier(new mc.sayda.creraces.engine.ManagedModifier(
+                                uuid, attributeId, rawValue, operation, "creraces:" + id, 
+                                condition != null ? condition : new com.google.gson.JsonObject(), 
+                                condition != null, interval, player.tickCount + interval
+                            ));
+                            CreRaces.LOGGER.debug("AttributeModifierAction: Updated Managed Modifier {} for {}", id, player.getScoreboardName());
+                        }
+                    }, () -> {
+                        vars.addManagedModifier(new mc.sayda.creraces.engine.ManagedModifier(
+                            uuid, attributeId, rawValue, operation, "creraces:" + id, 
+                            condition != null ? condition : new com.google.gson.JsonObject(), 
+                            condition != null, interval, player.tickCount + interval
+                        ));
+                        CreRaces.LOGGER.debug("AttributeModifierAction: REGISTERED Managed Modifier {} for {}", id, player.getScoreboardName());
+                    });
                 });
             } else {
                 // Not managed, but we should make sure any old managed entry for this UUID is gone

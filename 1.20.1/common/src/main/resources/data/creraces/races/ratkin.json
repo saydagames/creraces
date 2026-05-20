@@ -9,7 +9,7 @@
     "creraces:description": "race.creraces.ratkin.description",
     "creraces:icon": "creraces:textures/screens/ratkin_icon.png",
     "creraces:splash": "creraces:textures/screens/ratkin_splash.png",
-    "creraces:resource_type": "ENERGY",
+    "creraces:resource_type": "MANA",
     "creraces:difficulty": 2,
     "creraces:gstate": "MALE",
     "creraces:portrait": "creraces:textures/screens/ratkin_portrait.png",
@@ -64,6 +64,15 @@
                     "visible": true
                 }
             ]
+        }
+    ],
+    "ratkin_effects": [
+        {
+            "type": "creraces:permanent_effect",
+            "effect": "minecraft:night_vision",
+            "amplifier": 0,
+            "duration": 210,
+            "visible": false
         }
     ],
     "creraces:wiki_page": "Ratkin",

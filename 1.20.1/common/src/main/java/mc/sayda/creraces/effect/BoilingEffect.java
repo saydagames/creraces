@@ -46,7 +46,12 @@ public class BoilingEffect extends SimpleEffect {
 
             if (holder != null) {
                 net.minecraft.world.damagesource.DamageSource ds = new net.minecraft.world.damagesource.DamageSource(java.util.Objects.requireNonNull(holder), source, source);
-                entity.hurt(ds, damage);
+                mc.sayda.creraces.util.DamageGuard.setProcessing(true);
+                try {
+                    entity.hurt(ds, damage);
+                } finally {
+                    mc.sayda.creraces.util.DamageGuard.setProcessing(false);
+                }
             }
             
             // Client-side aesthetic particles

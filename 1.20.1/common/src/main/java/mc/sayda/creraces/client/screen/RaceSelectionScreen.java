@@ -230,6 +230,8 @@ public class RaceSelectionScreen extends Screen {
                         graphics.renderTooltip(this.font, hoverTooltip, mouseX, mouseY);
                 }
 
+                RenderSystem.disableBlend();
+
                 Component pageCounter = Component.translatable("gui.creraces.selection.page", (page + 1),
                                 ((raceEntries.size() + 8) / 9));
                 graphics.drawString(this.font, pageCounter, this.leftPos + 73, this.topPos + 205, -1, false);

@@ -99,6 +99,10 @@ public interface IPlayerVariables extends ISerializableData {
     void revokeAbility(ResourceLocation abilityId);
 
     boolean isAbilityUnlocked(ResourceLocation abilityId);
+ 
+    int getAbilityLevel(ResourceLocation abilityId);
+
+    void setAbilityLevel(ResourceLocation abilityId, int level);
 
     Map<AbilitySlot, ResourceLocation> getEquippedAbilities();
 
@@ -117,6 +121,12 @@ public interface IPlayerVariables extends ISerializableData {
     double getPersistentState(ResourceLocation id);
 
     void setPersistentState(ResourceLocation id, double value);
+    
+    /** Marks a specific state ID as persistent across player death. */
+    void setStatePersistent(ResourceLocation id, boolean persistent);
+    
+    /** returns true if the state ID is marked as persistent. */
+    boolean isStatePersistent(ResourceLocation id);
 
     AbilitySlot getSlotForAbility(ResourceLocation abilityId);
 
@@ -230,6 +240,7 @@ public interface IPlayerVariables extends ISerializableData {
     
     // Managed Attribute Modifiers
     java.util.Collection<mc.sayda.creraces.engine.ManagedModifier> getManagedModifiers();
+    java.util.Optional<mc.sayda.creraces.engine.ManagedModifier> getManagedModifier(java.util.UUID uuid);
     void addManagedModifier(mc.sayda.creraces.engine.ManagedModifier mod);
     void removeManagedModifier(java.util.UUID uuid);
     void clearManagedModifiers();

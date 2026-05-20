@@ -23,24 +23,6 @@ import javax.annotation.Nullable;
  * <p>
  * Spawns a registered entity at a resolved position and optionally tames it to
  * the casting player.
- * <ul>
- * <li>{@code entity} - Entity type ID (e.g.
- * {@code "creraces:troll_pillar"}).</li>
- * <li>{@code use_raycast} - (Optional, default {@code false}) If true, places
- * the entity
- * at the block surface the player is looking at, within {@code ray_range}
- * blocks.</li>
- * <li>{@code ray_range} - (Optional ScalingValue, default {@code 10.0}) Max
- * raycast distance.</li>
- * <li>{@code range} - (Optional ScalingValue, default {@code 0.0}) Random
- * horizontal offset radius applied when not raycasting.</li>
- * <li>{@code tame} - (Optional, default {@code false}) If true and the entity
- * is a
- * {@link TamableAnimal}, the entity is tamed to the casting player.</li>
- * <li>{@code offset_y} - (Optional ScalingValue, default {@code 0}) Additional
- * Y offset
- * applied to the spawn position.</li>
- * </ul>
  */
 public class SummonEntityAction implements ActionRegistry.RaceAction {
 
@@ -51,9 +33,10 @@ public class SummonEntityAction implements ActionRegistry.RaceAction {
     private final ScalingValue range;
     private final boolean tame;
     private final ScalingValue offsetY;
+    private final boolean markAsServant;
 
     public SummonEntityAction(ResourceLocation entityId, boolean useRaycast, boolean useTarget,
-            ScalingValue rayRange, ScalingValue range, boolean tame, ScalingValue offsetY) {
+            ScalingValue rayRange, ScalingValue range, boolean tame, ScalingValue offsetY, boolean markAsServant) {
         this.entityId = entityId;
         this.useRaycast = useRaycast;
         this.useTarget = useTarget;
@@ -61,12 +44,13 @@ public class SummonEntityAction implements ActionRegistry.RaceAction {
         this.range = range;
         this.tame = tame;
         this.offsetY = offsetY;
+        this.markAsServant = markAsServant;
     }
 
     @Override
     public boolean execute(Player player, @Nullable net.minecraft.world.entity.LivingEntity target,
             @Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @Nullable BlockPos interactionPos) {
+            @Nullable BlockPos interact_pos) {
 
         if (player.level().isClientSide())
             return true;
@@ -147,7 +131,9 @@ public class SummonEntityAction implements ActionRegistry.RaceAction {
         }
 
         if (entity instanceof mc.sayda.creraces.util.IPersistentDataAccessor accessor) {
-            accessor.creraces$getPersistentData().putUUID("creraces:servant_of", player.getUUID());
+            if (markAsServant) {
+                accessor.creraces$getPersistentData().putUUID("creraces:servant_of", player.getUUID());
+            }
         }
 
         serverLevel.addFreshEntity(entity);
@@ -164,7 +150,8 @@ public class SummonEntityAction implements ActionRegistry.RaceAction {
             ScalingValue range = ScalingValue.fromJson(json, "range", 0.0);
             boolean tame = GsonHelper.getAsBoolean(json, "tame", false);
             ScalingValue offsetY = ScalingValue.fromJson(json, "offset_y", 0.0);
-            return new SummonEntityAction(entityId, useRaycast, useTarget, rayRange, range, tame, offsetY);
+            boolean servant = GsonHelper.getAsBoolean(json, "mark_as_servant", false);
+            return new SummonEntityAction(entityId, useRaycast, useTarget, rayRange, range, tame, offsetY, servant);
         });
     }
 }

@@ -122,7 +122,7 @@ public class PoisonEmitterMobileEntity extends TamableAnimal {
                 // Apply source tag for attribution if owner is present
                 if (owner != null && target instanceof IPersistentDataAccessor accessor) {
                     CompoundTag data = accessor.creraces$getPersistentData();
-                    data.putString("creraces:venom_source", owner.getUUID().toString());
+                    data.putString("creraces:source", owner.getUUID().toString());
                 }
 
                 target.addEffect(new MobEffectInstance(venomEffect, 102, stacks, true, true));

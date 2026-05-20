@@ -25,7 +25,7 @@ public class SetCooldownAction implements ActionRegistry.RaceAction {
     @Override
     public boolean execute(Player player, @Nullable net.minecraft.world.entity.LivingEntity target,
             @Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @Nullable net.minecraft.core.BlockPos interactionPos) {
+            @Nullable net.minecraft.core.BlockPos interact_pos) {
         DataUtils.getVariables(player).ifPresent(vars -> {
             vars.setCooldown(abilityId, (int) Math.max(0, value.evaluate(player, target, slot)));
             mc.sayda.creraces.network.BoundaryHandler.resyncVariables(player, player);

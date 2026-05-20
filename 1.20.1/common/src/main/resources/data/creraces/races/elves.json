@@ -12,22 +12,6 @@
     "creraces:name_texture": "creraces:textures/screens/elves_text.png",
     "creraces:difficulty": 1,
     "creraces:resource_type": "ENERGY",
-    "combat_buffs": [
-        {
-            "id": "elf_speed",
-            "type": "creraces:attribute_modifier",
-            "attribute": "minecraft:generic.movement_speed",
-            "value": 0.12,
-            "operation": "addition"
-        },
-        {
-            "id": "elf_attack_speed",
-            "type": "creraces:attribute_modifier",
-            "attribute": "minecraft:generic.attack_speed",
-            "value": 4.5,
-            "operation": "addition"
-        }
-    ],
     "iron_weakness": [
         {
             "type": "creraces:on_tick",

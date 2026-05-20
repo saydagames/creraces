@@ -13,8 +13,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import net.minecraft.network.chat.Component;
-import net.minecraft.ChatFormatting;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -41,7 +39,7 @@ public abstract class EntityMixin implements IPersistentDataAccessor {
     @Inject(method = "saveWithoutId", at = @At("TAIL"))
     private void creraces$writePersistentData(CompoundTag tag, CallbackInfoReturnable cir) {
         if (this.creraces$persistentData != null && !this.creraces$persistentData.isEmpty()) {
-            tag.put("creraces:persistent_data", java.util.Objects.requireNonNull(this.creraces$persistentData));
+            tag.put("creraces:persistent_data", this.creraces$persistentData);
         }
     }
 
@@ -87,11 +85,6 @@ public abstract class EntityMixin implements IPersistentDataAccessor {
                                 ci.cancel();
                             }
                         }
-                    } else {
-                        player.sendSystemMessage(
-                                java.util.Objects
-                                        .requireNonNull(Component.translatable("creraces.message.ability_invalid")
-                                                .withStyle(ChatFormatting.RED)));
                     }
                 });
             }

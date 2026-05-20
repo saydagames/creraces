@@ -65,7 +65,12 @@ public class BleedingEffect extends SimpleEffect {
             // Multiplier based on amplifier (stacking support)
             float finalDamage = damage * (1.0f + amplifier);
             
-            entity.hurt(ds, finalDamage);
+            mc.sayda.creraces.util.DamageGuard.setProcessing(true);
+            try {
+                entity.hurt(ds, finalDamage);
+            } finally {
+                mc.sayda.creraces.util.DamageGuard.setProcessing(false);
+            }
         }
     }
 

@@ -2,7 +2,7 @@
     "creraces:name": "ability.creraces.mountains_fury.name",
     "creraces:description": "ability.creraces.mountains_fury.description",
     "creraces:type": "ACTIVE",
-    "creraces:icon": "minecraft:textures/item/magma_cream.png",
+    "creraces:icon": "creraces:textures/icons/incinerate.png",
     "creraces:cooldown": 0,
     "creraces:cost": 0,
     "creraces:race": [
@@ -54,8 +54,21 @@
                 },
                 {
                     "type": "creraces:spawn_particles",
+                    "particle": "minecraft:large_smoke",
+                    "count": 30,
+                    "spread": 4.0
+                },
+                {
+                    "type": "creraces:spawn_particles",
                     "particle": "minecraft:flame",
-                    "count": 200
+                    "count": 120,
+                    "spread": 4.0
+                },
+                {
+                    "type": "creraces:spawn_particles",
+                    "particle": "minecraft:smoke",
+                    "count": 60,
+                    "spread": 4.0
                 },
                 {
                     "type": "creraces:modify_resource",
@@ -102,7 +115,3 @@
     ],
     "creraces:wiki_page": "Ability:Mountains_Fury"
 }
-
-
-
-

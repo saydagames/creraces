@@ -260,7 +260,7 @@ public class Race {
                         this.isAquatic = isAquatic;
                         return this;
                 }
- 
+
                 public Builder isUndead(boolean isUndead) {
                         this.isUndead = isUndead;
                         return this;
@@ -426,7 +426,7 @@ public class Race {
         public boolean isAquatic() {
                 return isAquatic;
         }
- 
+
         public boolean isUndead() {
                 return isUndead;
         }

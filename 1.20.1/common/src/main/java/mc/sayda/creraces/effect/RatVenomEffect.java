@@ -44,7 +44,12 @@ public class RatVenomEffect extends MobEffect {
 
         DamageSource ds = new DamageSource(holder, source, source);
         float scaling = mc.sayda.creraces.config.CreRacesConfig.RAT_VENOM_SCALING.get().floatValue();
-        entity.hurt(ds, 0.2f + (amplifier * scaling));
+        mc.sayda.creraces.util.DamageGuard.setProcessing(true);
+        try {
+            entity.hurt(ds, 0.2f + (amplifier * scaling));
+        } finally {
+            mc.sayda.creraces.util.DamageGuard.setProcessing(false);
+        }
     }
 
     @Override
