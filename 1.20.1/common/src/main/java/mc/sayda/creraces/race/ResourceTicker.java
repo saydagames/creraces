@@ -148,7 +148,7 @@ public class ResourceTicker {
 
         // 5. Auto-apply Innate/Passive Abilities (Server only)
         if (!player.level().isClientSide()
-                && player.tickCount % mc.sayda.creraces.config.CreRacesConfig.PASSIVE_EXECUTION_INTERVAL.get() == 0) {
+                && player.tickCount % Math.max(1, mc.sayda.creraces.config.CreRacesConfig.PASSIVE_EXECUTION_INTERVAL.get()) == 0) {
             // Only tick A1 and A2
             for (mc.sayda.creraces.ability.AbilitySlot slot : new mc.sayda.creraces.ability.AbilitySlot[] {
                     mc.sayda.creraces.ability.AbilitySlot.A1, mc.sayda.creraces.ability.AbilitySlot.A2 }) {

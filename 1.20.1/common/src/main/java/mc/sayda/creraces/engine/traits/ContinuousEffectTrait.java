@@ -80,8 +80,9 @@ public class ContinuousEffectTrait implements TraitRegistry.RaceTrait {
                     MobEffect effect = BuiltInRegistries.MOB_EFFECT.get(effectLoc);
                     if (effect != null) {
                         if (!player.level().isClientSide()) {
+                            int amp = Math.max(0, Math.min(255, (int) amplifier.evaluate(player)));
                             player.addEffect(new MobEffectInstance(effect, (int) duration.evaluate(player),
-                                    (int) amplifier.evaluate(player), false, visible, true));
+                                    amp, false, visible, true));
                         }
                     }
                 }

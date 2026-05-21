@@ -60,6 +60,10 @@ public class RemoveEffectAction implements ActionRegistry.RaceAction {
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "remove_effect"), json -> {
             String effectId = GsonHelper.getAsString(json, "effect");
             MobEffect effect = BuiltInRegistries.MOB_EFFECT.get(new ResourceLocation(effectId));
+            if (effect == null) {
+                mc.sayda.creraces.CreRaces.LOGGER.error("RemoveEffectAction: Unknown effect ID '{}'.", effectId);
+                return null;
+            }
             ScalingValue radius = ScalingValue.fromJson(json, "radius", 0.0);
             mc.sayda.creraces.engine.TargetFilter targets = mc.sayda.creraces.engine.TargetFilter.fromJson(json,
                     "targets", java.util.Set.of("enemies", "self"));

@@ -103,7 +103,7 @@ public class AbilityManager extends SimplePreparableReloadListener<Map<ResourceL
                 }
 
                 // Remote Documentation
-                if (jsonObject.has("creraces:wiki_page")) {
+                if (jsonObject.has("creraces:wiki_page") && !jsonObject.get("creraces:wiki_page").isJsonNull()) {
                     String wikiPage = jsonObject.get("creraces:wiki_page").getAsString();
                     
                     AbilityRegistry.registerRemoteDoc(id, mc.sayda.creraces.util.RemoteDocConfig.fromWikiPage(wikiPage,

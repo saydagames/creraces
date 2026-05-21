@@ -125,15 +125,15 @@ public class PocketEntryAction implements ActionRegistry.RaceAction {
                             BlockPos.containing(finalTx + sOffX, finalTy + sOffY, finalTz + sOffZ),
                             BlockPos.containing(finalTx + sOffX, finalTy + sOffY, finalTz + sOffZ),
                             new StructurePlaceSettings(), pocketWorld.random, 3);
+                    vars.setHasPocket(true);
+
+                    // Initialize stable spawn point for this host's pocket
+                    vars.setPocketSpawnX(tx + spawnOffsetX.evaluate(player, target, slot) + sOffX);
+                    vars.setPocketSpawnY(ty + spawnOffsetY.evaluate(player, target, slot) + sOffY);
+                    vars.setPocketSpawnZ(tz + spawnOffsetZ.evaluate(player, target, slot) + sOffZ);
                 } else {
                     CreRaces.LOGGER.warn("Pocket structure not found: {}", structure);
                 }
-                vars.setHasPocket(true);
-
-                // Initialize stable spawn point for this host's pocket
-                vars.setPocketSpawnX(tx + spawnOffsetX.evaluate(player, target, slot) + sOffX);
-                vars.setPocketSpawnY(ty + spawnOffsetY.evaluate(player, target, slot) + sOffY);
-                vars.setPocketSpawnZ(tz + spawnOffsetZ.evaluate(player, target, slot) + sOffZ);
             }
 
             // Teleport to the saved stable spawn point

@@ -306,6 +306,7 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
                 ResourceLocation bLoc = new ResourceLocation(blockId);
                 if (!BuiltInRegistries.BLOCK.containsKey(bLoc)) {
                     CreRaces.LOGGER.error("SpawnParticlesAction: Unknown block ID '{}' for block particle.", blockId);
+                    return null;
                 }
                 net.minecraft.world.level.block.Block block = BuiltInRegistries.BLOCK.get(bLoc);
                 @SuppressWarnings("unchecked")
@@ -316,6 +317,7 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
                 ResourceLocation iLoc = new ResourceLocation(itemId);
                 if (!BuiltInRegistries.ITEM.containsKey(iLoc)) {
                     CreRaces.LOGGER.error("SpawnParticlesAction: Unknown item ID '{}' for item particle.", itemId);
+                    return null;
                 }
                 net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(iLoc);
                 @SuppressWarnings("unchecked")

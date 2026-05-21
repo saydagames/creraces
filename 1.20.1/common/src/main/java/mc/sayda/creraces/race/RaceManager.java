@@ -525,7 +525,7 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
         if (spawnElement != null && spawnElement.isJsonObject()) {
             JsonObject spawn = spawnElement.getAsJsonObject();
             spawnOnDeath = new mc.sayda.creraces.race.Race.EntitySpawnData(
-                    GsonHelper.getAsString(spawn, "entity_type"),
+                    GsonHelper.getAsString(spawn, "entity_type", ""),
                     GsonHelper.getAsString(spawn, "nbt", "{}"),
                     GsonHelper.getAsInt(spawn, "count", 1));
         }

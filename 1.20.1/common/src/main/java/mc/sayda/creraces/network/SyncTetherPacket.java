@@ -32,7 +32,7 @@ public class SyncTetherPacket {
         this.targetId = buf.readUUID();
         this.active = buf.readBoolean();
         if (this.active) {
-            this.texture = buf.readUtf();
+            this.texture = buf.readUtf(512);
             this.width = buf.readFloat();
         } else {
             this.texture = "";

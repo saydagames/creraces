@@ -66,6 +66,10 @@ public class ActionRegistry {
         }
         try {
             RaceAction action = factory.create(json);
+            if (action == null) {
+                CreRaces.LOGGER.error("Action factory for '{}' returned null - skipping.", type);
+                return (player, target, slot, interact_pos) -> true;
+            }
 
             ScalingValue chance = json.has("chance") ? ScalingValue.fromJson(json, "chance", 1.0) : null;
 

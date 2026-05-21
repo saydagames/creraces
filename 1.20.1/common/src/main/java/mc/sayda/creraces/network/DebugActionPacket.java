@@ -29,9 +29,9 @@ public class DebugActionPacket {
     }
 
     public DebugActionPacket(FriendlyByteBuf buf) {
-        this.action = java.util.Objects.requireNonNull(buf.readUtf());
-        this.key = java.util.Objects.requireNonNull(buf.readUtf());
-        this.value = java.util.Objects.requireNonNull(buf.readUtf());
+        this.action = java.util.Objects.requireNonNull(buf.readUtf(32));
+        this.key = java.util.Objects.requireNonNull(buf.readUtf(256));
+        this.value = java.util.Objects.requireNonNull(buf.readUtf(1024));
     }
 
     public void encode(FriendlyByteBuf buf) {

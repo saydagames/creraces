@@ -39,8 +39,10 @@ public class RatVenomEffect extends MobEffect {
         }
 
         var registry = entity.level().registryAccess().registryOrThrow(Registries.DAMAGE_TYPE);
-        var holder = registry.getHolderOrThrow(
+        var holderOpt = registry.getHolder(
                 ResourceKey.create(Registries.DAMAGE_TYPE, new ResourceLocation("creraces", "ratvenom")));
+        if (holderOpt.isEmpty()) return;
+        var holder = holderOpt.get();
 
         DamageSource ds = new DamageSource(holder, source, source);
         float scaling = mc.sayda.creraces.config.CreRacesConfig.RAT_VENOM_SCALING.get().floatValue();

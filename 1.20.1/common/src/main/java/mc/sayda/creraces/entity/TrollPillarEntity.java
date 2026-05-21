@@ -3,7 +3,6 @@ package mc.sayda.creraces.entity;
 
 import mc.sayda.creraces.config.CreRacesConfig;
 
-import mc.sayda.creraces.registry.ModEntities;
 import mc.sayda.creraces.registry.ModMobEffects;
 
 import net.minecraft.world.damagesource.DamageSource;
@@ -25,6 +24,7 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
 
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 
 import javax.annotation.Nullable;
@@ -118,7 +118,7 @@ public class TrollPillarEntity extends TamableAnimal {
         ticksAlive++;
 
         // Pulse Troll's Curse to nearby entities (Configurable interval)
-        if (ticksAlive % CreRacesConfig.ENTITY_TROLL_PILLAR_PULSE_INTERVAL.get() == 0) {
+        if (ticksAlive % Math.max(1, CreRacesConfig.ENTITY_TROLL_PILLAR_PULSE_INTERVAL.get()) == 0) {
             var curseEffect = ModMobEffects.TROLL_CURSE.get();
             if (curseEffect != null) {
                 Vec3 center = this.position();
@@ -162,6 +162,18 @@ public class TrollPillarEntity extends TamableAnimal {
     }
 
     @Override
+    public void addAdditionalSaveData(CompoundTag tag) {
+        super.addAdditionalSaveData(tag);
+        tag.putInt("TicksAlive", this.ticksAlive);
+    }
+
+    @Override
+    public void readAdditionalSaveData(CompoundTag tag) {
+        super.readAdditionalSaveData(tag);
+        this.ticksAlive = tag.getInt("TicksAlive");
+    }
+
+    @Override
     public boolean isFood(ItemStack stack) {
         return Ingredient.of().test(stack);
     }
@@ -169,7 +181,7 @@ public class TrollPillarEntity extends TamableAnimal {
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel level, AgeableMob otherParent) {
-        return ModEntities.TROLL_PILLAR.get().create(level);
+        return null;
     }
 
     // Only the owner (the troll who cast it) can interact

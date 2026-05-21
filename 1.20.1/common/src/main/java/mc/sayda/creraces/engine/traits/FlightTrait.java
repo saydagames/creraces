@@ -75,15 +75,15 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
 
 
                     var soggyEffect = mc.sayda.creraces.registry.ModMobEffects.SOGGY.get();
-                    if (soggyEffect != null) {
+                    if (soggyEffect != null && !player.level().isClientSide()) {
                         player.addEffect(
                                 new net.minecraft.world.effect.MobEffectInstance(soggyEffect, 9600, 0, false, false));
                     }
                 }
             }
 
-
-            boolean isSoggy = soggyWings && player.hasEffect(java.util.Objects.requireNonNull(mc.sayda.creraces.registry.ModMobEffects.SOGGY.get()));
+            var soggyEffectRef = mc.sayda.creraces.registry.ModMobEffects.SOGGY.get();
+            boolean isSoggy = soggyWings && soggyEffectRef != null && player.hasEffect(soggyEffectRef);
             boolean canFly = conditionMet && currentResource >= evaluatedDrain && !isSoggy;
             boolean wasMayfly = player.getAbilities().mayfly;
             boolean wasFlying = player.getAbilities().flying;

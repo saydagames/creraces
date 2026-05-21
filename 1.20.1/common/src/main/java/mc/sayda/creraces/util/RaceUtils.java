@@ -27,6 +27,7 @@ public class RaceUtils {
      * effect
      * based on their race's negate_effects list.
      */
+    @SuppressWarnings("null")
     public static boolean isImmuneToEffect(net.minecraft.world.entity.LivingEntity entity,
             net.minecraft.resources.ResourceLocation effectId) {
         if (!(entity instanceof Player player))
@@ -55,6 +56,7 @@ public class RaceUtils {
     /**
      * Checks if the specified food item is blocked for the player's race.
      */
+    @SuppressWarnings("null")
     public static boolean isFoodBlocked(Player player, net.minecraft.world.item.ItemStack stack) {
         if (stack.isEmpty() || !stack.isEdible())
             return false;
@@ -91,6 +93,7 @@ public class RaceUtils {
         }).orElse(false);
     }
 
+    @SuppressWarnings("null")
     private static boolean stackMatchesFilter(net.minecraft.world.item.ItemStack stack, String filter) {
         if (stack.isEmpty()) return false;
 
@@ -99,6 +102,7 @@ public class RaceUtils {
 
         net.minecraft.world.item.Item item = stack.getItem();
         net.minecraft.resources.ResourceLocation itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item);
+        if (itemId == null) return false;
 
         if (filter.startsWith("#")) {
             net.minecraft.resources.ResourceLocation tagId = net.minecraft.resources.ResourceLocation.tryParse(filter.substring(1));

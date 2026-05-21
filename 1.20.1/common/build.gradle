@@ -2,6 +2,14 @@ architectury {
     common(rootProject.property('1_20_1_enabled_platforms').split(","))
 }
 
+sourceSets {
+    main {
+        resources {
+            srcDir rootProject.file("common/src/main/resources")
+        }
+    }
+}
+
 group = rootProject.mod_group_id
 archivesBaseName = "creraces-1.20.1-common"
 

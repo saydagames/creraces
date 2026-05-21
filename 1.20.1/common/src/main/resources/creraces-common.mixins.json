@@ -18,12 +18,12 @@
         "PlayerRespawnMixin",
         "BlockEntityAccessor",
         "LivingEntityAccessor",
-        "PackRepositoryMixin"
+        "PackRepositoryMixin",
+        "PlayerFoodMixin"
     ],
     "client": [
         "LivingEntityRendererMixin",
         "LevelRendererMixin",
-        "PlayerFoodMixin",
         "MiniBlockPlaceMixin",
         "HumanoidModelMixin",
         "FogRendererMixin",

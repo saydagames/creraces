@@ -127,7 +127,8 @@ public class RaceIncidents {
             vars.sync(player);
 
             // Trigger respawn traits on initial selection too
-            race.traits().forEach(trait -> trait.onRespawn(player));
+            var traits$ = race.traits();
+            if (traits$ != null) traits$.forEach(trait -> trait.onRespawn(player));
         });
     }
 

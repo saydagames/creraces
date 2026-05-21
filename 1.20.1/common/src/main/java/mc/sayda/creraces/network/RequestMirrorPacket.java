@@ -21,7 +21,7 @@ public class RequestMirrorPacket {
     public void handle(Supplier<NetworkManager.PacketContext> contextSupplier) {
         NetworkManager.PacketContext context = contextSupplier.get();
         context.queue(() -> {
-            ServerPlayer player = (ServerPlayer) context.getPlayer();
+            if (!(context.getPlayer() instanceof ServerPlayer player)) return;
             BoundaryHandler.sendOpenMirror(player);
         });
     }

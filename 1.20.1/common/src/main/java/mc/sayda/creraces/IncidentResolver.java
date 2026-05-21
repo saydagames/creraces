@@ -266,6 +266,9 @@ public class IncidentResolver {
     private static void onIncidentBegin(ServerPlayer player) {
         mc.sayda.creraces.race.AttributeIncidents.eikiJudgment(player);
 
+        // Apply pending team removals for offline-kicked players (also called from onClientRequestedSync)
+        mc.sayda.creraces.team.RaceTeamManager.handlePlayerJoin(player);
+
         // Re-apply race elements on login (Persistence Fix)
         mc.sayda.creraces.race.RaceIncidents.refreshPlayer(player);
 

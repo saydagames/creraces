@@ -2,7 +2,6 @@ package mc.sayda.creraces.entity;
 
 import mc.sayda.creraces.config.CreRacesConfig;
 
-import mc.sayda.creraces.registry.ModEntities;
 import mc.sayda.creraces.registry.ModMobEffects;
 import mc.sayda.creraces.util.IPersistentDataAccessor;
 
@@ -65,7 +64,7 @@ public class PoisonEmitterEntity extends TamableAnimal {
             return;
 
         ticksAlive++;
-        double lifetime = CreRacesConfig.ENTITY_POISON_EMITTER_LIFETIME_TICKS.get();
+        double lifetime = Math.max(1, CreRacesConfig.ENTITY_POISON_EMITTER_LIFETIME_TICKS.get());
         double progress = (double) ticksAlive / lifetime;
 
         // Legacy Stacks logic (0 to 4 based on lifetime progress)
@@ -128,6 +127,18 @@ public class PoisonEmitterEntity extends TamableAnimal {
     }
 
     @Override
+    public void addAdditionalSaveData(CompoundTag tag) {
+        super.addAdditionalSaveData(tag);
+        tag.putInt("TicksAlive", this.ticksAlive);
+    }
+
+    @Override
+    public void readAdditionalSaveData(CompoundTag tag) {
+        super.readAdditionalSaveData(tag);
+        this.ticksAlive = tag.getInt("TicksAlive");
+    }
+
+    @Override
     public boolean isFood(ItemStack stack) {
         return Ingredient.of().test(stack);
     }
@@ -135,7 +146,7 @@ public class PoisonEmitterEntity extends TamableAnimal {
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel level, AgeableMob otherParent) {
-        return ModEntities.POISON_EMITTER.get().create(level);
+        return null;
     }
 
     @Override

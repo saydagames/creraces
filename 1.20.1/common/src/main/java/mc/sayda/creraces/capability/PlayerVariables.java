@@ -784,6 +784,7 @@ public class PlayerVariables implements IPlayerVariables {
         tag.putDouble("grit", grit);
         tag.putDouble("soul", soul);
         tag.putLong("resourceTimer", resourceTimer);
+        tag.putDouble("passiveCooldown", passiveCooldown);
 
         // Cooldowns ARE included in every sync so the HUD overlay counts down
         // correctly.
@@ -928,6 +929,8 @@ public class PlayerVariables implements IPlayerVariables {
             this.grit = tag.getDouble("grit");
         if (tag.contains("soul"))
             this.soul = tag.getDouble("soul");
+        if (tag.contains("passiveCooldown"))
+            this.passiveCooldown = tag.getDouble("passiveCooldown");
 
         if (tag.contains("cooldowns", Tag.TAG_COMPOUND)) {
             this.cooldowns.clear();

@@ -104,10 +104,12 @@ public class TraitRegistry {
         }
 
         RaceTrait trait = factory.create(json);
-        if (trait != null) {
-            String id = json.has("id") ? json.get("id").getAsString() : defaultId;
-            trait.setTraitId(id);
+        if (trait == null) {
+            CreRaces.LOGGER.error("Trait factory for {} returned null - skipping.", type);
+            return new RaceTrait() {};
         }
+        String id = json.has("id") ? json.get("id").getAsString() : defaultId;
+        trait.setTraitId(id);
         return trait;
     }
 

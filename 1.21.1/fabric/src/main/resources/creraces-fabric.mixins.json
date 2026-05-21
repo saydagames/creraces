@@ -1,0 +1,12 @@
+{
+    "required": true,
+    "refMap": "creraces-fabric.refmap.json",
+    "package": "mc.sayda.creraces.mixin",
+    "compatibilityLevel": "JAVA_21",
+    "minVersion": "0.8",
+    "mixins": [],
+    "client": [],
+    "injectors": {
+        "defaultRequire": 1
+    }
+}

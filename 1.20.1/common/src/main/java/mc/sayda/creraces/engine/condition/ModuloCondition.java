@@ -26,6 +26,7 @@ public class ModuloCondition implements Condition {
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         
+        if (stateId == null) return false;
         return DataUtils.getVariables(player).map(vars -> {
             int current = (int) vars.getPersistentState(stateId);
             int div = (int) divisor.evaluate(player, target, slot, interact_pos);

@@ -2,10 +2,10 @@ package mc.sayda.creraces.entity;
 
 import mc.sayda.creraces.config.CreRacesConfig;
 
-import mc.sayda.creraces.registry.ModEntities;
 import mc.sayda.creraces.registry.ModMobEffects;
 import mc.sayda.creraces.team.RaceTeamManager;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -164,10 +164,22 @@ public class TornadoEntity extends TamableAnimal {
         }
     }
 
+    @Override
+    public void addAdditionalSaveData(CompoundTag tag) {
+        super.addAdditionalSaveData(tag);
+        tag.putInt("TicksAlive", this.ticksAlive);
+    }
+
+    @Override
+    public void readAdditionalSaveData(CompoundTag tag) {
+        super.readAdditionalSaveData(tag);
+        this.ticksAlive = tag.getInt("TicksAlive");
+    }
+
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel level, AgeableMob otherParent) {
-        return ModEntities.TORNADO.get().create(level);
+        return null;
     }
 
     @Override

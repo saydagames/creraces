@@ -31,7 +31,7 @@ public class ConsumeItemAction implements ActionRegistry.RaceAction {
 
         net.minecraft.world.item.Item targetItem = net.minecraft.core.registries.BuiltInRegistries.ITEM
                 .get(Objects.requireNonNull(itemId));
-        if (targetItem == net.minecraft.world.item.Items.AIR)
+        if (targetItem == null || targetItem == net.minecraft.world.item.Items.AIR)
             return true;
 
         for (int i = 0; i < player.getInventory().getContainerSize(); i++) {

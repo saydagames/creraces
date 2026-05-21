@@ -177,7 +177,7 @@ public class ModifyResourceAction implements ActionRegistry.RaceAction {
                 else if (res.equals("grit"))
                     vars.setGrit(newValue);
                 else if (res.equals("soul")) {
-                    vars.setSoul(newValue);
+                    vars.setSoul(Math.max(0, Math.min(newValue, CreRacesConfig.MAX_SOUL.get())));
                     if (p instanceof net.minecraft.server.level.ServerPlayer sp) {
                         mc.sayda.creraces.race.AttributeIncidents.eikiJudgment(sp);
                     }

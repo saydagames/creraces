@@ -1,0 +1,25 @@
+architectury {
+    minecraft = rootProject.property('1_21_1_minecraft_version')
+}
+
+subprojects {
+    apply plugin: 'dev.architectury.loom'
+
+    loom {
+        silentMojangMappingsLicense()
+        mixin {
+            useLegacyMixinAp = true
+        }
+    }
+
+    archivesBaseName = "creraces-1.21.1-${project.name}"
+
+    dependencies {
+        minecraft "com.mojang:minecraft:${rootProject.property('1_21_1_minecraft_version')}"
+        mappings loom.officialMojangMappings()
+    }
+
+    tasks.withType(JavaCompile) {
+        options.release = 21
+    }
+}

@@ -20,6 +20,7 @@ public class AquaticMovementHandler {
      */
     public static void buoyancyTick(LivingEntity entity) {
         if (entity instanceof Player player) {
+            if (player.isPassenger()) return;
             DataUtils.getVariables(player).ifPresent(vars -> {
                 Race race = RaceRegistry.get(vars.getRace());
                 if (race != null) {

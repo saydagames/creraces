@@ -52,7 +52,9 @@ public class AttributeIncidents {
             // 2. Trait Processing
             java.util.Set<UUID> activeTraits = new java.util.HashSet<>();
 
-            for (mc.sayda.creraces.engine.TraitRegistry.RaceTrait trait : race.traits()) {
+            var traits$ = race.traits();
+            if (traits$ == null) traits$ = java.util.Collections.emptyList();
+            for (mc.sayda.creraces.engine.TraitRegistry.RaceTrait trait : traits$) {
                 if (trait instanceof mc.sayda.creraces.engine.traits.AttributeModifierTrait amt) {
                     Attribute attr = amt.getAttribute();
                     if (attr == null) continue;

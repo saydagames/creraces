@@ -49,6 +49,8 @@ public class TeamUpdatePacket {
 
     public TeamUpdatePacket(FriendlyByteBuf buf) {
         int size = buf.readInt();
+        int maxTeam = mc.sayda.creraces.config.CreRacesConfig.TEAM_MAX_SIZE.get();
+        if (size < 0 || size > maxTeam) throw new IllegalStateException("Oversized team packet: " + size);
         this.members = new ArrayList<>(size);
         int teamMax = mc.sayda.creraces.config.CreRacesConfig.NETWORK_TEAM_NAME_MAX_LEN.get();
         for (int i = 0; i < size; i++) {

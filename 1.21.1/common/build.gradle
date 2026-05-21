@@ -1,0 +1,23 @@
+architectury {
+    common(rootProject.property('1_21_1_enabled_platforms').split(","))
+}
+
+sourceSets {
+    main {
+        resources {
+            srcDir rootProject.file("common/src/main/resources")
+        }
+    }
+}
+
+loom {
+    mixin.defaultRefmapName = "creraces-common.refmap.json"
+}
+
+dependencies {
+    modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
+    modApi "dev.architectury:architectury:${rootProject.property('1_21_1_architectury_version')}"
+    implementation "com.google.code.findbugs:jsr305:3.0.2"
+    api "com.google.code.findbugs:jsr305:3.0.2"
+    modImplementation files("${rootProject.projectDir.parentFile}/twilight-lib/1.21.1/common/build/libs/twilight_lib-1.21.1-common-${rootProject.twilight_lib_version}.jar")
+}

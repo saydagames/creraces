@@ -24,7 +24,7 @@ public class SyncAnimationPacket {
 
     public SyncAnimationPacket(FriendlyByteBuf buf) {
         this.playerId = buf.readUUID();
-        this.animation = buf.readUtf();
+        this.animation = buf.readUtf(256);
         this.active = buf.readBoolean();
     }
 

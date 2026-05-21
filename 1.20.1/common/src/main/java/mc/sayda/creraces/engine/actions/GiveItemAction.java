@@ -30,6 +30,7 @@ public class GiveItemAction implements ActionRegistry.RaceAction {
     public boolean execute(Player player, @Nullable LivingEntity target,
             @Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @Nullable net.minecraft.core.BlockPos interact_pos) {
+        if (player.level() == null || player.level().isClientSide()) return true;
         Item item = BuiltInRegistries.ITEM.get(itemId);
         if (item != null) {
             int count = (int) amount.evaluate(player, target, slot);

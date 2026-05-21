@@ -33,15 +33,17 @@ public class PermanentEffectTrait implements TraitRegistry.RaceTrait {
         this.condition = condition;
     }
 
+    @SuppressWarnings("null")
     @Override
     public void tick(Player player) {
         if (effect != null && (condition == null || condition.evaluate(player, null, null, null))) {
             if (!player.level().isClientSide()) {
                 // Apply for moderate duration to avoid flickering, but short enough to clear if
                 // race changes
+                int amp = Math.max(0, Math.min(255, (int) amplifier.evaluate(player)));
                 player.addEffect(
                         new MobEffectInstance(effect, duration,
-                                (int) amplifier.evaluate(player), ambient, showParticles));
+                                amp, ambient, showParticles));
             }
         }
     }
@@ -50,6 +52,10 @@ public class PermanentEffectTrait implements TraitRegistry.RaceTrait {
         TraitRegistry.register(new ResourceLocation(CreRaces.MODID, "permanent_effect"), json -> {
             String effectId = GsonHelper.getAsString(json, "effect");
             MobEffect effect = BuiltInRegistries.MOB_EFFECT.get(new ResourceLocation(effectId));
+            if (effect == null) {
+                CreRaces.LOGGER.error("PermanentEffectTrait: Unknown effect ID '{}'.", effectId);
+                return null;
+            }
 
             mc.sayda.creraces.engine.ScalingValue amplifier = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
                     "amplifier", 0.0);

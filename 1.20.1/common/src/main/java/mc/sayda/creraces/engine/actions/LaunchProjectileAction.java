@@ -34,7 +34,7 @@ public class LaunchProjectileAction implements ActionRegistry.RaceAction {
     public boolean execute(Player player, @Nullable net.minecraft.world.entity.LivingEntity target,
             @Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @Nullable net.minecraft.core.BlockPos interact_pos) {
-        if (player.level() == null)
+        if (player.level() == null || player.level().isClientSide())
             return true;
 
         float dmg = (float) damage.evaluate(player, target, slot);

@@ -30,8 +30,9 @@ public class DropItemAction implements ActionRegistry.RaceAction {
     public boolean execute(Player player, @Nullable net.minecraft.world.entity.LivingEntity target,
             @Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @Nullable net.minecraft.core.BlockPos interact_pos) {
+        if (player.level() == null || player.level().isClientSide()) return true;
         Item item = BuiltInRegistries.ITEM.get(itemId);
-        if (item != null && player.level() != null) {
+        if (item != null) {
             int c = (int) amount.evaluate(player, target, slot);
             if (c <= 0)
                 return true;

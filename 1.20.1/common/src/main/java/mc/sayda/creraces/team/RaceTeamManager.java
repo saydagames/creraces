@@ -509,30 +509,44 @@ public class RaceTeamManager {
                 return;
             TEAMS.clear();
             teamsArray.forEach(elem -> {
-                JsonObject obj = elem.getAsJsonObject();
-                UUID id = UUID.fromString(obj.get("id").getAsString());
-                String name = obj.get("name").getAsString();
-                UUID leader = UUID.fromString(obj.get("leader").getAsString());
-                boolean ff = obj.has("friendlyFire") && obj.get("friendlyFire").getAsBoolean();
-                RaceTeam team = new RaceTeam(id, name, leader);
-                team.setFriendlyFire(ff);
-                team.getMembers().clear();
-                team.getMemberRoles().clear();
-                obj.getAsJsonArray("members").forEach(mElem -> {
-                    JsonObject mObj = mElem.getAsJsonObject();
-                    UUID mUuid = UUID.fromString(mObj.get("uuid").getAsString());
-                    Role role = Role.valueOf(mObj.get("role").getAsString());
-                    team.getMembers().add(mUuid);
-                    team.getMemberRoles().put(mUuid, role);
-                });
-                TEAMS.put(id, team);
+                try {
+                    JsonObject obj = elem.getAsJsonObject();
+                    if (!obj.has("id") || !obj.has("name") || !obj.has("leader")) {
+                        mc.sayda.creraces.CreRaces.LOGGER.warn("RaceTeamManager: skipping malformed team entry (missing id/name/leader)");
+                        return;
+                    }
+                    UUID id = UUID.fromString(obj.get("id").getAsString());
+                    String name = obj.get("name").getAsString();
+                    UUID leader = UUID.fromString(obj.get("leader").getAsString());
+                    boolean ff = obj.has("friendlyFire") && obj.get("friendlyFire").getAsBoolean();
+                    RaceTeam team = new RaceTeam(id, name, leader);
+                    team.setFriendlyFire(ff);
+                    team.getMembers().clear();
+                    team.getMemberRoles().clear();
+                    if (obj.has("members") && obj.get("members").isJsonArray()) {
+                        obj.getAsJsonArray("members").forEach(mElem -> {
+                            try {
+                                JsonObject mObj = mElem.getAsJsonObject();
+                                UUID mUuid = UUID.fromString(mObj.get("uuid").getAsString());
+                                Role role = Role.valueOf(mObj.get("role").getAsString());
+                                team.getMembers().add(mUuid);
+                                team.getMemberRoles().put(mUuid, role);
+                            } catch (Exception e) {
+                                mc.sayda.creraces.CreRaces.LOGGER.warn("RaceTeamManager: skipping malformed team member: {}", e.getMessage());
+                            }
+                        });
+                    }
+                    TEAMS.put(id, team);
 
-                // Re-wire teamId/teamName into any already-online players (e.g. after /reload)
-                team.getMembers().forEach(memberId -> {
-                    ServerPlayer online = server.getPlayerList().getPlayer(Objects.requireNonNull(memberId));
-                    if (online != null)
-                        applyTeamToPlayer(online, team);
-                });
+                    // Re-wire teamId/teamName into any already-online players (e.g. after /reload)
+                    team.getMembers().forEach(memberId -> {
+                        ServerPlayer online = server.getPlayerList().getPlayer(Objects.requireNonNull(memberId));
+                        if (online != null)
+                            applyTeamToPlayer(online, team);
+                    });
+                } catch (Exception e) {
+                    mc.sayda.creraces.CreRaces.LOGGER.warn("RaceTeamManager: failed to load team entry: {}", e.getMessage());
+                }
             });
             CreRaces.LOGGER.info("Loaded {} team(s) from {}", TEAMS.size(), savePath);
         } catch (Exception e) {

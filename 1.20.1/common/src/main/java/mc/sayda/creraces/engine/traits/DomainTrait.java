@@ -46,7 +46,7 @@ public class DomainTrait extends PeriodicTrait {
         }
 
         // Regional effects to OTHERS in the domain
-        double r = radius.evaluate(player, null);
+        double r = Math.max(0, radius.evaluate(player, null));
         int maxAoeRadius = mc.sayda.creraces.config.CreRacesConfig.AOE_MAX_RADIUS.get();
         if (maxAoeRadius > 0)
             r = Math.min(r, maxAoeRadius);

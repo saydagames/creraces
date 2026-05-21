@@ -27,6 +27,7 @@ import net.minecraft.commands.SharedSuggestionProvider;
  * Main command for race management.
  * Consolidates all race-related tools under /creraces.
  */
+@SuppressWarnings("null")
 public class CreracesCommand {
         private static final Random RANDOM = new Random();
 
@@ -751,10 +752,12 @@ public class CreracesCommand {
                                             returnDimName = "minecraft:overworld";
                                         }
 
+                                        net.minecraft.resources.ResourceLocation returnDimLoc = new ResourceLocation(
+                                                net.minecraft.resources.ResourceLocation.tryParse(returnDimName) != null ? returnDimName : "minecraft:overworld");
                                         net.minecraft.server.level.ServerLevel world = player.server.getLevel(
                                                         net.minecraft.resources.ResourceKey.create(
                                                                         net.minecraft.core.registries.Registries.DIMENSION,
-                                                                        new ResourceLocation(returnDimName)));
+                                                                        returnDimLoc));
 
                                         if (world == null)
                                                 world = player.server.overworld();
@@ -805,6 +808,7 @@ public class CreracesCommand {
                 }).orElse(0);
         }
 
+        @SuppressWarnings("null")
         private static int executePocketTeleport(CommandSourceStack source, int index) {
                 ServerPlayer player = source.getPlayer();
                 if (player == null)
@@ -814,7 +818,7 @@ public class CreracesCommand {
                 net.minecraft.server.level.ServerLevel pocketWorld = player.server.getLevel(
                                 net.minecraft.resources.ResourceKey.create(
                                                 net.minecraft.core.registries.Registries.DIMENSION,
-                                                new ResourceLocation(pocketDimName)));
+                                                new ResourceLocation(net.minecraft.resources.ResourceLocation.tryParse(pocketDimName) != null ? pocketDimName : "minecraft:overworld")));
 
                 if (pocketWorld == null) {
                         source.sendFailure(Component.translatable("message.creraces.pocket.not_found"));
@@ -832,6 +836,7 @@ public class CreracesCommand {
                 return 1;
         }
 
+        @SuppressWarnings("null")
         private static int executePocketJoin(CommandSourceStack source, ServerPlayer host) {
                 ServerPlayer player = source.getPlayer();
                 if (player == null)
@@ -858,7 +863,8 @@ public class CreracesCommand {
                 }
 
                 // Dryad Restriction: block entry to own pocket if tree is not set
-                if (player == host && hostVars.getRace().toString().equals("creraces:dryad")) {
+                var hostRace = hostVars.getRace();
+                if (player == host && hostRace != null && hostRace.toString().equals("creraces:dryad")) {
                     double tx = hostVars.getPersistentState(new ResourceLocation("creraces", "tx"));
                     double ty = hostVars.getPersistentState(new ResourceLocation("creraces", "ty"));
                     double tz = hostVars.getPersistentState(new ResourceLocation("creraces", "tz"));
@@ -873,7 +879,7 @@ public class CreracesCommand {
                 net.minecraft.server.level.ServerLevel pocketWorld = player.server.getLevel(
                                 net.minecraft.resources.ResourceKey.create(
                                                 net.minecraft.core.registries.Registries.DIMENSION,
-                                                new ResourceLocation(pocketDimName)));
+                                                new ResourceLocation(net.minecraft.resources.ResourceLocation.tryParse(pocketDimName) != null ? pocketDimName : "minecraft:overworld")));
 
                 if (pocketWorld == null) {
                         source.sendFailure(Component.translatable("message.creraces.pocket.not_found"));

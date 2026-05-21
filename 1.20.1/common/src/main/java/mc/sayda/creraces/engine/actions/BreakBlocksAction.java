@@ -42,6 +42,7 @@ public class BreakBlocksAction implements ActionRegistry.RaceAction {
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         if (player == null || player.level() == null) return false;
+        if (player.level().isClientSide()) return true;
 
         if (!player.level().getGameRules().getBoolean(ModGameRules.RULE_RACEGRIEFING)) {
             player.displayClientMessage(net.minecraft.network.chat.Component.translatable("msg.creraces.race_griefing_disabled"), true);

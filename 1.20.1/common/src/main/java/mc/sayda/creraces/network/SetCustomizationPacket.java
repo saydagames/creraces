@@ -25,8 +25,9 @@ public class SetCustomizationPacket {
     public SetCustomizationPacket(FriendlyByteBuf buf) {
         this.customizations = new HashMap<>();
         int size = buf.readInt();
+        if (size < 0 || size > 256) throw new IllegalStateException("Oversized customization packet: " + size);
         for (int i = 0; i < size; i++) {
-            this.customizations.put(buf.readUtf(), buf.readUtf());
+            this.customizations.put(buf.readUtf(128), buf.readUtf(4096));
         }
     }
 

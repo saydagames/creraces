@@ -40,7 +40,7 @@ public class PlaySoundAction implements ActionRegistry.RaceAction {
 
         if (player.level() != null) {
             // Smart Targeting: Prefer target if present, otherwise respect useTarget flag
-            net.minecraft.world.entity.LivingEntity subject = (target != null) ? target : (useTarget ? target : player);
+            net.minecraft.world.entity.LivingEntity subject = (target != null) ? target : (useTarget ? null : player);
             if (subject != null) {
                 player.level().playSound(null, subject.getX(), subject.getY(), subject.getZ(), sound,
                         SoundSource.PLAYERS, (float) volume.evaluate(player, target, slot),
