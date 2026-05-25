@@ -56,6 +56,10 @@ public class ScrollItem extends Item {
                                     isAllowed = true;
                                     break;
                                 }
+                                if (isDescendantOf(playerRaceId, rId)) {
+                                    isAllowed = true;
+                                    break;
+                                }
                                 if (playerRace != null) {
                                     if (rId.toString().equals("creraces:spirit") && playerRace.isSpirit()) {
                                         isAllowed = true;
@@ -200,7 +204,8 @@ public class ScrollItem extends Item {
                         } else {
                             Race r = RaceRegistry.get(rId);
                             name = (r != null) ? r.name().getString() : rId.getPath();
-                            matches = (playerRaceId != null && playerRaceId.equals(rId));
+                            matches = (playerRaceId != null &&
+                                    (playerRaceId.equals(rId) || isDescendantOf(playerRaceId, rId)));
                         }
 
                         ChatFormatting color = matches ? ChatFormatting.GREEN : ChatFormatting.RED;
@@ -217,8 +222,6 @@ public class ScrollItem extends Item {
             } else {
                 tooltipComponents.add(Component.literal("Unknown Ability: " + abilityId).withStyle(ChatFormatting.RED));
             }
-            tooltipComponents
-                    .add(Component.translatable("creraces.tooltip.scroll_empty").withStyle(ChatFormatting.GRAY));
         }
         if (level != null)
             super.appendHoverText(stack, level, tooltipComponents, isAdvanced);
@@ -241,5 +244,17 @@ public class ScrollItem extends Item {
     public static int getLevel(ItemStack stack) {
         CompoundTag tag = stack.getTag();
         return (tag != null && tag.contains("Level")) ? tag.getInt("Level") : 0;
+    }
+
+    /** Returns true if {@code raceId}'s ancestry chain contains {@code ancestorId}. */
+    static boolean isDescendantOf(ResourceLocation raceId, ResourceLocation ancestorId) {
+        if (raceId == null) return false;
+        Race race = RaceRegistry.get(raceId);
+        if (race == null) return false;
+        for (ResourceLocation parentId : race.parentRaces()) {
+            if (parentId.equals(ancestorId)) return true;
+            if (isDescendantOf(parentId, ancestorId)) return true;
+        }
+        return false;
     }
 }

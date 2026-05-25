@@ -124,7 +124,10 @@ public class PoisonEmitterMobileEntity extends TamableAnimal {
                     data.putString("creraces:source", owner.getUUID().toString());
                 }
 
-                target.addEffect(new MobEffectInstance(venomEffect, 102, stacks, true, true));
+                MobEffectInstance existing = target.getEffect(venomEffect);
+                if (existing == null || existing.getAmplifier() < stacks) {
+                    target.addEffect(new MobEffectInstance(venomEffect, 100, stacks, true, true));
+                }
             }
         }
 

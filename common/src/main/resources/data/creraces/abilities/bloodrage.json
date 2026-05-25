@@ -1,0 +1,38 @@
+{
+    "creraces:name": "ability.creraces.bloodrage.name",
+    "creraces:description": "ability.creraces.bloodrage.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/diamond_sword.png",
+    "creraces:cooldown": 1800,
+    "creraces:cost": 30,
+    "creraces:race": [
+        "creraces:orc"
+    ],
+    "creraces:actions": [
+        {
+            "type": "creraces:apply_effect",
+            "effect": "minecraft:strength",
+            "duration": 200,
+            "amplifier": 1,
+            "visible": true
+        },
+        {
+            "type": "creraces:apply_effect",
+            "effect": "minecraft:speed",
+            "duration": 200,
+            "amplifier": 0,
+            "visible": true
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:entity.ender_dragon.growl",
+            "volume": 1.0,
+            "pitch": 0.8
+        }
+    ],
+    "creraces:wiki_page": "Ability:Bloodrage"
+}
+
+
+
+

@@ -1,0 +1,16 @@
+{
+    "variants": {
+        "axis=y": {
+            "model": "creraces:block/weathered_red_stripped_oak_log"
+        },
+        "axis=z": {
+            "model": "creraces:block/weathered_red_stripped_oak_log",
+            "x": 90
+        },
+        "axis=x": {
+            "model": "creraces:block/weathered_red_stripped_oak_log",
+            "x": 90,
+            "y": 90
+        }
+    }
+}

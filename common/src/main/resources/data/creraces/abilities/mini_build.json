@@ -1,0 +1,47 @@
+{
+    "creraces:name": "ability.creraces.mini_build.name",
+    "creraces:description": "ability.creraces.mini_build.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:grass_block",
+    "creraces:cooldown": 20,
+    "creraces:cost": 0,
+    "creraces:race": [
+        "creraces:tiny"
+    ],
+    "creraces:actions": [
+        {
+            "type": "creraces:toggle_minibuild"
+        },
+        {
+            "type": "creraces:conditional",
+            "condition": {
+                "type": "creraces:entity_data",
+                "key": "minibuild",
+                "value": 1,
+                "operator": "=="
+            },
+            "if_true": [
+                {
+                    "type": "creraces:message",
+                    "text": "§aMini Build Enabled",
+                    "actionbar": true
+                }
+            ],
+            "if_false": [
+                {
+                    "type": "creraces:message",
+                    "text": "§cMini Build Disabled",
+                    "actionbar": true
+                }
+            ]
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "creraces:coin_pickup_1",
+            "volume": 1,
+            "pitch": 2
+        }
+    ],
+    "creraces:wiki_page": "Ability:Mini_Build"
+}
+

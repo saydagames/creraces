@@ -1,0 +1,147 @@
+{
+    "creraces:name": "race.creraces.autumn_fairy.name",
+    "creraces:state": "UNFINISHED",
+    "creraces:index": 5.5,
+    "creraces:parent_race": "creraces:fairy",
+    "creraces:description": "race.creraces.autumn_fairy.description",
+    "creraces:icon": "creraces:textures/screens/autumn_fairy_icon.png",
+    "creraces:splash": "creraces:textures/screens/autumn_fairy_splash.png",
+    "creraces:resource_type": "MANA",
+    "creraces:difficulty": 2,
+    "creraces:starting_items": [
+        "minecraft:red_mushroom"
+    ],
+    "creraces:portrait": "creraces:textures/screens/autumn_fairy_portrait.png",
+    "creraces:name_texture": "creraces:textures/screens/autumn_fairy_text.png",
+    "creraces:wiki_page": "Autumn_Fairy",
+    "creraces:splash_x": -19,
+    "creraces:splash_y": -37,
+    "creraces:splash_w": 175,
+    "creraces:splash_h": 275,
+    "creraces:name_tex_x": 45,
+    "creraces:name_tex_y": -39,
+    "creraces:name_tex_w": 84,
+    "creraces:name_tex_h": 26,
+    "creraces:bg_texture": "creraces:textures/screens/selection_autumn_bg.png",
+    "creraces:selection_dimension": "creraces:fairy_realm",
+    "creraces:selection_pos": {
+        "x": -248.5,
+        "y": 98.0,
+        "z": 250.5
+    },
+    "creraces:respawn_dimension": "creraces:fairy_realm",
+    "creraces:respawn_pos": {
+        "x": -248.5,
+        "y": 98.0,
+        "z": 250.5
+    },
+    "passive": [
+        {
+            "type": "creraces:on_tick",
+            "id": "autumn_broken_wings",
+            "interval": 20,
+            "condition": {
+                "type": "creraces:not",
+                "condition": {
+                    "type": "creraces:biome_temperature",
+                    "min": 0.15,
+                    "max": 1.0
+                }
+            },
+            "on_fail": [
+                {
+                    "type": "creraces:conditional",
+                    "condition": {
+                        "type": "creraces:resource_level",
+                        "resource": "state:creraces:bw_exposure",
+                        "operator": ">",
+                        "value": 0
+                    },
+                    "if_true": [
+                        {
+                            "type": "creraces:message",
+                            "text": "message.creraces.broken_wings_safe",
+                            "actionbar": true
+                        }
+                    ]
+                },
+                {
+                    "type": "creraces:set_state",
+                    "state": "creraces:bw_exposure",
+                    "value": 0,
+                    "operation": "set"
+                }
+            ],
+            "actions": [
+                {
+                    "type": "creraces:conditional",
+                    "condition": {
+                        "type": "creraces:not",
+                        "condition": {
+                            "type": "creraces:has_effect",
+                            "effect": "creraces:broken_wings"
+                        }
+                    },
+                    "if_true": [
+                        {
+                            "type": "creraces:set_state",
+                            "state": "creraces:bw_exposure",
+                            "value": 1,
+                            "operation": "add"
+                        },
+                        {
+                            "type": "creraces:conditional",
+                            "condition": {
+                                "type": "creraces:resource_level",
+                                "resource": "state:creraces:bw_exposure",
+                                "operator": ">=",
+                                "value": 60
+                            },
+                            "if_true": [
+                                {
+                                    "type": "creraces:set_state",
+                                    "state": "creraces:bw_exposure",
+                                    "value": 0,
+                                    "operation": "set"
+                                },
+                                {
+                                    "type": "creraces:apply_effect",
+                                    "effect": "creraces:broken_wings",
+                                    "duration": 2147483647,
+                                    "amplifier": 0,
+                                    "ambient": false,
+                                    "visible": false,
+                                    "targets": [
+                                        "self"
+                                    ]
+                                },
+                                {
+                                    "type": "creraces:message",
+                                    "text": "message.creraces.broken_wings_broken"
+                                }
+                            ],
+                            "if_false": [
+                                {
+                                    "type": "creraces:conditional",
+                                    "condition": {
+                                        "type": "creraces:resource_level",
+                                        "resource": "state:creraces:bw_exposure",
+                                        "operator": "==",
+                                        "value": 1
+                                    },
+                                    "if_true": [
+                                        {
+                                            "type": "creraces:message",
+                                            "text": "message.creraces.broken_wings_warning",
+                                            "actionbar": true
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

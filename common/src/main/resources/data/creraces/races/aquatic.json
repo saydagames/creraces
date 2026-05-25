@@ -1,0 +1,42 @@
+{
+    "creraces:selectable": false,
+    "creraces:can_breathe_on_land": false,
+    "creraces:water_vision": true,
+    "creraces:liquid_speed_multiplier": 2.0,
+    "creraces:is_aquatic": true,
+    "creraces:can_breathe_underwater": true,
+    "aquatic": [
+        {
+            "type": "creraces:aquatic_movement",
+            "neutral_buoyancy": true
+        },
+        {
+            "type": "creraces:permanent_effect",
+            "effect": "minecraft:night_vision",
+            "amplifier": 0,
+            "duration": 210,
+            "visible": false
+        },
+        {
+            "type": "creraces:on_respawn",
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:water_breathing",
+                    "duration": 6000,
+                    "amplifier": 0,
+                    "visible": false
+                }
+            ]
+        }
+    ],
+    "passive": [
+        {
+            "id": "aquatic_mining_penalty",
+            "type": "creraces:attribute_modifier",
+            "attribute": "twilight_lib:mining_penalty",
+            "value": -1.0,
+            "operation": "addition"
+        }
+    ]
+}

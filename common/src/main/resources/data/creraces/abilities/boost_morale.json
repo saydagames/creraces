@@ -1,0 +1,66 @@
+{
+    "creraces:name": "ability.creraces.boost_morale.name",
+    "creraces:description": "ability.creraces.boost_morale.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/golden_sword.png",
+    "creraces:cooldown": 2400,
+    "creraces:cost": 15,
+    "creraces:race": [
+        "creraces:undead"
+    ],
+    "creraces:actions": [
+        {
+            "type": "creraces:apply_effect",
+            "effect": "minecraft:strength",
+            "amplifier": {
+                "base": 0
+            },
+            "duration": {
+                "base": 200
+            },
+            "radius": 10.0,
+            "targets": [
+                "allies",
+                "!self"
+            ]
+        },
+        {
+            "type": "creraces:apply_effect",
+            "effect": "minecraft:speed",
+            "amplifier": {
+                "base": 0
+            },
+            "duration": {
+                "base": 200
+            },
+            "radius": 10.0,
+            "targets": [
+                "allies",
+                "!self"
+            ]
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:entity.wither.ambient",
+            "volume": 1.0,
+            "pitch": 0.5
+        },
+        {
+            "type": "creraces:spawn_particles",
+            "particle": "minecraft:soul",
+            "count": 15,
+            "spread": 0.5,
+            "speed": 0.05,
+            "radius": 10.0,
+            "targets": [
+                "allies",
+                "!self"
+            ]
+        }
+    ],
+    "creraces:wiki_page": "Ability:Boost_Morale"
+}
+
+
+
+

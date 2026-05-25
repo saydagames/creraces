@@ -124,6 +124,9 @@ public class FabricConfig {
         CreRacesConfig.MINI_BLOCK_REACH_MARGIN = () -> common.minibuild.mini_block_reach_margin;
         CreRacesConfig.MINI_BLOCK_WATER_RESISTANT = () -> common.minibuild.mini_block_water_resistant;
 
+        // Fairy Realm
+        CreRacesConfig.FAIRY_REALM_BORDER_SIZE = () -> common.fairyRealm.fairy_realm_border_size;
+
         // Pockets
         CreRacesConfig.POCKET_DIM_SPACING = () -> common.pockets.pocket_dim_spacing;
         CreRacesConfig.POCKET_DIM_Y = () -> common.pockets.pocket_dim_y;
@@ -194,6 +197,7 @@ public class FabricConfig {
         public Gameplay gameplay = new Gameplay();
         public Safety safety = new Safety();
         public MiniBuild minibuild = new MiniBuild();
+        public FairyRealm fairyRealm = new FairyRealm();
         public Pockets pockets = new Pockets();
 
         public static class Documentation {
@@ -257,6 +261,10 @@ public class FabricConfig {
             public long mini_placement_spam_threshold_ms = CreRacesConfig.MINI_PLACEMENT_SPAM_THRESHOLD_MS.get();
             public double mini_block_reach_margin = CreRacesConfig.MINI_BLOCK_REACH_MARGIN.get();
             public boolean mini_block_water_resistant = CreRacesConfig.MINI_BLOCK_WATER_RESISTANT.get();
+        }
+
+        public static class FairyRealm {
+            public int fairy_realm_border_size = CreRacesConfig.FAIRY_REALM_BORDER_SIZE.get();
         }
 
         public static class Pockets {

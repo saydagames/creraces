@@ -84,7 +84,9 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
 
             var soggyEffectRef = mc.sayda.creraces.registry.ModMobEffects.SOGGY.get();
             boolean isSoggy = soggyWings && soggyEffectRef != null && player.hasEffect(soggyEffectRef);
-            boolean canFly = conditionMet && currentResource >= evaluatedDrain && !isSoggy;
+            var brokenWingsRef = mc.sayda.creraces.registry.ModMobEffects.BROKEN_WINGS.get();
+            boolean hasBrokenWings = brokenWingsRef != null && player.hasEffect(brokenWingsRef);
+            boolean canFly = conditionMet && currentResource >= evaluatedDrain && !isSoggy && !hasBrokenWings;
             boolean wasMayfly = player.getAbilities().mayfly;
             boolean wasFlying = player.getAbilities().flying;
 

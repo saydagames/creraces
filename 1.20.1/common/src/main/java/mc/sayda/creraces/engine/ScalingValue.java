@@ -216,6 +216,30 @@ public class ScalingValue {
         }
 
         // Custom Variables
+        if (finalKey.startsWith("race:")) {
+            final String key = finalKey.substring(5);
+            return (s, p, t, sl, ip) -> {
+                if (!(s instanceof Player sp)) {
+                    return 0.0;
+                }
+                mc.sayda.creraces.capability.IPlayerVariables vars = DataUtils.getVariables(sp).orElse(null);
+                if (vars == null) {
+                    return 0.0;
+                }
+                mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
+                if (race == null || race.respawnPos() == null) {
+                    return 0.0;
+                }
+                double[] pos = race.respawnPos();
+                return switch (key) {
+                    case "respawn_x" -> pos[0];
+                    case "respawn_y" -> pos[1];
+                    case "respawn_z" -> pos[2];
+                    default -> 0.0;
+                };
+            };
+        }
+
         if (finalKey.startsWith("custom:")) {
             final String key = finalKey.substring(7);
             return (s, p, t, sl, ip) -> {

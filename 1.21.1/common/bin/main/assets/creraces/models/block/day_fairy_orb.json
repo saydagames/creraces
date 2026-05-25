@@ -1,0 +1,9 @@
+{
+  "parent": "creraces:custom/fairyorb",
+  "textures": {
+    "all": "creraces:block/day_sun",
+    "particle": "creraces:block/day_sun",
+    "0": "creraces:block/day_sun"
+  },
+  "render_type": "solid"
+}

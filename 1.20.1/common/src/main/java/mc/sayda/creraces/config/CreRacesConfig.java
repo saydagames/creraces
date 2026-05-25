@@ -15,6 +15,9 @@ public class CreRacesConfig {
     public static Supplier<Integer> MICRO_BLOCK_LIGHT_PER_TORCH = () -> 5;
     public static Supplier<Integer> MICRO_BLOCK_MAX_LIGHT = () -> 15;
 
+    // [SECTION: FAIRY REALM]
+    public static Supplier<Integer> FAIRY_REALM_BORDER_SIZE = () -> 1000;
+
     // [SECTION: POCKET DIMENSION]
     public static Supplier<String> ACTION_DEFAULT_POCKET_DIM = () -> "creraces:pocket";
     public static Supplier<String> ACTION_DEFAULT_POCKET_STRUCTURE = () -> "creraces:dryad_box_1";

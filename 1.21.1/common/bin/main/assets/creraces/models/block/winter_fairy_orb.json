@@ -1,0 +1,9 @@
+{
+  "parent": "creraces:custom/fairyorb",
+  "textures": {
+    "all": "creraces:block/winter_grass",
+    "particle": "creraces:block/winter_grass",
+    "0": "creraces:block/winter_grass"
+  },
+  "render_type": "solid"
+}

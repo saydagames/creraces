@@ -1,0 +1,17 @@
+{
+    "creraces:name": "race.creraces.human.name",
+    "creraces:index": 0.0,
+    "creraces:description": "race.creraces.human.description",
+    "creraces:icon": "creraces:textures/screens/human_icon.png",
+    "creraces:portrait": "creraces:textures/screens/human_portrait.png",
+    "creraces:splash": "creraces:textures/screens/human_splash.png",
+    "creraces:name_texture": "creraces:textures/screens/human_text.png",
+    "creraces:wiki_page": "Human",
+    "creraces:splash_x": 7,
+    "creraces:splash_y": -13,
+    "creraces:splash_w": 200,
+    "creraces:splash_h": 200,
+    "creraces:name_tex_x": 41,
+    "creraces:name_tex_y": -34,
+    "creraces:name_tex_w": 88
+}

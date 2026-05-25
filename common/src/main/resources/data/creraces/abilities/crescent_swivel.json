@@ -1,0 +1,87 @@
+{
+    "creraces:name": "ability.creraces.crescent_swivel.name",
+    "creraces:description": "ability.creraces.crescent_swivel.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:netherite_sword",
+    "creraces:cost": 60,
+    "creraces:race": [
+        "creraces:velox"
+    ],
+    "creraces:actions": [
+        {
+            "type": "creraces:aoe",
+            "radius": 2.5,
+            "targets": [
+                "enemies"
+            ],
+            "source": "caster",
+            "actions": [
+                {
+                    "type": "creraces:conditional",
+                    "condition": {
+                        "type": "creraces:has_effect",
+                        "effect": "creraces:foul_play",
+                        "use_target": true
+                    },
+                    "if_true": [
+                        {
+                            "type": "creraces:damage",
+                            "amount": {
+                                "base": 4,
+                                "scales_with": "creraces:ad",
+                                "factor": 0.04,
+                                "scales": [
+                                    {
+                                        "stat": "creraces:max_health",
+                                        "use_target": true,
+                                        "factor": 0.1
+                                    }
+                                ]
+                            },
+                            "damage_type": "minecraft:player_attack"
+                        },
+                        {
+                            "type": "creraces:remove_effect",
+                            "effect": "creraces:foul_play",
+                            "use_target": true
+                        }
+                    ],
+                    "if_false": [
+                        {
+                            "type": "creraces:damage",
+                            "amount": {
+                                "base": 2,
+                                "scales_with": "creraces:ad",
+                                "factor": 0.02
+                            },
+                            "damage_type": "minecraft:player_attack"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "creraces:slash",
+            "volume": 0.5,
+            "pitch": 1
+        },
+        {
+            "type": "creraces:spawn_particles",
+            "particle": "minecraft:witch",
+            "count": 45,
+            "radius": 2.0,
+            "shape": "disc",
+            "speed": 0.0
+        },
+        {
+            "type": "creraces:spawn_particles",
+            "particle": "minecraft:sweep_attack",
+            "count": 10,
+            "radius": 2.0,
+            "shape": "disc",
+            "speed": 0.0
+        }
+    ],
+    "creraces:wiki_page": "Ability:Crescent_Swivel"
+}

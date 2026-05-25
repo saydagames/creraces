@@ -1,0 +1,49 @@
+{
+    "creraces:name": "ability.creraces.hot_headed.name",
+    "creraces:description": "ability.creraces.hot_headed.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "creraces:textures/icons/rage.png",
+    "creraces:cooldown": 100,
+    "creraces:cost": 0,
+    "creraces:race": [
+        "creraces:oread"
+    ],
+    "creraces:actions": [
+        {
+            "type": "creraces:toggle_state",
+            "state": "self",
+            "on_value": 1,
+            "off_value": 0,
+            "on_enable": [
+                {
+                    "type": "creraces:spawn_particles",
+                    "particle": "minecraft:flame",
+                    "count": 20
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:entity.blaze.ambient",
+                    "volume": 0.8,
+                    "pitch": 1.2
+                }
+            ],
+            "on_disable": [
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:block.fire.extinguish",
+                    "volume": 0.8,
+                    "pitch": 1.0
+                }
+            ]
+        }
+    ],
+    "creraces:on_deactivate": [
+        {
+            "type": "creraces:set_state",
+            "state": "self",
+            "operation": "SET",
+            "value": 0
+        }
+    ],
+    "creraces:wiki_page": "Ability:Hot_Headed"
+}

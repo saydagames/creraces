@@ -1,0 +1,10 @@
+{
+  "parent": "block/cube_bottom_top",
+  "textures": {
+    "particle": "creraces:block/dryad_planks",
+    "bottom": "creraces:block/dryad_planks",
+    "top": "creraces:block/dryad_planks",
+    "side": "creraces:block/dryad_planks"
+  },
+  "render_type": "cutout"
+}

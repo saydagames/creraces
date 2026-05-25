@@ -88,6 +88,8 @@ public class CreRaces {
         // Particles
         mc.sayda.creraces.registry.ModParticles.register();
 
+        // Fluids (must be before blocks because of fluid states in block registration)
+        mc.sayda.creraces.registry.ModFluids.register();
         // Blocks
         mc.sayda.creraces.registry.ModBlocks.register();
         // Sounds

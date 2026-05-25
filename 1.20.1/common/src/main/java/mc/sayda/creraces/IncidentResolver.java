@@ -16,14 +16,14 @@ public class IncidentResolver {
     private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
     private static final AtomicLong sakuyaWatchTick = new AtomicLong(0);
 
-    public static void init() {
+public static void init() {
         // Player Events
         PlayerEvent.PLAYER_JOIN.register(IncidentResolver::onIncidentBegin); // Login
         PlayerEvent.PLAYER_CLONE.register((oldPlayer, newPlayer, wonGame) -> {
             onIncidentClone(oldPlayer, newPlayer, !wonGame);
         });
         PlayerEvent.CHANGE_DIMENSION.register((player, oldLevel, newLevel) -> {
-            onIncidentTransition(player); // Dimension change
+            onIncidentTransition(player, oldLevel, newLevel);
         });
         PlayerEvent.PLAYER_RESPAWN.register((player, conqueredEnd) -> {
             onRespawn(player);
@@ -48,17 +48,33 @@ public class IncidentResolver {
         dev.architectury.event.events.common.LifecycleEvent.SERVER_STARTED.register(server -> {
             mc.sayda.creraces.team.RaceTeamManager.load(server);
             mc.sayda.creraces.util.PocketManager.load(server);
+
         });
         dev.architectury.event.events.common.LifecycleEvent.SERVER_STOPPING.register(server -> {
             mc.sayda.creraces.team.RaceTeamManager.save(server);
             mc.sayda.creraces.util.PocketManager.save(server);
             mc.sayda.creraces.util.Scheduler.clear();
+            mc.sayda.creraces.worldgen.ModWorldgen.onServerStop();
         });
 
         // Social Passives (defendedByEntities)
         mc.sayda.creraces.race.SocialPassivesEvent.register();
 
         // Entity Events
+
+        // Prevent hostile mobs from spawning in the fairy realm
+        dev.architectury.event.events.common.EntityEvent.ADD.register((entity, level) -> {
+            if (!level.isClientSide()
+                    && entity instanceof net.minecraft.world.entity.monster.Monster
+                    && level instanceof net.minecraft.server.level.ServerLevel sl
+                    && sl.dimension().location().equals(
+                            new net.minecraft.resources.ResourceLocation(CreRaces.MODID, "fairy_realm"))) {
+                entity.discard();
+                return dev.architectury.event.EventResult.interruptFalse();
+            }
+            return dev.architectury.event.EventResult.pass();
+        });
+
         dev.architectury.event.events.common.EntityEvent.LIVING_DEATH.register((entity, source) -> {
             net.minecraft.world.entity.player.Player killer = mc.sayda.creraces.util.CombatUtils
                     .getRootOwner(source.getEntity());
@@ -272,6 +288,31 @@ public class IncidentResolver {
         // Re-apply race elements on login (Persistence Fix)
         mc.sayda.creraces.race.RaceIncidents.refreshPlayer(player);
 
+        // If the player logged back in while inside the fairy realm, restore the full-scale override.
+        // refreshPlayer above would have re-applied the race's base tiny scale (0.25), undoing it.
+        net.minecraft.resources.ResourceLocation fairyRealmLoc =
+                new net.minecraft.resources.ResourceLocation(CreRaces.MODID, "fairy_realm");
+        if (player.level().dimension().location().equals(fairyRealmLoc)) {
+            net.minecraft.server.level.ServerLevel fairyLevel =
+                    (net.minecraft.server.level.ServerLevel) player.serverLevel();
+            // Ensure world border is set — CHANGE_DIMENSION doesn't fire on direct login
+            mc.sayda.creraces.worldgen.ModWorldgen.placeFairyTreeIfNeeded(fairyLevel);
+                mc.sayda.creraces.worldgen.ModWorldgen.placeSeasonalTreesIfNeeded(fairyLevel);
+
+            // Send border packet once the client has fully loaded in (20-tick delay on login)
+            net.minecraft.world.level.border.WorldBorder border = fairyLevel.getWorldBorder();
+            mc.sayda.creraces.util.Scheduler.delay(20, () ->
+                    player.connection.send(
+                            new net.minecraft.network.protocol.game.ClientboundInitializeBorderPacket(border)));
+
+            mc.sayda.creraces.capability.DataUtils.getVariables(player).ifPresent(vars -> {
+                mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
+                if (race != null) {
+                    mc.sayda.creraces.race.RaceIncidents.applyFairyRealmScale(player, race);
+                }
+            });
+        }
+
         // Sync the joining player's data to all currently online players,
         // and sync all online players' data to the joining player.
         // NOTE: We iterate level().players() but avoid an O(n²) full cross-sync:
@@ -301,9 +342,41 @@ public class IncidentResolver {
         mc.sayda.creraces.team.RaceTeamManager.handlePlayerJoin(player);
     }
 
-    private static void onIncidentTransition(ServerPlayer player) {
-        // Sync when moving between dimensions
+    private static void onIncidentTransition(ServerPlayer player,
+            net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> oldLevel,
+            net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> newLevel) {
         BoundaryHandler.resyncVariables(player, player);
+
+        net.minecraft.resources.ResourceLocation fairyRealm =
+                new net.minecraft.resources.ResourceLocation(CreRaces.MODID, "fairy_realm");
+
+        if (newLevel.location().equals(fairyRealm)) {
+            // Place the island tree on first entry (level is loaded at this point)
+            net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> fairyKey =
+                    net.minecraft.resources.ResourceKey.create(
+                            net.minecraft.core.registries.Registries.DIMENSION, fairyRealm);
+            net.minecraft.server.level.ServerLevel fairyLevel = player.server.getLevel(fairyKey);
+            if (fairyLevel != null) {
+                mc.sayda.creraces.worldgen.ModWorldgen.placeFairyTreeIfNeeded(fairyLevel);
+                mc.sayda.creraces.worldgen.ModWorldgen.placeSeasonalTreesIfNeeded(fairyLevel);
+                // Explicitly sync the world border to this player 2 ticks later.
+                // CHANGE_DIMENSION fires before the client finishes loading the new level,
+                // so the broadcast from setSize() misses them; we must send it directly.
+                net.minecraft.world.level.border.WorldBorder border = fairyLevel.getWorldBorder();
+                mc.sayda.creraces.util.Scheduler.delay(2, () ->
+                        player.connection.send(
+                                new net.minecraft.network.protocol.game.ClientboundInitializeBorderPacket(border)));
+            }
+
+            DataUtils.getVariables(player).ifPresent(vars -> {
+                mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
+                if (race != null) {
+                    mc.sayda.creraces.race.RaceIncidents.applyFairyRealmScale(player, race);
+                }
+            });
+        } else if (oldLevel.location().equals(fairyRealm)) {
+            mc.sayda.creraces.race.RaceIncidents.refreshPlayer(player);
+        }
     }
 
     private static void onIncidentClone(ServerPlayer oldPlayer, ServerPlayer newPlayer, boolean wasDeath) {
@@ -351,11 +424,12 @@ public class IncidentResolver {
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             mc.sayda.creraces.race.ResourceTicker.tick(player);
         }
+
         mc.sayda.creraces.util.Scheduler.tick();
         mc.sayda.creraces.team.RaceTeamManager.tick(server);
     }
 
-    public static void onTrackingBegin(ServerPlayer tracker, net.minecraft.world.entity.Entity target) {
+public static void onTrackingBegin(ServerPlayer tracker, net.minecraft.world.entity.Entity target) {
         if (target instanceof Player targetPlayer) {
             BoundaryHandler.resyncVariables(targetPlayer, tracker);
         }
@@ -381,6 +455,21 @@ public class IncidentResolver {
                 for (mc.sayda.creraces.engine.TraitRegistry.RaceTrait trait : race.traits()) {
                     trait.onRespawn(player);
                 }
+            }
+
+            // Race-defined default respawn: used when the player has no bed/anchor spawn set
+            if (race != null && race.respawnPos() != null && player.getRespawnPosition() == null) {
+                double[] pos = race.respawnPos();
+                net.minecraft.server.level.ServerLevel targetLevel = player.serverLevel();
+                if (race.respawnDimension() != null) {
+                    net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimKey =
+                            net.minecraft.resources.ResourceKey.create(
+                                    net.minecraft.core.registries.Registries.DIMENSION,
+                                    race.respawnDimension());
+                    net.minecraft.server.level.ServerLevel dimLevel = player.server.getLevel(dimKey);
+                    if (dimLevel != null) targetLevel = dimLevel;
+                }
+                player.teleportTo(targetLevel, pos[0], pos[1], pos[2], player.getYRot(), player.getXRot());
             }
         });
     }

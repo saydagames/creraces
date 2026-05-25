@@ -11,21 +11,18 @@ public class DamageCritParticle extends TextureSheetParticle {
         super(world, x, y, z);
         this.spriteSet = spriteSet;
         
-        this.xd *= 0.1D;
-        this.yd *= 0.1D;
-        this.zd *= 0.1D;
-        this.xd += vx;
-        this.yd += vy;
-        this.zd += vz;
-        
+        this.xd = 0;
+        this.yd = 0;
+        this.zd = 0;
+
         float colorRand = (float)(Math.random() * 0.3D + 0.6D);
         this.rCol = colorRand;
         this.gCol = colorRand;
         this.bCol = colorRand;
-        
+
         this.quadSize *= 0.75F;
         this.lifetime = (int)(8.0D / (Math.random() * 0.8D + 0.2D));
-        this.hasPhysics = true;
+        this.hasPhysics = false;
         this.setSpriteFromAge(spriteSet);
     }
  
@@ -44,15 +41,6 @@ public class DamageCritParticle extends TextureSheetParticle {
             this.remove();
         } else {
             this.setSpriteFromAge(this.spriteSet);
-            this.yd -= 0.04D; // Gravity
-            this.move(this.xd, this.yd, this.zd);
-            this.xd *= 0.98D; // Friction
-            this.yd *= 0.98D;
-            this.zd *= 0.98D;
-            if (this.onGround) {
-                this.xd *= 0.7D;
-                this.zd *= 0.7D;
-            }
         }
     }
  

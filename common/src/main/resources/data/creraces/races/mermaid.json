@@ -1,0 +1,57 @@
+{
+    "creraces:name": "race.creraces.mermaid.name",
+    "creraces:parent_race": "creraces:aquatic",
+    "creraces:index": 6.0,
+    "creraces:description": "race.creraces.mermaid.description",
+    "creraces:icon": "creraces:textures/screens/mermaid_icon.png",
+    "creraces:splash": "creraces:textures/screens/mermaid_splash.png",
+    "creraces:portrait": "creraces:textures/screens/mermaid_portrait.png",
+    "creraces:name_texture": "creraces:textures/screens/mermaid_text.png",
+    "creraces:resource_type": "MANA",
+    "creraces:difficulty": 2,
+    "creraces:gstate": "FEMALE",
+    "creraces:can_breathe_on_land": false,
+    "creraces:allowed_food_types": [
+        "seafood"
+    ],
+    "creraces:negate_effects": [
+        "minecraft:poison",
+        "creraces:boiling"
+    ],
+    "creraces:starting_abilities": [
+        "creraces:tidal_wave",
+        "creraces:spicy_whirlpool"
+    ],
+    "land_penalties": [
+        {
+            "name": "land_penalties",
+            "type": "creraces:on_tick",
+            "interval": 20,
+            "condition": {
+                "type": "creraces:not",
+                "condition": {
+                    "type": "creraces:in_water",
+                    "include_rain": true
+                }
+            },
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:weakness",
+                    "duration": 30,
+                    "amplifier": 0,
+                    "visible": true
+                }
+            ]
+        }
+    ],
+    "creraces:wiki_page": "Mermaid",
+    "creraces:splash_x": 9,
+    "creraces:splash_y": -20,
+    "creraces:splash_w": 166,
+    "creraces:name_tex_x": 32,
+    "creraces:name_tex_y": -39,
+    "creraces:name_tex_w": 108,
+    "creraces:name_tex_h": 25,
+    "creraces:bg_texture": "creraces:textures/screens/selection_water_bg.png"
+}

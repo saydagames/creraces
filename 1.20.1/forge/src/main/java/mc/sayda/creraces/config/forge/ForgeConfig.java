@@ -83,6 +83,8 @@ public class ForgeConfig {
                 public final ForgeConfigSpec.ConfigValue<Double> mini_block_reach_margin;
                 public final ForgeConfigSpec.ConfigValue<Boolean> mini_block_water_resistant;
 
+                public final ForgeConfigSpec.ConfigValue<Integer> fairy_realm_border_size;
+
                 public final ForgeConfigSpec.ConfigValue<String> action_default_pocket_dim;
                 public final ForgeConfigSpec.ConfigValue<String> action_default_pocket_structure;
                 public final ForgeConfigSpec.ConfigValue<Double> action_default_pocket_spawn_x_offset;
@@ -267,6 +269,12 @@ public class ForgeConfig {
                         mini_block_water_resistant = builder.comment("Blocks cannot be destroyed by flowing water. Default: true")
                                         .define("mini_block_water_resistant",
                                                         CreRacesConfig.MINI_BLOCK_WATER_RESISTANT.get());
+                        builder.pop();
+
+                        builder.push("FairyRealm");
+                        fairy_realm_border_size = builder.comment("World border diameter for the fairy_realm dimension. Default: 1000")
+                                        .defineInRange("fairy_realm_border_size",
+                                                        CreRacesConfig.FAIRY_REALM_BORDER_SIZE.get(), 100, 60000000);
                         builder.pop();
 
                         builder.push("Pockets");
@@ -629,6 +637,8 @@ public class ForgeConfig {
                 CreRacesConfig.SAG_WINGS = () -> COMMON.sag_wings.get();
                 CreRacesConfig.GSTATE_ENABLED = () -> COMMON.gstate_enabled.get();
                 CreRacesConfig.RITUAL_MODE = () -> COMMON.ritual_mode.get();
+
+                CreRacesConfig.FAIRY_REALM_BORDER_SIZE = () -> COMMON.fairy_realm_border_size.get();
 
                 CreRacesConfig.POCKET_DIM_SPACING = () -> COMMON.pocket_dim_spacing.get();
                 CreRacesConfig.POCKET_DIM_Y = () -> COMMON.pocket_dim_y.get();

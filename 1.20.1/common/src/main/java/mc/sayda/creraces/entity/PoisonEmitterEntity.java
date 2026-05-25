@@ -113,7 +113,13 @@ public class PoisonEmitterEntity extends TamableAnimal {
                     data.putString("creraces:source", owner.getUUID().toString());
                 }
 
-                target.addEffect(new MobEffectInstance(venomEffect, 102, stacks, true, true));
+                // Only apply/upgrade when target lacks the effect or stacks have increased;
+                // re-applying every tick would reset the duration before isDurationEffectTick
+                // could fire (102 % 10 != 0 meant damage was never dealt).
+                MobEffectInstance existing = target.getEffect(venomEffect);
+                if (existing == null || existing.getAmplifier() < stacks) {
+                    target.addEffect(new MobEffectInstance(venomEffect, 100, stacks, true, true));
+                }
             }
         }
 

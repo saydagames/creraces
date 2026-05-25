@@ -26,7 +26,24 @@ public class MicroBlockWhitelist {
                 || block instanceof FenceGateBlock
                 || block instanceof ChestBlock
                 || block instanceof EnderChestBlock
-                || block instanceof JukeboxBlock;
+                || block instanceof JukeboxBlock
+                || block instanceof AnvilBlock
+                || block instanceof StonecutterBlock
+                || block instanceof GrindstoneBlock
+                || block instanceof EnchantmentTableBlock
+                || block instanceof LoomBlock
+                || block instanceof CartographyTableBlock
+                || block instanceof BrewingStandBlock
+                || block instanceof CampfireBlock
+                || block instanceof SmithingTableBlock
+                || block == net.minecraft.world.level.block.Blocks.LODESTONE
+                || block instanceof LecternBlock
+                || block instanceof ChiseledBookShelfBlock
+                || block instanceof DecoratedPotBlock
+                || block instanceof BellBlock
+                || block instanceof NoteBlock
+                || block instanceof RespawnAnchorBlock
+                || block instanceof AbstractCauldronBlock;
     }
 
     public static boolean isAllowed(Block block) {
@@ -67,8 +84,11 @@ public class MicroBlockWhitelist {
             return true;
 
         // Liquids / fire / void
-        if (block instanceof LiquidBlock)
-            return false;
+        if (block instanceof LiquidBlock) {
+            // Allow water and lava source blocks (static only, no flow logic)
+            return block == net.minecraft.world.level.block.Blocks.WATER
+                    || block == net.minecraft.world.level.block.Blocks.LAVA;
+        }
         if (block instanceof BaseFireBlock)
             return false;
 

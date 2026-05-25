@@ -1,0 +1,8 @@
+{
+  "parent": "block/cube_all",
+  "textures": {
+    "all": "creraces:block/dryad_root",
+    "particle": "creraces:block/dryad_root"
+  },
+  "render_type": "solid"
+}

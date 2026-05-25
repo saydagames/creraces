@@ -90,9 +90,9 @@ public class ModItems {
                         ModBlocks.WINTER_FAIRY_ORB);
         public static final RegistrySupplier<Item> DAY_FAIRY_ORB_ITEM = registerBlockItem(ModBlocks.DAY_FAIRY_ORB);
         public static final RegistrySupplier<Item> NIGHT_FAIRY_ORB_ITEM = registerBlockItem(ModBlocks.NIGHT_FAIRY_ORB);
-        public static final RegistrySupplier<Item> TORI_BELL_ITEM = registerBlockItem(ModBlocks.TORI_BELL);
-        public static final RegistrySupplier<Item> WEATHERED_TORI_BELL_ITEM = registerBlockItem(
-                        ModBlocks.WEATHERED_TORI_BELL);
+        public static final RegistrySupplier<Item> TORII_BELL_ITEM = registerBlockItem(ModBlocks.TORII_BELL);
+        public static final RegistrySupplier<Item> WEATHERED_TORII_BELL_ITEM = registerBlockItem(
+                        ModBlocks.WEATHERED_TORII_BELL);
         public static final RegistrySupplier<Item> RED_STRIPPED_OAK_LOG_ITEM = registerBlockItem(
                         ModBlocks.RED_STRIPPED_OAK_LOG);
         public static final RegistrySupplier<Item> WEATHERED_RED_STRIPPED_OAK_LOG_ITEM = registerBlockItem(
@@ -101,36 +101,56 @@ public class ModItems {
                         ModBlocks.VOLCANIC_ROCK);
         public static final RegistrySupplier<Item> VOLCANIC_ROCK_HARDENED_ITEM = registerBlockItem(
                         ModBlocks.VOLCANIC_ROCK_HARDENED);
+        public static final RegistrySupplier<Item> CHERRY_TREE_GATEWAY_ITEM = registerBlockItem(
+                        ModBlocks.CHERRY_TREE_GATEWAY);
+        public static final RegistrySupplier<Item> OAK_TREE_GATEWAY_ITEM = registerBlockItem(
+                        ModBlocks.OAK_TREE_GATEWAY);
+        public static final RegistrySupplier<Item> SPRUCE_TREE_GATEWAY_ITEM = registerBlockItem(
+                        ModBlocks.SPRUCE_TREE_GATEWAY);
 
         // Mermaid Armor - Blue
         public static final RegistrySupplier<Item> BLUE_MERMAID_HELMET = ITEMS.register("blue_mermaid_helmet",
-                        () -> new net.minecraft.world.item.ArmorItem(MermaidArmorMaterial.BLUE, net.minecraft.world.item.ArmorItem.Type.HELMET, new Item.Properties()));
+                        () -> new net.minecraft.world.item.ArmorItem(MermaidArmorMaterial.BLUE,
+                                        net.minecraft.world.item.ArmorItem.Type.HELMET, new Item.Properties()));
         public static final RegistrySupplier<Item> BLUE_MERMAID_CHESTPLATE = ITEMS.register("blue_mermaid_chestplate",
-                        () -> new net.minecraft.world.item.ArmorItem(MermaidArmorMaterial.BLUE, net.minecraft.world.item.ArmorItem.Type.CHESTPLATE, new Item.Properties()));
+                        () -> new net.minecraft.world.item.ArmorItem(MermaidArmorMaterial.BLUE,
+                                        net.minecraft.world.item.ArmorItem.Type.CHESTPLATE, new Item.Properties()));
         public static final RegistrySupplier<Item> BLUE_MERMAID_LEGGINGS = ITEMS.register("blue_mermaid_leggings",
-                        () -> new net.minecraft.world.item.ArmorItem(MermaidArmorMaterial.BLUE, net.minecraft.world.item.ArmorItem.Type.LEGGINGS, new Item.Properties()));
+                        () -> new net.minecraft.world.item.ArmorItem(MermaidArmorMaterial.BLUE,
+                                        net.minecraft.world.item.ArmorItem.Type.LEGGINGS, new Item.Properties()));
         public static final RegistrySupplier<Item> BLUE_MERMAID_BOOTS = ITEMS.register("blue_mermaid_boots",
-                        () -> new net.minecraft.world.item.ArmorItem(MermaidArmorMaterial.BLUE, net.minecraft.world.item.ArmorItem.Type.BOOTS, new Item.Properties()));
+                        () -> new net.minecraft.world.item.ArmorItem(MermaidArmorMaterial.BLUE,
+                                        net.minecraft.world.item.ArmorItem.Type.BOOTS, new Item.Properties()));
 
         // Mermaid Armor - Green
         public static final RegistrySupplier<Item> GREEN_MERMAID_HELMET = ITEMS.register("green_mermaid_helmet",
-                        () -> new net.minecraft.world.item.ArmorItem(MermaidArmorMaterial.GREEN, net.minecraft.world.item.ArmorItem.Type.HELMET, new Item.Properties()));
+                        () -> new net.minecraft.world.item.ArmorItem(MermaidArmorMaterial.GREEN,
+                                        net.minecraft.world.item.ArmorItem.Type.HELMET, new Item.Properties()));
         public static final RegistrySupplier<Item> GREEN_MERMAID_CHESTPLATE = ITEMS.register("green_mermaid_chestplate",
-                        () -> new net.minecraft.world.item.ArmorItem(MermaidArmorMaterial.GREEN, net.minecraft.world.item.ArmorItem.Type.CHESTPLATE, new Item.Properties()));
+                        () -> new net.minecraft.world.item.ArmorItem(MermaidArmorMaterial.GREEN,
+                                        net.minecraft.world.item.ArmorItem.Type.CHESTPLATE, new Item.Properties()));
         public static final RegistrySupplier<Item> GREEN_MERMAID_LEGGINGS = ITEMS.register("green_mermaid_leggings",
-                        () -> new net.minecraft.world.item.ArmorItem(MermaidArmorMaterial.GREEN, net.minecraft.world.item.ArmorItem.Type.LEGGINGS, new Item.Properties()));
+                        () -> new net.minecraft.world.item.ArmorItem(MermaidArmorMaterial.GREEN,
+                                        net.minecraft.world.item.ArmorItem.Type.LEGGINGS, new Item.Properties()));
         public static final RegistrySupplier<Item> GREEN_MERMAID_BOOTS = ITEMS.register("green_mermaid_boots",
-                        () -> new net.minecraft.world.item.ArmorItem(MermaidArmorMaterial.GREEN, net.minecraft.world.item.ArmorItem.Type.BOOTS, new Item.Properties()));
+                        () -> new net.minecraft.world.item.ArmorItem(MermaidArmorMaterial.GREEN,
+                                        net.minecraft.world.item.ArmorItem.Type.BOOTS, new Item.Properties()));
 
         // Mermaid Armor - Yellow
         public static final RegistrySupplier<Item> YELLOW_MERMAID_HELMET = ITEMS.register("yellow_mermaid_helmet",
-                        () -> new net.minecraft.world.item.ArmorItem(MermaidArmorMaterial.YELLOW, net.minecraft.world.item.ArmorItem.Type.HELMET, new Item.Properties()));
-        public static final RegistrySupplier<Item> YELLOW_MERMAID_CHESTPLATE = ITEMS.register("yellow_mermaid_chestplate",
-                        () -> new net.minecraft.world.item.ArmorItem(MermaidArmorMaterial.YELLOW, net.minecraft.world.item.ArmorItem.Type.CHESTPLATE, new Item.Properties()));
+                        () -> new net.minecraft.world.item.ArmorItem(MermaidArmorMaterial.YELLOW,
+                                        net.minecraft.world.item.ArmorItem.Type.HELMET, new Item.Properties()));
+        public static final RegistrySupplier<Item> YELLOW_MERMAID_CHESTPLATE = ITEMS
+                        .register("yellow_mermaid_chestplate",
+                                        () -> new net.minecraft.world.item.ArmorItem(MermaidArmorMaterial.YELLOW,
+                                                        net.minecraft.world.item.ArmorItem.Type.CHESTPLATE,
+                                                        new Item.Properties()));
         public static final RegistrySupplier<Item> YELLOW_MERMAID_LEGGINGS = ITEMS.register("yellow_mermaid_leggings",
-                        () -> new net.minecraft.world.item.ArmorItem(MermaidArmorMaterial.YELLOW, net.minecraft.world.item.ArmorItem.Type.LEGGINGS, new Item.Properties()));
+                        () -> new net.minecraft.world.item.ArmorItem(MermaidArmorMaterial.YELLOW,
+                                        net.minecraft.world.item.ArmorItem.Type.LEGGINGS, new Item.Properties()));
         public static final RegistrySupplier<Item> YELLOW_MERMAID_BOOTS = ITEMS.register("yellow_mermaid_boots",
-                        () -> new net.minecraft.world.item.ArmorItem(MermaidArmorMaterial.YELLOW, net.minecraft.world.item.ArmorItem.Type.BOOTS, new Item.Properties()));
+                        () -> new net.minecraft.world.item.ArmorItem(MermaidArmorMaterial.YELLOW,
+                                        net.minecraft.world.item.ArmorItem.Type.BOOTS, new Item.Properties()));
 
         // Music Discs
         public static final RegistrySupplier<Item> LOFI_WARCRIMES_DISC = ITEMS.register("lofi_warcrimes_disc",
@@ -153,6 +173,21 @@ public class ModItems {
                                         new net.minecraft.world.item.Item.Properties().stacksTo(1)
                                                         .rarity(net.minecraft.world.item.Rarity.RARE),
                                         2200));
+
+        // ─── Fairy Source ──────────────────────────────────────────────────────────
+        public static final RegistrySupplier<Item> FAIRY_DUST = ITEMS.register("fairy_dust",
+                        () -> new Item(new Item.Properties()));
+
+        public static final RegistrySupplier<Item> FAIRY_BUCKET = ITEMS.register("fairy_bucket",
+                        () -> new net.minecraft.world.item.BucketItem(
+                                        ModFluids.FAIRY_SOURCE.get(),
+                                        new Item.Properties()
+                                                        .craftRemainder(net.minecraft.world.item.Items.BUCKET)
+                                                        .stacksTo(1)));
+
+        public static final RegistrySupplier<Item> FAIRY_BOTTLE = ITEMS.register("fairy_bottle",
+                        () -> new mc.sayda.creraces.item.FairyBottleItem(
+                                        new Item.Properties().stacksTo(16)));
 
         private static RegistrySupplier<Item> registerBlockItem(
                         RegistrySupplier<? extends net.minecraft.world.level.block.Block> blockSupplier) {

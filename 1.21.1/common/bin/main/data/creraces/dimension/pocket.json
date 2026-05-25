@@ -1,0 +1,16 @@
+{
+    "type": "creraces:pocket",
+    "generator": {
+        "type": "minecraft:flat",
+        "settings": {
+            "biome": "minecraft:the_void",
+            "layers": [
+                {
+                    "block": "minecraft:air",
+                    "height": 64
+                }
+            ],
+            "structure_overrides": []
+        }
+    }
+}

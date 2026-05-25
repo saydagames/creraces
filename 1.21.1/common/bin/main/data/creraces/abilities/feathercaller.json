@@ -1,0 +1,30 @@
+{
+    "creraces:name": "ability.creraces.feathercaller.name",
+    "creraces:description": "ability.creraces.feathercaller.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "creraces:textures/item/harpy_feather.png",
+    "creraces:cooldown": 200,
+    "creraces:cost": 15,
+    "creraces:race": [
+        "creraces:harpy"
+    ],
+    "creraces:actions": [
+        {
+            "type": "creraces:recall_projectiles",
+            "radius": {
+                "base": 64.0
+            }
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:block.wool.break",
+            "volume": {
+                "base": 1.0
+            },
+            "pitch": {
+                "base": 1.2
+            }
+        }
+    ],
+    "creraces:wiki_page": "Ability:Feathercaller"
+}

@@ -4,7 +4,7 @@
     "package": "mc.sayda.creraces.forge.mixin",
     "compatibilityLevel": "JAVA_17",
     "minVersion": "0.8",
-    "mixins": [],
+    "mixins": ["BootstrapMixin", "FairyFluidTypeMixin"],
     "client": [],
     "injectors": {
         "defaultRequire": 1

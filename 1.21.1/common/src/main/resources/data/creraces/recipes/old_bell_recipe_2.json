@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "a",
+    "b",
+    "c"
+  ],
+  "key": {
+    "a": {
+      "item": "minecraft:stick"
+    },
+    "b": {
+      "item": "minecraft:gold_block"
+    },
+    "c": {
+      "item": "minecraft:gold_nugget"
+    }
+  },
+  "result": {
+    "count": 1,
+    "id": "creraces:old_bell"
+  }
+}

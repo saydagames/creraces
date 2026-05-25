@@ -1,0 +1,57 @@
+{
+    "creraces:name": "ability.creraces.spicy_whirlpool.name",
+    "creraces:description": "ability.creraces.spicy_whirlpool.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "creraces:textures/mob_effect/boiling.png",
+    "creraces:cooldown": 600,
+    "creraces:cost": 0,
+    "creraces:race": [
+        "creraces:mermaid"
+    ],
+    "creraces:condition": {
+        "type": "creraces:in_water"
+    },
+    "creraces:actions": [
+        {
+            "type": "creraces:aoe",
+            "radius": 5.0,
+            "targets": [
+                "enemies"
+            ],
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "creraces:boiling",
+                    "duration": 100,
+                    "amplifier": 0,
+                    "visible": true
+                }
+            ]
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:block.lava.pop",
+            "volume": 1.0,
+            "pitch": 0.8
+        },
+        {
+            "type": "creraces:spawn_particles",
+            "particle": "minecraft:bubble",
+            "count": 160,
+            "spread": 2.0
+        },
+        {
+            "type": "creraces:spawn_particles",
+            "particle": "minecraft:large_smoke",
+            "count": 10,
+            "spread": 2.0
+        },
+        {
+            "type": "creraces:spawn_particles",
+            "particle": "minecraft:flame",
+            "count": 40,
+            "spread": 2.0
+        }
+    ],
+    "creraces:wiki_page": "Ability:Spicy_Whirlpool"
+}

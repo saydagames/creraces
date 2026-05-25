@@ -1,0 +1,71 @@
+{
+    "creraces:name": "race.creraces.naiad.name",
+    "creraces:parent_races": [
+        "creraces:nymph",
+        "creraces:aquatic"
+    ],
+    "creraces:index": 9.2,
+    "creraces:description": "race.creraces.naiad.description",
+    "creraces:icon": "creraces:textures/screens/naiad_icon.png",
+    "creraces:splash": "creraces:textures/screens/naiad_splash.png",
+    "creraces:portrait": "creraces:textures/screens/naiad_portrait.png",
+    "creraces:name_texture": "creraces:textures/screens/naiad_text.png",
+    "creraces:resource_type": "MANA",
+    "creraces:gstate": "FEMALE",
+    "creraces:starting_abilities": [
+        "creraces:tidal_wave",
+        "creraces:whirlpool",
+        "creraces:quick_current",
+        "creraces:camouflage"
+    ],
+    "aquatic_buffs": [
+        {
+            "name": "aquatic_buffs",
+            "type": "creraces:on_tick",
+            "interval": 100,
+            "condition": {
+                "type": "creraces:in_water",
+                "include_rain": false
+            },
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:strength",
+                    "duration": 200,
+                    "amplifier": 0
+                },
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:conduit_power",
+                    "duration": 200,
+                    "amplifier": 0
+                },
+                {
+                    "type": "creraces:apply_velocity",
+                    "y": 0.05,
+                    "relative": false
+                }
+            ]
+        }
+    ],
+    "cosmetics": [
+        {
+            "type": "creraces:addon",
+            "addon_id": "moss"
+        },
+        {
+            "type": "creraces:addon",
+            "addon_id": "naiad_body"
+        }
+    ],
+    "creraces:wiki_page": "Naiad",
+    "creraces:splash_x": -7,
+    "creraces:splash_y": 7,
+    "creraces:splash_w": 200,
+    "creraces:splash_h": 179,
+    "creraces:name_tex_x": 51,
+    "creraces:name_tex_y": -38,
+    "creraces:name_tex_w": 72,
+    "creraces:name_tex_h": 24,
+    "creraces:bg_texture": "creraces:textures/screens/selection_water_bg.png"
+}

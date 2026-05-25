@@ -67,6 +67,7 @@ public class TeleportAction implements ActionRegistry.RaceAction {
                         serverPlayer.getXRot());
                 return true;
             }
+            return false;
         }
 
         serverPlayer.teleportTo(targetX, targetY, targetZ);

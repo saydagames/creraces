@@ -1,0 +1,71 @@
+{
+    "creraces:name": "ability.creraces.fruitful_harvest.name",
+    "creraces:description": "ability.creraces.fruitful_harvest.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "creraces:textures/icons/blood.png",
+    "creraces:cooldown": 420,
+    "creraces:cost": 10,
+    "creraces:race": [
+        "creraces:undead"
+    ],
+    "creraces:actions": [
+        {
+            "type": "creraces:aoe",
+            "radius": 16.0,
+            "targets": [
+                "enemies"
+            ],
+            "required_effect": "creraces:life_drain",
+            "actions": [
+                {
+                    "type": "creraces:damage",
+                    "amount": {
+                        "base": 2.0
+                    },
+                    "damage_type": "minecraft:wither",
+                    "source": "self",
+                    "heal_amount": {
+                        "base": 2.0
+                    }
+                },
+                {
+                    "type": "creraces:spawn_particles",
+                    "particle": "minecraft:witch",
+                    "count": 10,
+                    "spread": 0.3,
+                    "speed": 0.05,
+                    "targets": [
+                        "enemies"
+                    ]
+                },
+                {
+                    "type": "creraces:remove_effect",
+                    "effect": "creraces:life_drain"
+                }
+            ]
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:entity.player.burp",
+            "volume": 1.0,
+            "pitch": 0.8
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:entity.generic.drink",
+            "volume": 0.8,
+            "pitch": 0.6
+        },
+        {
+            "type": "creraces:spawn_particles",
+            "particle": "minecraft:happy_villager",
+            "count": 20,
+            "spread": 0.5,
+            "speed": 0.05,
+            "targets": [
+                "self"
+            ]
+        }
+    ],
+    "creraces:wiki_page": "Ability:Fruitful_Harvest"
+}

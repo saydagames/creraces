@@ -1,0 +1,58 @@
+{
+    "creraces:name": "ability.creraces.slash_n_dash.name",
+    "creraces:description": "ability.creraces.slash_n_dash.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:iron_sword",
+    "creraces:cost": 100,
+    "creraces:race": [
+        "creraces:velox"
+    ],
+    "creraces:actions": [
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:block.anvil.hit",
+            "volume": 1,
+            "pitch": 1
+        },
+        {
+            "type": "creraces:spawn_particles",
+            "particle": "minecraft:witch",
+            "shape": "disc",
+            "radius": 2.0,
+            "count": 25
+        },
+        {
+            "type": "creraces:spawn_particles",
+            "particle": "minecraft:sweep_attack",
+            "shape": "disc",
+            "radius": 2.0,
+            "count": 10
+        },
+        {
+            "type": "creraces:dash",
+            "power": 1.5,
+            "y_multiplier": 1.0,
+            "y_boost": 0.2
+        },
+        {
+            "type": "creraces:aoe",
+            "radius": 2,
+            "targets": [
+                "enemies"
+            ],
+            "source": "caster",
+            "actions": [
+                {
+                    "type": "creraces:damage",
+                    "amount": {
+                        "base": 4,
+                        "scales_with": "creraces:ad",
+                        "factor": 0.04
+                    },
+                    "damage_type": "minecraft:player_attack"
+                }
+            ]
+        }
+    ],
+    "creraces:wiki_page": "Ability:Slash_N_Dash"
+}

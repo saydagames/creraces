@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "creraces:towel"
+    },
+    {
+      "item": "#minecraft:wool"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "creraces:towel"
+  }
+}

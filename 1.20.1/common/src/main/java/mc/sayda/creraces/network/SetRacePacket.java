@@ -2,11 +2,16 @@ package mc.sayda.creraces.network;
 
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.race.Race;
 import mc.sayda.creraces.race.RaceIncidents;
 import mc.sayda.creraces.race.RaceRegistry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
 
 import java.util.function.Supplier;
 
@@ -43,9 +48,28 @@ public class SetRacePacket {
                             return;
                         }
 
-                        if (RaceRegistry.get(raceId) != null) {
+                        Race race = RaceRegistry.get(raceId);
+                        if (race != null) {
                             RaceIncidents.transformPlayer(sp, raceId);
                             CreRaces.LOGGER.info("Player {} chose race: {}", sp.getName().getString(), raceId);
+
+                            // Selection teleport: warp to the race's defined destination if set.
+                            double[] selPos = race.selectionPos();
+                            if (selPos != null) {
+                                ServerLevel targetLevel = sp.serverLevel();
+                                if (race.selectionDimension() != null) {
+                                    ResourceKey<Level> dimKey = ResourceKey.create(
+                                            Registries.DIMENSION, race.selectionDimension());
+                                    ServerLevel dimLevel = sp.server.getLevel(dimKey);
+                                    if (dimLevel != null) targetLevel = dimLevel;
+                                }
+                                vars.setReturnDim(sp.level().dimension().location().toString());
+                                vars.setReturnX(sp.getX());
+                                vars.setReturnY(sp.getY());
+                                vars.setReturnZ(sp.getZ());
+                                sp.teleportTo(targetLevel, selPos[0], selPos[1], selPos[2],
+                                        sp.getYRot(), sp.getXRot());
+                            }
                         } else {
                             CreRaces.LOGGER.error("Player {} attempted to set invalid race (get null): {}",
                                     sp.getName().getString(), raceId);

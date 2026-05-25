@@ -1,0 +1,9 @@
+{
+  "parent": "creraces:custom/fairyorb",
+  "textures": {
+    "all": "creraces:block/night_moon",
+    "particle": "creraces:block/night_moon",
+    "0": "creraces:block/night_moon"
+  },
+  "render_type": "solid"
+}

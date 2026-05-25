@@ -149,6 +149,13 @@ public class MicroBlock extends BaseEntityBlock {
 
         // --- PERMISSION CHECK ---
         if (!mc.sayda.creraces.capability.DataUtils.canInteractWithMiniBuild(player)) {
+            // Consume bucket interactions so vanilla doesn't place liquid adjacent to the block
+            net.minecraft.world.item.Item heldItem = player.getItemInHand(hand).getItem();
+            if (heldItem == net.minecraft.world.item.Items.WATER_BUCKET
+                    || heldItem == net.minecraft.world.item.Items.LAVA_BUCKET
+                    || heldItem == net.minecraft.world.item.Items.BUCKET) {
+                return net.minecraft.world.InteractionResult.CONSUME;
+            }
             return net.minecraft.world.InteractionResult.PASS;
         }
 
@@ -170,8 +177,41 @@ public class MicroBlock extends BaseEntityBlock {
             int slotZ = mc.sayda.creraces.block.entity.MicroBlockEntity.clampSlot(hitCenter.z);
 
             BlockState slotState = micro.getSlot(slotX, slotY, slotZ);
+            ItemStack held = player.getItemInHand(hand);
+
             if (slotState.isAir()) {
+                if (held.getItem() == net.minecraft.world.item.Items.WATER_BUCKET) {
+                    micro.setSlot(slotX, slotY, slotZ,
+                            net.minecraft.world.level.block.Blocks.WATER.defaultBlockState());
+                    if (!player.getAbilities().instabuild)
+                        player.setItemInHand(hand, new ItemStack(net.minecraft.world.item.Items.BUCKET));
+                    return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide());
+                } else if (held.getItem() == net.minecraft.world.item.Items.LAVA_BUCKET) {
+                    micro.setSlot(slotX, slotY, slotZ,
+                            net.minecraft.world.level.block.Blocks.LAVA.defaultBlockState());
+                    if (!player.getAbilities().instabuild)
+                        player.setItemInHand(hand, new ItemStack(net.minecraft.world.item.Items.BUCKET));
+                    return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide());
+                }
                 return net.minecraft.world.InteractionResult.PASS;
+            }
+
+            if (held.getItem() == net.minecraft.world.item.Items.BUCKET
+                    && (slotState.getBlock() == net.minecraft.world.level.block.Blocks.WATER
+                            || slotState.getBlock() == net.minecraft.world.level.block.Blocks.LAVA)) {
+                net.minecraft.world.item.Item filledItem =
+                        slotState.getBlock() == net.minecraft.world.level.block.Blocks.WATER
+                                ? net.minecraft.world.item.Items.WATER_BUCKET
+                                : net.minecraft.world.item.Items.LAVA_BUCKET;
+                micro.setSlot(slotX, slotY, slotZ,
+                        net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+                if (!player.getAbilities().instabuild) {
+                    held.shrink(1);
+                    ItemStack filled = new ItemStack(filledItem);
+                    if (!player.getInventory().add(filled))
+                        player.drop(filled, false);
+                }
+                return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide());
             }
 
             if (micro != null) {
@@ -199,6 +239,14 @@ public class MicroBlock extends BaseEntityBlock {
         if (!level.isClientSide && blockEntity instanceof MicroBlockEntity micro) {
             // Drop regular mini-blocks
             micro.forEachOccupied((x, y, z, slotState) -> {
+                if (slotState.getBlock() == net.minecraft.world.level.block.Blocks.WATER) {
+                    popResource(level, pos, new ItemStack(net.minecraft.world.item.Items.WATER_BUCKET));
+                    return;
+                }
+                if (slotState.getBlock() == net.minecraft.world.level.block.Blocks.LAVA) {
+                    popResource(level, pos, new ItemStack(net.minecraft.world.item.Items.LAVA_BUCKET));
+                    return;
+                }
                 net.minecraft.world.level.ItemLike itemLike = slotState.getBlock().asItem();
                 if (itemLike != net.minecraft.world.item.Items.AIR) {
                     @SuppressWarnings("null")
@@ -208,7 +256,6 @@ public class MicroBlock extends BaseEntityBlock {
                         popResource(level, pos, drop);
                     }
                 }
-                    
             });
             // Inventories are handled by onRemove
         }

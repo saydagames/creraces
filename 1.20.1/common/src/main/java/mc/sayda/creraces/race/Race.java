@@ -55,6 +55,10 @@ public class Race {
         private final boolean selectable;
         private final mc.sayda.creraces.engine.GState gState;
         private final RaceState state;
+        @Nullable private final ResourceLocation selectionDimension;
+        @Nullable private final double[] selectionPos;
+        @Nullable private final ResourceLocation respawnDimension;
+        @Nullable private final double[] respawnPos;
 
         private Race(Builder builder) {
                 this.id = builder.id;
@@ -94,6 +98,10 @@ public class Race {
                 this.selectable = builder.selectable;
                 this.gState = builder.gState;
                 this.state = builder.state;
+                this.selectionDimension = builder.selectionDimension;
+                this.selectionPos = builder.selectionPos;
+                this.respawnDimension = builder.respawnDimension;
+                this.respawnPos = builder.respawnPos;
         }
 
         public static class Builder {
@@ -128,6 +136,10 @@ public class Race {
                 private boolean selectable = true;
                 private mc.sayda.creraces.engine.GState gState = mc.sayda.creraces.engine.GState.BOTH;
                 private RaceState state = RaceState.FINISHED;
+                @Nullable private ResourceLocation selectionDimension = null;
+                @Nullable private double[] selectionPos = null;
+                @Nullable private ResourceLocation respawnDimension = null;
+                @Nullable private double[] respawnPos = null;
 
                 public Builder(ResourceLocation id, net.minecraft.network.chat.Component name) {
                         this.id = id;
@@ -281,6 +293,26 @@ public class Race {
                 public Builder state(RaceState state) {
                         if (state != null)
                                 this.state = state;
+                        return this;
+                }
+
+                public Builder selectionDimension(@Nullable ResourceLocation selectionDimension) {
+                        this.selectionDimension = selectionDimension;
+                        return this;
+                }
+
+                public Builder selectionPos(@Nullable double[] selectionPos) {
+                        this.selectionPos = selectionPos;
+                        return this;
+                }
+
+                public Builder respawnDimension(@Nullable ResourceLocation respawnDimension) {
+                        this.respawnDimension = respawnDimension;
+                        return this;
+                }
+
+                public Builder respawnPos(@Nullable double[] respawnPos) {
+                        this.respawnPos = respawnPos;
                         return this;
                 }
 
@@ -684,5 +716,32 @@ public class Race {
 
         public String getTranslationKey() {
                 return "race." + id.getNamespace() + "." + id.getPath();
+        }
+
+        /** Dimension to teleport to on race selection, or null for no dimension swap. */
+        public @Nullable ResourceLocation selectionDimension() {
+                return selectionDimension;
+        }
+
+        /** [x, y, z] destination on race selection, or null for no teleport. */
+        public @Nullable double[] selectionPos() {
+                return selectionPos;
+        }
+
+        /**
+         * Dimension to respawn in when no bed/anchor spawn is set.
+         * Falls back to world spawn if null.
+         */
+        public @Nullable ResourceLocation respawnDimension() {
+                return respawnDimension;
+        }
+
+        /**
+         * [x, y, z] position to respawn at when no bed/anchor spawn is set.
+         * Only used when this is non-null; dimension defaults to overworld if
+         * respawnDimension is null.
+         */
+        public @Nullable double[] respawnPos() {
+                return respawnPos;
         }
 }

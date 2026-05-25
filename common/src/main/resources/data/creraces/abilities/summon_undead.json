@@ -1,0 +1,53 @@
+{
+    "creraces:name": "ability.creraces.summon_undead.name",
+    "creraces:description": "ability.creraces.summon_undead.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/bone.png",
+    "creraces:cooldown": 420,
+    "creraces:cost": 30,
+    "creraces:race": [
+        "creraces:undead"
+    ],
+    "creraces:actions": [
+        {
+            "type": "creraces:mass_summon",
+            "min_count": {
+                "base": 3
+            },
+            "max_count": {
+                "base": 5
+            },
+            "range": 6.0,
+            "mark_as_servant": true,
+            "pool": [
+                {
+                    "entity": "minecraft:zombie",
+                    "weight": 40
+                },
+                {
+                    "entity": "minecraft:skeleton",
+                    "weight": 30
+                },
+                {
+                    "entity": "minecraft:husk",
+                    "weight": 15
+                },
+                {
+                    "entity": "minecraft:stray",
+                    "weight": 10
+                },
+                {
+                    "entity": "minecraft:wither_skeleton",
+                    "weight": 5
+                }
+            ]
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:entity.wither.spawn",
+            "volume": 0.8,
+            "pitch": 0.8
+        }
+    ],
+    "creraces:wiki_page": "Ability:Summon_Undead"
+}

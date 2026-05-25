@@ -1,0 +1,145 @@
+{
+    "creraces:name": "ability.creraces.cowardly_skirmish.name",
+    "creraces:description": "ability.creraces.cowardly_skirmish.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/iron_sword.png",
+    "creraces:cooldown": 420,
+    "creraces:cost": 15,
+    "creraces:race": [
+        "creraces:ratkin"
+    ],
+    "creraces:actions": [
+        {
+            "type": "creraces:conditional",
+            "condition": {
+                "type": "creraces:state",
+                "state": "cowardly_skirmish",
+                "value": 1
+            },
+            "if_true": [
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:block.note_block.bass",
+                    "volume": 1.0,
+                    "pitch": 1.0
+                },
+                {
+                    "type": "creraces:aoe",
+                    "radius": 4.0,
+                    "targets": [
+                        "enemies"
+                    ],
+                    "actions": [
+                        {
+                            "type": "creraces:apply_effect",
+                            "effects": [
+                                {
+                                    "effect": "minecraft:slowness",
+                                    "amplifier": 2.0,
+                                    "duration": {
+                                        "base": 0,
+                                        "scales_with": "effect(minecraft:weakness, duration)",
+                                        "factor": 0.5
+                                    }
+                                },
+                                {
+                                    "effect": "minecraft:weakness",
+                                    "amplifier": 2.0,
+                                    "duration": {
+                                        "base": 0,
+                                        "scales_with": "effect(minecraft:weakness, duration)",
+                                        "factor": 0.5
+                                    }
+                                }
+                            ],
+                            "radius": 0.0,
+                            "targets": [
+                                "enemies"
+                            ]
+                        },
+                        {
+                            "type": "creraces:play_sound",
+                            "sound": "creraces:slash",
+                            "volume": 1.0,
+                            "pitch": 0.4,
+                            "use_target": true
+                        }
+                    ]
+                },
+                {
+                    "type": "creraces:remove_effect",
+                    "effect": "minecraft:speed"
+                },
+                {
+                    "type": "creraces:remove_effect",
+                    "effect": "minecraft:haste"
+                },
+                {
+                    "type": "creraces:remove_effect",
+                    "effect": "minecraft:weakness"
+                },
+                {
+                    "type": "creraces:set_state",
+                    "state": "cowardly_skirmish",
+                    "value": 0
+                },
+                {
+                    "type": "creraces:modify_resource",
+                    "resource": "passive_cd",
+                    "operation": "set",
+                    "value": 0
+                },
+                {
+                    "type": "creraces:set_cooldown",
+                    "state": "cowardly_skirmish",
+                    "value": 420
+                }
+            ],
+            "if_false": [
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:block.note_block.bell",
+                    "volume": 1.0,
+                    "pitch": 1.0
+                },
+                {
+                    "type": "creraces:apply_effect",
+                    "effects": [
+                        {
+                            "effect": "minecraft:speed",
+                            "amplifier": 1.0,
+                            "duration": 240
+                        },
+                        {
+                            "effect": "minecraft:haste",
+                            "amplifier": 1.0,
+                            "duration": 240
+                        },
+                        {
+                            "effect": "minecraft:weakness",
+                            "amplifier": 2.0,
+                            "duration": 240
+                        }
+                    ]
+                },
+                {
+                    "type": "creraces:set_state",
+                    "state": "cowardly_skirmish",
+                    "value": 1
+                },
+                {
+                    "type": "creraces:modify_resource",
+                    "resource": "passive_cd",
+                    "operation": "set",
+                    "value": 240
+                },
+                {
+                    "type": "creraces:set_cooldown",
+                    "state": "cowardly_skirmish",
+                    "value": 20
+                }
+            ]
+        }
+    ],
+    "creraces:wiki_page": "Ability:Cowardly_Skirmish"
+}

@@ -138,6 +138,14 @@ public interface Condition {
                     ScalingValue max = ScalingValue.fromJson(json, "max", Double.POSITIVE_INFINITY);
                     yield new AltitudeCondition(min, max);
                 }
+                case "biome_temperature" -> {
+                    ScalingValue min = ScalingValue.fromJson(json, "min", (double) -Float.MAX_VALUE);
+                    ScalingValue max = ScalingValue.fromJson(json, "max", (double) Float.MAX_VALUE);
+                    yield (Condition) (player, target, slot, interact_pos) -> {
+                        float temp = player.level().getBiome(player.blockPosition()).value().getBaseTemperature();
+                        return temp >= (float) min.evaluate(player, target) && temp < (float) max.evaluate(player, target);
+                    };
+                }
                 case "is_burning" -> {
                     boolean expected = GsonHelper.getAsBoolean(json, "value", true);
                     yield new IsBurningCondition(expected);
@@ -321,7 +329,8 @@ public interface Condition {
                     boolean useinteract_pos = GsonHelper.getAsBoolean(json, "use_interact_pos", true);
                     boolean absolute = GsonHelper.getAsBoolean(json, "absolute", false);
 
-                    ScalingValue.MathOp math = ScalingValue.MathOp.ROUND;
+                    // Default FLOOR matches BlockPos.containing() — vanilla standard
+                    ScalingValue.MathOp math = ScalingValue.MathOp.FLOOR;
                     if (json.has("math")) {
                         try {
                             math = ScalingValue.MathOp.valueOf(json.get("math").getAsString().toUpperCase());

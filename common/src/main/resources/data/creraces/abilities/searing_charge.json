@@ -1,0 +1,54 @@
+{
+    "creraces:name": "ability.creraces.searing_charge.name",
+    "creraces:description": "ability.creraces.searing_charge.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/blaze_powder.png",
+    "creraces:cooldown": 240,
+    "creraces:cost": 0,
+    "creraces:race": [
+        "creraces:oread"
+    ],
+    "creraces:actions": [
+        {
+            "type": "creraces:dash",
+            "power": 1.5,
+            "direction": "forward"
+        },
+        {
+            "type": "creraces:aoe",
+            "radius": 2.5,
+            "source": "caster",
+            "actions": [
+                {
+                    "type": "creraces:damage",
+                    "amount": {
+                        "base": 4.0
+                    },
+                    "knockback": 1.2,
+                    "damage_type": "minecraft:player_attack"
+                },
+                {
+                    "type": "creraces:spawn_particles",
+                    "particle": "minecraft:flame",
+                    "count": 20,
+                    "spread": 0.2,
+                    "speed": 0.05
+                }
+            ]
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:entity.player.attack.knockback",
+            "volume": 0.8,
+            "pitch": 1.2
+        },
+        {
+            "type": "creraces:spawn_particles",
+            "particle": "minecraft:flame",
+            "count": 20,
+            "spread": 0.2,
+            "speed": 0.05
+        }
+    ],
+    "creraces:wiki_page": "Ability:Searing_Charge"
+}

@@ -58,8 +58,8 @@ public class RaceIncidents {
             }
             player.removeEffect(net.minecraft.world.effect.MobEffects.DAMAGE_RESISTANCE);
 
-            // Apply Scale
-            applyScale(player, race.scale());
+            // Apply Scale (with fairy realm override if needed)
+            applyScaleWithDimensionOverride(player, race);
 
             // Apply Base Stats
             vars.setAp(race.baseAp());
@@ -145,8 +145,8 @@ public class RaceIncidents {
             AttributeIncidents.eikiJudgment(player);
 
             if (race != null) {
-                // Re-apply Scale
-                applyScale(player, race.scale());
+                // Re-apply Scale (with fairy realm override if needed)
+                applyScaleWithDimensionOverride(player, race);
             }
 
             // Re-apply GState Cosmetics (Crucial: This must happen even for NONE race
@@ -170,6 +170,21 @@ public class RaceIncidents {
             // Full Sync to client and trackers
             vars.sync(player);
         });
+    }
+
+    private static final net.minecraft.resources.ResourceLocation FAIRY_REALM =
+            new net.minecraft.resources.ResourceLocation(mc.sayda.creraces.CreRaces.MODID, "fairy_realm");
+
+    /**
+     * Applies the race scale, then overrides with the fairy realm scale if the
+     * player is currently inside fairy_realm. Use this everywhere a race change
+     * can happen so the dimension context is always respected.
+     */
+    public static void applyScaleWithDimensionOverride(net.minecraft.server.level.ServerPlayer player, Race race) {
+        applyScale(player, race.scale());
+        if (player.level().dimension().location().equals(FAIRY_REALM)) {
+            applyFairyRealmScale(player, race);
+        }
     }
 
     public static void applyScale(net.minecraft.world.entity.LivingEntity entity, RaceScale scale) {
@@ -208,6 +223,29 @@ public class RaceIncidents {
             // Pehkui may be absent or throw on unsupported scale types, not fatal, but log
             // it
             mc.sayda.creraces.CreRaces.LOGGER.warn("Failed to apply scale for entity {}: {}",
+                    entity.getName().getString(), e.getMessage());
+        }
+    }
+
+    /**
+     * Sets only the Pehkui BASE scale to 4× the player's normal effective BASE scale,
+     * letting Pehkui derive all other scale types from BASE automatically.
+     * "Normal effective BASE" = race.base × 0.5 if isTiny, × 1.0 otherwise.
+     */
+    public static void applyFairyRealmScale(net.minecraft.server.level.ServerPlayer player, Race race) {
+        mc.sayda.creraces.capability.IPlayerVariables vars = DataUtils.getVariables(player).orElse(null);
+        float tinyMul = (vars != null && vars.isTiny()) ? 0.5f : 1.0f;
+        float base = (float) race.scale().base().evaluate(player) * tinyMul * 4.0f;
+        applyFlatBaseScale(player, base);
+    }
+
+    public static void applyFlatBaseScale(net.minecraft.world.entity.LivingEntity entity, float scale) {
+        try {
+            virtuoel.pehkui.api.ScaleData data = virtuoel.pehkui.api.ScaleTypes.BASE.getScaleData(entity);
+            data.setScale(scale);
+            data.setTargetScale(scale);
+        } catch (Throwable e) {
+            mc.sayda.creraces.CreRaces.LOGGER.warn("Failed to apply flat scale for {}: {}",
                     entity.getName().getString(), e.getMessage());
         }
     }

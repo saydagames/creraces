@@ -1,0 +1,350 @@
+{
+    "activate1": {
+        "subtitle": "subtitles.creraces.activate",
+        "sounds": [
+            {
+                "name": "creraces:activate1"
+            }
+        ]
+    },
+    "android_charge": {
+        "subtitle": "subtitles.creraces.android_charge",
+        "sounds": [
+            {
+                "name": "creraces:android_charge"
+            }
+        ]
+    },
+    "blessing": {
+        "subtitle": "subtitles.creraces.blessing",
+        "sounds": [
+            {
+                "name": "creraces:blessing"
+            }
+        ]
+    },
+    "boost": {
+        "subtitle": "subtitles.creraces.boost",
+        "sounds": [
+            {
+                "name": "creraces:boost"
+            }
+        ]
+    },
+    "coin_pickup_1": {
+        "subtitle": "subtitles.creraces.coin_pickup",
+        "sounds": [
+            {
+                "name": "creraces:coin_pickup_1"
+            }
+        ]
+    },
+    "coin_pickup_2": {
+        "subtitle": "subtitles.creraces.coin_pickup",
+        "sounds": [
+            {
+                "name": "creraces:coin_pickup_2"
+            }
+        ]
+    },
+    "dash": {
+        "subtitle": "subtitles.creraces.dash",
+        "sounds": [
+            {
+                "name": "creraces:dash"
+            }
+        ]
+    },
+    "death_challenge": {
+        "subtitle": "subtitles.creraces.death_challenge",
+        "sounds": [
+            {
+                "name": "creraces:death_challenge"
+            }
+        ]
+    },
+    "dragon_roar": {
+        "subtitle": "subtitles.creraces.dragon_roar",
+        "sounds": [
+            {
+                "name": "creraces:dragon_roar"
+            }
+        ]
+    },
+    "dragon_roaring_and_breathe_fire": {
+        "subtitle": "subtitles.creraces.dragon_fire",
+        "sounds": [
+            {
+                "name": "creraces:dragon_roaring_and_breathe_fire"
+            }
+        ]
+    },
+    "engage": {
+        "subtitle": "subtitles.creraces.engage",
+        "sounds": [
+            {
+                "name": "creraces:engage"
+            }
+        ]
+    },
+    "engine_heavy_loop": {
+        "subtitle": "subtitles.creraces.engine_loop",
+        "sounds": [
+            {
+                "name": "creraces:engine_heavy_loop"
+            }
+        ]
+    },
+    "explosion": {
+        "subtitle": "subtitles.creraces.explosion",
+        "sounds": [
+            {
+                "name": "creraces:explosion"
+            }
+        ]
+    },
+    "fire_projectile": {
+        "subtitle": "subtitles.creraces.fire_projectile",
+        "sounds": [
+            {
+                "name": "creraces:fire_projectile"
+            }
+        ]
+    },
+    "flip_page": {
+        "subtitle": "subtitles.creraces.flip_page",
+        "sounds": [
+            {
+                "name": "creraces:flip_page"
+            }
+        ]
+    },
+    "gun_reverb": {
+        "subtitle": "subtitles.creraces.gun",
+        "sounds": [
+            {
+                "name": "creraces:gun_reverb"
+            }
+        ]
+    },
+    "heal": {
+        "subtitle": "subtitles.creraces.heal",
+        "sounds": [
+            {
+                "name": "creraces:heal"
+            }
+        ]
+    },
+    "hesa_fredrik": {
+        "subtitle": "subtitles.creraces.alarm",
+        "sounds": [
+            {
+                "name": "creraces:hesa_fredrik"
+            }
+        ]
+    },
+    "lazer_charge": {
+        "subtitle": "subtitles.creraces.lazer_charge",
+        "sounds": [
+            {
+                "name": "creraces:lazer_charge"
+            }
+        ]
+    },
+    "lofi_warcrimes": {
+        "category": "music",
+        "sounds": [
+            {
+                "name": "creraces:lofi_warcrimes",
+                "stream": true
+            }
+        ]
+    },
+    "magical": {
+        "subtitle": "subtitles.creraces.magical",
+        "sounds": [
+            {
+                "name": "creraces:magical"
+            }
+        ]
+    },
+    "master_spark": {
+        "subtitle": "subtitles.creraces.master_spark",
+        "sounds": [
+            {
+                "name": "creraces:master_spark"
+            }
+        ]
+    },
+    "moai_sound": {
+        "subtitle": "subtitles.creraces.moai",
+        "sounds": [
+            {
+                "name": "creraces:moai_sound"
+            }
+        ]
+    },
+    "orc_warcry": {
+        "subtitle": "subtitles.creraces.warcry",
+        "sounds": [
+            {
+                "name": "creraces:orc_warcry"
+            }
+        ]
+    },
+    "orc_warcry_short": {
+        "subtitle": "subtitles.creraces.warcry",
+        "sounds": [
+            {
+                "name": "creraces:orc_warcry_short"
+            }
+        ]
+    },
+    "pleasant_bops": {
+        "category": "music",
+        "sounds": [
+            {
+                "name": "creraces:pleasant_bops",
+                "stream": true
+            }
+        ]
+    },
+    "projectile_hit": {
+        "subtitle": "subtitles.creraces.hit",
+        "sounds": [
+            {
+                "name": "creraces:projectile_hit"
+            }
+        ]
+    },
+    "projectile_hit_1": {
+        "subtitle": "subtitles.creraces.hit",
+        "sounds": [
+            {
+                "name": "creraces:projectile_hit_1"
+            }
+        ]
+    },
+    "projectile_hit_2": {
+        "subtitle": "subtitles.creraces.hit",
+        "sounds": [
+            {
+                "name": "creraces:projectile_hit_2"
+            }
+        ]
+    },
+    "ratkin_a3": {
+        "subtitle": "subtitles.creraces.ratkin",
+        "sounds": [
+            {
+                "name": "creraces:ratkin_a3"
+            }
+        ]
+    },
+    "redemption": {
+        "subtitle": "subtitles.creraces.redemption",
+        "sounds": [
+            {
+                "name": "creraces:redemption"
+            }
+        ]
+    },
+    "scream_meme": {
+        "subtitle": "subtitles.creraces.scream",
+        "sounds": [
+            {
+                "name": "creraces:scream_meme"
+            }
+        ]
+    },
+    "shoot1": {
+        "subtitle": "subtitles.creraces.shoot",
+        "sounds": [
+            {
+                "name": "creraces:shoot1"
+            }
+        ]
+    },
+    "slash": {
+        "subtitle": "subtitles.creraces.slash",
+        "sounds": [
+            {
+                "name": "creraces:slash"
+            }
+        ]
+    },
+    "slime_jump": {
+        "subtitle": "subtitles.creraces.slime",
+        "sounds": [
+            {
+                "name": "creraces:slime_jump"
+            }
+        ]
+    },
+    "slime_rub": {
+        "subtitle": "subtitles.creraces.slime",
+        "sounds": [
+            {
+                "name": "creraces:slime_rub"
+            }
+        ]
+    },
+    "succubus_charm": {
+        "subtitle": "subtitles.creraces.charm",
+        "sounds": [
+            {
+                "name": "creraces:succubus_charm"
+            }
+        ]
+    },
+    "underground_club": {
+        "category": "music",
+        "sounds": [
+            {
+                "name": "creraces:underground_club",
+                "stream": true
+            }
+        ]
+    },
+    "unloading": {
+        "subtitle": "subtitles.creraces.unloading",
+        "sounds": [
+            {
+                "name": "creraces:unloading"
+            }
+        ]
+    },
+    "verminwave": {
+        "category": "music",
+        "sounds": [
+            {
+                "name": "creraces:verminwave",
+                "stream": true
+            }
+        ]
+    },
+    "war_horn": {
+        "subtitle": "subtitles.creraces.horn",
+        "sounds": [
+            {
+                "name": "creraces:war_horn"
+            }
+        ]
+    },
+    "wings_sound": {
+        "subtitle": "subtitles.creraces.wings",
+        "sounds": [
+            {
+                "name": "creraces:wings_sound"
+            }
+        ]
+    },
+    "wings_sound_short": {
+        "subtitle": "subtitles.creraces.wings",
+        "sounds": [
+            {
+                "name": "creraces:wings_sound_short"
+            }
+        ]
+    }
+}

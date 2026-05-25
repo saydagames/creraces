@@ -1,0 +1,96 @@
+{
+    "creraces:name": "ability.creraces.fruitful_sacrifice.name",
+    "creraces:description": "ability.creraces.fruitful_sacrifice.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "creraces:textures/mob_effect/life_drain.png",
+    "creraces:cooldown": 420,
+    "creraces:cost": 15,
+    "creraces:race": [
+        "creraces:undead"
+    ],
+    "creraces:actions": [
+        {
+            "type": "creraces:aoe",
+            "radius": 16.0,
+            "targets": [
+                "enemies"
+            ],
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "creraces:life_drain",
+                    "duration": 200,
+                    "amplifier": 0,
+                    "visible": true,
+                    "use_target": true
+                },
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:slowness",
+                    "duration": 160,
+                    "amplifier": 0,
+                    "visible": true,
+                    "use_target": true
+                },
+                {
+                    "type": "creraces:spawn_particles",
+                    "particle": "minecraft:soul",
+                    "count": 15,
+                    "spread": 0.5,
+                    "speed": 0.05,
+                    "targets": [
+                        "enemies"
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "creraces:apply_effect",
+            "effect": "minecraft:speed",
+            "duration": 160,
+            "amplifier": 0,
+            "targets": [
+                "self"
+            ],
+            "visible": true
+        },
+        {
+            "type": "creraces:damage",
+            "amount": {
+                "base": 0.0,
+                "scales_with": "creraces:max_health",
+                "factor": 0.25
+            },
+            "damage_type": "minecraft:starve",
+            "knockback": 0.0,
+            "source": "self",
+            "targets": [
+                "self"
+            ],
+            "disable_knockback": true
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:entity.wither.ambient",
+            "volume": 1.0,
+            "pitch": 1.2
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:entity.generic.explode",
+            "volume": 0.5,
+            "pitch": 1.5
+        },
+        {
+            "type": "creraces:spawn_particles",
+            "particle": "minecraft:soul_fire_flame",
+            "count": 30,
+            "spread": 1.0,
+            "speed": 0.1,
+            "targets": [
+                "self"
+            ]
+        }
+    ],
+    "creraces:wiki_page": "Ability:Fruitful_Sacrifice"
+}

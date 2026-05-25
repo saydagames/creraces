@@ -122,13 +122,13 @@ public class ModBlocks {
                                         BlockBehaviour.Properties.of().strength(-1.0f, 3600000.0f)
                                                         .lightLevel(state -> 10).noOcclusion()));
 
-        public static final RegistrySupplier<Block> TORI_BELL = BLOCKS.register("tori_bell",
-                        () -> new mc.sayda.creraces.block.ToriBellBlock(
+        public static final RegistrySupplier<Block> TORII_BELL = BLOCKS.register("torii_bell",
+                        () -> new mc.sayda.creraces.block.ToriiBellBlock(
                                         BlockBehaviour.Properties.copy(Blocks.BELL).mapColor(MapColor.COLOR_RED),
                                         false));
 
-        public static final RegistrySupplier<Block> WEATHERED_TORI_BELL = BLOCKS.register("weathered_tori_bell",
-                        () -> new mc.sayda.creraces.block.ToriBellBlock(
+        public static final RegistrySupplier<Block> WEATHERED_TORII_BELL = BLOCKS.register("weathered_torii_bell",
+                        () -> new mc.sayda.creraces.block.ToriiBellBlock(
                                         BlockBehaviour.Properties.copy(Blocks.BELL).mapColor(MapColor.COLOR_RED),
                                         true));
 
@@ -155,6 +155,28 @@ public class ModBlocks {
         public static final RegistrySupplier<Block> RAT_HOLE = BLOCKS.register("rat_hole",
                         () -> new mc.sayda.creraces.block.RatHoleBlock());
 
+        // ─── Fairy Tree Gateways ───────────────────────────────────────────────────
+        public static final RegistrySupplier<Block> CHERRY_TREE_GATEWAY = BLOCKS.register("cherry_tree_gateway",
+                        () -> new mc.sayda.creraces.block.TreeGatewayBlock(
+                                        BlockBehaviour.Properties.of().strength(-1.0f, 3600000.0f)
+                                                        .sound(SoundType.CHERRY_WOOD).lightLevel(state -> 7)));
+        public static final RegistrySupplier<Block> OAK_TREE_GATEWAY = BLOCKS.register("oak_tree_gateway",
+                        () -> new mc.sayda.creraces.block.TreeGatewayBlock(
+                                        BlockBehaviour.Properties.of().strength(-1.0f, 3600000.0f)
+                                                        .sound(SoundType.WOOD).lightLevel(state -> 7)));
+        public static final RegistrySupplier<Block> SPRUCE_TREE_GATEWAY = BLOCKS.register("spruce_tree_gateway",
+                        () -> new mc.sayda.creraces.block.TreeGatewayBlock(
+                                        BlockBehaviour.Properties.of().strength(-1.0f, 3600000.0f)
+                                                        .sound(SoundType.WOOD).lightLevel(state -> 7)));
+
+        // ─── Fairy Source ──────────────────────────────────────────────────────────
+        public static final RegistrySupplier<Block> FAIRY_SOURCE_BLOCK = BLOCKS.register("fairy_source",
+                        () -> new mc.sayda.creraces.block.FairySourceBlock(
+                                        mc.sayda.creraces.registry.ModFluids.FAIRY_SOURCE.get(),
+                                        BlockBehaviour.Properties.of()
+                                                        .noCollission().strength(100.0F).noLootTable()
+                                                        .liquid().replaceable()));
+
         // ─── Mini Build System ─────────────────────────────────────────────────────
         // Always registered so MICRO_BLOCK is never null.
         // The runtime Mixin behavior is gated by CreRacesConfig.MINI_BUILD_ENABLED at
@@ -166,7 +188,7 @@ public class ModBlocks {
 
         public static dev.architectury.registry.registries.RegistrySupplier<net.minecraft.world.level.block.entity.BlockEntityType<mc.sayda.creraces.block.entity.MicroBlockEntity>> MICRO_BLOCK_ENTITY;
         public static dev.architectury.registry.registries.RegistrySupplier<net.minecraft.world.level.block.entity.BlockEntityType<mc.sayda.creraces.block.entity.RatHoleBlockEntity>> RAT_HOLE_ENTITY;
-        public static dev.architectury.registry.registries.RegistrySupplier<net.minecraft.world.level.block.entity.BlockEntityType<net.minecraft.world.level.block.entity.BellBlockEntity>> TORI_BELL_ENTITY;
+        public static dev.architectury.registry.registries.RegistrySupplier<net.minecraft.world.level.block.entity.BlockEntityType<net.minecraft.world.level.block.entity.BellBlockEntity>> TORII_BELL_ENTITY;
 
         public static void register() {
                 BLOCKS.register();
@@ -187,10 +209,10 @@ public class ModBlocks {
                                                                 RAT_HOLE.get())
                                                 .build(null));
 
-                TORI_BELL_ENTITY = BLOCK_ENTITIES.register("tori_bell",
+                TORII_BELL_ENTITY = BLOCK_ENTITIES.register("torii_bell",
                                 () -> BlockEntityType.Builder
                                                 .of(net.minecraft.world.level.block.entity.BellBlockEntity::new,
-                                                                TORI_BELL.get(), WEATHERED_TORI_BELL.get())
+                                                                TORII_BELL.get(), WEATHERED_TORII_BELL.get())
                                                 .build(null));
 
                 BLOCK_ENTITIES.register();

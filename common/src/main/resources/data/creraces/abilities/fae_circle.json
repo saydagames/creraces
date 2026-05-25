@@ -1,0 +1,153 @@
+{
+    "creraces:name": "ability.creraces.fae_circle.name",
+    "creraces:description": "ability.creraces.fae_circle.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:red_mushroom",
+    "creraces:cooldown": 600,
+    "creraces:cost": 25,
+    "creraces:race": [
+        "creraces:fairy"
+    ],
+    "creraces:actions": [
+        {
+            "type": "creraces:conditional",
+            "condition": {
+                "type": "creraces:and",
+                "conditions": [
+                    {
+                        "type": "creraces:dimension",
+                        "value": "minecraft:overworld"
+                    },
+                    {
+                        "type": "creraces:is_block",
+                        "block": "#creraces:fairy_mushrooms",
+                        "use_interact_pos": false,
+                        "offset_x": 2,
+                        "offset_y": 0,
+                        "offset_z": 0
+                    },
+                    {
+                        "type": "creraces:is_block",
+                        "block": "#creraces:fairy_mushrooms",
+                        "use_interact_pos": false,
+                        "offset_x": 2,
+                        "offset_y": 0,
+                        "offset_z": 1
+                    },
+                    {
+                        "type": "creraces:is_block",
+                        "block": "#creraces:fairy_mushrooms",
+                        "use_interact_pos": false,
+                        "offset_x": 2,
+                        "offset_y": 0,
+                        "offset_z": -1
+                    },
+                    {
+                        "type": "creraces:is_block",
+                        "block": "#creraces:fairy_mushrooms",
+                        "use_interact_pos": false,
+                        "offset_x": -2,
+                        "offset_y": 0,
+                        "offset_z": 0
+                    },
+                    {
+                        "type": "creraces:is_block",
+                        "block": "#creraces:fairy_mushrooms",
+                        "use_interact_pos": false,
+                        "offset_x": -2,
+                        "offset_y": 0,
+                        "offset_z": 1
+                    },
+                    {
+                        "type": "creraces:is_block",
+                        "block": "#creraces:fairy_mushrooms",
+                        "use_interact_pos": false,
+                        "offset_x": -2,
+                        "offset_y": 0,
+                        "offset_z": -1
+                    },
+                    {
+                        "type": "creraces:is_block",
+                        "block": "#creraces:fairy_mushrooms",
+                        "use_interact_pos": false,
+                        "offset_x": 0,
+                        "offset_y": 0,
+                        "offset_z": 2
+                    },
+                    {
+                        "type": "creraces:is_block",
+                        "block": "#creraces:fairy_mushrooms",
+                        "use_interact_pos": false,
+                        "offset_x": 1,
+                        "offset_y": 0,
+                        "offset_z": 2
+                    },
+                    {
+                        "type": "creraces:is_block",
+                        "block": "#creraces:fairy_mushrooms",
+                        "use_interact_pos": false,
+                        "offset_x": -1,
+                        "offset_y": 0,
+                        "offset_z": 2
+                    },
+                    {
+                        "type": "creraces:is_block",
+                        "block": "#creraces:fairy_mushrooms",
+                        "use_interact_pos": false,
+                        "offset_x": 0,
+                        "offset_y": 0,
+                        "offset_z": -2
+                    },
+                    {
+                        "type": "creraces:is_block",
+                        "block": "#creraces:fairy_mushrooms",
+                        "use_interact_pos": false,
+                        "offset_x": 1,
+                        "offset_y": 0,
+                        "offset_z": -2
+                    },
+                    {
+                        "type": "creraces:is_block",
+                        "block": "#creraces:fairy_mushrooms",
+                        "use_interact_pos": false,
+                        "offset_x": -1,
+                        "offset_y": 0,
+                        "offset_z": -2
+                    }
+                ]
+            },
+            "if_true": [
+                {
+                    "type": "creraces:teleport",
+                    "dimension": "creraces:fairy_realm",
+                    "x": "race:respawn_x",
+                    "y": "race:respawn_y",
+                    "z": "race:respawn_z"
+                },
+                {
+                    "type": "creraces:spawn_particles",
+                    "particle": "minecraft:spore_blossom_air",
+                    "count": 16,
+                    "shape": "circle",
+                    "radius": 2,
+                    "points": 12
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:block.amethyst_block.chime"
+                }
+            ],
+            "if_false": [
+                {
+                    "type": "creraces:message",
+                    "text": "message.creraces.fae_circle.failed",
+                    "actionbar": true
+                },
+                {
+                    "type": "creraces:cancel"
+                }
+            ]
+        }
+    ],
+    "creraces:wiki_page": "Ability:Fae_Circle"
+}

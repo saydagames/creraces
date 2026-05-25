@@ -1,0 +1,41 @@
+{
+    "creraces:name": "ability.creraces.talon_strike.name",
+    "creraces:description": "ability.creraces.talon_strike.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "creraces:textures/mob_effect/talon_strike.png",
+    "creraces:cooldown": 500,
+    "creraces:cost": 5,
+    "creraces:race": [
+        "creraces:harpy"
+    ],
+    "creraces:actions": [
+        {
+            "type": "creraces:conditional",
+            "condition": {
+                "type": "creraces:flying",
+                "value": true
+            },
+            "if_true": [
+                {
+                    "type": "creraces:dash",
+                    "power": 2.0,
+                    "direction": "down",
+                    "reset_fall": true
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:entity.phantom.bite",
+                    "volume": 1.0,
+                    "pitch": 0.8
+                },
+                {
+                    "type": "creraces:set_state",
+                    "state": "self",
+                    "value": 1.0
+                }
+            ],
+            "if_false": []
+        }
+    ],
+    "creraces:wiki_page": "Ability:Talon_Strike"
+}

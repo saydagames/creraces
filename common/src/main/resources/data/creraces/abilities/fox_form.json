@@ -1,0 +1,113 @@
+{
+    "creraces:name": "ability.creraces.fox_form.name",
+    "creraces:description": "ability.creraces.fox_form.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "creraces:textures/icons/mirror.png",
+    "creraces:cooldown": 60,
+    "creraces:cost": 20,
+    "creraces:persistent": false,
+    "creraces:race": [
+        "creraces:kitsune"
+    ],
+    "creraces:actions": [
+        {
+            "type": "creraces:conditional",
+            "condition": {
+                "type": "creraces:morphed",
+                "value": false
+            },
+            "if_true": [
+                {
+                    "type": "creraces:morph",
+                    "entity_type": "twilight_lib:{color}_fox"
+                },
+                {
+                    "type": "creraces:bind",
+                    "slot": "a1",
+                    "ability": "creraces:dash",
+                    "save_to": "human_a1"
+                },
+                {
+                    "type": "creraces:set_state",
+                    "state": "fox_form",
+                    "value": 1.0
+                },
+                {
+                    "type": "creraces:attribute_modifier",
+                    "attribute": "minecraft:generic.movement_speed",
+                    "id": "fox_form_speed",
+                    "value": {
+                        "base": 0.02
+                    },
+                    "operation": "addition",
+                    "method": "ADD"
+                },
+                {
+                    "type": "creraces:attribute_modifier",
+                    "attribute": "minecraft:generic.attack_damage",
+                    "id": "fox_form_no_damage",
+                    "value": {
+                        "base": -100.0
+                    },
+                    "operation": "addition",
+                    "method": "ADD"
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:entity.fox.ambient",
+                    "volume": 1.0,
+                    "pitch": 1.0
+                },
+                {
+                    "type": "creraces:change_size",
+                    "scale": {
+                        "base": 1.0,
+                        "hitbox_height": 0.4,
+                        "eye_height": 0.4
+                    }
+                }
+            ],
+            "if_false": [
+                {
+                    "type": "creraces:morph",
+                    "entity_type": ""
+                },
+                {
+                    "type": "creraces:unbind",
+                    "slot": "a1",
+                    "restore_from": "human_a1"
+                },
+                {
+                    "type": "creraces:set_state",
+                    "state": "fox_form",
+                    "value": 0.0
+                },
+                {
+                    "type": "creraces:attribute_modifier",
+                    "id": "fox_form_speed",
+                    "method": "REMOVE"
+                },
+                {
+                    "type": "creraces:attribute_modifier",
+                    "id": "fox_form_no_damage",
+                    "method": "REMOVE"
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:entity.fox.teleport",
+                    "volume": 1.0,
+                    "pitch": 1.0
+                },
+                {
+                    "type": "creraces:change_size",
+                    "scale": {
+                        "base": 1.0,
+                        "hitbox_height": 1.0,
+                        "eye_height": 1.0
+                    }
+                }
+            ]
+        }
+    ],
+    "creraces:wiki_page": "Ability:Fox_Form"
+}

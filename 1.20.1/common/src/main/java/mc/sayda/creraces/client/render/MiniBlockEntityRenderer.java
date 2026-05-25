@@ -64,7 +64,6 @@ public class MiniBlockEntityRenderer implements BlockEntityRenderer<MicroBlockEn
         CachedMiniModel cached = modelCache.computeIfAbsent(entity.getBlockPos().immutable(),
                 k -> new CachedMiniModel());
 
-        // Re-bake if version or host light changed (to update sub-block shading)
         if (cached.version != entity.getRenderVersion() || cached.lastPackedLight != packedLight) {
             bakeModel(entity, cached, packedLight, packedOverlay);
         }
@@ -140,12 +139,16 @@ public class MiniBlockEntityRenderer implements BlockEntityRenderer<MicroBlockEn
             return;
 
         entity.forEachOccupied((x, y, z, state) -> {
-            if (state.getRenderShape() != RenderShape.MODEL)
-                return;
-
-            // Sample light for this specific slot
             BlockPos pos = Objects.requireNonNull(entity.getBlockPos().immutable());
             int slotLight = LevelRenderer.getLightColor(level, pos);
+
+            if (state.getBlock() instanceof net.minecraft.world.level.block.LiquidBlock) {
+                addLiquidFaces(cached.quadsByRenderType, level, pos, x, y, z, state, scale, slotLight);
+                return;
+            }
+
+            if (state.getRenderShape() != RenderShape.MODEL)
+                return;
 
             BakedModel model = blockRenderer.getBlockModel(state);
             long seed = state.getSeed(pos) + MicroBlockEntity.toIndex(x, y, z);
@@ -158,7 +161,6 @@ public class MiniBlockEntityRenderer implements BlockEntityRenderer<MicroBlockEn
             RenderType rt = getEntityCompatibleRenderType(state);
             List<BakedQuad> quads = cached.quadsByRenderType.computeIfAbsent(rt, k -> new ArrayList<>());
 
-            // Bake quads from all directions
             for (Direction dir : Direction.values()) {
                 addTransformedQuads(quads, model.getQuads(state, dir, random), x * scale, y * scale,
                         z * scale, scale, slotLight, state, level, pos, -1);
@@ -236,11 +238,22 @@ public class MiniBlockEntityRenderer implements BlockEntityRenderer<MicroBlockEn
             return RenderType
                     .entityCutout(Objects.requireNonNull(net.minecraft.world.inventory.InventoryMenu.BLOCK_ATLAS));
         } else {
-            // solid / tripwire / everything else → solid entity cutout
+            // solid → full-cube faces are never seen from behind, cull is fine
             return RenderType
                     .entityCutout(Objects.requireNonNull(net.minecraft.world.inventory.InventoryMenu.BLOCK_ATLAS));
         }
     }
+
+    // Vertex positions for each face of a unit cube, CCW winding when viewed from outside.
+    // Index matches Direction.ordinal(): DOWN=0, UP=1, NORTH=2, SOUTH=3, WEST=4, EAST=5
+    private static final float[][][] FACE_POSITIONS = {
+        {{0,0,0}, {0,0,1}, {1,0,1}, {1,0,0}}, // DOWN
+        {{0,1,1}, {0,1,0}, {1,1,0}, {1,1,1}}, // UP
+        {{1,0,0}, {0,0,0}, {0,1,0}, {1,1,0}}, // NORTH
+        {{0,0,1}, {1,0,1}, {1,1,1}, {0,1,1}}, // SOUTH
+        {{0,0,0}, {0,0,1}, {0,1,1}, {0,1,0}}, // WEST
+        {{1,0,1}, {1,0,0}, {1,1,0}, {1,1,1}}, // EAST
+    };
 
     private static class CachedMiniModel {
         long version = -1;
@@ -248,9 +261,60 @@ public class MiniBlockEntityRenderer implements BlockEntityRenderer<MicroBlockEn
         final Map<RenderType, List<BakedQuad>> quadsByRenderType = new HashMap<>();
     }
 
-    /** Renderer is visible from any distance - matches host block visibility. */
+    private void addLiquidFaces(Map<RenderType, List<BakedQuad>> quadsByRenderType,
+            Level level, BlockPos pos,
+            int x, int y, int z, BlockState state, float scale, int slotLight) {
+        boolean isWater = state.getBlock() == net.minecraft.world.level.block.Blocks.WATER;
+        net.minecraft.resources.ResourceLocation texLoc = new net.minecraft.resources.ResourceLocation(
+                "minecraft", isWater ? "block/water_still" : "block/lava_still");
+        net.minecraft.client.renderer.texture.TextureAtlasSprite sprite =
+                Minecraft.getInstance().getModelManager()
+                        .getAtlas(net.minecraft.world.inventory.InventoryMenu.BLOCK_ATLAS)
+                        .getSprite(texLoc);
+
+        RenderType rt = isWater
+                ? RenderType.entityTranslucentCull(
+                        Objects.requireNonNull(net.minecraft.world.inventory.InventoryMenu.BLOCK_ATLAS))
+                : RenderType.entityCutout(
+                        Objects.requireNonNull(net.minecraft.world.inventory.InventoryMenu.BLOCK_ATLAS));
+        List<BakedQuad> quads = quadsByRenderType.computeIfAbsent(rt, k -> new ArrayList<>());
+
+        for (Direction dir : Direction.values()) {
+            addTransformedQuads(quads, List.of(buildLiquidFaceQuad(dir, sprite)),
+                    x * scale, y * scale, z * scale, scale,
+                    slotLight, state, level, pos, -1);
+        }
+    }
+
+    private static BakedQuad buildLiquidFaceQuad(Direction dir,
+            net.minecraft.client.renderer.texture.TextureAtlasSprite sprite) {
+        int[] vertices = new int[32];
+        float u0 = sprite.getU0(), u1 = sprite.getU1();
+        float v0 = sprite.getV0(), v1 = sprite.getV1();
+        float[][] uvs = {{u0, v0}, {u0, v1}, {u1, v1}, {u1, v0}};
+        float[][] fp = FACE_POSITIONS[dir.ordinal()];
+        for (int i = 0; i < 4; i++) {
+            int off = i * 8;
+            vertices[off]     = Float.floatToRawIntBits(fp[i][0]);
+            vertices[off + 1] = Float.floatToRawIntBits(fp[i][1]);
+            vertices[off + 2] = Float.floatToRawIntBits(fp[i][2]);
+            vertices[off + 3] = 0xFFFFFFFF;
+            vertices[off + 4] = Float.floatToRawIntBits(uvs[i][0]);
+            vertices[off + 5] = Float.floatToRawIntBits(uvs[i][1]);
+            vertices[off + 6] = 0;
+            vertices[off + 7] = 0;
+        }
+        return new BakedQuad(vertices, -1, dir, sprite, false);
+    }
+
+    /**
+     * Use the global BER list so rendering is driven by getRenderBoundingBox()
+     * rather than chunk-section frustum culling. Without this, a tiny fairy
+     * (1/4 scale) standing inside the block's 1×1×1 space can trigger a
+     * chunk-section edge case where the per-section render list is skipped.
+     */
     @Override
     public boolean shouldRenderOffScreen(@Nonnull MicroBlockEntity blockEntity) {
-        return false;
+        return true;
     }
 }

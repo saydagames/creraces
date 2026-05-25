@@ -1,0 +1,57 @@
+{
+    "creraces:name": "ability.creraces.foxfire.name",
+    "creraces:description": "ability.creraces.foxfire.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/blaze_powder.png",
+    "creraces:cooldown": 0,
+    "creraces:cost": 0,
+    "creraces:persistent": false,
+    "creraces:race": [
+        "creraces:kitsune"
+    ],
+    "creraces:actions": [
+        {
+            "type": "creraces:toggle_state",
+            "state": "foxfire",
+            "on_value": 2,
+            "off_value": 0,
+            "on_enable": [
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:entity.fox.ambient",
+                    "volume": 1.0,
+                    "pitch": 1.2
+                },
+                {
+                    "type": "creraces:spawn_particles",
+                    "particle": "minecraft:soul_fire_flame",
+                    "count": 20,
+                    "speed": 0.1,
+                    "dx": 0.5,
+                    "dy": 0.5,
+                    "dz": 0.5
+                },
+                {
+                    "type": "creraces:dash",
+                    "power": {
+                        "base": 0.4
+                    },
+                    "direction": "up"
+                }
+            ],
+            "on_disable": [
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:entity.fox.ambient",
+                    "volume": 1.0,
+                    "pitch": 0.8
+                }
+            ]
+        }
+    ],
+    "creraces:wiki_page": "Ability:Foxfire"
+}
+
+
+
+

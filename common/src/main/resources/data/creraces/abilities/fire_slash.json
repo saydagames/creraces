@@ -1,0 +1,31 @@
+{
+    "creraces:name": "ability.creraces.fire_slash.name",
+    "creraces:description": "ability.creraces.fire_slash.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "creraces:textures/icons/ignition.png",
+    "creraces:cooldown": 60,
+    "creraces:cost": 5,
+    "creraces:actions": [
+        {
+            "type": "creraces:aoe",
+            "damage": {
+                "base": 6.0,
+                "creraces:ap": 0.5
+            },
+            "radius": 4.0,
+            "set_on_fire": true,
+            "fire_duration": 5,
+            "targets": [
+                "enemies",
+                "!players"
+            ]
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:entity.blaze.shoot",
+            "volume": 1.0,
+            "pitch": 1.0
+        }
+    ],
+    "creraces:wiki_page": "Ability:Fire_Slash"
+}

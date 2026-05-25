@@ -15,5 +15,8 @@ public class BootstrapMixin {
         // This is safe because Registries are ready, but early enough (hopefully) to
         // beat Player loading.
         ModAttributes.init();
+
+        // Register worldgen codecs for the fairy_realm dimension before registries freeze.
+        mc.sayda.creraces.worldgen.ModWorldgen.registerCodecs();
     }
 }

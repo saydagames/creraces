@@ -283,6 +283,40 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                     }
                 }
 
+                // Selection teleport (optional)
+                @javax.annotation.Nullable String selDimStr =
+                        GsonHelper.getNullableString(jsonObject, "creraces:selection_dimension", null);
+                @javax.annotation.Nullable ResourceLocation selDim =
+                        selDimStr != null ? ResourceLocation.tryParse(selDimStr) : null;
+
+                double[] selPos = null;
+                JsonElement selPosElem = jsonObject.get("creraces:selection_pos");
+                if (selPosElem != null && selPosElem.isJsonObject()) {
+                    JsonObject p = selPosElem.getAsJsonObject();
+                    selPos = new double[]{
+                        p.get("x").getAsDouble(),
+                        p.get("y").getAsDouble(),
+                        p.get("z").getAsDouble()
+                    };
+                }
+
+                // Default respawn location (optional — used when no bed/anchor spawn is set)
+                @javax.annotation.Nullable String respawnDimStr =
+                        GsonHelper.getNullableString(jsonObject, "creraces:respawn_dimension", null);
+                @javax.annotation.Nullable ResourceLocation respawnDim =
+                        respawnDimStr != null ? ResourceLocation.tryParse(respawnDimStr) : null;
+
+                double[] respawnPos = null;
+                JsonElement respawnPosElem = jsonObject.get("creraces:respawn_pos");
+                if (respawnPosElem != null && respawnPosElem.isJsonObject()) {
+                    JsonObject rp = respawnPosElem.getAsJsonObject();
+                    respawnPos = new double[]{
+                        rp.get("x").getAsDouble(),
+                        rp.get("y").getAsDouble(),
+                        rp.get("z").getAsDouble()
+                    };
+                }
+
                 // Parents
                 List<ResourceLocation> parentRaces = new java.util.ArrayList<>();
                 String singleParent = GsonHelper.getNullableString(jsonObject, "creraces:parent_race", null);
@@ -324,6 +358,10 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                         .selectable(GsonHelper.getAsBoolean(jsonObject, "creraces:selectable", true))
                         .gState(gState)
                         .state(Race.RaceState.fromString(GsonHelper.getNullableString(jsonObject, "creraces:state", "FINISHED")))
+                        .selectionDimension(selDim)
+                        .selectionPos(selPos)
+                        .respawnDimension(respawnDim)
+                        .respawnPos(respawnPos)
                         .build();
 
                 RaceRegistry.register(race);
