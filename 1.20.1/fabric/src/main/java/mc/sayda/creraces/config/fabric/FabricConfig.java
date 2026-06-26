@@ -55,6 +55,10 @@ public class FabricConfig {
         return data;
     }
 
+    public static void saveClientConfig() {
+        saveConfig("creraces-client.json", new ClientConfig());
+    }
+
     private static void saveConfig(String fileName, Object data) {
         File file = CONFIG_DIR.resolve(fileName).toFile();
         try (FileWriter writer = new FileWriter(file)) {
@@ -114,6 +118,8 @@ public class FabricConfig {
         // MiniBuild
         CreRacesConfig.MINI_BUILD_ENABLED = () -> common.minibuild.mini_build_enabled;
         CreRacesConfig.MINI_FURNACE_ENABLED = () -> common.minibuild.mini_furnace_enabled;
+        CreRacesConfig.MINI_CAMPFIRE_ENABLED = () -> common.minibuild.mini_campfire_enabled;
+        CreRacesConfig.MINI_BREWING_STAND_ENABLED = () -> common.minibuild.mini_brewing_stand_enabled;
         CreRacesConfig.MINI_PLACE_WHITELIST_ENABLED = () -> common.minibuild.mini_place_whitelist_enabled;
         CreRacesConfig.RACE_SOCIAL_DEFENSE_RANGE = () -> common.minibuild.social_defense_range;
         CreRacesConfig.MICRO_BLOCK_LIGHT_PER_TORCH = () -> common.minibuild.micro_block_light_per_torch;
@@ -123,6 +129,18 @@ public class FabricConfig {
         CreRacesConfig.MINI_PLACEMENT_SPAM_THRESHOLD_MS = () -> common.minibuild.mini_placement_spam_threshold_ms;
         CreRacesConfig.MINI_BLOCK_REACH_MARGIN = () -> common.minibuild.mini_block_reach_margin;
         CreRacesConfig.MINI_BLOCK_WATER_RESISTANT = () -> common.minibuild.mini_block_water_resistant;
+        CreRacesConfig.MINI_BUILD_DIMENSION_BLACKLIST = () -> common.minibuild.mini_build_dimension_blacklist;
+
+        // Territory
+        CreRacesConfig.TERRITORY_DEFAULT_CLAIM_RADIUS        = () -> common.territory.territory_default_claim_radius;
+        CreRacesConfig.TERRITORY_MAX_NODES_PER_PLAYER        = () -> common.territory.territory_max_nodes_per_player;
+        CreRacesConfig.TERRITORY_INTER_RACE_BLOCKING         = () -> common.territory.territory_inter_race_blocking;
+        CreRacesConfig.TERRITORY_LEADER_DECAY_THRESHOLD_DAYS = () -> common.territory.territory_leader_decay_threshold_days;
+        CreRacesConfig.TERRITORY_SUCCESSION_WINDOW_DAYS      = () -> common.territory.territory_succession_window_days;
+        CreRacesConfig.TERRITORY_SUCCESSION_TICK_INTERVAL    = () -> common.territory.territory_succession_tick_interval;
+
+        // Team
+        CreRacesConfig.TEAM_REQUIRE_SAME_RACE = () -> common.team.team_require_same_race;
 
         // Fairy Realm
         CreRacesConfig.FAIRY_REALM_BORDER_SIZE = () -> common.fairyRealm.fairy_realm_border_size;
@@ -148,6 +166,21 @@ public class FabricConfig {
         CreRacesConfig.RACE_OVERLAYS_ENABLED = () -> client.hud.race_overlays_enabled;
         CreRacesConfig.ENGINE_POPUPS_ENABLED = () -> client.hud.engine_popups_enabled;
         CreRacesConfig.MINI_DUMMY_CACHE_SIZE = () -> client.hud.mini_dummy_cache_size;
+        CreRacesConfig.HUD_ANCHOR_X = () -> client.hud.hud_anchor_x;
+        CreRacesConfig.HUD_ANCHOR_Y = () -> client.hud.hud_anchor_y;
+        CreRacesConfig.HUD_PORTRAIT_X = () -> client.hud.hud_portrait_x;
+        CreRacesConfig.HUD_PORTRAIT_Y = () -> client.hud.hud_portrait_y;
+        CreRacesConfig.HUD_ABILITIES_X = () -> client.hud.hud_abilities_x;
+        CreRacesConfig.HUD_ABILITIES_Y = () -> client.hud.hud_abilities_y;
+        CreRacesConfig.HUD_BARS_X = () -> client.hud.hud_bars_x;
+        CreRacesConfig.HUD_BARS_Y = () -> client.hud.hud_bars_y;
+        CreRacesConfig.BAR_LABEL_MODE = () -> client.hud.bar_label_mode;
+        CreRacesConfig.BAR_SHOW_SECONDS = () -> client.hud.bar_show_seconds;
+        CreRacesConfig.HUD_BARS_GROW_UP = () -> client.hud.hud_bars_grow_up;
+        CreRacesConfig.HUD_ABILITIES_VERTICAL = () -> client.hud.hud_abilities_vertical;
+        CreRacesConfig.HUD_SLOT_LABEL_SIDE = () -> client.hud.hud_slot_label_side;
+        CreRacesConfig.HUD_SCALE = () -> client.hud.hud_scale;
+        CreRacesConfig.HUD_CONFIG_SAVE = FabricConfig::saveClientConfig;
 
         // Balancing
 
@@ -199,6 +232,8 @@ public class FabricConfig {
         public MiniBuild minibuild = new MiniBuild();
         public FairyRealm fairyRealm = new FairyRealm();
         public Pockets pockets = new Pockets();
+        public Territory territory = new Territory();
+        public Team team = new Team();
 
         public static class Documentation {
             public String wiki_base_url = CreRacesConfig.WIKI_BASE_URL.get();
@@ -252,6 +287,8 @@ public class FabricConfig {
         public static class MiniBuild {
             public boolean mini_build_enabled = CreRacesConfig.MINI_BUILD_ENABLED.get();
             public boolean mini_furnace_enabled = CreRacesConfig.MINI_FURNACE_ENABLED.get();
+            public boolean mini_campfire_enabled = CreRacesConfig.MINI_CAMPFIRE_ENABLED.get();
+            public boolean mini_brewing_stand_enabled = CreRacesConfig.MINI_BREWING_STAND_ENABLED.get();
             public boolean mini_place_whitelist_enabled = CreRacesConfig.MINI_PLACE_WHITELIST_ENABLED.get();
             public double social_defense_range = CreRacesConfig.RACE_SOCIAL_DEFENSE_RANGE.get();
             public int micro_block_light_per_torch = CreRacesConfig.MICRO_BLOCK_LIGHT_PER_TORCH.get();
@@ -261,10 +298,25 @@ public class FabricConfig {
             public long mini_placement_spam_threshold_ms = CreRacesConfig.MINI_PLACEMENT_SPAM_THRESHOLD_MS.get();
             public double mini_block_reach_margin = CreRacesConfig.MINI_BLOCK_REACH_MARGIN.get();
             public boolean mini_block_water_resistant = CreRacesConfig.MINI_BLOCK_WATER_RESISTANT.get();
+            public java.util.List<String> mini_build_dimension_blacklist = new java.util.ArrayList<>(
+                    CreRacesConfig.MINI_BUILD_DIMENSION_BLACKLIST.get());
         }
 
         public static class FairyRealm {
             public int fairy_realm_border_size = CreRacesConfig.FAIRY_REALM_BORDER_SIZE.get();
+        }
+
+        public static class Territory {
+            public int  territory_default_claim_radius        = CreRacesConfig.TERRITORY_DEFAULT_CLAIM_RADIUS.get();
+            public int  territory_max_nodes_per_player        = CreRacesConfig.TERRITORY_MAX_NODES_PER_PLAYER.get();
+            public boolean territory_inter_race_blocking      = CreRacesConfig.TERRITORY_INTER_RACE_BLOCKING.get();
+            public long territory_leader_decay_threshold_days = CreRacesConfig.TERRITORY_LEADER_DECAY_THRESHOLD_DAYS.get();
+            public long territory_succession_window_days      = CreRacesConfig.TERRITORY_SUCCESSION_WINDOW_DAYS.get();
+            public int  territory_succession_tick_interval    = CreRacesConfig.TERRITORY_SUCCESSION_TICK_INTERVAL.get();
+        }
+
+        public static class Team {
+            public boolean team_require_same_race = CreRacesConfig.TEAM_REQUIRE_SAME_RACE.get();
         }
 
         public static class Pockets {
@@ -300,6 +352,20 @@ public class FabricConfig {
             public boolean race_overlays_enabled = CreRacesConfig.RACE_OVERLAYS_ENABLED.get();
             public boolean engine_popups_enabled = CreRacesConfig.ENGINE_POPUPS_ENABLED.get();
             public int mini_dummy_cache_size = CreRacesConfig.MINI_DUMMY_CACHE_SIZE.get();
+            public int hud_anchor_x = CreRacesConfig.HUD_ANCHOR_X.get();
+            public int hud_anchor_y = CreRacesConfig.HUD_ANCHOR_Y.get();
+            public int hud_portrait_x = CreRacesConfig.HUD_PORTRAIT_X.get();
+            public int hud_portrait_y = CreRacesConfig.HUD_PORTRAIT_Y.get();
+            public int hud_abilities_x = CreRacesConfig.HUD_ABILITIES_X.get();
+            public int hud_abilities_y = CreRacesConfig.HUD_ABILITIES_Y.get();
+            public int hud_bars_x = CreRacesConfig.HUD_BARS_X.get();
+            public int hud_bars_y = CreRacesConfig.HUD_BARS_Y.get();
+            public String bar_label_mode = CreRacesConfig.BAR_LABEL_MODE.get();
+            public boolean bar_show_seconds = CreRacesConfig.BAR_SHOW_SECONDS.get();
+            public boolean hud_bars_grow_up = CreRacesConfig.HUD_BARS_GROW_UP.get();
+            public boolean hud_abilities_vertical = CreRacesConfig.HUD_ABILITIES_VERTICAL.get();
+            public String hud_slot_label_side = CreRacesConfig.HUD_SLOT_LABEL_SIDE.get();
+            public double hud_scale = CreRacesConfig.HUD_SCALE.get();
         }
     }
 

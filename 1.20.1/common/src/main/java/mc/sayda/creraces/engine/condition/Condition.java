@@ -42,8 +42,7 @@ public interface Condition {
         try {
             return switch (type) {
                 case "state", "state_equals" -> {
-                    String stateKey = json.has("state") ? GsonHelper.getAsString(json, "state")
-                            : GsonHelper.getAsString(json, "ability");
+                    String stateKey = GsonHelper.getAsString(json, "state");
                     ScalingValue value = ScalingValue.fromJson(json, "value", 1.0);
                     String operator = GsonHelper.getAsString(json, "operator", "==");
                     yield new StateCondition(stateKey, value, operator);
@@ -174,8 +173,7 @@ public interface Condition {
                 }
                 case "modulo" -> {
                     String stateKey = json.has("state") ? GsonHelper.getAsString(json, "state")
-                            : (json.has("id") ? GsonHelper.getAsString(json, "id")
-                                    : GsonHelper.getAsString(json, "ability"));
+                            : GsonHelper.getAsString(json, "id");
                     if (!stateKey.contains(":")) {
                         stateKey = "creraces:" + stateKey;
                     }
@@ -344,8 +342,7 @@ public interface Condition {
                 }
                 case "cooldown" -> {
                     String id = json.has("state") ? GsonHelper.getAsString(json, "state")
-                            : (json.has("id") ? GsonHelper.getAsString(json, "id")
-                                    : GsonHelper.getAsString(json, "ability"));
+                            : GsonHelper.getAsString(json, "id");
                     if (!id.contains(":")) {
                         id = "creraces:" + id;
                     }
@@ -354,10 +351,32 @@ public interface Condition {
                     yield new CooldownCondition(id, operator, value);
                 }
                 case "ability_level" -> {
-                    String id = json.has("ability") ? GsonHelper.getAsString(json, "ability") : "self";
+                    String id = json.has("id") ? GsonHelper.getAsString(json, "id") : "self";
                     String operator = GsonHelper.getAsString(json, "operator", ">=");
                     ScalingValue value = ScalingValue.fromJson(json, "value", 1.0);
                     yield new AbilityLevelCondition(id, operator, value);
+                }
+                case "in_habitable_biome" ->
+                    new InHabitableBiomeCondition();
+                case "has_faction" ->
+                    new HasFactionCondition();
+                case "in_claimed_territory" -> {
+                    String scope = GsonHelper.getAsString(json, "scope", "own");
+                    yield new InClaimedTerritoryCondition(scope);
+                }
+                case "faction_rank" -> {
+                    String minRankStr = GsonHelper.getAsString(json, "min_rank", "MEMBER").toUpperCase();
+                    mc.sayda.creraces.territory.FactionRank minRank;
+                    try {
+                        minRank = mc.sayda.creraces.territory.FactionRank.valueOf(minRankStr);
+                    } catch (IllegalArgumentException ex) {
+                        minRank = mc.sayda.creraces.territory.FactionRank.MEMBER;
+                    }
+                    yield new FactionRankCondition(minRank);
+                }
+                case "is_spirit" -> {
+                    boolean expected = GsonHelper.getAsBoolean(json, "value", true);
+                    yield new IsSpiritCondition(expected);
                 }
                 default ->
                     throw new IllegalArgumentException("Unknown condition type '" + typeStr + "' - check your JSON");
@@ -1511,6 +1530,24 @@ class CanPlaceBlockCondition implements Condition {
     }
 }
 
+class IsSpiritCondition implements Condition {
+    private final boolean expected;
+
+    public IsSpiritCondition(boolean expected) {
+        this.expected = expected;
+    }
+
+    @Override
+    public boolean evaluate(Player player,
+            @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
+        return DataUtils.getVariables(player)
+                .map(vars -> vars.isSpirit() == expected)
+                .orElse(false);
+    }
+}
+
 class IsSpiritMoonCondition implements Condition {
     private final boolean expected;
 
@@ -1625,5 +1662,102 @@ class BlockDataCondition implements Condition {
         }
 
         return false;
+    }
+}
+
+class InHabitableBiomeCondition implements Condition {
+    @Override
+    public boolean evaluate(net.minecraft.world.entity.player.Player player,
+            @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
+        java.util.UUID factionId = mc.sayda.creraces.territory.TerritoryManager.get()
+                .getFactionId(player.getUUID());
+        if (factionId == null) return false;
+        net.minecraft.resources.ResourceLocation biome = player.level()
+                .getBiome(player.blockPosition())
+                .unwrapKey()
+                .map(k -> k.location())
+                .orElse(null);
+        if (biome == null) return false;
+        return mc.sayda.creraces.territory.TerritoryManager.get().isHabitable(factionId, biome);
+    }
+}
+
+class HasFactionCondition implements Condition {
+    @Override
+    public boolean evaluate(net.minecraft.world.entity.player.Player player,
+            @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
+        return mc.sayda.creraces.territory.TerritoryManager.get().hasFaction(player.getUUID());
+    }
+}
+
+class InClaimedTerritoryCondition implements Condition {
+    private final String scope; // "own", "allied", "any"
+
+    InClaimedTerritoryCondition(String scope) {
+        this.scope = scope;
+    }
+
+    @Override
+    public boolean evaluate(net.minecraft.world.entity.player.Player player,
+            @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
+        mc.sayda.creraces.territory.TerritoryManager tm =
+                mc.sayda.creraces.territory.TerritoryManager.get();
+        net.minecraft.world.level.ChunkPos chunk = new net.minecraft.world.level.ChunkPos(
+                player.blockPosition());
+        mc.sayda.creraces.territory.ClaimData claim = tm.getClaimAt(chunk);
+        if (claim == null) return false;
+
+        if ("any".equals(scope)) return true;
+
+        java.util.UUID playerFactionId = tm.getFactionId(player.getUUID());
+        if ("own".equals(scope)) {
+            return playerFactionId != null && claim.getFactionId().equals(playerFactionId);
+        }
+        if ("allied".equals(scope)) {
+            if (playerFactionId != null && claim.getFactionId().equals(playerFactionId)) return true;
+            java.util.UUID playerTeamId = mc.sayda.creraces.capability.DataUtils
+                    .getVariables(player)
+                    .map(mc.sayda.creraces.capability.IPlayerVariables::getTeamId)
+                    .orElse(null);
+            if (playerTeamId == null) return false;
+            mc.sayda.creraces.team.RaceTeamManager.RaceTeam playerTeam =
+                    mc.sayda.creraces.team.RaceTeamManager.getTeam(playerTeamId).orElse(null);
+            if (playerTeam == null) return false;
+            mc.sayda.creraces.territory.FactionData claimFaction = tm.getFaction(claim.getFactionId());
+            if (claimFaction == null) return false;
+            for (java.util.UUID memberId : claimFaction.getMembers().keySet()) {
+                if (playerTeam.getMembers().contains(memberId)) return true;
+            }
+        }
+        return false;
+    }
+}
+
+class FactionRankCondition implements Condition {
+    private final mc.sayda.creraces.territory.FactionRank minRank;
+
+    FactionRankCondition(mc.sayda.creraces.territory.FactionRank minRank) {
+        this.minRank = minRank;
+    }
+
+    @Override
+    public boolean evaluate(net.minecraft.world.entity.player.Player player,
+            @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
+        mc.sayda.creraces.territory.TerritoryManager tm =
+                mc.sayda.creraces.territory.TerritoryManager.get();
+        java.util.UUID factionId = tm.getFactionId(player.getUUID());
+        if (factionId == null) return false;
+        mc.sayda.creraces.territory.FactionData faction = tm.getFaction(factionId);
+        if (faction == null) return false;
+        mc.sayda.creraces.territory.FactionRank rank = faction.getRank(player.getUUID());
+        return rank != null && rank.isAtLeast(minRank);
     }
 }

@@ -59,13 +59,13 @@
                                             "math": "floor"
                                         },
                                         {
-                                            "type": "creraces:modify_resource",
+                                            "type": "creraces:modify_value",
                                             "resource": "mana",
                                             "operation": "add",
                                             "value": -20
                                         },
                                         {
-                                            "type": "creraces:modify_resource",
+                                            "type": "creraces:modify_value",
                                             "resource": "state:creraces:stored_material",
                                             "operation": "add",
                                             "value": -1

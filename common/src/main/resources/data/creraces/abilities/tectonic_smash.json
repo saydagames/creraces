@@ -41,14 +41,14 @@
                     ]
                 },
                 {
-                    "type": "creraces:modify_resource",
+                    "type": "creraces:modify_value",
                     "resource": "grit",
                     "operation": "set",
                     "value": 0
                 },
                 {
-                    "type": "creraces:set_state",
-                    "state": "tectonic_smash",
+                    "type": "creraces:modify_value",
+                    "resource": "state:tectonic_smash",
                     "value": 0
                 },
                 {
@@ -159,8 +159,8 @@
                     ]
                 },
                 {
-                    "type": "creraces:modify_state",
-                    "state": "tectonic_smash",
+                    "type": "creraces:modify_value",
+                    "resource": "state:tectonic_smash",
                     "operation": "add",
                     "value": 1
                 },

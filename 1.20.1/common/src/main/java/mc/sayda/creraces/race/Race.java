@@ -48,6 +48,7 @@ public class Race {
         private final List<ResourceLocation> startingItems;
         private final Passives passives;
         private final List<RaceTrait> traits;
+        private final List<mc.sayda.creraces.ability.OverlayBar> overlayBars;
         private final boolean isSpirit;
         private final boolean isTiny;
         private final boolean isAquatic;
@@ -59,6 +60,8 @@ public class Race {
         @Nullable private final double[] selectionPos;
         @Nullable private final ResourceLocation respawnDimension;
         @Nullable private final double[] respawnPos;
+        private final boolean biomePreview;
+        private final List<String> claimValidBiomes;
 
         private Race(Builder builder) {
                 this.id = builder.id;
@@ -91,6 +94,7 @@ public class Race {
                 this.startingItems = builder.startingItems;
                 this.passives = builder.passives;
                 this.traits = builder.traits;
+                this.overlayBars = builder.overlayBars;
                 this.isSpirit = builder.isSpirit;
                 this.isTiny = builder.isTiny;
                 this.isAquatic = builder.isAquatic;
@@ -102,6 +106,8 @@ public class Race {
                 this.selectionPos = builder.selectionPos;
                 this.respawnDimension = builder.respawnDimension;
                 this.respawnPos = builder.respawnPos;
+                this.biomePreview = builder.biomePreview;
+                this.claimValidBiomes = builder.claimValidBiomes;
         }
 
         public static class Builder {
@@ -129,6 +135,7 @@ public class Race {
                 private List<ResourceLocation> startingItems = new java.util.ArrayList<>();
                 private Passives passives = null;
                 private List<RaceTrait> traits = new java.util.ArrayList<>();
+                private List<mc.sayda.creraces.ability.OverlayBar> overlayBars = new java.util.ArrayList<>();
                 private boolean isSpirit = false;
                 private boolean isTiny = false;
                 private boolean isAquatic = false;
@@ -140,6 +147,8 @@ public class Race {
                 @Nullable private double[] selectionPos = null;
                 @Nullable private ResourceLocation respawnDimension = null;
                 @Nullable private double[] respawnPos = null;
+                private boolean biomePreview = false;
+                private List<String> claimValidBiomes = new java.util.ArrayList<>();
 
                 public Builder(ResourceLocation id, net.minecraft.network.chat.Component name) {
                         this.id = id;
@@ -252,6 +261,11 @@ public class Race {
                         return this;
                 }
 
+                public Builder overlayBars(List<mc.sayda.creraces.ability.OverlayBar> bars) {
+                        if (bars != null) this.overlayBars = bars;
+                        return this;
+                }
+
                 public Builder traits(List<RaceTrait> traits) {
                         if (traits != null)
                                 this.traits = traits;
@@ -313,6 +327,16 @@ public class Race {
 
                 public Builder respawnPos(@Nullable double[] respawnPos) {
                         this.respawnPos = respawnPos;
+                        return this;
+                }
+
+                public Builder biomePreview(boolean biomePreview) {
+                        this.biomePreview = biomePreview;
+                        return this;
+                }
+
+                public Builder claimValidBiomes(List<String> claimValidBiomes) {
+                        this.claimValidBiomes = claimValidBiomes;
                         return this;
                 }
 
@@ -447,6 +471,10 @@ public class Race {
                 return traits;
         }
 
+        public List<mc.sayda.creraces.ability.OverlayBar> overlayBars() {
+                return overlayBars;
+        }
+
         public boolean isSpirit() {
                 return isSpirit;
         }
@@ -463,6 +491,13 @@ public class Race {
                 return isUndead;
         }
 
+        public boolean biomePreview() {
+                return biomePreview;
+        }
+
+        public List<String> claimValidBiomes() {
+                return claimValidBiomes;
+        }
 
         public boolean selectable() {
                 return selectable;

@@ -351,6 +351,7 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                         .startingItems(startingItems)
                         .passives(parsePassives(jsonObject))
                         .traits(traits)
+                        .overlayBars(mc.sayda.creraces.ability.OverlayBar.collectOverlayBarsResult(jsonObject))
                         .isSpirit(GsonHelper.getAsBoolean(jsonObject, "creraces:is_spirit", false))
                         .isTiny(GsonHelper.getAsBoolean(jsonObject, "creraces:is_tiny", false))
                         .isAquatic(GsonHelper.getAsBoolean(jsonObject, "creraces:is_aquatic", false))
@@ -362,6 +363,8 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                         .selectionPos(selPos)
                         .respawnDimension(respawnDim)
                         .respawnPos(respawnPos)
+                        .biomePreview(GsonHelper.getAsBoolean(jsonObject, "creraces:territory_biome_preview", false))
+                        .claimValidBiomes(parseStringList(jsonObject, "creraces:territory_valid_biomes"))
                         .build();
 
                 RaceRegistry.register(race);
@@ -504,6 +507,16 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
         }
 
         return merged;
+    }
+
+    private static java.util.List<String> parseStringList(JsonObject json, String key) {
+        java.util.List<String> result = new java.util.ArrayList<>();
+        if (json.has(key) && json.get(key).isJsonArray()) {
+            for (com.google.gson.JsonElement e : json.getAsJsonArray(key)) {
+                result.add(e.getAsString());
+            }
+        }
+        return result;
     }
 
     private static mc.sayda.creraces.race.Race.Passives parsePassives(JsonObject p) {

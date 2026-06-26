@@ -8,6 +8,18 @@ import net.minecraft.resources.ResourceLocation;
 
 public class RaceIncidents {
     public static void transformPlayer(ServerPlayer player, ResourceLocation raceId) {
+        // Kick from faction if new race is incompatible with the faction's race restriction
+        if (player.getServer() != null) {
+            mc.sayda.creraces.territory.TerritoryManager tm = mc.sayda.creraces.territory.TerritoryManager.get();
+            if (tm.hasFaction(player.getUUID())) {
+                java.util.UUID fId = tm.getFactionId(player.getUUID());
+                mc.sayda.creraces.territory.FactionData faction = tm.getFaction(fId);
+                if (faction != null && !faction.getRaceId().equals(raceId)) {
+                    tm.removeMember(player.getServer(), fId, player.getUUID(), true);
+                }
+            }
+        }
+
         // Clear all engine-managed attribute modifiers before transforming
         AttributeIncidents.purgeRacialAttributes(player);
 
@@ -126,10 +138,48 @@ public class RaceIncidents {
             // Final Sync - vars.sync handles both local and tracking players
             vars.sync(player);
 
+            // Grace period: spirit races get nymph_call for 5 minutes so the nymph
+            // debuff passive doesn't punish them immediately on selection.
+            if (race.isSpirit()) {
+                net.minecraft.world.effect.MobEffect nymphCallEffect =
+                        net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT
+                        .get(new net.minecraft.resources.ResourceLocation("creraces", "nymph_call"));
+                if (nymphCallEffect != null) {
+                    player.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                            nymphCallEffect, 6000, 0, false, false));
+                }
+            }
+
             // Trigger respawn traits on initial selection too
             var traits$ = race.traits();
             if (traits$ != null) traits$.forEach(trait -> trait.onRespawn(player));
         });
+
+        // Teleport to race-specific selection dimension only for fresh players
+        // (no existing territory/root — existing players keep their overworld context)
+        if (race.selectionDimension() != null && player.getServer() != null) {
+            mc.sayda.creraces.territory.TerritoryManager tm = mc.sayda.creraces.territory.TerritoryManager.get();
+            boolean hasFaction = tm.hasFaction(player.getUUID());
+            boolean hasRoot = DataUtils.getVariables(player)
+                .map(v -> v.getPersistentState(new net.minecraft.resources.ResourceLocation("creraces", "tx")) != 0.0)
+                .orElse(false);
+            if (!hasFaction && !hasRoot) {
+                net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimKey =
+                    net.minecraft.resources.ResourceKey.create(
+                        net.minecraft.core.registries.Registries.DIMENSION,
+                        race.selectionDimension());
+                net.minecraft.server.level.ServerLevel targetLevel = player.getServer().getLevel(dimKey);
+                if (targetLevel != null) {
+                    double[] pos = race.selectionPos();
+                    double sx = pos != null ? pos[0] : 0.5;
+                    double sy = pos != null ? pos[1] : 65.0;
+                    double sz = pos != null ? pos[2] : 0.5;
+                    player.teleportTo(targetLevel, sx, sy, sz, player.getYRot(), player.getXRot());
+                    BoundaryHandler.resyncForAllTrackers(player);
+                    BoundaryHandler.resyncVariables(player, player);
+                }
+            }
+        }
     }
 
     /**

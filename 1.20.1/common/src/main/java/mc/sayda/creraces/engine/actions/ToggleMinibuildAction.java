@@ -19,6 +19,17 @@ public class ToggleMinibuildAction implements ActionRegistry.RaceAction {
     public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
             @Nullable BlockPos interact_pos) {
         DataUtils.getVariables(player).ifPresent(vars -> {
+            net.minecraft.resources.ResourceLocation dim = player.level().dimension().location();
+            boolean blacklisted = mc.sayda.creraces.config.CreRacesConfig.MINI_BUILD_DIMENSION_BLACKLIST
+                    .get().contains(dim.toString());
+            if (blacklisted) {
+                if (vars.isSmallBuild()) {
+                    vars.setSmallBuild(false);
+                    mc.sayda.creraces.network.BoundaryHandler.resyncForAllTrackers(player);
+                }
+                return;
+            }
+
             boolean newState = !vars.isSmallBuild();
             mc.sayda.creraces.CreRaces.LOGGER.info("ToggleMinibuildAction: Toggling smallBuild for {} to {}",
                     player.getName().getString(), newState);

@@ -5,6 +5,7 @@ import mc.sayda.creraces.ability.Ability;
 import mc.sayda.creraces.ability.AbilityRegistry;
 import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.config.CreRacesConfig;
 import mc.sayda.creraces.race.Race;
 import mc.sayda.creraces.race.RaceRegistry;
 import mc.sayda.creraces.race.ResourceType;
@@ -17,19 +18,21 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
 import javax.annotation.Nonnull;
+import java.util.Map;
 
 public class RaceOverlay {
     private static final ResourceLocation UI_BG = new ResourceLocation("creraces", "textures/screens/ui_bg.png");
-    private static final ResourceLocation UI_FG_BG = new ResourceLocation("creraces", "textures/screens/ui_fg_bg.png");
+    private static final ResourceLocation UI_BG2 = new ResourceLocation("creraces", "textures/screens/ui_bg2.png");
     private static final ResourceLocation UI_FRAME = new ResourceLocation("creraces", "textures/screens/ui.png");
+    private static final ResourceLocation UI_LVL = new ResourceLocation("creraces", "textures/screens/ui_lvl.png");
+    private static final ResourceLocation UI_RDY = new ResourceLocation("creraces", "textures/screens/ui_rdy.png");
     private static final ResourceLocation UI_FG_FRAME = new ResourceLocation("creraces", "textures/screens/ui_fg.png");
-    private static final ResourceLocation UI_H = new ResourceLocation("creraces", "textures/screens/ui_h.png");
+    private static final ResourceLocation UI_FG_BG = new ResourceLocation("creraces", "textures/screens/ui_fg_bg.png");
     private static final ResourceLocation UI_M = new ResourceLocation("creraces", "textures/screens/ui_m.png");
     private static final ResourceLocation UI_R = new ResourceLocation("creraces", "textures/screens/ui_r.png");
-    private static final ResourceLocation UI_DR = new ResourceLocation("creraces", "textures/screens/ui_dr.png");
     private static final ResourceLocation UI_E = new ResourceLocation("creraces", "textures/screens/ui_e.png");
     private static final ResourceLocation UI_G = new ResourceLocation("creraces", "textures/screens/ui_g.png");
-    private static final ResourceLocation UI_P = new ResourceLocation("creraces", "textures/screens/ui_p.png");
+
 
     public static void render(@Nonnull GuiGraphics graphics, float tickDelta) {
         Minecraft mc = Minecraft.getInstance();
@@ -37,6 +40,9 @@ public class RaceOverlay {
         if (player == null || mc.options.hideGui)
             return;
 
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
         graphics.pose().pushPose();
         DataUtils.getVariables(player).ifPresent(vars -> {
             ResourceLocation raceId = vars.getRace();
@@ -49,32 +55,28 @@ public class RaceOverlay {
 
             // Modern 1.20.1 HUD rendering uses GuiGraphics state management
 
-            // Legacy Portrait Base (Based on UI Overlay legacy code)
-            int basePosX = 14;
-            int basePosY = 13;
+            // Group positions driven by HUD editor config
+            int globalX = CreRacesConfig.HUD_ANCHOR_X.get();
+            int globalY = CreRacesConfig.HUD_ANCHOR_Y.get();
+            int basePosX = globalX + CreRacesConfig.HUD_PORTRAIT_X.get();
+            int basePosY = globalY + CreRacesConfig.HUD_PORTRAIT_Y.get();
 
-            // UI BG (Portrait mask area) - legacy pos: 14, 13
-            graphics.blit(UI_BG, basePosX, basePosY, 0, 0, 33, 32, 33, 32);
+            // Scale around the global anchor
+            float scale = CreRacesConfig.HUD_SCALE.get().floatValue();
+            if (scale != 1.0f) {
+                graphics.pose().translate(globalX, globalY, 0);
+                graphics.pose().scale(scale, scale, 1.0f);
+                graphics.pose().translate(-globalX, -globalY, 0);
+            }
 
-            // UI FG BG (Bars background) - legacy pos: 14, 45
-            graphics.blit(UI_FG_BG, basePosX, basePosY + 32, 0, 0, 32, 15, 32, 15);
+            // All portrait assets are 80x80, displayed at half-scale = 40x40
+            graphics.blit(UI_BG,  basePosX, basePosY, 0, 0, 40, 40, 40, 40);
+            graphics.blit(UI_BG2, basePosX, basePosY, 0, 0, 40, 40, 40, 40);
 
-            // Race Icon - legacy pos: 15, 16
-            graphics.blit(race.icon(), basePosX + 1, basePosY + 3, 0, 0, 29, 29, 29, 29);
+            // Race Icon (29x29) within the 40x40 canvas
+            graphics.blit(race.icon(), basePosX + 5, basePosY + 2, 0, 0, 29, 29, 29, 29);
 
-            // UI Frame (Portrait ornate border) - legacy pos: 11, 13
-            graphics.blit(UI_FRAME, basePosX - 3, basePosY, 0, 0, 36, 33, 36, 33);
-
-            // UI FG Frame (Bars ornate border) - legacy pos: 12, 44
-            graphics.blit(UI_FG_FRAME, basePosX - 2, basePosY + 31, 0, 0, 35, 18, 35, 18);
-
-            // Stepped Bars (using legacy 31-step logic)
-            // Health Bar - legacy pos: 15, 46
-            double maxHealth = player.getMaxHealth();
-            double health = player.getHealth();
-            renderSteppedBar(graphics, UI_H, basePosX + 1, basePosY + 33, health, maxHealth, 3);
-
-            // Resource Bar - legacy pos: 15, 49
+            // Resource Bar - legacy pos: 15, 49 (rendered before frame so frame draws on top)
             ResourceLocation resourceTex = UI_M;
             double currentRes = vars.getMana();
             var maxManaAttr = ModAttributes.MAX_MANA.get();
@@ -101,23 +103,46 @@ public class RaceOverlay {
                     break;
                 case MANA:
                 default:
-                    // Already set to Mana
                     break;
             }
-
+            // Old spacing was 36
             if (race.resourceType() != ResourceType.NONE) {
-                renderSteppedBar(graphics, resourceTex, basePosX + 1, basePosY + 36, currentRes, maxRes, 3);
+                renderSteppedBar(graphics, resourceTex, basePosX + 4, basePosY + 33, currentRes, maxRes, 3);
             }
 
-            // Modern Ability Slots (Dynamically rendered based on keybinds)
-            int slotX = basePosX + 40;
-            int slotY = basePosY + 4;
+            // Frame overlays — same 80x80 canvas, displayed at 40x40, same origin as BG
+            graphics.blit(UI_FRAME, basePosX, basePosY, 0, 0, 40, 40, 40, 40);
+            graphics.blit(UI_LVL,   basePosX, basePosY, 0, 0, 40, 40, 40, 40);
+            graphics.blit(UI_RDY,   basePosX, basePosY, 0, 0, 40, 40, 40, 40);
 
+            // Overlay Bars - config-driven position
+            int barStartX = globalX + CreRacesConfig.HUD_BARS_X.get();
+            int barStartY = globalY + CreRacesConfig.HUD_BARS_Y.get();
+            renderOverlayBars(graphics, vars, race, barStartX, barStartY);
+
+            // Stepped Bars (using legacy 31-step logic)
+            // Health Bar - legacy pos: 15, 46
+            // double maxHealth = player.getMaxHealth();
+            // double health = player.getHealth();
+            // renderSteppedBar(graphics, UI_H, basePosX + 1, basePosY + 33, health, maxHealth, 3);
+
+            // Ability Slots - config-driven position
+            int slotX = globalX + CreRacesConfig.HUD_ABILITIES_X.get();
+            int slotY = globalY + CreRacesConfig.HUD_ABILITIES_Y.get();
+
+            boolean abilitiesVertical = CreRacesConfig.HUD_ABILITIES_VERTICAL.get();
+            String labelOrientation = CreRacesConfig.HUD_SLOT_LABEL_SIDE.get();
+            int verticalStep = switch (labelOrientation) {
+                case "side", "left" -> 25;
+                case "none"         -> 22;
+                default             -> 30;
+            };
             for (AbilitySlot slot : AbilitySlot.values()) {
                 net.minecraft.client.KeyMapping keyMapping = getKeyMapping(slot);
                 if (keyMapping != null && !keyMapping.isUnbound()) {
-                    renderAbilitySlot(graphics, vars, slot, slotX, slotY);
-                    slotX += 25;
+                    renderAbilitySlot(graphics, vars, slot, slotX, slotY, labelOrientation);
+                    if (abilitiesVertical) slotY += verticalStep;
+                    else                   slotX += 25;
                 }
             }
 
@@ -125,6 +150,68 @@ public class RaceOverlay {
         });
         
         graphics.pose().popPose();
+    }
+
+    private static void renderOverlayBars(@Nonnull GuiGraphics graphics,
+            @Nonnull mc.sayda.creraces.capability.IPlayerVariables vars,
+            @Nonnull Race race, int x, int startY) {
+        var font = Minecraft.getInstance().font;
+        boolean growUp = CreRacesConfig.HUD_BARS_GROW_UP.get();
+        int barY = startY;
+
+        for (mc.sayda.creraces.ability.OverlayBar bar : race.overlayBars()) {
+            barY = renderBar(graphics, font, vars, bar, x, barY, growUp);
+        }
+
+        for (Ability ability : AbilityRegistry.getAll()) {
+            if (!ability.allowedRaces().isEmpty() && !ability.allowedRaces().contains(race.id())) continue;
+            for (mc.sayda.creraces.ability.OverlayBar bar : ability.overlayBars()) {
+                barY = renderBar(graphics, font, vars, bar, x, barY, growUp);
+            }
+        }
+    }
+
+    private static int renderBar(@Nonnull GuiGraphics graphics, net.minecraft.client.gui.Font font,
+            @Nonnull mc.sayda.creraces.capability.IPlayerVariables vars,
+            @Nonnull mc.sayda.creraces.ability.OverlayBar bar, int x, int barY, boolean growUp) {
+        double value = bar.getValue(vars);
+        if (value <= 0) return barY;
+
+        // growUp=false: anchor is top of stack, bars go down.
+        // growUp=true:  anchor is bottom of stack; drawY+4 places BG bottom exactly at barY.
+        int drawY = growUp ? barY + 4 : barY;
+
+        graphics.blit(UI_FG_BG, x - 1, drawY - 11, 0, 0, 35, 7, 35, 7);
+
+        float r = ((bar.color() >> 16) & 0xFF) / 255f;
+        float g = ((bar.color() >> 8) & 0xFF) / 255f;
+        float b = (bar.color() & 0xFF) / 255f;
+        float a = ((bar.color() >> 24) & 0xFF) / 255f;
+        // Re-enable blend each bar: previous bar's frame blit teardown disables it
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShaderColor(r, g, b, a);
+        renderSteppedBar(graphics, UI_G, x + 2, drawY - 9, value, bar.max(), 3);
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+
+        graphics.blit(UI_FG_FRAME, x - 1, drawY - 11, 0, 0, 35, 7, 35, 7);
+
+        if (font != null) {
+            String valueStr = bar.sourceType().equals("cooldown") && CreRacesConfig.BAR_SHOW_SECONDS.get()
+                    ? Math.max(1, (int) value / 20) + "s"
+                    : String.valueOf((int) value);
+            String labelText = switch (CreRacesConfig.BAR_LABEL_MODE.get()) {
+                case "name"   -> bar.label();
+                case "value"  -> valueStr;
+                case "hidden" -> null;
+                default       -> bar.label() + ": " + valueStr;
+            };
+            if (labelText != null) {
+                graphics.drawString(font, labelText, x + 37, drawY - 11, 0xAAAAAA, true);
+            }
+        }
+
+        return growUp ? barY - 9 : barY + 9;
     }
 
     private static void renderSteppedBar(@Nonnull GuiGraphics graphics, ResourceLocation texture, int x, int y,
@@ -138,7 +225,7 @@ public class RaceOverlay {
 
     private static void renderAbilitySlot(@Nonnull GuiGraphics graphics,
             @Nonnull mc.sayda.creraces.capability.IPlayerVariables vars,
-            @Nonnull AbilitySlot slot, int x, int y) {
+            @Nonnull AbilitySlot slot, int x, int y, String labelOrientation) {
         ResourceLocation abilityId = vars.getAbilityInSlot(slot);
 
         // Draw Slot Background
@@ -197,9 +284,14 @@ public class RaceOverlay {
 
         // Draw Keybind Label
         var font = Minecraft.getInstance().font;
-        if (font != null) {
-            graphics.drawCenteredString(font,
-                    Component.translatable("gui.creraces.hud.slot." + slot.name().toLowerCase()), x + 9, y + 20, 0xAAAAAA);
+        if (font != null && !labelOrientation.equals("none")) {
+            var label = Component.translatable("gui.creraces.hud.slot." + slot.name().toLowerCase());
+            switch (labelOrientation) {
+                case "side" -> graphics.drawString(font, label, x + 21, y + 6, 0xAAAAAA, false);
+                case "top"  -> graphics.drawCenteredString(font, label, x + 9, y - 10, 0xAAAAAA);
+                case "left" -> graphics.drawString(font, label, x - font.width(label) - 3, y + 6, 0xAAAAAA, false);
+                default     -> graphics.drawCenteredString(font, label, x + 9, y + 20, 0xAAAAAA);
+            }
         }
     }
 

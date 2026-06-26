@@ -2,7 +2,7 @@
     "creraces:name": "ability.creraces.camouflage.name",
     "creraces:description": "ability.creraces.camouflage.description",
     "creraces:type": "ACTIVE",
-    "creraces:cooldown": 720,
+    "creraces:cooldown": 480,
     "creraces:icon": "creraces:textures/mob_effect/camouflage.png",
     "creraces:cost": 1,
     "creraces:race": [
@@ -42,6 +42,9 @@
                     "duration": 1000000,
                     "amplifier": 0,
                     "visible": true
+                },
+                {
+                    "type": "creraces:cancel"
                 }
             ]
         },
@@ -54,8 +57,8 @@
     ],
     "creraces:on_deactivate": [
         {
-            "type": "creraces:set_state",
-            "state": "self",
+            "type": "creraces:modify_value",
+            "resource": "self",
             "operation": "SET",
             "value": 0
         }

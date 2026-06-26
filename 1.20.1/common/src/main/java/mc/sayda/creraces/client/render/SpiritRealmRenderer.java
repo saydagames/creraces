@@ -31,14 +31,9 @@ public class SpiritRealmRenderer {
                 int width = mc.getWindow().getGuiScaledWidth();
                 int height = mc.getWindow().getGuiScaledHeight();
  
-                RenderSystem.disableDepthTest();
-                RenderSystem.depthMask(false);
-                RenderSystem.enableBlend();
-                RenderSystem.defaultBlendFunc();
-                graphics.fill(0, 0, width, height, 0x2240BFFF); // Light aqua tint
-                RenderSystem.disableBlend();
-                RenderSystem.depthMask(true);
-                RenderSystem.enableDepthTest();
+                // GuiGraphics.fill() uses RenderType.gui() which already handles blending;
+                // manual RenderSystem blend calls here corrupt the GuiGraphics batch pipeline
+                graphics.fill(0, 0, width, height, 0x2240BFFF);
             }
         });
     }

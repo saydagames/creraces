@@ -1,0 +1,9 @@
+{
+    "parent": "minecraft:block/bell_single_wall",
+    "textures": {
+        "top": "creraces:block/torii_bell_top",
+        "side": "creraces:block/torii_bell_side",
+        "bottom": "creraces:block/torii_bell_bottom",
+        "particle": "creraces:block/torii_bell_side"
+    }
+}

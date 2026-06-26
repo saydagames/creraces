@@ -42,7 +42,7 @@
             },
             "actions": [
                 {
-                    "type": "creraces:modify_resource",
+                    "type": "creraces:modify_value",
                     "resource": "grit",
                     "operation": "add",
                     "value": 5.0

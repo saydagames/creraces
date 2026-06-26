@@ -66,6 +66,7 @@ public class CreRaces {
         dev.architectury.event.events.common.CommandRegistrationEvent.EVENT
                 .register((dispatcher, registry, selection) -> {
                     mc.sayda.creraces.commands.CreracesCommand.register(dispatcher);
+                    mc.sayda.creraces.commands.TerritoryCommand.register(dispatcher);
                 });
 
         // Attributes
@@ -96,6 +97,8 @@ public class CreRaces {
         mc.sayda.creraces.registry.ModSounds.register();
         // Items
         mc.sayda.creraces.registry.ModItems.register();
+        // Recipes
+        mc.sayda.creraces.registry.ModRecipes.register();
         // Tabs
         mc.sayda.creraces.registry.ModTabs.register();
         // Menus

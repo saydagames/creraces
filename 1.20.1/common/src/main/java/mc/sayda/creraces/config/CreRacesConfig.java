@@ -6,7 +6,11 @@ public class CreRacesConfig {
     // [SECTION: COMMON]
     public static Supplier<Boolean> MINI_BUILD_ENABLED = () -> true;
     public static Supplier<Boolean> MINIBUILD_REQUIRES_LEARNED = () -> true;
+    public static Supplier<java.util.List<String>> MINI_BUILD_DIMENSION_BLACKLIST = () -> java.util.List
+            .of("creraces:fairy_realm");
     public static Supplier<Boolean> MINI_FURNACE_ENABLED = () -> true;
+    public static Supplier<Boolean> MINI_CAMPFIRE_ENABLED = () -> true;
+    public static Supplier<Boolean> MINI_BREWING_STAND_ENABLED = () -> true;
     public static Supplier<Boolean> MINI_PLACE_WHITELIST_ENABLED = () -> true;
     public static Supplier<Double> MINI_CRAFTING_DISTANCE_SQR = () -> 64.0;
     public static Supplier<Long> MINI_PLACEMENT_SPAM_THRESHOLD_MS = () -> 50L;
@@ -117,6 +121,29 @@ public class CreRacesConfig {
     public static Supplier<Integer> RACE_OVERLAY_OFFSET_Y = () -> 0;
     public static Supplier<Boolean> RACE_OVERLAYS_ENABLED = () -> true;
     public static Supplier<Boolean> ENGINE_POPUPS_ENABLED = () -> true;
+
+    // [SECTION: HUD LAYOUT]
+    public static Supplier<Integer> HUD_ANCHOR_X = () -> -12;
+    public static Supplier<Integer> HUD_ANCHOR_Y = () -> -9;
+    public static Supplier<Integer> HUD_PORTRAIT_X = () -> 14;
+    public static Supplier<Integer> HUD_PORTRAIT_Y = () -> 13;
+    public static Supplier<Integer> HUD_ABILITIES_X = () -> 54;
+    public static Supplier<Integer> HUD_ABILITIES_Y = () -> 17;
+    public static Supplier<Integer> HUD_BARS_X = () -> 16;
+    public static Supplier<Integer> HUD_BARS_Y = () -> 62;
+    public static Supplier<String> BAR_LABEL_MODE = () -> "name_value";
+    public static Supplier<Boolean> BAR_SHOW_SECONDS = () -> true;
+    public static Supplier<Boolean> HUD_BARS_GROW_UP = () -> false;
+    public static Supplier<Boolean> HUD_ABILITIES_VERTICAL = () -> false;
+    public static Supplier<String> HUD_SLOT_LABEL_SIDE = () -> "below";
+    public static Supplier<Double> HUD_SCALE = () -> 1.0;
+
+    /** Set by platform config during init; called when the HUD editor saves. */
+    public static Runnable HUD_CONFIG_SAVE = () -> {};
+
+    public static void saveHudConfig() {
+        HUD_CONFIG_SAVE.run();
+    }
     public static Supplier<Double> REMAINS_HEALTH = () -> 10.0;
     public static Supplier<Integer> REMAINS_DECAY_TIME = () -> 1200;
     public static Supplier<Double> MAX_SOUL = () -> 9.0;
@@ -128,4 +155,17 @@ public class CreRacesConfig {
     public static Supplier<Double> DEFAULT_MAX_GRIT = () -> 100.0;
     /** Path to look for race/ability JSONs on the local filesystem (dev only). */
     public static Supplier<String> DEVELOPER_RESOURCE_PATH = () -> "";
+
+    // [SECTION: TERRITORY]
+    public static Supplier<Integer> TERRITORY_DEFAULT_CLAIM_RADIUS        = () -> 1;
+    public static Supplier<Integer> TERRITORY_MAX_NODES_PER_PLAYER        = () -> -1;
+    public static Supplier<Boolean> TERRITORY_INTER_RACE_BLOCKING         = () -> true;
+    public static Supplier<Long>    TERRITORY_LEADER_DECAY_THRESHOLD_DAYS = () -> 14L;
+    public static Supplier<Long>    TERRITORY_SUCCESSION_WINDOW_DAYS      = () -> 7L;
+    public static Supplier<Integer> TERRITORY_SUCCESSION_TICK_INTERVAL    = () -> 6000;
+    /** Max chunk-distance a player may be from a chunk when claiming via the territory map. -1 disables the check. */
+    public static Supplier<Integer> TERRITORY_MAP_CLAIM_MAX_DISTANCE      = () -> 256;
+
+    // [SECTION: TEAM]
+    public static Supplier<Boolean> TEAM_REQUIRE_SAME_RACE = () -> false;
 }

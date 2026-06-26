@@ -74,12 +74,14 @@ public class LevelRendererMixin {
     private void creraces$hijackCelestialDraw(com.mojang.blaze3d.vertex.BufferBuilder.RenderedBuffer buffer) {
         if (this.creraces$moonPass) {
             this.creraces$moonPass = false;
+            buffer.release();
             SpiritRealmRenderer.renderSecondMoon(this.creraces$currentPoseStack, this.creraces$currentMatrix,
                     this.creraces$currentDelta, false);
             return;
         }
         if (this.creraces$sunPass) {
             this.creraces$sunPass = false;
+            buffer.release();
             SpiritRealmRenderer.renderSecondMoon(this.creraces$currentPoseStack, this.creraces$currentMatrix,
                     this.creraces$currentDelta, true);
             return;

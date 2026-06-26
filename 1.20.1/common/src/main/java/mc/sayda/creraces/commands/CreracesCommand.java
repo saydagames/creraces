@@ -40,6 +40,17 @@ public class CreracesCommand {
                                 .then(Commands.literal("help")
                                                 .executes(ctx -> executeHelp(ctx.getSource())))
 
+                                // hud (Available to everyone — opens HUD editor on client)
+                                .then(Commands.literal("hud")
+                                                .executes(ctx -> {
+                                                        ServerPlayer player = ctx.getSource().getPlayer();
+                                                        if (player == null)
+                                                                return 0;
+                                                        mc.sayda.creraces.network.BoundaryHandler
+                                                                        .sendOpenHUDEditor(player);
+                                                        return 1;
+                                                }))
+
                                 // abilities (Available to everyone)
                                 .then(Commands.literal("abilities")
                                                 .executes(ctx -> {
@@ -61,6 +72,18 @@ public class CreracesCommand {
                                                                         .sendOpenTeamGUI(player);
                                                         return 1;
                                                 }))
+
+                                // faction (Available to everyone — opens FactionManagementScreen)
+                                .then(Commands.literal("faction")
+                                                .executes(ctx -> executeFaction(ctx.getSource())))
+
+                                // territory (Available to everyone — opens TerritoryMapScreen)
+                                .then(Commands.literal("territory")
+                                                .executes(ctx -> executeTerritory(ctx.getSource())))
+
+                                // clan (Available to everyone — opens ClanManagementScreen)
+                                .then(Commands.literal("clan")
+                                                .executes(ctx -> executeClan(ctx.getSource())))
 
                                 // select subcommand
                                 .then(Commands.literal("select")
@@ -281,7 +304,62 @@ public class CreracesCommand {
                                                                                                 ctx.getSource(),
                                                                                                 EntityArgument.getPlayer(
                                                                                                                 ctx,
-                                                                                                                "host")))))));
+                                                                                                                "host")))))
+                                                .then(Commands.literal("leave")
+                                                                .executes(ctx -> executePocketLeave(ctx.getSource())))));
+
+                // /raceteam alias for /creraces team
+                dispatcher.register(Commands.literal("raceteam")
+                                .requires(src -> true)
+                                .executes(ctx -> {
+                                        ServerPlayer player = ctx.getSource().getPlayer();
+                                        if (player == null)
+                                                return 0;
+                                        mc.sayda.creraces.network.BoundaryHandler.sendOpenTeamGUI(player);
+                                        return 1;
+                                }));
+        }
+
+        private static int executeFaction(CommandSourceStack source) {
+                ServerPlayer player = source.getPlayer();
+                if (player == null) return 0;
+                mc.sayda.creraces.territory.TerritoryManager tm = mc.sayda.creraces.territory.TerritoryManager.get();
+                if (!tm.hasFaction(player.getUUID())) {
+                        source.sendFailure(Component.literal("You are not in a faction."));
+                        return 0;
+                }
+                java.util.UUID factionId = tm.getFactionId(player.getUUID());
+                mc.sayda.creraces.territory.FactionData faction = tm.getFaction(factionId);
+                if (faction == null) return 0;
+                mc.sayda.creraces.network.BoundaryHandler.sendFactionUpdate(player,
+                        mc.sayda.creraces.network.FactionUpdatePacket.from(faction, source.getServer()));
+                mc.sayda.creraces.network.BoundaryHandler.sendOpenFactionManage(player);
+                return 1;
+        }
+
+        private static int executeTerritory(CommandSourceStack source) {
+                ServerPlayer player = source.getPlayer();
+                if (player == null) return 0;
+                mc.sayda.creraces.network.BoundaryHandler.sendTerritoryData(player,
+                        mc.sayda.creraces.network.RequestTerritoryDataPacket.buildFor(player));
+                return 1;
+        }
+
+        private static int executeClan(CommandSourceStack source) {
+                ServerPlayer player = source.getPlayer();
+                if (player == null) return 0;
+                mc.sayda.creraces.territory.TerritoryManager tm = mc.sayda.creraces.territory.TerritoryManager.get();
+                java.util.UUID clanId = tm.getClanId(player.getUUID());
+                if (clanId == null) {
+                        source.sendFailure(Component.literal("You are not in a clan."));
+                        return 0;
+                }
+                mc.sayda.creraces.territory.ClanData clan = tm.getClans().get(clanId);
+                if (clan == null) return 0;
+                mc.sayda.creraces.network.BoundaryHandler.sendClanUpdate(player,
+                        mc.sayda.creraces.network.ClanUpdatePacket.from(clan, tm, source.getServer()));
+                mc.sayda.creraces.network.BoundaryHandler.sendOpenClanManage(player);
+                return 1;
         }
 
         private static int executeHelp(CommandSourceStack source) {
@@ -293,106 +371,40 @@ public class CreracesCommand {
                                 false);
 
                 // Public Commands
-                source.sendSuccess(
-                                () -> java.util.Objects.requireNonNull(Component.literal("/creraces abilities")
-                                                .withStyle(ChatFormatting.GRAY)
-                                                .append(Component.translatable("creraces.help.abilities")
-                                                                .withStyle(ChatFormatting.DARK_GRAY))),
-                                false);
-
-                source.sendSuccess(
-                                () -> java.util.Objects.requireNonNull(Component
-                                                .literal("/creraces select" + (isOp ? " [player]" : ""))
-                                                .withStyle(ChatFormatting.GRAY)
-                                                .append(Component.translatable("creraces.help.selection")
-                                                                .withStyle(ChatFormatting.DARK_GRAY))),
-                                false);
-
-                source.sendSuccess(
-                                () -> java.util.Objects.requireNonNull(
-                                                Component.literal("/creraces mirror" + (isOp ? " [player]" : ""))
-                                                                .withStyle(ChatFormatting.GRAY)
-                                                                .append(Component.translatable("creraces.help.mirror")
-                                                                                .withStyle(ChatFormatting.DARK_GRAY))),
-                                false);
-
-                source.sendSuccess(
-                                () -> java.util.Objects.requireNonNull(Component
-                                                .literal("/creraces pocket <invite|join|list|kick|revoke>")
-                                                .withStyle(ChatFormatting.GRAY)
-                                                .append(Component.literal(" - Pocket management commands")
-                                                                .withStyle(ChatFormatting.DARK_GRAY))),
-                                false);
-
-                source.sendSuccess(
-                                () -> java.util.Objects.requireNonNull(
-                                                Component.literal("/creraces debug" + (isOp ? " [player]" : ""))
-                                                                .withStyle(ChatFormatting.GRAY)
-                                                                .append(Component.translatable("creraces.help.debug")
-                                                                                .withStyle(ChatFormatting.DARK_GRAY))),
-                                false);
+                sendHelp(source, "/creraces hud",                           "creraces.help.hud");
+                sendHelp(source, "/creraces abilities",                      "creraces.help.abilities");
+                sendHelp(source, "/creraces select" + (isOp ? " [player]" : ""), "creraces.help.selection");
+                sendHelp(source, "/creraces mirror"  + (isOp ? " [player]" : ""), "creraces.help.mirror");
+                sendHelp(source, "/creraces debug"   + (isOp ? " [player]" : ""), "creraces.help.debug");
+                sendHelp(source, "/creraces team",                           "creraces.help.team");
+                sendHelp(source, "/creraces faction",                        "creraces.help.faction");
+                sendHelp(source, "/creraces territory",                      "creraces.help.territory");
+                sendHelp(source, "/creraces clan",                           "creraces.help.clan");
+                sendHelp(source, "/creraces pocket <invite|join|leave|list|kick|revoke>", "creraces.help.pocket");
+                sendHelp(source, "/creraces refresh",                        "creraces.help.refresh");
 
                 // OP-Only Commands
                 if (isOp) {
-                        source.sendSuccess(
-                                        () -> java.util.Objects.requireNonNull(Component
-                                                        .literal("/creraces reset <player>")
-                                                        .withStyle(ChatFormatting.GRAY)
-                                                        .append(Component.translatable("creraces.help.reset")
-                                                                        .withStyle(ChatFormatting.DARK_GRAY))),
-                                        false);
-                        source.sendSuccess(
-                                        () -> java.util.Objects.requireNonNull(Component
-                                                        .literal("/creraces setrace <player> <id>")
-                                                        .withStyle(ChatFormatting.GRAY)
-                                                        .append(Component.translatable("creraces.help.setrace")
-                                                                        .withStyle(ChatFormatting.DARK_GRAY))),
-                                        false);
-                        source.sendSuccess(
-                                        () -> java.util.Objects.requireNonNull(Component
-                                                        .literal("/creraces grant <player> <ability>")
-                                                        .withStyle(ChatFormatting.GRAY)
-                                                        .append(Component.literal(" - Grants an ability to a player")
-                                                                        .withStyle(ChatFormatting.DARK_GRAY))),
-                                        false);
-                        source.sendSuccess(
-                                        () -> java.util.Objects.requireNonNull(Component
-                                                        .literal("/creraces revoke <player> <ability>")
-                                                        .withStyle(ChatFormatting.GRAY)
-                                                        .append(Component.literal(" - Revokes an ability from a player")
-                                                                        .withStyle(ChatFormatting.DARK_GRAY))),
-                                        false);
-                        source.sendSuccess(
-                                        () -> java.util.Objects.requireNonNull(Component
-                                                        .literal("/creraces setrandom <player>")
-                                                        .withStyle(ChatFormatting.GRAY)
-                                                        .append(Component.translatable("creraces.help.setrandom")
-                                                                        .withStyle(ChatFormatting.DARK_GRAY))),
-                                        false);
-                        source.sendSuccess(
-                                        () -> java.util.Objects.requireNonNull(Component.literal("/creraces reload")
-                                                        .withStyle(ChatFormatting.GRAY)
-                                                        .append(Component
-                                                                        .literal(" - Reloads all race and ability data")
-                                                                        .withStyle(ChatFormatting.DARK_GRAY))),
-                                        false);
-                        source.sendSuccess(
-                                        () -> java.util.Objects.requireNonNull(Component
-                                                        .literal("/creraces pocket goto <index>")
-                                                        .withStyle(ChatFormatting.GRAY)
-                                                        .append(Component.literal(" - Teleport to any pocket index")
-                                                                        .withStyle(ChatFormatting.DARK_GRAY))),
-                                        false);
+                        sendHelp(source, "/creraces reset <player>",              "creraces.help.reset");
+                        sendHelp(source, "/creraces setrace <player> <id>",       "creraces.help.setrace");
+                        sendHelp(source, "/creraces setrandom <player>",          "creraces.help.setrandom");
+                        sendHelp(source, "/creraces grant <player> <ability>",    "creraces.help.grant");
+                        sendHelp(source, "/creraces revoke <player> <ability>",   "creraces.help.revoke");
+                        sendHelp(source, "/creraces modify <player> <var> <val>", "creraces.help.modify");
+                        sendHelp(source, "/creraces reload",                       "creraces.help.reload");
+                        sendHelp(source, "/creraces pocket goto <index>",          "creraces.help.pocket_goto");
                 }
 
-                source.sendSuccess(
-                                () -> java.util.Objects.requireNonNull(Component.literal("/creraces refresh")
-                                                .withStyle(ChatFormatting.GRAY)
-                                                .append(Component.literal(" - Refreshes your attributes and cosmetics")
-                                                                .withStyle(ChatFormatting.DARK_GRAY))),
-                                false);
-
                 return 1;
+        }
+
+        private static void sendHelp(CommandSourceStack source, String command, String descKey) {
+                source.sendSuccess(
+                                () -> Component.literal(command)
+                                                .withStyle(ChatFormatting.AQUA)
+                                                .append(Component.translatable(descKey)
+                                                                .withStyle(ChatFormatting.WHITE)),
+                                false);
         }
 
         private static int executeOpenSelection(CommandSourceStack source, ServerPlayer target) {
@@ -834,6 +846,38 @@ public class CreracesCommand {
                 source.sendSuccess(() -> Component.translatable("message.creraces.pocket.teleport_success", index, (int) tx, (int) ty, (int) tz)
                                 .withStyle(ChatFormatting.GREEN), false);
                 return 1;
+        }
+
+        private static int executePocketLeave(CommandSourceStack source) {
+                ServerPlayer player = source.getPlayer();
+                if (player == null) return 0;
+
+                String pocketDim = mc.sayda.creraces.config.CreRacesConfig.ACTION_DEFAULT_POCKET_DIM.get();
+                if (!player.level().dimension().location().toString().equals(pocketDim)) {
+                        source.sendFailure(Component.translatable("message.creraces.pocket.not_in_pocket_dim"));
+                        return 0;
+                }
+
+                return mc.sayda.creraces.capability.DataUtils.getVariables(player).map(vars -> {
+                        String returnDimName = vars.getReturnDim();
+                        if (returnDimName == null || returnDimName.isEmpty() || returnDimName.contains("pocket")) {
+                                returnDimName = "minecraft:overworld";
+                        }
+
+                        ResourceLocation returnDimLoc = new ResourceLocation(
+                                ResourceLocation.tryParse(returnDimName) != null ? returnDimName : "minecraft:overworld");
+                        net.minecraft.server.level.ServerLevel world = player.server.getLevel(
+                                net.minecraft.resources.ResourceKey.create(
+                                        net.minecraft.core.registries.Registries.DIMENSION, returnDimLoc));
+
+                        if (world == null) world = player.server.overworld();
+
+                        player.teleportTo(world, vars.getReturnX(), vars.getReturnY(), vars.getReturnZ(),
+                                player.getYRot(), player.getXRot());
+                        source.sendSuccess(() -> Component.translatable("message.creraces.pocket.leave_success")
+                                .withStyle(ChatFormatting.GREEN), false);
+                        return 1;
+                }).orElse(0);
         }
 
         @SuppressWarnings("null")

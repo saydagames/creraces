@@ -7,7 +7,6 @@ import mc.sayda.creraces.race.Race;
 import mc.sayda.creraces.race.RaceRegistry;
 import mc.sayda.creraces.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -22,14 +21,14 @@ import net.minecraft.world.level.block.BellBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.entity.BellBlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 
-import javax.annotation.Nullable;
-import java.util.List;
 
 public class ToriiBellBlock extends BellBlock {
     private final boolean isWeathered;
@@ -37,6 +36,19 @@ public class ToriiBellBlock extends BellBlock {
     public ToriiBellBlock(Properties properties, boolean isWeathered) {
         super(properties);
         this.isWeathered = isWeathered;
+    }
+
+    @Override
+    public BellBlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return new mc.sayda.creraces.block.entity.ToriiBellBlockEntity(pos, state);
+    }
+
+    @Override
+    @javax.annotation.Nullable
+    public <T extends net.minecraft.world.level.block.entity.BlockEntity> BlockEntityTicker<T> getTicker(
+            Level level, BlockState state, BlockEntityType<T> type) {
+        return createTickerHelper(type, ModBlocks.TORII_BELL_ENTITY.get(),
+                level.isClientSide() ? BellBlockEntity::clientTick : BellBlockEntity::serverTick);
     }
 
     @Override
@@ -83,27 +95,11 @@ public class ToriiBellBlock extends BellBlock {
                 }
             } else {
                 boolean isSpirit = playerRace != null && playerRace.isSpirit();
-                if (isSpirit) {
-                    toggleSpiritRealm(player, level, pos, vars, true);
+                boolean isSpiritMoon = mc.sayda.creraces.engine.WorldState.isSpiritMoon(level);
+                if (isSpirit || isSpiritMoon) {
+                    toggleSpiritRealm(player, level, pos, vars);
                 } else {
-                    List<Player> nearbyPlayers = level.getEntitiesOfClass(Player.class, new AABB(pos).inflate(5));
-                    boolean guided = false;
-                    for (Player nearby : nearbyPlayers) {
-                        if (nearby == player)
-                            continue;
-                        var nearbyVars = DataUtils.getVariables(nearby).orElse(null);
-                        Race nearbyRace = nearbyVars != null ? RaceRegistry.get(nearbyVars.getRace()) : null;
-                        if (nearbyRace != null && nearbyRace.isSpirit()) {
-                            guided = true;
-                            break;
-                        }
-                    }
-
-                    if (guided) {
-                        toggleSpiritRealm(player, level, pos, vars, false);
-                    } else {
-                        player.displayClientMessage(Component.translatable("block.creraces.torii_gate.silent"), true);
-                    }
+                    player.displayClientMessage(Component.translatable("block.creraces.torii_bell.silent"), true);
                 }
             }
         });
@@ -120,9 +116,9 @@ public class ToriiBellBlock extends BellBlock {
 
         if (foundNS || foundEW) {
             StructureTemplate template = level.getStructureManager()
-                    .getOrCreate(new ResourceLocation("creraces", "kitsune_gate_overworld"));
+                    .getOrCreate(new ResourceLocation("creraces", "torii_gate"));
             if (template != null) {
-                BlockPos placePos = foundNS ? new BlockPos(x - 4, y - 3, z - 1) : new BlockPos(x + 1, y - 3, z - 6);
+                BlockPos placePos = foundNS ? new BlockPos(x - 6, y - 3, z - 1) : new BlockPos(x + 1, y - 3, z - 6);
                 Rotation rotation = foundNS ? Rotation.NONE : Rotation.CLOCKWISE_90;
 
                 // 1. Place the structure first
@@ -172,33 +168,14 @@ public class ToriiBellBlock extends BellBlock {
         return level.getBlockState(new BlockPos(x, y, z)).is(expected);
     }
 
-    private void toggleSpiritRealm(Player player, Level level, BlockPos pos, IPlayerVariables vars,
-            boolean isGuidingSpirit) {
-        boolean newState = !vars.isInSpiritRealm();
-        vars.setInSpiritRealm(newState);
+    private void toggleSpiritRealm(Player player, Level level, BlockPos pos, IPlayerVariables vars) {
+        vars.setInSpiritRealm(!vars.isInSpiritRealm());
         BoundaryHandler.resyncForAllTrackers(player);
         BoundaryHandler.resyncVariables(player, player);
 
         net.minecraft.sounds.SoundEvent ringSound = SoundEvents.BELL_BLOCK;
         if (ringSound != null) {
-            level.playSound((net.minecraft.world.entity.player.Player) null, pos, ringSound, SoundSource.BLOCKS, 1.0f,
-                    1.0f);
-        }
-
-        if (isGuidingSpirit) {
-            List<Player> nearbyPlayers = level.getEntitiesOfClass(Player.class, new AABB(pos).inflate(5));
-            for (Player nearby : nearbyPlayers) {
-                if (nearby == player)
-                    continue;
-                DataUtils.getVariables(nearby).ifPresent(nearbyVars -> {
-                    Race nearbyRace = RaceRegistry.get(nearbyVars.getRace());
-                    if (nearbyRace != null && !nearbyRace.isSpirit()) {
-                        nearbyVars.setInSpiritRealm(newState);
-                        BoundaryHandler.resyncForAllTrackers(nearby);
-                        BoundaryHandler.resyncVariables(nearby, nearby);
-                    }
-                });
-            }
+            level.playSound((net.minecraft.world.entity.player.Player) null, pos, ringSound, SoundSource.BLOCKS, 1.0f, 1.0f);
         }
     }
 }

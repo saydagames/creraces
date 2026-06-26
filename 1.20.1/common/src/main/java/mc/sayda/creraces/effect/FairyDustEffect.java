@@ -20,6 +20,14 @@ public class FairyDustEffect extends MobEffect {
     @Override
     public void applyEffectTick(LivingEntity entity, int amplifier) {
         if (!(entity instanceof ServerPlayer player)) return;
+        if (player.isInWater()) {
+            player.removeEffect(java.util.Objects.requireNonNull(mc.sayda.creraces.registry.ModMobEffects.FAIRY_DUST_EFFECT.get()));
+            return;
+        }
+        if (player.hasEffect(java.util.Objects.requireNonNull(mc.sayda.creraces.registry.ModMobEffects.SOGGY.get()))) {
+            player.removeEffect(java.util.Objects.requireNonNull(mc.sayda.creraces.registry.ModMobEffects.FAIRY_DUST_EFFECT.get()));
+            return;
+        }
         if (player.level().dimension().location().equals(FAIRY_REALM)) return;
         try {
             virtuoel.pehkui.api.ScaleData data = virtuoel.pehkui.api.ScaleTypes.FLIGHT.getScaleData(player);

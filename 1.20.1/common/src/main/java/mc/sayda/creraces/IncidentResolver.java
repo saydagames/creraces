@@ -42,17 +42,22 @@ public static void init() {
         // Disconnect: clear transient engine states and save teams
         PlayerEvent.PLAYER_QUIT.register(player -> {
             mc.sayda.creraces.engine.ActionRegistry.cleanup(player);
+            mc.sayda.creraces.engine.actions.ClaimTerritoryAction.clearPending(player.getUUID());
+            mc.sayda.creraces.territory.TerritoryManager tm = mc.sayda.creraces.territory.TerritoryManager.get();
+            tm.updateActivity(player.getUUID(), System.currentTimeMillis());
+            tm.clearPlayerTracking(player.getUUID());
         });
 
         // Team persistence
         dev.architectury.event.events.common.LifecycleEvent.SERVER_STARTED.register(server -> {
             mc.sayda.creraces.team.RaceTeamManager.load(server);
             mc.sayda.creraces.util.PocketManager.load(server);
-
+            mc.sayda.creraces.territory.TerritoryManager.load(server);
         });
         dev.architectury.event.events.common.LifecycleEvent.SERVER_STOPPING.register(server -> {
             mc.sayda.creraces.team.RaceTeamManager.save(server);
             mc.sayda.creraces.util.PocketManager.save(server);
+            mc.sayda.creraces.territory.TerritoryManager.save(server);
             mc.sayda.creraces.util.Scheduler.clear();
             mc.sayda.creraces.worldgen.ModWorldgen.onServerStop();
         });
@@ -282,6 +287,9 @@ public static void init() {
     private static void onIncidentBegin(ServerPlayer player) {
         mc.sayda.creraces.race.AttributeIncidents.eikiJudgment(player);
 
+        mc.sayda.creraces.territory.TerritoryManager.get().updateActivity(
+                player.getUUID(), System.currentTimeMillis());
+
         // Apply pending team removals for offline-kicked players (also called from onClientRequestedSync)
         mc.sayda.creraces.team.RaceTeamManager.handlePlayerJoin(player);
 
@@ -427,6 +435,7 @@ public static void init() {
 
         mc.sayda.creraces.util.Scheduler.tick();
         mc.sayda.creraces.team.RaceTeamManager.tick(server);
+        mc.sayda.creraces.territory.TerritoryManager.get().tick(server);
     }
 
 public static void onTrackingBegin(ServerPlayer tracker, net.minecraft.world.entity.Entity target) {

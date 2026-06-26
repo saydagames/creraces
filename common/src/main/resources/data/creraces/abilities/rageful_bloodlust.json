@@ -18,7 +18,7 @@
             }
         },
         {
-            "type": "creraces:modify_resource",
+            "type": "creraces:modify_value",
             "resource": "rage",
             "operation": "set",
             "value": 0

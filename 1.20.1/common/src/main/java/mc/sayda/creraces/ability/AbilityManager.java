@@ -148,6 +148,9 @@ public class AbilityManager extends SimplePreparableReloadListener<Map<ResourceL
                     condition = mc.sayda.creraces.engine.condition.Condition.fromJson(jsonObject.getAsJsonObject("creraces:condition"));
                 }
 
+                java.util.List<mc.sayda.creraces.ability.OverlayBar> overlayBars = new java.util.ArrayList<>();
+                mc.sayda.creraces.ability.OverlayBar.collectOverlayBars(jsonObject, overlayBars);
+
                 Ability ability = new Ability(
                         id,
                         Component.translatable(nameStr),
@@ -160,7 +163,8 @@ public class AbilityManager extends SimplePreparableReloadListener<Map<ResourceL
                         allowedRaces,
                         onActivate,
                         onDeactivate,
-                        condition);
+                        condition,
+                        overlayBars);
 
                 AbilityRegistry.register(ability);
                 count[0]++;
@@ -171,6 +175,7 @@ public class AbilityManager extends SimplePreparableReloadListener<Map<ResourceL
 
         CreRaces.LOGGER.info("Applied {} abilities.", count[0]);
     }
+
 
     public static void syncFromServer(Map<ResourceLocation, JsonElement> data) {
         internalApply(data);

@@ -1,6 +1,8 @@
 {
     "creraces:name": "race.creraces.dryad.name",
     "creraces:parent_race": "creraces:nymph",
+    "creraces:territory_biome_preview": true,
+    "creraces:territory_valid_biomes": ["#minecraft:is_forest"],
     "creraces:index": 9.3,
     "creraces:description": "race.creraces.dryad.description",
     "creraces:icon": "creraces:textures/screens/dryad_icon.png",
@@ -30,74 +32,77 @@
             }
         },
         {
-            "type": "creraces:continuous_effect",
-            "effect": "creraces:nymph_call",
-            "visible": false,
-            "duration": 18000,
+            "name": "nature_nymph_call",
+            "type": "creraces:on_tick",
+            "interval": 1,
             "condition": {
                 "type": "or",
                 "conditions": [
-                    {
-                        "type": "distance",
-                        "x": "state:tx",
-                        "y": "state:ty",
-                        "z": "state:tz",
-                        "range": 64.0
-                    },
-                    {
-                        "type": "dimension",
-                        "value": "creraces:pocket"
-                    }
+                    { "type": "creraces:in_claimed_territory", "scope": "own" },
+                    { "type": "dimension", "value": "creraces:pocket" }
                 ]
-            }
+            },
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "creraces:nymph_call",
+                    "duration": -1,
+                    "visible": false,
+                    "ambient": false
+                }
+            ],
+            "on_fail": [
+                {
+                    "type": "creraces:remove_effect",
+                    "effect": "creraces:nymph_call"
+                }
+            ]
         }
     ],
     "sapling_mechanics": [
         {
             "type": "creraces:block_place",
             "block": "creraces:dryad_sapling",
-            "condition": {
-                "type": "creraces:not",
-                "condition": {
-                "type": "creraces:state",
-                "state": "state:tx",
-                "operator": "!=",
-                "value": 0.0
-                }
-            },
             "actions": [
                 {
                     "type": "creraces:conditional",
                     "condition": {
-                        "type": "creraces:is_block",
-                        "block": "creraces:dryad_root",
-                        "offset_y": -1,
-                        "math": "round"
+                        "type": "state",
+                        "state": "state:tx",
+                        "operator": "!=",
+                        "value": 0.0
                     },
                     "if_true": [
                         {
                             "type": "creraces:message",
-                            "text": "Dryad Sapling location is \u0026cAlready Claimed\u0026f!",
+                            "text": "message.creraces.dryad.already_has_tree",
                             "actionbar": true
-                        }
-                    ],
-                    "if_false": [
+                        },
                         {
-                            "type": "creraces:set_state",
-                            "state": "state:tx",
+                            "type": "creraces:cancel"
+                        }
+                    ]
+                },
+                {
+                    "type": "creraces:claim_territory",
+                    "valid_biomes": ["#minecraft:is_forest"],
+                    "on_success": [
+                        {
+                            "type": "creraces:modify_value",
+                            "resource": "state:tx",
                             "mode": "TARGET_BLOCK_X",
                             "persistent": true
                         },
                         {
-                            "type": "creraces:set_state",
-                            "state": "state:ty",
+                            "type": "creraces:modify_value",
+                            "resource": "state:ty",
                             "mode": "TARGET_BLOCK_Y",
                             "offset_y": -1,
                             "persistent": true
                         },
                         {
-                            "type": "creraces:set_state",
-                            "state": "state:tz",
+                            "type": "creraces:modify_value",
+                            "resource": "state:tz",
                             "mode": "TARGET_BLOCK_Z",
                             "persistent": true
                         },
@@ -128,6 +133,87 @@
                             "type": "creraces:message",
                             "text": "message.creraces.dryad.sapling_claimed_success",
                             "actionbar": true
+                        }
+                    ],
+                    "on_partial": [
+                        {
+                            "type": "creraces:modify_value",
+                            "resource": "state:tx",
+                            "mode": "TARGET_BLOCK_X",
+                            "persistent": true
+                        },
+                        {
+                            "type": "creraces:modify_value",
+                            "resource": "state:ty",
+                            "mode": "TARGET_BLOCK_Y",
+                            "offset_y": -1,
+                            "persistent": true
+                        },
+                        {
+                            "type": "creraces:modify_value",
+                            "resource": "state:tz",
+                            "mode": "TARGET_BLOCK_Z",
+                            "persistent": true
+                        }
+                    ],
+                    "on_invalid_biome": [
+                        {
+                            "type": "creraces:message",
+                            "text": "message.creraces.dryad.invalid_biome",
+                            "actionbar": true
+                        },
+                        {
+                            "type": "creraces:cancel"
+                        }
+                    ],
+                    "on_enemy_territory": [
+                        {
+                            "type": "creraces:message",
+                            "text": "message.creraces.dryad.enemy_territory",
+                            "actionbar": true
+                        }
+                    ],
+                    "on_inside_own": [
+                        {
+                            "type": "creraces:modify_value",
+                            "resource": "state:tx",
+                            "mode": "TARGET_BLOCK_X",
+                            "persistent": true
+                        },
+                        {
+                            "type": "creraces:modify_value",
+                            "resource": "state:ty",
+                            "mode": "TARGET_BLOCK_Y",
+                            "offset_y": -1,
+                            "persistent": true
+                        },
+                        {
+                            "type": "creraces:modify_value",
+                            "resource": "state:tz",
+                            "mode": "TARGET_BLOCK_Z",
+                            "persistent": true
+                        },
+                        {
+                            "type": "creraces:place_block",
+                            "block": "creraces:dryad_root",
+                            "use_target_block": true,
+                            "offset_y": -1,
+                            "overwrite": true
+                        },
+                        {
+                            "type": "creraces:message",
+                            "text": "message.creraces.dryad.dormant_node",
+                            "actionbar": true
+                        }
+                    ],
+                    "on_invalid_rank": [
+                        {
+                            "type": "creraces:message",
+                            "text": "message.creraces.territory.invalid_rank",
+                            "actionbar": true
+                        },
+                        {
+                            "type": "creraces:cancel"
                         }
                     ]
                 }
@@ -179,22 +265,27 @@
                             "overwrite": true
                         },
                         {
-                            "type": "creraces:set_state",
-                            "state": "state:tx",
+                            "type": "creraces:modify_value",
+                            "resource": "state:tx",
                             "value": 0.0,
                             "persistent": true
                         },
                         {
-                            "type": "creraces:set_state",
-                            "state": "state:ty",
+                            "type": "creraces:modify_value",
+                            "resource": "state:ty",
                             "value": 0.0,
                             "persistent": true
                         },
                         {
-                            "type": "creraces:set_state",
-                            "state": "state:tz",
+                            "type": "creraces:modify_value",
+                            "resource": "state:tz",
                             "value": 0.0,
                             "persistent": true
+                        },
+                        {
+                            "type": "creraces:set_flag",
+                            "flag": "isInSpiritRealm",
+                            "value": true
                         },
                         {
                             "type": "creraces:message",

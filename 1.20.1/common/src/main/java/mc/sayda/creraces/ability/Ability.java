@@ -21,13 +21,15 @@ public class Ability {
     private final List<mc.sayda.creraces.engine.ActionRegistry.RaceAction> onActivate;
     private final List<mc.sayda.creraces.engine.ActionRegistry.RaceAction> onDeactivate;
     private final mc.sayda.creraces.engine.condition.Condition condition;
+    private final List<OverlayBar> overlayBars;
 
     public Ability(ResourceLocation id, net.minecraft.network.chat.Component name,
             net.minecraft.network.chat.Component description, AbilityType type, ResourceLocation icon, int cooldown,
             int cost, boolean persistent, List<ResourceLocation> allowedRaces,
             List<mc.sayda.creraces.engine.ActionRegistry.RaceAction> onActivate,
             List<mc.sayda.creraces.engine.ActionRegistry.RaceAction> onDeactivate,
-            mc.sayda.creraces.engine.condition.Condition condition) {
+            mc.sayda.creraces.engine.condition.Condition condition,
+            List<OverlayBar> overlayBars) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -40,6 +42,7 @@ public class Ability {
         this.onActivate = onActivate;
         this.onDeactivate = onDeactivate;
         this.condition = condition;
+        this.overlayBars = overlayBars;
     }
 
     public mc.sayda.creraces.engine.condition.Condition condition() {
@@ -88,6 +91,10 @@ public class Ability {
 
     public List<mc.sayda.creraces.engine.ActionRegistry.RaceAction> onDeactivate() {
         return onDeactivate;
+    }
+
+    public List<OverlayBar> overlayBars() {
+        return overlayBars;
     }
 
     public String getTranslationKey() {

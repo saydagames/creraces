@@ -13,7 +13,7 @@
             "type": "creraces:dash",
             "power": {
                 "base": 2.0,
-                "creraces:ad": 0.3
+                "creraces:ad": 0.2
             },
             "direction": "forward"
         },

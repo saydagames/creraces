@@ -11,11 +11,18 @@
             "neutral_buoyancy": true
         },
         {
-            "type": "creraces:permanent_effect",
-            "effect": "minecraft:night_vision",
-            "amplifier": 0,
-            "duration": 210,
-            "visible": false
+            "name": "night_vision_passive",
+            "type": "creraces:on_tick",
+            "interval": 20,
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:night_vision",
+                    "amplifier": 0,
+                    "duration": -1,
+                    "visible": false
+                }
+            ]
         },
         {
             "type": "creraces:on_respawn",

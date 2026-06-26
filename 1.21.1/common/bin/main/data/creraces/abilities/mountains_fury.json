@@ -71,14 +71,14 @@
                     "spread": 4.0
                 },
                 {
-                    "type": "creraces:modify_resource",
+                    "type": "creraces:modify_value",
                     "resource": "state:creraces:stacks",
                     "operation": "set",
                     "value": 0
                 },
                 {
-                    "type": "creraces:set_state",
-                    "state": "self",
+                    "type": "creraces:modify_value",
+                    "resource": "self",
                     "value": 0
                 },
                 {
@@ -93,8 +93,8 @@
             ],
             "if_false": [
                 {
-                    "type": "creraces:set_state",
-                    "state": "self",
+                    "type": "creraces:modify_value",
+                    "resource": "self",
                     "value": 1
                 },
                 {

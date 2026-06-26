@@ -2,7 +2,7 @@ package mc.sayda.creraces.engine.actions;
 
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.engine.ActionRegistry;
-import net.minecraft.core.registries.BuiltInRegistries;
+import mc.sayda.creraces.util.GsonHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.SimpleContainer;
@@ -15,11 +15,17 @@ import java.util.Optional;
 
 public class SmeltItemAction implements ActionRegistry.RaceAction {
 
+    private final int amount;
+
+    private SmeltItemAction(int amount) {
+        this.amount = amount;
+    }
+
     @Override
     public boolean execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
-        if (!(player instanceof ServerPlayer serverPlayer))
+        if (!(player instanceof ServerPlayer))
             return true;
 
         ItemStack stack = player.getMainHandItem();
@@ -30,14 +36,24 @@ public class SmeltItemAction implements ActionRegistry.RaceAction {
                 .getRecipeFor(RecipeType.SMELTING, new SimpleContainer(stack), player.level());
 
         if (recipe.isPresent()) {
-            ItemStack result = recipe.get().getResultItem(player.level().registryAccess()).copy();
-            result.setCount(stack.getCount());
-            player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, result);
+            ItemStack singleResult = recipe.get().getResultItem(player.level().registryAccess()).copy();
+            int toSmelt = Math.min(amount, stack.getCount());
+            stack.shrink(toSmelt);
+            ItemStack result = singleResult.copyWithCount(singleResult.getCount() * toSmelt);
+            if (stack.isEmpty()) {
+                player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, result);
+            } else {
+                player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, stack);
+                player.getInventory().placeItemBackInInventory(result);
+            }
         }
         return true;
     }
 
     public static void register() {
-        ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "smelt_item"), json -> new SmeltItemAction());
+        ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "smelt_item"), json -> {
+            int amount = GsonHelper.getAsInt(json, "amount", 1);
+            return new SmeltItemAction(amount);
+        });
     }
 }

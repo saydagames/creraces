@@ -135,7 +135,7 @@
             "type": "creraces:on_kill",
             "actions": [
                 {
-                    "type": "creraces:modify_resource",
+                    "type": "creraces:modify_value",
                     "resource": "energy",
                     "operation": "add",
                     "value": 20

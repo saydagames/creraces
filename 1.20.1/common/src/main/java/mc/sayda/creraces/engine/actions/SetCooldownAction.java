@@ -35,7 +35,7 @@ public class SetCooldownAction implements ActionRegistry.RaceAction {
 
     public static void register() {
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "set_cooldown"), json -> {
-            String idStr = json.has("state") ? GsonHelper.getAsString(json, "state") : (json.has("id") ? GsonHelper.getAsString(json, "id") : GsonHelper.getAsString(json, "ability"));
+            String idStr = json.has("state") ? GsonHelper.getAsString(json, "state") : GsonHelper.getAsString(json, "id");
             if (!idStr.contains(":")) {
                 idStr = "creraces:" + idStr;
             }

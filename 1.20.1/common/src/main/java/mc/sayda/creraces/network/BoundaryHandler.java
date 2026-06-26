@@ -20,7 +20,6 @@ import mc.sayda.creraces.world.inventory.MirrorMenu;
 
 /**
  * Manages the boundaries between server and client.
- * Yukari would be proud.
  */
 public class BoundaryHandler {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -110,6 +109,31 @@ public class BoundaryHandler {
             pkt.handle(() -> context);
         });
 
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, FactionActionPacket.ID, (buf, context) -> {
+            var pkt = new FactionActionPacket(buf);
+            pkt.handle(() -> context);
+        });
+
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, ClaimChunkPacket.ID, (buf, context) -> {
+            var pkt = new ClaimChunkPacket(buf);
+            pkt.handle(() -> context);
+        });
+
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, JoinRequestResponsePacket.ID, (buf, context) -> {
+            var pkt = new JoinRequestResponsePacket(buf);
+            pkt.handle(() -> context);
+        });
+
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, ClanActionPacket.ID, (buf, context) -> {
+            var pkt = new ClanActionPacket(buf);
+            pkt.handle(() -> context);
+        });
+
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, RequestTerritoryDataPacket.ID, (buf, context) -> {
+            var pkt = new RequestTerritoryDataPacket(buf);
+            pkt.handle(() -> context);
+        });
+
         LOGGER.info("Yukari has established the server network boundaries.");
     }
 
@@ -142,6 +166,11 @@ public class BoundaryHandler {
 
         NetworkManager.registerReceiver(NetworkManager.Side.S2C, OpenSkillWheelPacket.ID, (buf, context) -> {
             var pkt = new OpenSkillWheelPacket(buf);
+            pkt.handle(() -> context);
+        });
+
+        NetworkManager.registerReceiver(NetworkManager.Side.S2C, OpenHUDEditorPacket.ID, (buf, context) -> {
+            var pkt = new OpenHUDEditorPacket(buf);
             pkt.handle(() -> context);
         });
 
@@ -185,6 +214,51 @@ public class BoundaryHandler {
             pkt.handle(() -> context);
         });
 
+        NetworkManager.registerReceiver(NetworkManager.Side.S2C, OpenFactionCreatePacket.ID, (buf, context) -> {
+            var pkt = new OpenFactionCreatePacket(buf);
+            pkt.handle(() -> context);
+        });
+
+        NetworkManager.registerReceiver(NetworkManager.Side.S2C, OpenFactionManagePacket.ID, (buf, context) -> {
+            var pkt = new OpenFactionManagePacket(buf);
+            pkt.handle(() -> context);
+        });
+
+        NetworkManager.registerReceiver(NetworkManager.Side.S2C, OpenClanManagePacket.ID, (buf, context) -> {
+            var pkt = new OpenClanManagePacket(buf);
+            pkt.handle(() -> context);
+        });
+
+        NetworkManager.registerReceiver(NetworkManager.Side.S2C, FactionUpdatePacket.ID, (buf, context) -> {
+            var pkt = new FactionUpdatePacket(buf);
+            pkt.handle(() -> context);
+        });
+
+        NetworkManager.registerReceiver(NetworkManager.Side.S2C, JoinRequestNotifyPacket.ID, (buf, context) -> {
+            var pkt = new JoinRequestNotifyPacket(buf);
+            pkt.handle(() -> context);
+        });
+
+        NetworkManager.registerReceiver(NetworkManager.Side.S2C, ClaimResponsePacket.ID, (buf, context) -> {
+            var pkt = new ClaimResponsePacket(buf);
+            pkt.handle(() -> context);
+        });
+
+        NetworkManager.registerReceiver(NetworkManager.Side.S2C, TerritoryDataPacket.ID, (buf, context) -> {
+            var pkt = new TerritoryDataPacket(buf);
+            pkt.handle(() -> context);
+        });
+
+        NetworkManager.registerReceiver(NetworkManager.Side.S2C, TerrainSamplePacket.ID, (buf, context) -> {
+            var pkt = new TerrainSamplePacket(buf);
+            pkt.handle(() -> context);
+        });
+
+        NetworkManager.registerReceiver(NetworkManager.Side.S2C, ClanUpdatePacket.ID, (buf, context) -> {
+            var pkt = new ClanUpdatePacket(buf);
+            pkt.handle(() -> context);
+        });
+
         LOGGER.info("Yukari has established the client network boundaries.");
     }
 
@@ -224,6 +298,11 @@ public class BoundaryHandler {
 
     public static void sendOpenSkillWheel(ServerPlayer player) {
         send(player, OpenSkillWheelPacket.ID, buf -> {
+        });
+    }
+
+    public static void sendOpenHUDEditor(ServerPlayer player) {
+        send(player, OpenHUDEditorPacket.ID, buf -> {
         });
     }
 
@@ -427,6 +506,74 @@ public class BoundaryHandler {
                 send(p, id, encoder);
             }
         }
+    }
+
+    // ── Territory: S2C senders ───────────────────────────────────────────────
+    public static void openFactionCreate(ServerPlayer player) {
+        send(player, OpenFactionCreatePacket.ID, buf -> {});
+    }
+
+    public static void sendOpenFactionManage(ServerPlayer player) {
+        send(player, OpenFactionManagePacket.ID, buf -> {});
+    }
+
+    public static void sendOpenClanManage(ServerPlayer player) {
+        send(player, OpenClanManagePacket.ID, buf -> {});
+    }
+
+    public static void sendFactionUpdate(ServerPlayer player, FactionUpdatePacket pkt) {
+        send(player, FactionUpdatePacket.ID, pkt::encode);
+    }
+
+    public static void sendClaimResponse(ServerPlayer player, ClaimResponsePacket pkt) {
+        send(player, ClaimResponsePacket.ID, pkt::encode);
+    }
+
+    public static void sendJoinRequestNotify(ServerPlayer player, JoinRequestNotifyPacket pkt) {
+        send(player, JoinRequestNotifyPacket.ID, pkt::encode);
+    }
+
+    public static void sendTerritoryData(ServerPlayer player, TerritoryDataPacket pkt) {
+        send(player, TerritoryDataPacket.ID, pkt::encode);
+    }
+
+    public static void sendTerrainSample(ServerPlayer player, TerrainSamplePacket pkt) {
+        send(player, TerrainSamplePacket.ID, pkt::encode);
+    }
+
+    // ── Territory: C2S senders ───────────────────────────────────────────────
+    public static void sendFactionAction(FactionActionPacket pkt) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(java.util.Objects.requireNonNull(Unpooled.buffer()));
+        pkt.encode(buf);
+        NetworkManager.sendToServer(FactionActionPacket.ID, buf);
+    }
+
+    public static void sendClaimChunk(ClaimChunkPacket pkt) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(java.util.Objects.requireNonNull(Unpooled.buffer()));
+        pkt.encode(buf);
+        NetworkManager.sendToServer(ClaimChunkPacket.ID, buf);
+    }
+
+    public static void sendJoinRequestResponse(JoinRequestResponsePacket pkt) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(java.util.Objects.requireNonNull(Unpooled.buffer()));
+        pkt.encode(buf);
+        NetworkManager.sendToServer(JoinRequestResponsePacket.ID, buf);
+    }
+
+    public static void sendClanAction(ClanActionPacket pkt) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(java.util.Objects.requireNonNull(Unpooled.buffer()));
+        pkt.encode(buf);
+        NetworkManager.sendToServer(ClanActionPacket.ID, buf);
+    }
+
+    public static void sendRequestTerritoryData() {
+        FriendlyByteBuf buf = new FriendlyByteBuf(java.util.Objects.requireNonNull(Unpooled.buffer()));
+        new RequestTerritoryDataPacket().encode(buf);
+        NetworkManager.sendToServer(RequestTerritoryDataPacket.ID, buf);
+    }
+
+    public static void sendClanUpdate(net.minecraft.server.level.ServerPlayer player, ClanUpdatePacket pkt) {
+        send(player, ClanUpdatePacket.ID, pkt::encode);
     }
 
     private static void send(ServerPlayer player, net.minecraft.resources.ResourceLocation id,

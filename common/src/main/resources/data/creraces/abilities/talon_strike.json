@@ -29,8 +29,8 @@
                     "pitch": 0.8
                 },
                 {
-                    "type": "creraces:set_state",
-                    "state": "self",
+                    "type": "creraces:modify_value",
+                    "resource": "self",
                     "value": 1.0
                 }
             ],

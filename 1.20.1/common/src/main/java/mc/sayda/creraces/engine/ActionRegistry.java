@@ -114,7 +114,7 @@ public class ActionRegistry {
         mc.sayda.creraces.engine.actions.ToggleStateAction.register();
         mc.sayda.creraces.engine.actions.SpawnParticlesAction.register();
         mc.sayda.creraces.engine.actions.MorphAction.register();
-        mc.sayda.creraces.engine.actions.SetStateAction.register();
+        mc.sayda.creraces.engine.actions.ModifyValueAction.register();
         mc.sayda.creraces.engine.actions.ConditionalAction.register();
         mc.sayda.creraces.engine.actions.ClearCooldownsAction.register();
         mc.sayda.creraces.engine.actions.LaunchProjectileAction.register();
@@ -122,7 +122,6 @@ public class ActionRegistry {
         mc.sayda.creraces.engine.actions.SetCooldownAction.register();
         mc.sayda.creraces.engine.actions.RemoveEffectAction.register();
         mc.sayda.creraces.engine.actions.ModifyEntityDataAction.register();
-        mc.sayda.creraces.engine.actions.ModifyResourceAction.register();
         mc.sayda.creraces.engine.actions.CommandAction.register();
         mc.sayda.creraces.engine.actions.ItemAnimationAction.register();
         mc.sayda.creraces.engine.actions.ApplyVelocityAction.register();
@@ -138,6 +137,7 @@ public class ActionRegistry {
         mc.sayda.creraces.engine.actions.SetCustomizationAction.register();
         mc.sayda.creraces.engine.actions.EnterSpiritRealmAction.register();
         mc.sayda.creraces.engine.actions.ToggleMinibuildAction.register();
+        mc.sayda.creraces.engine.actions.SetFlagAction.register();
         mc.sayda.creraces.engine.actions.BeamAction.register();
         mc.sayda.creraces.engine.actions.RemoveBlockAction.register();
         mc.sayda.creraces.engine.actions.SleepAction.register();
@@ -158,5 +158,6 @@ public class ActionRegistry {
         mc.sayda.creraces.engine.actions.UpdateBlockAction.register();
         mc.sayda.creraces.engine.actions.AttributeModifierAction.register();
         mc.sayda.creraces.engine.actions.InteractBlockAction.register();
+        mc.sayda.creraces.engine.actions.ClaimTerritoryAction.register();
     }
 }

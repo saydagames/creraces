@@ -20,8 +20,8 @@
             "visible": true
         },
         {
-            "type": "creraces:set_state",
-            "state": "adrenaline_rush",
+            "type": "creraces:modify_value",
+            "resource": "state:adrenaline_rush",
             "value": 1
         },
         {

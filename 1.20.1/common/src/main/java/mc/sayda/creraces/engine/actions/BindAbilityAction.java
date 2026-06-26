@@ -49,7 +49,7 @@ public class BindAbilityAction implements ActionRegistry.RaceAction {
                     CreRaces.LOGGER.warn("Invalid slot in bind action: {}", json.get("slot").getAsString());
                 }
             }
-            ResourceLocation abilityId = new ResourceLocation(GsonHelper.getAsString(json, "ability", "minecraft:barrier"));
+            ResourceLocation abilityId = new ResourceLocation(GsonHelper.getAsString(json, "id", "minecraft:barrier"));
             String saveTo = GsonHelper.getNullableString(json, "save_to", null);
             return new BindAbilityAction(slot, abilityId, saveTo);
         });

@@ -89,8 +89,8 @@
                     "visible": true
                 },
                 {
-                    "type": "creraces:set_state",
-                    "state": "wild_hunt",
+                    "type": "creraces:modify_value",
+                    "resource": "state:wild_hunt",
                     "value": 0
                 }
             ]
@@ -104,7 +104,7 @@
             },
             "actions": [
                 {
-                    "type": "creraces:modify_resource",
+                    "type": "creraces:modify_value",
                     "resource": "state:creraces:stacks",
                     "operation": "add",
                     "value": 2.0
@@ -123,7 +123,7 @@
             },
             "actions": [
                 {
-                    "type": "creraces:modify_resource",
+                    "type": "creraces:modify_value",
                     "resource": "state:creraces:stacks",
                     "operation": "add",
                     "value": 1.0
@@ -134,7 +134,7 @@
             "type": "creraces:on_death",
             "actions": [
                 {
-                    "type": "creraces:modify_resource",
+                    "type": "creraces:modify_value",
                     "resource": "state:creraces:stacks",
                     "operation": "multiply",
                     "value": 0.5

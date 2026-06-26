@@ -628,7 +628,7 @@ public class MicroBlockEntity extends BlockEntity {
             }
         }
 
-        if (entity.hasCampfires) {
+        if (entity.hasCampfires && mc.sayda.creraces.config.CreRacesConfig.MINI_CAMPFIRE_ENABLED.get()) {
             for (int i : entity.campfireIndices) {
                 BlockState slotState = entity.slots.get(i);
                 if (slotState == null || slotState.isAir()
@@ -678,7 +678,7 @@ public class MicroBlockEntity extends BlockEntity {
             }
         }
 
-        if (entity.hasBrewingStands) {
+        if (entity.hasBrewingStands && mc.sayda.creraces.config.CreRacesConfig.MINI_BREWING_STAND_ENABLED.get()) {
             for (int i : entity.brewingIndices) {
                 BlockState slotState = entity.slots.get(i);
                 if (slotState == null || slotState.isAir()

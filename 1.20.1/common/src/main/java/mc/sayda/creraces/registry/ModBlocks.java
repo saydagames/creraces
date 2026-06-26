@@ -209,11 +209,11 @@ public class ModBlocks {
                                                                 RAT_HOLE.get())
                                                 .build(null));
 
-                TORII_BELL_ENTITY = BLOCK_ENTITIES.register("torii_bell",
-                                () -> BlockEntityType.Builder
-                                                .of(net.minecraft.world.level.block.entity.BellBlockEntity::new,
-                                                                TORII_BELL.get(), WEATHERED_TORII_BELL.get())
-                                                .build(null));
+                TORII_BELL_ENTITY = BLOCK_ENTITIES.register("torii_bell", () -> {
+                                net.minecraft.world.level.block.entity.BlockEntityType.BlockEntitySupplier<net.minecraft.world.level.block.entity.BellBlockEntity> factory =
+                                                (pos, state) -> new mc.sayda.creraces.block.entity.ToriiBellBlockEntity(pos, state);
+                                return BlockEntityType.Builder.of(factory, TORII_BELL.get(), WEATHERED_TORII_BELL.get()).build(null);
+                                });
 
                 BLOCK_ENTITIES.register();
         }

@@ -33,7 +33,7 @@
                             "relative": false
                         },
                         {
-                            "type": "creraces:modify_resource",
+                            "type": "creraces:modify_value",
                             "resource": "air",
                             "operation": "set",
                             "value": 0
@@ -58,7 +58,7 @@
                             "strength": 0.5
                         },
                         {
-                            "type": "creraces:modify_resource",
+                            "type": "creraces:modify_value",
                             "resource": "air",
                             "operation": "add",
                             "value": -20

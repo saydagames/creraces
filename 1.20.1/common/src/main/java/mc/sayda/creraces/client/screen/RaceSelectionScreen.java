@@ -217,11 +217,11 @@ public class RaceSelectionScreen extends Screen {
                 Calendar now = Calendar.getInstance();
                 int month = now.get(Calendar.MONTH);
                 if (month == Calendar.DECEMBER) {
-                        graphics.blit(DECO_CHRISTMAS, this.leftPos + 35, this.topPos - 60, 0, 0, 107, 39, 107, 39);
+                        graphics.blit(DECO_CHRISTMAS, this.leftPos + 11, this.topPos - 56, 0, 0, 151, 42, 151, 42);
                 } else if (month == Calendar.OCTOBER) {
-                        graphics.blit(DECO_HALLOWEEN, this.leftPos + 35, this.topPos - 60, 0, 0, 107, 39, 107, 39);
+                        graphics.blit(DECO_HALLOWEEN, this.leftPos + 11, this.topPos - 56, 0, 0, 151, 42, 151, 42);
                 } else if (month >= Calendar.JUNE && month <= Calendar.AUGUST) {
-                        graphics.blit(DECO_MIDSUMMER, this.leftPos + 35, this.topPos - 60, 0, 0, 107, 39, 107, 39);
+                        graphics.blit(DECO_MIDSUMMER, this.leftPos + 11, this.topPos - 56, 0, 0, 151, 42, 151, 42);
                 }
 
                 super.render(graphics, mouseX, mouseY, partialTick);

@@ -24,12 +24,12 @@
                 {
                     "type": "creraces:bind",
                     "slot": "a1",
-                    "ability": "creraces:dash",
+                    "id": "creraces:dash",
                     "save_to": "human_a1"
                 },
                 {
-                    "type": "creraces:set_state",
-                    "state": "fox_form",
+                    "type": "creraces:modify_value",
+                    "resource": "state:fox_form",
                     "value": 1.0
                 },
                 {
@@ -78,8 +78,8 @@
                     "restore_from": "human_a1"
                 },
                 {
-                    "type": "creraces:set_state",
-                    "state": "fox_form",
+                    "type": "creraces:modify_value",
+                    "resource": "state:fox_form",
                     "value": 0.0
                 },
                 {

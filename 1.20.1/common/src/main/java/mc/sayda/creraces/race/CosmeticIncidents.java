@@ -114,14 +114,12 @@ public class CosmeticIncidents {
             JsonElement element = data.get(value);
             if (element.isJsonArray()) {
                 for (JsonElement e : element.getAsJsonArray()) {
-                    if (applyComplexAddon(e, value, custMap, addons)) {
-                        if (e.isJsonObject() && e.getAsJsonObject().has("condition")) {
-                            break;
-                        }
+                    if (applyComplexAddon(player, e, value, custMap, addons)) {
+                        break;
                     }
                 }
             } else {
-                applyComplexAddon(element, value, custMap, addons);
+                applyComplexAddon(player, element, value, custMap, addons);
             }
         }
 
@@ -133,13 +131,21 @@ public class CosmeticIncidents {
         }
     }
 
-    private static boolean applyComplexAddon(JsonElement element, String value,
-            Map<String, String> custMap, IAddons addons) {
+    private static boolean applyComplexAddon(net.minecraft.world.entity.player.Player player,
+            JsonElement element, String value, Map<String, String> custMap, IAddons addons) {
         if (element.isJsonPrimitive()) {
             setAddonActiveRobust(addons, resolvePlaceholders(element.getAsString(), custMap, null), true, true);
             return true;
         } else if (element.isJsonObject()) {
             JsonObject obj = element.getAsJsonObject();
+
+            if (obj.has("condition") && player != null) {
+                mc.sayda.creraces.engine.condition.Condition cond =
+                        mc.sayda.creraces.engine.condition.Condition.fromJson(obj.getAsJsonObject("condition"));
+                if (!cond.evaluate(player, null, null, null)) {
+                    return false;
+                }
+            }
 
             if (obj.has("id")) {
                 String id = resolvePlaceholders(obj.get("id").getAsString(), custMap, null);

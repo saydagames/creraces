@@ -28,6 +28,9 @@
                     "type": "creraces:message",
                     "text": "§cYou can only curl up while in fox form!",
                     "actionbar": true
+                },
+                {
+                    "type": "creraces:cancel"
                 }
             ]
         }

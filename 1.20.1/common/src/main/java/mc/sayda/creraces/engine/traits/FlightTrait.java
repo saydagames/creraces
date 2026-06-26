@@ -26,6 +26,8 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
     private final boolean forceFly;
     private final boolean soggyWings;
     @Nullable
+    private final Condition soggyCondition;
+    @Nullable
     private final Condition condition;
     @Nullable
     private final ResourceLocation exhaustionCooldownId;
@@ -34,7 +36,7 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
     private final List<ActionRegistry.RaceAction> onFail;
 
     public FlightTrait(ResourceLocation traitId, ResourceType resource, ScalingValue drainRate, boolean forceFly,
-            boolean soggyWings, @Nullable Condition condition,
+            boolean soggyWings, @Nullable Condition soggyCondition, @Nullable Condition condition,
             @Nullable ResourceLocation exhaustionCooldownId, @Nullable ScalingValue exhaustionCooldownDuration,
             List<ActionRegistry.RaceAction> onFail) {
         this.traitId = traitId;
@@ -42,6 +44,7 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
         this.drainRate = drainRate;
         this.forceFly = forceFly;
         this.soggyWings = soggyWings;
+        this.soggyCondition = soggyCondition;
         this.condition = condition;
         this.exhaustionCooldownId = exhaustionCooldownId;
         this.exhaustionCooldownDuration = exhaustionCooldownDuration;
@@ -65,8 +68,8 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
 
             double evaluatedDrain = drainRate.evaluate(player);
 
-            // Apply Soggy effect if wings can sag and environment matches
-            if (soggyWings) {
+            // Apply Soggy effect if wings can sag, environment matches, and soggy_condition allows it
+            if (soggyWings && (soggyCondition == null || soggyCondition.evaluate(player, null, null, null))) {
                 boolean inRain = mc.sayda.creraces.util.WorldUtils.isExposedToRain(player);
                 boolean inWater = player.isInWater();
                 boolean shouldBeSoggy = inWater || (inRain && mc.sayda.creraces.config.CreRacesConfig.SAG_WINGS.get());
@@ -175,6 +178,11 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
             boolean soggyWings = GsonHelper.getAsBoolean(json, "creraces:soggy_wings",
                     GsonHelper.getAsBoolean(json, "soggy_wings", false));
 
+            Condition soggyCondition = null;
+            if (json.has("soggy_condition")) {
+                soggyCondition = Condition.fromJson(json.getAsJsonObject("soggy_condition"));
+            }
+
             Condition condition = null;
             if (json.has("condition")) {
                 condition = Condition.fromJson(json.getAsJsonObject("condition"));
@@ -204,7 +212,7 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
                     : "flight_" + Math.abs(json.toString().hashCode());
             ResourceLocation traitId = new ResourceLocation(CreRaces.MODID, traitName);
 
-            return new FlightTrait(traitId, resource, drainRate, forceFly, soggyWings, condition, cooldownId,
+            return new FlightTrait(traitId, resource, drainRate, forceFly, soggyWings, soggyCondition, condition, cooldownId,
                     cooldownDuration, onFail);
         });
     }

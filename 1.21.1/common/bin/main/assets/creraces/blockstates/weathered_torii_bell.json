@@ -1,64 +1,20 @@
 {
     "variants": {
-        "attachment=floor,facing=north": {
-            "model": "creraces:block/weathered_torii_bell"
-        },
-        "attachment=floor,facing=south": {
-            "model": "creraces:block/weathered_torii_bell",
-            "y": 180
-        },
-        "attachment=floor,facing=west": {
-            "model": "creraces:block/weathered_torii_bell",
-            "y": 270
-        },
-        "attachment=floor,facing=east": {
-            "model": "creraces:block/weathered_torii_bell",
-            "y": 90
-        },
-        "attachment=ceiling,facing=north": {
-            "model": "creraces:block/weathered_torii_bell"
-        },
-        "attachment=ceiling,facing=south": {
-            "model": "creraces:block/weathered_torii_bell",
-            "y": 180
-        },
-        "attachment=ceiling,facing=west": {
-            "model": "creraces:block/weathered_torii_bell",
-            "y": 270
-        },
-        "attachment=ceiling,facing=east": {
-            "model": "creraces:block/weathered_torii_bell",
-            "y": 90
-        },
-        "attachment=single_wall,facing=north": {
-            "model": "creraces:block/weathered_torii_bell",
-            "y": 90
-        },
-        "attachment=single_wall,facing=south": {
-            "model": "creraces:block/weathered_torii_bell",
-            "y": 270
-        },
-        "attachment=single_wall,facing=west": {
-            "model": "creraces:block/weathered_torii_bell",
-            "y": 180
-        },
-        "attachment=single_wall,facing=east": {
-            "model": "creraces:block/weathered_torii_bell"
-        },
-        "attachment=double_wall,facing=north": {
-            "model": "creraces:block/weathered_torii_bell",
-            "y": 90
-        },
-        "attachment=double_wall,facing=south": {
-            "model": "creraces:block/weathered_torii_bell",
-            "y": 270
-        },
-        "attachment=double_wall,facing=west": {
-            "model": "creraces:block/weathered_torii_bell",
-            "y": 180
-        },
-        "attachment=double_wall,facing=east": {
-            "model": "creraces:block/weathered_torii_bell"
-        }
+        "attachment=floor,facing=north":       { "model": "creraces:block/weathered_torii_bell_floor" },
+        "attachment=floor,facing=south":       { "model": "creraces:block/weathered_torii_bell_floor", "y": 180 },
+        "attachment=floor,facing=west":        { "model": "creraces:block/weathered_torii_bell_floor", "y": 270 },
+        "attachment=floor,facing=east":        { "model": "creraces:block/weathered_torii_bell_floor", "y": 90 },
+        "attachment=ceiling,facing=north":     { "model": "creraces:block/weathered_torii_bell_ceiling" },
+        "attachment=ceiling,facing=south":     { "model": "creraces:block/weathered_torii_bell_ceiling", "y": 180 },
+        "attachment=ceiling,facing=west":      { "model": "creraces:block/weathered_torii_bell_ceiling", "y": 270 },
+        "attachment=ceiling,facing=east":      { "model": "creraces:block/weathered_torii_bell_ceiling", "y": 90 },
+        "attachment=single_wall,facing=north": { "model": "creraces:block/weathered_torii_bell_single_wall", "y": 90 },
+        "attachment=single_wall,facing=south": { "model": "creraces:block/weathered_torii_bell_single_wall", "y": 270 },
+        "attachment=single_wall,facing=west":  { "model": "creraces:block/weathered_torii_bell_single_wall", "y": 180 },
+        "attachment=single_wall,facing=east":  { "model": "creraces:block/weathered_torii_bell_single_wall" },
+        "attachment=double_wall,facing=north": { "model": "creraces:block/weathered_torii_bell_double_wall", "y": 90 },
+        "attachment=double_wall,facing=south": { "model": "creraces:block/weathered_torii_bell_double_wall", "y": 270 },
+        "attachment=double_wall,facing=west":  { "model": "creraces:block/weathered_torii_bell_double_wall", "y": 180 },
+        "attachment=double_wall,facing=east":  { "model": "creraces:block/weathered_torii_bell_double_wall" }
     }
 }

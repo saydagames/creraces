@@ -12,14 +12,15 @@
     "creraces:splash": "creraces:textures/screens/dwarf_splash.png",
     "creraces:portrait": "creraces:textures/screens/dwarf_portrait.png",
     "creraces:name_texture": "creraces:textures/screens/dwarf_text.png",
-    "creraces:resource_type": "ENERGY",
+    "creraces:resource_type": "GRIT",
     "creraces:difficulty": 1,
     "creraces:negate_effects": [
         "minecraft:mining_fatigue",
         "minecraft:slowness"
     ],
     "creraces:starting_abilities": [
-        "creraces:unstoppable_charge"
+        "creraces:unstoppable_charge",
+        "creraces:miners_verdict"
     ],
     "dwarf_attributes": [
         {
@@ -43,12 +44,23 @@
             "operation": "addition"
         }
     ],
-    "utility": [
+    "forge_mastery": [
         {
-            "type": "creraces:on_item_pickup",
+            "name": "miners_verdict_smelt",
+            "type": "creraces:on_tick",
+            "interval": 20,
             "condition": {
-                "type": "creraces:sneaking",
-                "value": true
+                "type": "creraces:and",
+                "conditions": [
+                    {
+                        "type": "creraces:sneaking"
+                    },
+                    {
+                        "type": "creraces:state",
+                        "state": "miners_verdict",
+                        "value": 1.0
+                    }
+                ]
             },
             "actions": [
                 {

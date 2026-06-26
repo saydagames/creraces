@@ -26,14 +26,28 @@
     ],
     "magmatic_metabolism": [
         {
-            "type": "creraces:permanent_effect",
-            "effect": "minecraft:slowness",
-            "amplifier": 1,
+            "name": "magmatic_slowness",
+            "type": "creraces:on_tick",
+            "interval": 1,
             "condition": {
                 "type": "creraces:state",
                 "state": "mountains_fury",
                 "value": 1.0
-            }
+            },
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:slowness",
+                    "amplifier": 1,
+                    "duration": -1
+                }
+            ],
+            "on_fail": [
+                {
+                    "type": "creraces:remove_effect",
+                    "effect": "minecraft:slowness"
+                }
+            ]
         },
         {
             "name": "magmatic_strength",
@@ -109,10 +123,14 @@
             },
             "actions": [
                 {
-                    "type": "creraces:modify_resource",
+                    "name": "Fury Stacks",
+                    "type": "creraces:modify_value",
                     "resource": "state:creraces:stacks",
                     "operation": "add",
-                    "value": 1
+                    "value": 1,
+                    "show_bar": true,
+                    "bar_max": 1000,
+                    "bar_color": "#FF4500"
                 }
             ]
         },
@@ -128,38 +146,42 @@
                     },
                     {
                         "type": "creraces:holding_item",
-                        "item": "minecraft:cobblestone"
+                        "item": "#forge:cobblestone"
                     },
                     {
                         "type": "creraces:state",
                         "state": "magmamancy",
-                        "value": 1.0
+                        "value": 1.0,
+                        "show_bar": true
                     }
                 ]
             },
             "actions": [
                 {
                     "type": "creraces:consume_item",
-                    "item": "minecraft:cobblestone",
+                    "item": "#forge:cobblestone",
                     "amount": 1
                 },
                 {
-                    "type": "creraces:modify_resource",
+                    "type": "creraces:modify_value",
                     "resource": "food",
                     "operation": "add",
                     "value": 2
                 },
                 {
-                    "type": "creraces:modify_resource",
+                    "type": "creraces:modify_value",
                     "resource": "saturation",
                     "operation": "add",
                     "value": 2
                 },
                 {
-                    "type": "creraces:modify_resource",
+                    "name": "Stored Material",
+                    "type": "creraces:modify_value",
                     "resource": "state:creraces:stored_material",
                     "operation": "add",
-                    "value": 1
+                    "value": 1,
+                    "show_bar": true,
+                    "bar_max": 64
                 },
                 {
                     "type": "creraces:play_sound",
@@ -172,24 +194,38 @@
     ],
     "hot_headed_logic": [
         {
-            "type": "creraces:permanent_effect",
-            "effect": "minecraft:resistance",
-            "amplifier": 1,
+            "name": "hot_headed_effects",
+            "type": "creraces:on_tick",
+            "interval": 1,
             "condition": {
                 "type": "creraces:state",
                 "state": "hot_headed",
                 "value": 1.0
-            }
-        },
-        {
-            "type": "creraces:permanent_effect",
-            "effect": "minecraft:hunger",
-            "amplifier": 1,
-            "condition": {
-                "type": "creraces:state",
-                "state": "hot_headed",
-                "value": 1.0
-            }
+            },
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:resistance",
+                    "amplifier": 1,
+                    "duration": -1
+                },
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:hunger",
+                    "amplifier": 1,
+                    "duration": -1
+                }
+            ],
+            "on_fail": [
+                {
+                    "type": "creraces:remove_effect",
+                    "effect": "minecraft:resistance"
+                },
+                {
+                    "type": "creraces:remove_effect",
+                    "effect": "minecraft:hunger"
+                }
+            ]
         },
         {
             "name": "hot_headed_burning",

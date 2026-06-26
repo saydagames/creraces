@@ -45,26 +45,26 @@
                             ]
                         },
                         {
-                            "type": "creraces:set_state",
-                            "state": "hole_x",
+                            "type": "creraces:modify_value",
+                            "resource": "state:hole_x",
                             "mode": "BLOCK_X",
                             "persistent": true
                         },
                         {
-                            "type": "creraces:set_state",
-                            "state": "hole_y",
+                            "type": "creraces:modify_value",
+                            "resource": "state:hole_y",
                             "mode": "BLOCK_Y",
                             "persistent": true
                         },
                         {
-                            "type": "creraces:set_state",
-                            "state": "hole_z",
+                            "type": "creraces:modify_value",
+                            "resource": "state:hole_z",
                             "mode": "BLOCK_Z",
                             "persistent": true
                         },
                         {
-                            "type": "creraces:set_state",
-                            "state": "rat_tunnels",
+                            "type": "creraces:modify_value",
+                            "resource": "state:rat_tunnels",
                             "persistent": true,
                             "value": {
                                 "base": 1.0,
@@ -119,8 +119,8 @@
                             ]
                         },
                         {
-                            "type": "creraces:set_state",
-                            "state": "rat_tunnels",
+                            "type": "creraces:modify_value",
+                            "resource": "state:rat_tunnels",
                             "value": {
                                 "base": 1.0,
                                 "scales_with": "state:rat_tunnels"

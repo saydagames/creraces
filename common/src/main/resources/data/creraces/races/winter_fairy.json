@@ -59,8 +59,8 @@
                     ]
                 },
                 {
-                    "type": "creraces:set_state",
-                    "state": "creraces:bw_exposure",
+                    "type": "creraces:modify_value",
+                    "resource": "state:creraces:bw_exposure",
                     "value": 0,
                     "operation": "set"
                 }
@@ -77,10 +77,14 @@
                     },
                     "if_true": [
                         {
-                            "type": "creraces:set_state",
-                            "state": "creraces:bw_exposure",
+                            "type": "creraces:modify_value",
+                            "resource": "state:creraces:bw_exposure",
+                            "name": "Wings Exposure",
                             "value": 1,
-                            "operation": "add"
+                            "operation": "add",
+                            "show_bar": true,
+                            "bar_max": 60,
+                            "bar_color": "#FF4500"
                         },
                         {
                             "type": "creraces:conditional",
@@ -92,8 +96,8 @@
                             },
                             "if_true": [
                                 {
-                                    "type": "creraces:set_state",
-                                    "state": "creraces:bw_exposure",
+                                    "type": "creraces:modify_value",
+                                    "resource": "state:creraces:bw_exposure",
                                     "value": 0,
                                     "operation": "set"
                                 },

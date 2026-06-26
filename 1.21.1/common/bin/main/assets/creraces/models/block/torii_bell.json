@@ -1,5 +1,5 @@
 {
-    "parent": "creraces:block/torii_bell_body",
+    "parent": "creraces:block/torii_bell_floor",
     "textures": {
         "top": "creraces:block/torii_bell_top",
         "side": "creraces:block/torii_bell_side",

@@ -39,8 +39,8 @@
     ],
     "creraces:on_deactivate": [
         {
-            "type": "creraces:set_state",
-            "state": "self",
+            "type": "creraces:modify_value",
+            "resource": "self",
             "operation": "SET",
             "value": 0
         }

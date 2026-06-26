@@ -34,7 +34,15 @@ public class SleepAction implements ActionRegistry.RaceAction {
         player.addTag("creraces_force_sleep");
 
         // Try to sleep at current position.
-        player.startSleepInBed(pos);
+        com.mojang.datafixers.util.Either<net.minecraft.world.entity.player.Player.BedSleepingProblem, net.minecraft.util.Unit> result = player.startSleepInBed(pos);
+        if (result.left().isPresent()) {
+            net.minecraft.world.entity.player.Player.BedSleepingProblem problem = result.left().get();
+            net.minecraft.network.chat.Component msg = problem.getMessage();
+            if (msg != null) {
+                player.displayClientMessage(msg, true);
+            }
+            return false;
+        }
         return true;
     }
 

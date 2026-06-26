@@ -79,12 +79,12 @@
                     "effect": "minecraft:weakness"
                 },
                 {
-                    "type": "creraces:set_state",
-                    "state": "cowardly_skirmish",
+                    "type": "creraces:modify_value",
+                    "resource": "state:cowardly_skirmish",
                     "value": 0
                 },
                 {
-                    "type": "creraces:modify_resource",
+                    "type": "creraces:modify_value",
                     "resource": "passive_cd",
                     "operation": "set",
                     "value": 0
@@ -123,12 +123,12 @@
                     ]
                 },
                 {
-                    "type": "creraces:set_state",
-                    "state": "cowardly_skirmish",
+                    "type": "creraces:modify_value",
+                    "resource": "state:cowardly_skirmish",
                     "value": 1
                 },
                 {
-                    "type": "creraces:modify_resource",
+                    "type": "creraces:modify_value",
                     "resource": "passive_cd",
                     "operation": "set",
                     "value": 240

@@ -18,11 +18,18 @@
     ],
     "harpy_effects": [
         {
-            "type": "creraces:permanent_effect",
-            "effect": "minecraft:night_vision",
-            "amplifier": 0,
-            "duration": 210,
-            "visible": false
+            "name": "night_vision_passive",
+            "type": "creraces:on_tick",
+            "interval": 20,
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:night_vision",
+                    "amplifier": 0,
+                    "duration": -1,
+                    "visible": false
+                }
+            ]
         }
     ],
     "armor_restrictions": [
@@ -100,8 +107,8 @@
                     "speed": 0.2
                 },
                 {
-                    "type": "creraces:set_state",
-                    "state": "creraces:talon_strike",
+                    "type": "creraces:modify_value",
+                    "resource": "state:creraces:talon_strike",
                     "value": 0.0
                 }
             ]
@@ -125,8 +132,8 @@
             },
             "actions": [
                 {
-                    "type": "creraces:set_state",
-                    "state": "creraces:talon_strike",
+                    "type": "creraces:modify_value",
+                    "resource": "state:creraces:talon_strike",
                     "value": 0.0
                 }
             ]
@@ -190,7 +197,7 @@
                     },
                     "if_true": [
                         {
-                            "type": "creraces:modify_resource",
+                            "type": "creraces:modify_value",
                             "resource": "energy",
                             "operation": "add",
                             "value": -5
@@ -239,7 +246,7 @@
                     },
                     "if_true": [
                         {
-                            "type": "creraces:modify_resource",
+                            "type": "creraces:modify_value",
                             "resource": "energy",
                             "operation": "add",
                             "value": -5

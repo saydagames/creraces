@@ -8,6 +8,9 @@
     "creraces:difficulty": 4,
     "creraces:is_spirit": true,
     "creraces:gstate": "FEMALE",
+    "creraces:immune_to_damage": [
+        "minecraft:sweet_berry_bush"
+    ],
     "creraces:scale": {
         "base": {
             "base": 1.0
@@ -63,8 +66,8 @@
             },
             "on_fail": [
                 {
-                    "type": "creraces:set_state",
-                    "state": "foxfire",
+                    "type": "creraces:modify_value",
+                    "resource": "state:foxfire",
                     "value": {
                         "base": 0.0
                     }

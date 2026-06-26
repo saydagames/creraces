@@ -60,6 +60,11 @@ public class MiniBlockPlaceMixin {
             return;
         }
 
+        ResourceLocation creraces$dim = player.level().dimension().location();
+        if (CreRacesConfig.MINI_BUILD_DIMENSION_BLACKLIST.get().contains(creraces$dim.toString())) {
+            return;
+        }
+
         ItemStack held = player.getItemInHand(hand);
         BlockPos hitPos = hitResult.getBlockPos();
         net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();

@@ -154,7 +154,8 @@ public class MiniPlacePacket {
 
             // Validate reach distance to prevent arbitrary remote placement
             double reachSq = mc.sayda.creraces.config.CreRacesConfig.MINI_CRAFTING_DISTANCE_SQR.get();
-            if (serverPlayer.distanceToSqr(hostPos.getX() + 0.5, hostPos.getY() + 0.5, hostPos.getZ() + 0.5) > reachSq) {
+            if (serverPlayer.distanceToSqr(hostPos.getX() + 0.5, hostPos.getY() + 0.5,
+                    hostPos.getZ() + 0.5) > reachSq) {
                 CreRaces.LOGGER.warn("MiniPlacePacket: Rejected - player {} too far from hostPos {}",
                         serverPlayer.getName().getString(), hostPos);
                 return;
@@ -188,6 +189,12 @@ public class MiniPlacePacket {
 
             if (!mc.sayda.creraces.config.CreRacesConfig.MINI_BUILD_ENABLED.get()) {
                 CreRaces.LOGGER.warn("MiniPlacePacket: Rejected placement: Feature disabled in config.");
+                return;
+            }
+
+            ResourceLocation currentDim = level.dimension().location();
+            if (mc.sayda.creraces.config.CreRacesConfig.MINI_BUILD_DIMENSION_BLACKLIST.get()
+                    .contains(currentDim.toString())) {
                 return;
             }
 

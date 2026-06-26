@@ -65,7 +65,6 @@ public class TraitRegistry {
     public enum TraitType {
         PASSIVE_TICK,
         ATTRIBUTE_MODIFIER,
-        PERMANENT_EFFECT,
         EVENT_HOOK // e.g., on_hit
     }
 
@@ -117,9 +116,7 @@ public class TraitRegistry {
 
         // Passive Traits
         mc.sayda.creraces.engine.traits.AddonTrait.register();
-        mc.sayda.creraces.engine.traits.PermanentEffectTrait.register();
         mc.sayda.creraces.engine.traits.FlightTrait.register();
-        mc.sayda.creraces.engine.traits.ContinuousEffectTrait.register();
         mc.sayda.creraces.engine.traits.DamageMultiplierTrait.register();
         mc.sayda.creraces.engine.traits.BlockInteractionTrait.register();
         mc.sayda.creraces.engine.traits.BlockPlaceTrait.register();

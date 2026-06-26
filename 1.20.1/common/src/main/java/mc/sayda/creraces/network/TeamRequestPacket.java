@@ -88,6 +88,20 @@ public class TeamRequestPacket {
                     }
                     ServerPlayer target = player.getServer().getPlayerList().getPlayerByName(data);
                     if (target != null) {
+                        if (mc.sayda.creraces.config.CreRacesConfig.TEAM_REQUIRE_SAME_RACE.get()) {
+                            net.minecraft.resources.ResourceLocation inviterRace = mc.sayda.creraces.capability.DataUtils
+                                    .getVariables(player).map(mc.sayda.creraces.capability.IPlayerVariables::getRace)
+                                    .orElse(null);
+                            net.minecraft.resources.ResourceLocation targetRace = mc.sayda.creraces.capability.DataUtils
+                                    .getVariables(target).map(mc.sayda.creraces.capability.IPlayerVariables::getRace)
+                                    .orElse(null);
+                            if (inviterRace == null || !inviterRace.equals(targetRace)) {
+                                player.sendSystemMessage(java.util.Objects.requireNonNull(
+                                        net.minecraft.network.chat.Component.translatable(
+                                                "msg.creraces.team.different_race")));
+                                return;
+                            }
+                        }
                         RaceTeamManager.getPlayerTeam(player).ifPresent(team -> {
                             RaceTeamManager.invitePlayer(player, target, team.getId());
                         });

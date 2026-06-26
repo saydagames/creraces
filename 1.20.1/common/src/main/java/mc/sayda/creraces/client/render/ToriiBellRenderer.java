@@ -16,9 +16,7 @@ import net.minecraft.world.level.block.entity.BellBlockEntity;
 public class ToriiBellRenderer extends BellRenderer {
 
     private static final ResourceLocation TEX = new ResourceLocation("creraces", "textures/entity/bell/torii_bell.png");
-    private static final ResourceLocation W_TEX = new ResourceLocation("creraces",
-            "textures/entity/bell/weathered_torii_bell.png");
-
+    private static final ResourceLocation W_TEX = new ResourceLocation("creraces", "textures/entity/bell/weathered_torii_bell.png");
     // Shadow the parent's private bellBody so we own a reference.
     private final ModelPart bellBody;
 
@@ -49,6 +47,8 @@ public class ToriiBellRenderer extends BellRenderer {
 
         boolean weathered = entity.getBlockState().is(ModBlocks.WEATHERED_TORII_BELL.get());
         VertexConsumer vc = buffer.getBuffer(RenderType.entitySolid(weathered ? W_TEX : TEX));
+        poseStack.pushPose();
         this.bellBody.render(poseStack, vc, light, overlay);
+        poseStack.popPose();
     }
 }

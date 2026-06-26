@@ -31,16 +31,30 @@
     ],
     "regeneration_logic": [
         {
-            "type": "creraces:permanent_effect",
-            "effect": "minecraft:regeneration",
-            "amplifier": 0,
-            "visible": false,
+            "name": "regeneration_effect",
+            "type": "creraces:on_tick",
+            "interval": 1,
             "condition": {
                 "type": "creraces:not",
                 "condition": {
                     "type": "creraces:is_burning"
                 }
-            }
+            },
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:regeneration",
+                    "amplifier": 0,
+                    "duration": -1,
+                    "visible": false
+                }
+            ],
+            "on_fail": [
+                {
+                    "type": "creraces:remove_effect",
+                    "effect": "minecraft:regeneration"
+                }
+            ]
         }
     ],
     "sunlight_penalty": [
@@ -213,8 +227,8 @@
                     "use_target": true
                 },
                 {
-                    "type": "creraces:set_state",
-                    "state": "adrenaline_rush",
+                    "type": "creraces:modify_value",
+                    "resource": "state:adrenaline_rush",
                     "value": 0
                 }
             ]

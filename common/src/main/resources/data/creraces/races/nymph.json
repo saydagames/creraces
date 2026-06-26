@@ -33,31 +33,38 @@
             "operation": "addition"
         },
         {
-            "type": "creraces:permanent_effect",
-            "effect": "minecraft:hero_of_the_village",
-            "amplifier": 0,
-            "visible": false
-        },
-        {
-            "type": "creraces:permanent_effect",
-            "effect": "creraces:nymph_call",
-            "amplifier": 0,
-            "visible": false,
-            "condition": {
-                "type": "creraces:race_equals",
-                "race": "creraces:nymph"
-            }
+            "name": "hero_of_the_village_passive",
+            "type": "creraces:on_tick",
+            "interval": 20,
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:hero_of_the_village",
+                    "amplifier": 0,
+                    "duration": -1,
+                    "visible": false
+                }
+            ]
         },
         {
             "name": "nymph_debuff",
             "type": "creraces:on_tick",
             "interval": 20,
             "condition": {
-                "type": "creraces:not",
-                "condition": {
-                    "type": "creraces:has_effect",
-                    "effect": "creraces:nymph_call"
-                }
+                "type": "creraces:and",
+                "conditions": [
+                    {
+                        "type": "spirit",
+                        "value": false
+                    },
+                    {
+                        "type": "creraces:not",
+                        "condition": {
+                            "type": "creraces:has_effect",
+                            "effect": "creraces:nymph_call"
+                        }
+                    }
+                ]
             },
             "actions": [
                 {
@@ -79,18 +86,6 @@
                             "duration": 100
                         }
                     ]
-                }
-            ]
-        },
-        {
-            "type": "creraces:on_respawn",
-            "actions": [
-                {
-                    "type": "creraces:apply_effect",
-                    "effect": "creraces:nymph_call",
-                    "duration": 6000,
-                    "amplifier": 0,
-                    "visible": false
                 }
             ]
         }

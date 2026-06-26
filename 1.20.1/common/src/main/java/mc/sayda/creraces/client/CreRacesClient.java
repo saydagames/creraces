@@ -3,7 +3,9 @@ package mc.sayda.creraces.client;
 import dev.architectury.event.events.client.ClientGuiEvent;
 import dev.architectury.event.events.client.ClientTickEvent;
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.client.screen.HUDEditorScreen;
 import mc.sayda.creraces.client.screen.SkillWheelScreen;
+import net.minecraft.client.Minecraft;
 import dev.architectury.registry.menu.MenuRegistry;
 import mc.sayda.creraces.capability.DataUtils;
 import dev.architectury.platform.Platform;
@@ -143,13 +145,17 @@ public class CreRacesClient {
                 });
 
                 ClientGuiEvent.RENDER_HUD.register((graphics, tickDelta) -> {
-                        RaceOverlay.render(graphics, tickDelta);
+                        // Skip normal HUD rendering while the editor is open (it renders itself)
+                        if (!(Minecraft.getInstance().screen instanceof HUDEditorScreen)) {
+                                RaceOverlay.render(graphics, tickDelta);
+                        }
                         mc.sayda.creraces.client.render.SpiritRealmRenderer.renderScreenTint(graphics);
                 });
 
                 dev.architectury.event.events.client.ClientPlayerEvent.CLIENT_PLAYER_JOIN.register(player -> {
                         mc.sayda.creraces.client.ClientAccess.lastSyncedPlayer = null;
                         mc.sayda.creraces.network.BoundaryHandler.sendSyncRequest();
+                        mc.sayda.creraces.client.screen.TerritoryMapScreen.clearCache();
                         CreRaces.LOGGER.info("CreRacesClient: Requested initial sync from server.");
                 });
 
@@ -231,6 +237,7 @@ public class CreRacesClient {
                         while (ModKeyMappings.MENU_GUI.consumeClick()) {
                                 mc.sayda.creraces.network.BoundaryHandler.sendOpenMenu();
                         }
+
                 });
 
                 CreRaces.LOGGER.info("CreRaces Client initialized.");

@@ -24,14 +24,29 @@
             "type": "creraces:flight"
         },
         {
-            "type": "creraces:continuous_effect",
-            "effect": "creraces:nymph_call",
-            "amplifier": 0,
-            "visible": false,
+            "name": "altitude_nymph_call",
+            "type": "creraces:on_tick",
+            "interval": 1,
             "condition": {
                 "type": "creraces:altitude",
                 "min": 120.0
-            }
+            },
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "creraces:nymph_call",
+                    "amplifier": 0,
+                    "duration": -1,
+                    "visible": false,
+                    "ambient": false
+                }
+            ],
+            "on_fail": [
+                {
+                    "type": "creraces:remove_effect",
+                    "effect": "creraces:nymph_call"
+                }
+            ]
         },
         {
             "type": "creraces:on_tick",

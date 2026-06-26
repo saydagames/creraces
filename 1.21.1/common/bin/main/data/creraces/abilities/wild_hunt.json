@@ -24,8 +24,8 @@
             "visible": true
         },
         {
-            "type": "creraces:set_state",
-            "state": "wild_hunt",
+            "type": "creraces:modify_value",
+            "resource": "state:wild_hunt",
             "value": 1
         },
         {
