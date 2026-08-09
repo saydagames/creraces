@@ -15,7 +15,7 @@ public class SpiritSpawningHandler {
                 return EventResult.pass();
 
             if (entity.getTags().contains("creraces:spirit")) {
-                // If it's a spirit mob, check if any player in spirit realm is nearby (64
+                // If it's a spirit mob, check if any player in spirit realm is nearby (16
                 // blocks)
                 boolean playerInSpiritNearby = false;
                 int checkDist = 16;

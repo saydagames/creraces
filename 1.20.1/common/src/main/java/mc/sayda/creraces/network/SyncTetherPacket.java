@@ -18,13 +18,15 @@ public class SyncTetherPacket {
     private final boolean active;
     private final String texture;
     private final float width;
+    private final boolean effects;
 
-    public SyncTetherPacket(UUID casterId, UUID targetId, boolean active, String texture, float width) {
+    public SyncTetherPacket(UUID casterId, UUID targetId, boolean active, String texture, float width, boolean effects) {
         this.casterId = casterId;
         this.targetId = targetId;
         this.active = active;
         this.texture = texture;
         this.width = width;
+        this.effects = effects;
     }
 
     public SyncTetherPacket(FriendlyByteBuf buf) {
@@ -34,9 +36,11 @@ public class SyncTetherPacket {
         if (this.active) {
             this.texture = buf.readUtf(512);
             this.width = buf.readFloat();
+            this.effects = buf.readBoolean();
         } else {
             this.texture = "";
             this.width = 0f;
+            this.effects = false;
         }
     }
 
@@ -47,6 +51,7 @@ public class SyncTetherPacket {
         if (this.active) {
             buf.writeUtf(this.texture);
             buf.writeFloat(this.width);
+            buf.writeBoolean(this.effects);
         }
     }
 
@@ -56,7 +61,7 @@ public class SyncTetherPacket {
             dev.architectury.utils.EnvExecutor.runInEnv(dev.architectury.utils.Env.CLIENT,
                     () -> () -> {
                         mc.sayda.creraces.client.render.TetherRenderer.handleSync(this.casterId, this.targetId,
-                                this.active, this.texture, this.width);
+                                this.active, this.texture, this.width, this.effects);
                     });
         });
     }

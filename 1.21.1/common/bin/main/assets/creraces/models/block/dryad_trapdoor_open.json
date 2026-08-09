@@ -1,8 +1,0 @@
-{
-  "parent": "block/template_orientable_trapdoor_open",
-  "textures": {
-    "texture": "creraces:block/dryad_trapdoor",
-    "particle": "creraces:block/dryad_trapdoor"
-  },
-  "render_type": "cutout"
-}

@@ -12,8 +12,7 @@ import javax.annotation.Nonnull;
 
 /**
  * BLINDED - Severely reduces the entity's follow-range, simulating blindness by
- * making mobs unable to path to distant targets and reducing player's visible
- * range.
+ * making mobs unable to path to distant targets; reduces mob targeting range.
  * Uses an attribute modifier on FOLLOW_RANGE so it integrates with the vanilla
  * mob AI.
  */

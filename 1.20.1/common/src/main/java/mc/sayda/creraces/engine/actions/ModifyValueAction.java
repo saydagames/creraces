@@ -68,7 +68,7 @@ public class ModifyValueAction implements ActionRegistry.RaceAction {
                 if (res.equals("self")) {
                     stateId = slot != null ? vars.getAbilityInSlot(slot) : null;
                 } else {
-                    String subKey = resource.substring(6); // strip "state:"
+                    String subKey = res.substring(6); // strip "state:" (already lowercased)
                     if (!subKey.contains(":")) subKey = "creraces:" + subKey;
                     stateId = ResourceLocation.tryParse(subKey);
                 }

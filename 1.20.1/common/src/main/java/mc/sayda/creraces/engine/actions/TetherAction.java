@@ -32,12 +32,13 @@ public class TetherAction implements ActionRegistry.RaceAction {
     private final List<ActionRegistry.RaceAction> onBreakActions;
     private final ResourceLocation texture;
     private final ScalingValue width;
+    private final boolean effects;
     private final mc.sayda.creraces.engine.TargetFilter targets;
 
     public TetherAction(ScalingValue duration, ScalingValue maxDistance, ScalingValue interval,
             List<ActionRegistry.RaceAction> actions, List<ActionRegistry.RaceAction> onCompleteActions,
             List<ActionRegistry.RaceAction> onBreakActions, ResourceLocation texture, ScalingValue width,
-            mc.sayda.creraces.engine.TargetFilter targets) {
+            boolean effects, mc.sayda.creraces.engine.TargetFilter targets) {
         this.duration = duration;
         this.maxDistance = maxDistance;
         this.interval = interval;
@@ -46,6 +47,7 @@ public class TetherAction implements ActionRegistry.RaceAction {
         this.onBreakActions = onBreakActions;
         this.texture = texture;
         this.width = width;
+        this.effects = effects;
         this.targets = targets;
     }
 
@@ -73,16 +75,16 @@ public class TetherAction implements ActionRegistry.RaceAction {
         ACTIVE_TETHERS.computeIfAbsent(casterId, k -> new ConcurrentHashMap<>()).put(targetId, data);
 
         // Sync to clients
-        syncTetherToClients(player, casterId, targetId, true, texture, widthData);
+        syncTetherToClients(player, casterId, targetId, true, texture, widthData, effects);
 
         return true;
     }
 
     private static void syncTetherToClients(Player caster, UUID casterId, UUID targetId, boolean add,
-            ResourceLocation tex, float width) {
+            ResourceLocation tex, float width, boolean effects) {
         mc.sayda.creraces.network.BoundaryHandler.sendToTrackers(caster, mc.sayda.creraces.network.SyncTetherPacket.ID,
                 buf -> {
-                    new mc.sayda.creraces.network.SyncTetherPacket(casterId, targetId, add, tex.toString(), width)
+                    new mc.sayda.creraces.network.SyncTetherPacket(casterId, targetId, add, tex.toString(), width, effects)
                             .encode(buf);
                 });
     }
@@ -145,7 +147,7 @@ public class TetherAction implements ActionRegistry.RaceAction {
         // Cleanup
         for (UUID tId : toRemove) {
             tethers.remove(tId);
-            syncTetherToClients(caster, casterId, tId, false, new ResourceLocation("minecraft", "air"), 0f);
+            syncTetherToClients(caster, casterId, tId, false, new ResourceLocation("minecraft", "air"), 0f, false);
         }
     }
 
@@ -156,7 +158,7 @@ public class TetherAction implements ActionRegistry.RaceAction {
         Map<UUID, TetherData> tethers = ACTIVE_TETHERS.remove(casterId);
         if (tethers != null) {
             for (UUID tId : tethers.keySet()) {
-                syncTetherToClients(caster, casterId, tId, false, new ResourceLocation("minecraft", "air"), 0f);
+                syncTetherToClients(caster, casterId, tId, false, new ResourceLocation("minecraft", "air"), 0f, false);
             }
         }
     }
@@ -166,9 +168,10 @@ public class TetherAction implements ActionRegistry.RaceAction {
             ScalingValue dur = ScalingValue.fromJson(json, "duration", 100.0);
             ScalingValue dist = ScalingValue.fromJson(json, "max_distance", 10.0);
             ScalingValue inter = ScalingValue.fromJson(json, "interval", 20.0);
-            String texStr = GsonHelper.getAsString(json, "texture", "creraces:textures/misc/tether.png");
+            String texStr = GsonHelper.getAsString(json, "texture", "minecraft:textures/entity/guardian_beam.png");
             ResourceLocation tex = new ResourceLocation(Objects.requireNonNull(texStr));
             ScalingValue w = ScalingValue.fromJson(json, "width", 0.1);
+            boolean effects = GsonHelper.getAsBoolean(json, "effects", true);
 
             List<ActionRegistry.RaceAction> actions = new ArrayList<>();
             if (json.has("actions")) {
@@ -196,7 +199,7 @@ public class TetherAction implements ActionRegistry.RaceAction {
             mc.sayda.creraces.engine.TargetFilter targets = mc.sayda.creraces.engine.TargetFilter.fromJson(json,
                     "targets", java.util.Set.of("enemies"));
 
-            return new TetherAction(dur, dist, inter, actions, onComplete, onBreak, tex, w, targets);
+            return new TetherAction(dur, dist, inter, actions, onComplete, onBreak, tex, w, effects, targets);
         });
     }
 

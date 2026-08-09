@@ -1,6 +1,8 @@
 {
     "creraces:name": "race.creraces.aurai.name",
     "creraces:parent_race": "creraces:nymph",
+    "creraces:enable_territory": true,
+    "creraces:faction_group": "nymph",
     "creraces:index": 9.4,
     "creraces:description": "race.creraces.aurai.description",
     "creraces:icon": "creraces:textures/screens/aurai_icon.png",

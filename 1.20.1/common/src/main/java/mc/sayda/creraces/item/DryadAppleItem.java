@@ -14,8 +14,6 @@ import mc.sayda.creraces.registry.ModMobEffects;
 
 public class DryadAppleItem extends Item {
     private final Variant variant;
-    private static final net.minecraft.resources.ResourceLocation DRYAD_RACE = new net.minecraft.resources.ResourceLocation(
-            "creraces", "dryad");
 
     public enum Variant {
         DEFAULT(4, 2.4f, Rarity.COMMON),
@@ -67,9 +65,9 @@ public class DryadAppleItem extends Item {
 
         if (!level.isClientSide && entity instanceof Player player) {
             DataUtils.getVariables(player).ifPresent(vars -> {
-                if (DRYAD_RACE.equals(vars.getRace())) { // TODO: Change to all Nymphs?
-                    // Apply Nymph Call for 15 minutes
-                    player.addEffect(new MobEffectInstance(ModMobEffects.NYMPH_CALL.get(), 18000, 0));
+                mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
+                if (race != null && "nymph".equals(race.factionGroup())) {
+                    player.addEffect(new MobEffectInstance(ModMobEffects.NYMPH_CALL.get(), 18000, 0, false, false, true));
                 }
             });
         }

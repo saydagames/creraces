@@ -31,9 +31,8 @@ import javax.annotation.Nullable;
  */
 public class MicroBlock extends BaseEntityBlock {
 
-    // Idk about this Box implementation to be entierly honest, these numbers are
-    // kinda just freshly served from my rear ngl, hopefully it stops the crash
-    // though
+    // VoxelShape values below are empirically tuned to avoid entity collision
+    // crashes; the exact bounds are approximate and may need adjustment.
     public static final IntegerProperty LIGHT = IntegerProperty.create("light", 0, 15);
     public static final VoxelShape BOX = Block.box(0.01, 0.01, 0.01, 0.02, 0.02, 0.02);
 
@@ -214,9 +213,7 @@ public class MicroBlock extends BaseEntityBlock {
                 return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide());
             }
 
-            if (micro != null) {
-                return micro.handleSlotUse(player, hand, slotX, slotY, slotZ);
-            }
+            return micro.handleSlotUse(player, hand, slotX, slotY, slotZ);
         }
 
         return net.minecraft.world.InteractionResult.PASS;

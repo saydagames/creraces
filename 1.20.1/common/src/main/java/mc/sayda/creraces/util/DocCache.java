@@ -24,8 +24,8 @@ public class DocCache {
     private static boolean isDirty = false;
 
     public static void init(Path configDir) {
-        cacheFile = configDir.resolve("creraces/cache")
-                .resolve("wiki_docs.json").toFile();
+        cacheFile = configDir.resolve(mc.sayda.creraces.config.CreRacesConfig.DOC_CACHE_DIR.get())
+                .resolve(mc.sayda.creraces.config.CreRacesConfig.DOC_CACHE_FILENAME.get()).toFile();
         load();
 
         // Simple scheduled save every 30 seconds if dirty

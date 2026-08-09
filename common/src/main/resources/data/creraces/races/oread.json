@@ -1,6 +1,8 @@
 {
     "creraces:name": "race.creraces.oread.name",
     "creraces:parent_race": "creraces:nymph",
+    "creraces:enable_territory": true,
+    "creraces:faction_group": "nymph",
     "creraces:index": 9.1,
     "creraces:description": "race.creraces.oread.description",
     "creraces:icon": "creraces:textures/screens/oread_icon.png",

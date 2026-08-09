@@ -22,9 +22,18 @@ public class PocketManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final String SAVE_FILE_NAME = "creraces_pockets.json";
     private static final AtomicInteger NEXT_POCKET_INDEX = new AtomicInteger(1);
+    private static volatile MinecraftServer currentServer = null;
 
     public static int getNextIndex() {
-        return NEXT_POCKET_INDEX.getAndIncrement();
+        int index = NEXT_POCKET_INDEX.getAndIncrement();
+        if (currentServer != null) {
+            save(currentServer);
+        }
+        return index;
+    }
+
+    public static void onServerStop() {
+        currentServer = null;
     }
 
     public static void save(MinecraftServer server) {
@@ -41,6 +50,7 @@ public class PocketManager {
     }
 
     public static void load(MinecraftServer server) {
+        currentServer = server;
         Path savePath = server.getWorldPath(Objects.requireNonNull(LevelResource.ROOT)).resolve(SAVE_FILE_NAME);
         if (!Files.exists(savePath)) {
             NEXT_POCKET_INDEX.set(1);

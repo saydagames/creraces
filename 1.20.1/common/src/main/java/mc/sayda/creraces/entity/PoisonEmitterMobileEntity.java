@@ -32,7 +32,7 @@ import java.util.List;
 /**
  * Poison Emitter Mobile - a mobile version of the emitter that follows the
  * owner.
- * Pulshes Ratvenom to enemies within 5.5 blocks.
+ * Pulses Ratvenom to enemies within 5.5 blocks.
  * Stacks increase every 120 ticks (0.2 of lifetime).
  */
 @SuppressWarnings("null")

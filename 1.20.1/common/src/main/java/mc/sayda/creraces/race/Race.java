@@ -62,6 +62,8 @@ public class Race {
         @Nullable private final double[] respawnPos;
         private final boolean biomePreview;
         private final List<String> claimValidBiomes;
+        private final boolean enableTerritory;
+        @Nullable private final String factionGroup;
 
         private Race(Builder builder) {
                 this.id = builder.id;
@@ -108,6 +110,8 @@ public class Race {
                 this.respawnPos = builder.respawnPos;
                 this.biomePreview = builder.biomePreview;
                 this.claimValidBiomes = builder.claimValidBiomes;
+                this.enableTerritory = builder.enableTerritory;
+                this.factionGroup = builder.factionGroup;
         }
 
         public static class Builder {
@@ -149,6 +153,8 @@ public class Race {
                 @Nullable private double[] respawnPos = null;
                 private boolean biomePreview = false;
                 private List<String> claimValidBiomes = new java.util.ArrayList<>();
+                private boolean enableTerritory = false;
+                @Nullable private String factionGroup = null;
 
                 public Builder(ResourceLocation id, net.minecraft.network.chat.Component name) {
                         this.id = id;
@@ -340,6 +346,16 @@ public class Race {
                         return this;
                 }
 
+                public Builder enableTerritory(boolean enableTerritory) {
+                        this.enableTerritory = enableTerritory;
+                        return this;
+                }
+
+                public Builder factionGroup(@Nullable String factionGroup) {
+                        this.factionGroup = factionGroup;
+                        return this;
+                }
+
                 public Race build() {
                         if (this.id == null)
                                 throw new IllegalStateException("Race ID cannot be null");
@@ -497,6 +513,25 @@ public class Race {
 
         public List<String> claimValidBiomes() {
                 return claimValidBiomes;
+        }
+
+        public boolean enableTerritory() {
+                return enableTerritory;
+        }
+
+        public @Nullable String factionGroup() {
+                return factionGroup;
+        }
+
+        /**
+         * Returns the group key used for leader election and territory ownership.
+         * Uses the explicit faction_group if set, otherwise falls back to this race's
+         * own ID path so every territory race is self-contained by default.
+         * Returns null for races that have territory disabled.
+         */
+        public @Nullable String effectiveFactionGroup() {
+                if (!enableTerritory) return null;
+                return factionGroup != null ? factionGroup : id().getPath();
         }
 
         public boolean selectable() {

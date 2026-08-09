@@ -30,7 +30,7 @@ public class SetRacePacket {
         this.raceId = buf.readResourceLocation();
     }
 
-    public void toBytes(FriendlyByteBuf buf) {
+    public void encode(FriendlyByteBuf buf) {
         buf.writeResourceLocation(java.util.Objects.requireNonNull(this.raceId));
     }
 

@@ -16,6 +16,6 @@ public class VolcanicRockHardenedBlock extends Block {
                 .strength(2.0f, 6.0f)
                 .requiresCorrectToolForDrops()
                 .instrument(NoteBlockInstrument.BASEDRUM)
-                .lightLevel(state -> 15));
+                .lightLevel(state -> 0));
     }
 }

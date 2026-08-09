@@ -1,8 +1,0 @@
-{
-  "parent": "block/button",
-  "textures": {
-    "particle": "creraces:block/dryad_planks",
-    "texture": "creraces:block/dryad_planks"
-  },
-  "render_type": "solid"
-}

@@ -24,11 +24,11 @@ import java.util.function.Supplier;
 public class TerrainSamplePacket {
     public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "terrain_sample");
 
-    /** Sub-samples per chunk axis. CELL(10) / SUB(5) = 2px per sample — clean integer. */
+    /** Sub-samples per chunk axis. CELL(10) / SUB(5) = 2px per sample (clean integer). */
     public static final int SUB  = 5;
     public static final int SUB2 = SUB * SUB; // 25 bytes per chunk
 
-    private static final int RADIUS = 64; // chunks — gives 129×129×25 ≈ 406KB (one-shot)
+    private static final int RADIUS = 64; // chunks; gives 129×129×25 ≈ 406KB (one-shot)
 
     public final int originCX, originCZ;
     public final int width, height;
@@ -79,7 +79,7 @@ public class TerrainSamplePacket {
                 int cx = pcx - RADIUS + rx;
                 int cz = pcz - RADIUS + rz;
 
-                // Skip unloaded chunks — never trigger a chunk load
+                // Skip unloaded chunks; never trigger a chunk load
                 if (level.getChunkSource().getChunkNow(cx, cz) == null) continue;
 
                 int baseIdx = (rz * w + rx) * SUB2;
@@ -112,7 +112,7 @@ public class TerrainSamplePacket {
             }
             if (color == MapColor.NONE) return 0;
 
-            // Height-comparison shading — same logic as MapItemSavedData
+            // Height-comparison shading: same logic as MapItemSavedData
             MapColor.Brightness brightness;
             if (byC > byN)      brightness = MapColor.Brightness.HIGH;
             else if (byC < byN) brightness = MapColor.Brightness.LOW;

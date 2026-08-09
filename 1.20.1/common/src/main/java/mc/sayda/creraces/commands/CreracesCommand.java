@@ -9,6 +9,8 @@ import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import mc.sayda.creraces.race.Race;
 import mc.sayda.creraces.race.RaceIncidents;
 import mc.sayda.creraces.race.RaceRegistry;
+import mc.sayda.creraces.territory.ClaimData;
+import mc.sayda.creraces.territory.TerritoryManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -17,11 +19,11 @@ import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.ChunkPos;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
-import net.minecraft.commands.SharedSuggestionProvider;
 
 /**
  * Main command for race management.
@@ -33,14 +35,14 @@ public class CreracesCommand {
 
         public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
                 dispatcher.register(Commands.literal("creraces")
-                                // Base command accesible to everyone (for 'abilities' etc)
+                                // Base command accessible to everyone (for 'abilities' etc.)
                                 .requires(src -> true)
 
                                 // help (Available to everyone)
                                 .then(Commands.literal("help")
                                                 .executes(ctx -> executeHelp(ctx.getSource())))
 
-                                // hud (Available to everyone — opens HUD editor on client)
+                                // hud (Available to everyone; opens HUD editor on client)
                                 .then(Commands.literal("hud")
                                                 .executes(ctx -> {
                                                         ServerPlayer player = ctx.getSource().getPlayer();
@@ -73,15 +75,49 @@ public class CreracesCommand {
                                                         return 1;
                                                 }))
 
-                                // faction (Available to everyone — opens FactionManagementScreen)
-                                .then(Commands.literal("faction")
-                                                .executes(ctx -> executeFaction(ctx.getSource())))
-
-                                // territory (Available to everyone — opens TerritoryMapScreen)
+                                // territory (Available to everyone; opens TerritoryMapScreen - admin sub-branches below)
                                 .then(Commands.literal("territory")
-                                                .executes(ctx -> executeTerritory(ctx.getSource())))
+                                                .executes(ctx -> executeTerritory(ctx.getSource()))
 
-                                // clan (Available to everyone — opens ClanManagementScreen)
+                                                // territory race unclaim <race_id> (Admin Only)
+                                                .then(Commands.literal("race")
+                                                                .requires(src -> src.hasPermission(2))
+                                                                .then(Commands.literal("unclaim")
+                                                                                .then(Commands.argument("race_id",
+                                                                                                java.util.Objects.requireNonNull(
+                                                                                                                ResourceLocationArgument.id()))
+                                                                                                .suggests(CreracesCommand::suggestRaces)
+                                                                                                .executes(ctx -> executeAdminTerritoryRaceUnclaim(
+                                                                                                                ctx.getSource(),
+                                                                                                                ResourceLocationArgument.getId(ctx, "race_id"))))))
+
+                                                // territory chunk unclaim <x> <z> / chunk info <x> <z> (Admin Only)
+                                                .then(Commands.literal("chunk")
+                                                                .requires(src -> src.hasPermission(2))
+                                                                .then(Commands.literal("unclaim")
+                                                                                .then(Commands.argument("x",
+                                                                                                java.util.Objects.requireNonNull(
+                                                                                                                IntegerArgumentType.integer()))
+                                                                                                .then(Commands.argument("z",
+                                                                                                                java.util.Objects.requireNonNull(
+                                                                                                                                IntegerArgumentType.integer()))
+                                                                                                                .executes(ctx -> executeAdminTerritoryChunkUnclaim(
+                                                                                                                                ctx.getSource(),
+                                                                                                                                IntegerArgumentType.getInteger(ctx, "x"),
+                                                                                                                                IntegerArgumentType.getInteger(ctx, "z"))))))
+                                                                .then(Commands.literal("info")
+                                                                                .then(Commands.argument("x",
+                                                                                                java.util.Objects.requireNonNull(
+                                                                                                                IntegerArgumentType.integer()))
+                                                                                                .then(Commands.argument("z",
+                                                                                                                java.util.Objects.requireNonNull(
+                                                                                                                                IntegerArgumentType.integer()))
+                                                                                                                .executes(ctx -> executeAdminTerritoryChunkInfo(
+                                                                                                                                ctx.getSource(),
+                                                                                                                                IntegerArgumentType.getInteger(ctx, "x"),
+                                                                                                                                IntegerArgumentType.getInteger(ctx, "z"))))))))
+
+                                // clan (Available to everyone; opens ClanManagementScreen)
                                 .then(Commands.literal("clan")
                                                 .executes(ctx -> executeClan(ctx.getSource())))
 
@@ -320,44 +356,32 @@ public class CreracesCommand {
                                 }));
         }
 
-        private static int executeFaction(CommandSourceStack source) {
-                ServerPlayer player = source.getPlayer();
-                if (player == null) return 0;
-                mc.sayda.creraces.territory.TerritoryManager tm = mc.sayda.creraces.territory.TerritoryManager.get();
-                if (!tm.hasFaction(player.getUUID())) {
-                        source.sendFailure(Component.literal("You are not in a faction."));
-                        return 0;
-                }
-                java.util.UUID factionId = tm.getFactionId(player.getUUID());
-                mc.sayda.creraces.territory.FactionData faction = tm.getFaction(factionId);
-                if (faction == null) return 0;
-                mc.sayda.creraces.network.BoundaryHandler.sendFactionUpdate(player,
-                        mc.sayda.creraces.network.FactionUpdatePacket.from(faction, source.getServer()));
-                mc.sayda.creraces.network.BoundaryHandler.sendOpenFactionManage(player);
-                return 1;
-        }
-
         private static int executeTerritory(CommandSourceStack source) {
                 ServerPlayer player = source.getPlayer();
                 if (player == null) return 0;
                 mc.sayda.creraces.network.BoundaryHandler.sendTerritoryData(player,
                         mc.sayda.creraces.network.RequestTerritoryDataPacket.buildFor(player));
+                mc.sayda.creraces.network.BoundaryHandler.sendTerrainSample(player,
+                        mc.sayda.creraces.network.TerrainSamplePacket.buildFor(player));
+                mc.sayda.creraces.network.BoundaryHandler.sendOpenTerritoryMap(player);
                 return 1;
         }
 
         private static int executeClan(CommandSourceStack source) {
                 ServerPlayer player = source.getPlayer();
                 if (player == null) return 0;
-                mc.sayda.creraces.territory.TerritoryManager tm = mc.sayda.creraces.territory.TerritoryManager.get();
-                java.util.UUID clanId = tm.getClanId(player.getUUID());
-                if (clanId == null) {
-                        source.sendFailure(Component.literal("You are not in a clan."));
+                net.minecraft.resources.ResourceLocation myRace =
+                        mc.sayda.creraces.capability.DataUtils.getVariables(player)
+                                .map(mc.sayda.creraces.capability.IPlayerVariables::getRace)
+                                .orElse(null);
+                if (myRace == null || myRace.equals(mc.sayda.creraces.race.RaceRegistry.NONE)) {
+                        source.sendFailure(Component.literal("You have not chosen a race."));
                         return 0;
                 }
-                mc.sayda.creraces.territory.ClanData clan = tm.getClans().get(clanId);
-                if (clan == null) return 0;
+                mc.sayda.creraces.territory.TerritoryManager tm = mc.sayda.creraces.territory.TerritoryManager.get();
+                mc.sayda.creraces.territory.ClanData clan = tm.getOrCreateClan(myRace);
                 mc.sayda.creraces.network.BoundaryHandler.sendClanUpdate(player,
-                        mc.sayda.creraces.network.ClanUpdatePacket.from(clan, tm, source.getServer()));
+                        mc.sayda.creraces.network.ClanUpdatePacket.from(clan));
                 mc.sayda.creraces.network.BoundaryHandler.sendOpenClanManage(player);
                 return 1;
         }
@@ -377,7 +401,6 @@ public class CreracesCommand {
                 sendHelp(source, "/creraces mirror"  + (isOp ? " [player]" : ""), "creraces.help.mirror");
                 sendHelp(source, "/creraces debug"   + (isOp ? " [player]" : ""), "creraces.help.debug");
                 sendHelp(source, "/creraces team",                           "creraces.help.team");
-                sendHelp(source, "/creraces faction",                        "creraces.help.faction");
                 sendHelp(source, "/creraces territory",                      "creraces.help.territory");
                 sendHelp(source, "/creraces clan",                           "creraces.help.clan");
                 sendHelp(source, "/creraces pocket <invite|join|leave|list|kick|revoke>", "creraces.help.pocket");
@@ -391,8 +414,11 @@ public class CreracesCommand {
                         sendHelp(source, "/creraces grant <player> <ability>",    "creraces.help.grant");
                         sendHelp(source, "/creraces revoke <player> <ability>",   "creraces.help.revoke");
                         sendHelp(source, "/creraces modify <player> <var> <val>", "creraces.help.modify");
-                        sendHelp(source, "/creraces reload",                       "creraces.help.reload");
-                        sendHelp(source, "/creraces pocket goto <index>",          "creraces.help.pocket_goto");
+                        sendHelp(source, "/creraces reload",                                          "creraces.help.reload");
+                        sendHelp(source, "/creraces pocket goto <index>",                             "creraces.help.pocket_goto");
+                        sendHelp(source, "/creraces territory race unclaim <race_id>",                "creraces.help.territory_race_unclaim");
+                        sendHelp(source, "/creraces territory chunk unclaim <x> <z>",                "creraces.help.territory_chunk_unclaim");
+                        sendHelp(source, "/creraces territory chunk info <x> <z>",                   "creraces.help.territory_chunk_info");
                 }
 
                 return 1;
@@ -838,7 +864,8 @@ public class CreracesCommand {
                 }
 
                 double tx = 1000 * (index % 1000);
-                double ty = 128;
+                double ty = mc.sayda.creraces.capability.DataUtils.getVariables(player)
+                        .map(v -> v.getPocketSpawnY()).orElse(128.0);
                 double tz = 1000 * (index / 1000);
 
                 player.teleportTo(pocketWorld, tx + 0.5, ty + 1.0, tz + 0.5, 0, 0);
@@ -909,9 +936,9 @@ public class CreracesCommand {
                 // Dryad Restriction: block entry to own pocket if tree is not set
                 var hostRace = hostVars.getRace();
                 if (player == host && hostRace != null && hostRace.toString().equals("creraces:dryad")) {
-                    double tx = hostVars.getPersistentState(new ResourceLocation("creraces", "tx"));
-                    double ty = hostVars.getPersistentState(new ResourceLocation("creraces", "ty"));
-                    double tz = hostVars.getPersistentState(new ResourceLocation("creraces", "tz"));
+                    double tx = hostVars.getPersistentState(new ResourceLocation("creraces", "node_x"));
+                    double ty = hostVars.getPersistentState(new ResourceLocation("creraces", "node_y"));
+                    double tz = hostVars.getPersistentState(new ResourceLocation("creraces", "node_z"));
                     if (tx == 0 && ty == 0 && tz == 0) {
                         source.sendFailure(Component.translatable("message.creraces.dryad.no_tree"));
                         return 0;
@@ -946,6 +973,62 @@ public class CreracesCommand {
 
                 source.sendSuccess(() -> Component.translatable("message.creraces.pocket.joined", host.getDisplayName())
                                 .withStyle(ChatFormatting.GREEN), false);
+                return 1;
+        }
+
+        private static int executeAdminTerritoryRaceUnclaim(CommandSourceStack source, ResourceLocation raceId) {
+                TerritoryManager tm = TerritoryManager.get();
+                long before = tm.getClaims().values().stream()
+                                .filter(c -> c.getRaceId().equals(raceId)).count();
+                if (before == 0) {
+                        source.sendFailure(Component.literal("No claims found for race: " + raceId));
+                        return 0;
+                }
+                tm.unclaimAllForRace(raceId);
+                source.sendSuccess(() -> Component.literal(
+                                "Removed " + before + " claim(s) for race '" + raceId + "'.")
+                                .withStyle(ChatFormatting.YELLOW), true);
+                return 1;
+        }
+
+        private static int executeAdminTerritoryChunkUnclaim(CommandSourceStack source, int chunkX, int chunkZ) {
+                ChunkPos chunkPos = new ChunkPos(chunkX, chunkZ);
+                TerritoryManager tm = TerritoryManager.get();
+                ClaimData claim = tm.getClaimAt(chunkPos);
+                if (claim == null) {
+                        source.sendFailure(Component.literal(
+                                        "Chunk [" + chunkX + ", " + chunkZ + "] is not claimed."));
+                        return 0;
+                }
+                boolean ok = tm.unclaimChunk(claim.getRaceId(), chunkPos);
+                if (!ok) {
+                        tm.forceUnclaimChunk(chunkPos);
+                        source.sendSuccess(() -> Component.literal(
+                                        "Force-unclaimed chunk [" + chunkX + ", " + chunkZ + "] (was anchor).")
+                                        .withStyle(ChatFormatting.YELLOW), true);
+                } else {
+                        source.sendSuccess(() -> Component.literal(
+                                        "Unclaimed chunk [" + chunkX + ", " + chunkZ + "].")
+                                        .withStyle(ChatFormatting.GREEN), true);
+                }
+                return 1;
+        }
+
+        private static int executeAdminTerritoryChunkInfo(CommandSourceStack source, int chunkX, int chunkZ) {
+                ChunkPos chunkPos = new ChunkPos(chunkX, chunkZ);
+                ClaimData claim = TerritoryManager.get().getClaimAt(chunkPos);
+                if (claim == null) {
+                        source.sendSuccess(() -> Component.literal(
+                                        "Chunk [" + chunkX + ", " + chunkZ + "] is unclaimed.")
+                                        .withStyle(ChatFormatting.GRAY), false);
+                        return 1;
+                }
+                String raceStr = claim.getRaceId().toString();
+                boolean persistent = claim.isPersistent();
+                source.sendSuccess(() -> Component.literal(
+                                "Chunk [" + chunkX + ", " + chunkZ + "]: race=" + raceStr
+                                                + (persistent ? " §e[ANCHOR]§r" : ""))
+                                .withStyle(ChatFormatting.AQUA), false);
                 return 1;
         }
 

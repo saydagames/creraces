@@ -41,27 +41,87 @@ public class LaunchProjectileAction implements ActionRegistry.RaceAction {
         float spd = (float) speed.evaluate(player, target, slot);
         float acc = (float) inaccuracy.evaluate(player, target, slot);
 
-        if ("arrow".equals(projectileType) || "minecraft:arrow".equals(projectileType)) {
-            Arrow arrow = new Arrow(player.level(), player);
-            arrow.setBaseDamage(dmg);
-            arrow.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, spd, acc);
-            player.level().addFreshEntity(arrow);
-        } else if ("feather".equals(projectileType) || "minecraft:feather".equals(projectileType)
-                || "harpy_feather".equals(projectileType) || "creraces:harpy_feather".equals(projectileType)) {
-            FeatherProjectile feather = new FeatherProjectile(player.level(), player);
-            feather.setDamage(dmg);
+        String type = projectileType.contains(":") ? projectileType : "minecraft:" + projectileType;
 
-            if ("harpy_feather".equals(projectileType) || "creraces:harpy_feather".equals(projectileType)) {
-                feather.setItem(new ItemStack(mc.sayda.creraces.registry.ModItems.HARPY_FEATHER.get()));
-            } else {
-                feather.setItem(new ItemStack(Items.FEATHER));
+        switch (type) {
+            case "minecraft:arrow" -> {
+                Arrow arrow = new Arrow(player.level(), player);
+                arrow.setBaseDamage(dmg);
+                arrow.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, spd, acc);
+                player.level().addFreshEntity(arrow);
             }
-
-            feather.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, spd, acc);
-            player.level().addFreshEntity(feather);
-        } else if (projectileType.contains(":")) {
-            // Generic fallback for other entities if we want to support them later
-            // For now, let's stick to these
+            case "minecraft:spectral_arrow" -> {
+                net.minecraft.world.entity.projectile.SpectralArrow spectral =
+                        new net.minecraft.world.entity.projectile.SpectralArrow(player.level(), player);
+                spectral.setBaseDamage(dmg);
+                spectral.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, spd, acc);
+                player.level().addFreshEntity(spectral);
+            }
+            case "minecraft:snowball" -> {
+                net.minecraft.world.entity.projectile.Snowball snowball =
+                        new net.minecraft.world.entity.projectile.Snowball(player.level(), player);
+                snowball.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, spd, acc);
+                player.level().addFreshEntity(snowball);
+            }
+            case "minecraft:egg" -> {
+                net.minecraft.world.entity.projectile.ThrownEgg egg =
+                        new net.minecraft.world.entity.projectile.ThrownEgg(player.level(), player);
+                egg.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, spd, acc);
+                player.level().addFreshEntity(egg);
+            }
+            case "minecraft:ender_pearl" -> {
+                net.minecraft.world.entity.projectile.ThrownEnderpearl pearl =
+                        new net.minecraft.world.entity.projectile.ThrownEnderpearl(player.level(), player);
+                pearl.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, spd, acc);
+                player.level().addFreshEntity(pearl);
+            }
+            case "minecraft:fireball" -> {
+                net.minecraft.world.phys.Vec3 look = player.getLookAngle().scale(spd);
+                net.minecraft.world.entity.projectile.LargeFireball fireball =
+                        new net.minecraft.world.entity.projectile.LargeFireball(player.level(), player,
+                                look.x, look.y, look.z, (int) dmg);
+                fireball.setPos(player.getX(), player.getEyeY(), player.getZ());
+                player.level().addFreshEntity(fireball);
+            }
+            case "minecraft:small_fireball" -> {
+                net.minecraft.world.phys.Vec3 look = player.getLookAngle().scale(spd);
+                net.minecraft.world.entity.projectile.SmallFireball smallFireball =
+                        new net.minecraft.world.entity.projectile.SmallFireball(player.level(), player,
+                                look.x, look.y, look.z);
+                smallFireball.setPos(player.getX(), player.getEyeY(), player.getZ());
+                player.level().addFreshEntity(smallFireball);
+            }
+            case "creraces:harpy_feather" -> {
+                FeatherProjectile harpy = new FeatherProjectile(player.level(), player);
+                harpy.setDamage(dmg);
+                harpy.setItem(new ItemStack(mc.sayda.creraces.registry.ModItems.HARPY_FEATHER.get()));
+                harpy.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, spd, acc);
+                player.level().addFreshEntity(harpy);
+            }
+            case "minecraft:feather" -> {
+                FeatherProjectile feather = new FeatherProjectile(player.level(), player);
+                feather.setDamage(dmg);
+                feather.setItem(new ItemStack(Items.FEATHER));
+                feather.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, spd, acc);
+                player.level().addFreshEntity(feather);
+            }
+            default -> {
+                net.minecraft.world.entity.EntityType<?> entityType =
+                        BuiltInRegistries.ENTITY_TYPE.get(new ResourceLocation(type));
+                if (entityType != null) {
+                    net.minecraft.world.entity.Entity entity = entityType.create(player.level());
+                    if (entity instanceof net.minecraft.world.entity.projectile.Projectile proj) {
+                        entity.setPos(player.getX(), player.getEyeY(), player.getZ());
+                        if (proj instanceof net.minecraft.world.entity.projectile.AbstractArrow arrow) {
+                            arrow.setBaseDamage(dmg);
+                            arrow.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, spd, acc);
+                        } else {
+                            proj.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, spd, acc);
+                        }
+                        player.level().addFreshEntity(entity);
+                    }
+                }
+            }
         }
         return true;
     }

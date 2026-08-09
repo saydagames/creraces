@@ -119,10 +119,11 @@ public class ScrollItem extends Item {
                             if (!player.getAbilities().instabuild) {
                                 stack.shrink(1);
                             }
+                            boolean wasAlreadyLearned = vars.isAbilityUnlocked(abilityId);
                             vars.unlockAbility(abilityId);
                             vars.setAbilityLevel(abilityId, scrollLevel);
-                            
-                            Component learnedMsg = currentLevel < scrollLevel && vars.isAbilityUnlocked(abilityId)
+
+                            Component learnedMsg = wasAlreadyLearned
                                     ? Component.translatable("creraces.message.ability_upgraded", ability.name().getString(), scrollLevel)
                                     : Component.translatable("creraces.message.ability_learned", ability.name().getString());
 

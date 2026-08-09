@@ -35,7 +35,7 @@ public class DynamicMirrorScreen extends AbstractContainerScreen<MirrorMenu> {
     private final Map<String, String> originalCustomizations = new HashMap<>();
     private final Map<String, String> tempCustomizations = new HashMap<>();
     private final Player player;
-    private Race race; // Changed to non-final as it's set in setupRaceWidgets
+    private Race race;
     private float previewRotation = 0;
     private boolean saved = false;
     private boolean initializedRaceWidgets = false;
@@ -43,7 +43,6 @@ public class DynamicMirrorScreen extends AbstractContainerScreen<MirrorMenu> {
     public DynamicMirrorScreen(MirrorMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
         this.player = inventory.player;
-        // this.race = DataUtils.getVariables(player).map(IPlayerVariables::getRace).orElse(null); // Initialized in setupRaceWidgets
         this.imageWidth = 256;
         this.imageHeight = 256;
     }

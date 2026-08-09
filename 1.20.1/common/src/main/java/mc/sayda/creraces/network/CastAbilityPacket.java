@@ -30,8 +30,6 @@ public class CastAbilityPacket {
     public void handle(Supplier<NetworkManager.PacketContext> contextSupplier) {
         NetworkManager.PacketContext context = contextSupplier.get();
         context.queue(() -> {
-            // Server-side logic for casting
-            // This will call AbilityIncidents.tryCast(player, slot)
             if (context.getPlayer() instanceof net.minecraft.server.level.ServerPlayer sp) {
                 mc.sayda.creraces.ability.AbilityIncidents.tryCast(sp, slot);
             }

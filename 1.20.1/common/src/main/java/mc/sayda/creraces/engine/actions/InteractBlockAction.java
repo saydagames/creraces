@@ -42,6 +42,7 @@ public class InteractBlockAction implements ActionRegistry.RaceAction {
     public boolean execute(Player player, @Nullable LivingEntity target,
             @Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @Nullable BlockPos interact_pos) {
+        if (player.level().isClientSide()) return true;
         BlockPos pos = (useInteractPos && interact_pos != null) ? interact_pos : player.blockPosition();
         pos = pos.offset(
                 (int) ox.evaluate(player, target, slot, interact_pos),

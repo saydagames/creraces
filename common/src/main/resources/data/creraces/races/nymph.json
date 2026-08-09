@@ -1,5 +1,6 @@
 {
     "creraces:name": "race.creraces.nymph.name",
+    "creraces:faction_group": "nymph",
     "creraces:scale": {
         "base": 1.0,
         "height": 1.1
@@ -81,11 +82,27 @@
                             "duration": 100
                         },
                         {
-                            "effect": "minecraft:blindness",
-                            "amplifier": 0,
+                            "effect": "minecraft:darkness",
+                            "amplifier": 254,
                             "duration": 100
                         }
                     ]
+                }
+            ]
+        }
+    ],
+    "graceperiod": [
+        {
+            "type": "creraces:on_events",
+            "triggers": ["on_respawn", "on_select"],
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "creraces:nymph_call",
+                    "duration": 6000,
+                    "amplifier": 0,
+                    "visible": false,
+                    "ambient": false
                 }
             ]
         }

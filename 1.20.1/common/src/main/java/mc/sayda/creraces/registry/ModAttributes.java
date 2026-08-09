@@ -97,12 +97,12 @@ public class ModAttributes {
                         () -> new RangedAttribute("attribute.creraces.armor_shred", 0.0, 0.0, 1.0)
                                         .setSyncable(true));
 
-        /** Flat magic resistance — reduces incoming magical damage via LoL formula. */
+        /** Flat magic resistance; reduces incoming magical damage via LoL formula. */
         public static final RegistrySupplier<Attribute> MAGIC_RESIST = ATTRIBUTES.register("magic_resist",
                         () -> new RangedAttribute("attribute.creraces.magic_resist", 0.0, 0.0, 1000.0)
                                         .setSyncable(true));
 
-        /** Flat magic penetration — reduces target's MR by this amount. */
+        /** Flat magic penetration; reduces target's MR by this amount. */
         public static final RegistrySupplier<Attribute> MAGIC_PIERCE = ATTRIBUTES.register("magic_pierce",
                         () -> new RangedAttribute("attribute.creraces.magic_pierce", 0.0, 0.0, 1000.0)
                                         .setSyncable(true));
@@ -131,7 +131,7 @@ public class ModAttributes {
                         case "crit_rate" -> "crit_chance";
                         case "ability_haste" -> "cooldown_reduction";
 
-                        case "attack_damage" -> "attack_damage"; // attributeslib:attack_damage
+                        case "attack_damage" -> "attack_damage";
                         case "magic_resist" -> "magic_resistance";
                         case "healing_received" -> "healing_received";
                         default -> internalName;
@@ -174,6 +174,7 @@ public class ModAttributes {
                 if (attr == null)
                         return false;
                 ResourceLocation id = BuiltInRegistries.ATTRIBUTE.getKey(attr);
+                if (id == null) return false;
 
                 String path = id.getPath();
                 return switch (path) {

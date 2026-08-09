@@ -37,10 +37,11 @@ public abstract class PeriodicTrait implements TraitRegistry.RaceTrait {
         if (currentTimer <= 0) {
             if (shouldExecute(player, vars)) {
                 execute(player, vars);
-                // Reset timer based on current scaling
-                int intVal = (int) interval.evaluate(player, null);
-                vars.setTraitTimer(traitId, Math.max(1, intVal));
             }
+            // Reset the timer regardless of whether execution happened so that
+            // shouldExecute is only called every interval ticks, not every tick.
+            int intVal = (int) interval.evaluate(player, null);
+            vars.setTraitTimer(traitId, Math.max(0, intVal - 1));
         } else {
             vars.setTraitTimer(traitId, currentTimer - 1);
         }

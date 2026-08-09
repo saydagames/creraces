@@ -89,9 +89,7 @@ public class ForgeConfig {
                 public final ForgeConfigSpec.ConfigValue<Integer> territory_default_claim_radius;
                 public final ForgeConfigSpec.ConfigValue<Integer> territory_max_nodes_per_player;
                 public final ForgeConfigSpec.ConfigValue<Boolean> territory_inter_race_blocking;
-                public final ForgeConfigSpec.ConfigValue<Long>    territory_leader_decay_threshold_days;
-                public final ForgeConfigSpec.ConfigValue<Long>    territory_succession_window_days;
-                public final ForgeConfigSpec.ConfigValue<Integer> territory_succession_tick_interval;
+                public final ForgeConfigSpec.ConfigValue<Integer> territory_claim_cost_per_chunk;
 
                 public final ForgeConfigSpec.ConfigValue<Boolean> team_require_same_race;
 
@@ -327,18 +325,9 @@ public class ForgeConfig {
                                         .comment("Cross-race claims block each other. Default: true")
                                         .define("territory_inter_race_blocking",
                                                         CreRacesConfig.TERRITORY_INTER_RACE_BLOCKING.get());
-                        territory_leader_decay_threshold_days = builder
-                                        .comment("Days offline before succession triggers. -1 = disabled. Default: 14")
-                                        .defineInRange("territory_leader_decay_threshold_days",
-                                                        CreRacesConfig.TERRITORY_LEADER_DECAY_THRESHOLD_DAYS.get(), -1L, 3650L);
-                        territory_succession_window_days = builder
-                                        .comment("Days of activity required to be eligible for succession. Default: 7")
-                                        .defineInRange("territory_succession_window_days",
-                                                        CreRacesConfig.TERRITORY_SUCCESSION_WINDOW_DAYS.get(), 1L, 365L);
-                        territory_succession_tick_interval = builder
-                                        .comment("Ticks between succession checks (~5 min = 6000). Default: 6000")
-                                        .defineInRange("territory_succession_tick_interval",
-                                                        CreRacesConfig.TERRITORY_SUCCESSION_TICK_INTERVAL.get(), 20, 72000);
+                        territory_claim_cost_per_chunk = builder
+                                        .comment("Coins deducted per chunk when claiming territory. 0 = free. Default: 200")
+                                        .defineInRange("territory_claim_cost_per_chunk", 200, 0, 100000);
                         builder.pop();
 
                         builder.push("Team");
@@ -801,12 +790,10 @@ public class ForgeConfig {
                 CreRacesConfig.MINI_BUILD_DIMENSION_BLACKLIST = () -> (java.util.List<String>) (java.util.List<?>) COMMON.mini_build_dimension_blacklist
                                 .get();
 
-                CreRacesConfig.TERRITORY_DEFAULT_CLAIM_RADIUS        = () -> COMMON.territory_default_claim_radius.get();
-                CreRacesConfig.TERRITORY_MAX_NODES_PER_PLAYER        = () -> COMMON.territory_max_nodes_per_player.get();
-                CreRacesConfig.TERRITORY_INTER_RACE_BLOCKING         = () -> COMMON.territory_inter_race_blocking.get();
-                CreRacesConfig.TERRITORY_LEADER_DECAY_THRESHOLD_DAYS = () -> COMMON.territory_leader_decay_threshold_days.get();
-                CreRacesConfig.TERRITORY_SUCCESSION_WINDOW_DAYS      = () -> COMMON.territory_succession_window_days.get();
-                CreRacesConfig.TERRITORY_SUCCESSION_TICK_INTERVAL    = () -> COMMON.territory_succession_tick_interval.get();
+                CreRacesConfig.TERRITORY_DEFAULT_CLAIM_RADIUS = () -> COMMON.territory_default_claim_radius.get();
+                CreRacesConfig.TERRITORY_MAX_NODES_PER_PLAYER = () -> COMMON.territory_max_nodes_per_player.get();
+                CreRacesConfig.TERRITORY_INTER_RACE_BLOCKING  = () -> COMMON.territory_inter_race_blocking.get();
+                CreRacesConfig.TERRITORY_CLAIM_COST_PER_CHUNK = () -> COMMON.territory_claim_cost_per_chunk.get();
 
                 CreRacesConfig.TEAM_REQUIRE_SAME_RACE = () -> COMMON.team_require_same_race.get();
 

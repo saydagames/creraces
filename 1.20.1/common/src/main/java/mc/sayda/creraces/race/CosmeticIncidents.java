@@ -33,9 +33,9 @@ public class CosmeticIncidents {
         // If master toggle is off, stop here after clearing
         if (!mc.sayda.creraces.config.CreRacesConfig.RACE_ADDONS_ENABLED.get()) {
             if (player instanceof net.minecraft.server.level.ServerPlayer) {
-                mc.sayda.twilight_lib.network.NetworkHandler.sendAddonsToAll(
-                        createSyncPacket(player.getUUID(), addons.getActiveAddons(),
-                                getExternalGrantsRobust(addons), addons.getAllAddonTints()));
+                var pkt = createSyncPacket(player.getUUID(), addons.getActiveAddons(),
+                        getExternalGrantsRobust(addons), addons.getAllAddonTints());
+                if (pkt != null) mc.sayda.twilight_lib.network.NetworkHandler.sendAddonsToAll(pkt);
             }
             return;
         }
@@ -100,9 +100,9 @@ public class CosmeticIncidents {
         if (addons == null)
             return;
 
-        mc.sayda.twilight_lib.network.NetworkHandler.sendAddonsToAll(
-                createSyncPacket(player.getUUID(), addons.getActiveAddons(),
-                        getExternalGrantsRobust(addons), addons.getAllAddonTints()));
+        var pkt = createSyncPacket(player.getUUID(), addons.getActiveAddons(),
+                getExternalGrantsRobust(addons), addons.getAllAddonTints());
+        if (pkt != null) mc.sayda.twilight_lib.network.NetworkHandler.sendAddonsToAll(pkt);
     }
 
     private static void applyAddonData(net.minecraft.world.entity.player.Player player, JsonObject data,
@@ -196,7 +196,9 @@ public class CosmeticIncidents {
         // Handle Race placeholder
         if (race != null) {
             result = result.replace("{race}", race.id().toString());
-            result = result.replace("{gender}", race.getGState() == GState.FEMALE ? "female" : "male");
+            if (race.getGState() != GState.BOTH) {
+                result = result.replace("{gender}", race.getGState() == GState.FEMALE ? "female" : "male");
+            }
 
             for (RaceCustomization cust : race.customization()) {
                 String placeholder = "{" + cust.id() + "}";

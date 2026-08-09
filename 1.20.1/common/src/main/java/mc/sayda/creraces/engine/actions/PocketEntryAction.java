@@ -77,9 +77,9 @@ public class PocketEntryAction implements ActionRegistry.RaceAction {
 
             // Dryad Restriction
             if (vars.getRace().toString().equals("creraces:dryad")) {
-                double tx = vars.getPersistentState(new ResourceLocation("creraces", "tx"));
-                double ty = vars.getPersistentState(new ResourceLocation("creraces", "ty"));
-                double tz = vars.getPersistentState(new ResourceLocation("creraces", "tz"));
+                double tx = vars.getPersistentState(new ResourceLocation("creraces", "node_x"));
+                double ty = vars.getPersistentState(new ResourceLocation("creraces", "node_y"));
+                double tz = vars.getPersistentState(new ResourceLocation("creraces", "node_z"));
                 if (tx == 0 && ty == 0 && tz == 0) {
                     serverPlayer.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.creraces.dryad.no_tree"), true);
                     return;

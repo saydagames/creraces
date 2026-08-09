@@ -1,6 +1,7 @@
 package mc.sayda.creraces.ability;
 
 import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.config.CreRacesConfig;
 import mc.sayda.creraces.race.Race;
 import mc.sayda.creraces.race.RaceRegistry;
 import mc.sayda.creraces.network.BoundaryHandler;
@@ -52,14 +53,6 @@ public class AbilityIncidents {
 
             // 3. Find Executor
             AbilityExecutor executor = AbilityExecutionRegistry.get(abilityId);
-            if (executor == null) {
-                // Ability might not have logic yet, but we should still notify or log
-                var name = ability.name();
-                if (name != null) {
-                    player.displayClientMessage(java.util.Objects.requireNonNull(Component.translatable("msg.creraces.no_executor", (Object) name)), true);
-                }
-                return;
-            }
 
             // 4. Evaluate Condition
             // TODO: Add support for custom failure messages in ability requirements
@@ -76,8 +69,7 @@ public class AbilityIncidents {
 
                     var hasteAttr = mc.sayda.creraces.registry.ModAttributes.ABILITY_HASTE.get();
                     double haste = hasteAttr != null ? player.getAttributeValue(hasteAttr) : 0.0;
-                    double cap = 40.0; // ABILITY_HASTE_CAP default
-                    double effectiveHaste = Math.min(haste, cap);
+                    double effectiveHaste = Math.min(haste, CreRacesConfig.ABILITY_HASTE_CAP.get());
                     double multiplier = 1.0 - (effectiveHaste / 100.0);
                     int cooledTicks = (int) (ability.cooldown() * multiplier);
 

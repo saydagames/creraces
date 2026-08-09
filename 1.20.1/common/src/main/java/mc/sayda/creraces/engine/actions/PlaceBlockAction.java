@@ -114,10 +114,15 @@ public class PlaceBlockAction implements ActionRegistry.RaceAction {
 
         net.minecraft.world.level.block.Block resolvedBlock = net.minecraft.core.registries.BuiltInRegistries.BLOCK
                 .get(block);
- 
-        // If the block is already there, we return 'false' so that the ability
-        // doesn't progress its state or consume costs when no change occurred.
-        if (player.level().getBlockState(finalPos).is(resolvedBlock)) {
+
+        if (resolvedBlock == null) {
+            CreRaces.LOGGER.error("PlaceBlockAction: block '{}' not found in registry", block);
+            return false;
+        }
+
+        // If the block is already there and we're not overwriting, abort so the
+        // ability doesn't progress its state or consume costs when no change occurred.
+        if (!overwrite && player.level().getBlockState(finalPos).is(resolvedBlock)) {
             return false;
         }
 

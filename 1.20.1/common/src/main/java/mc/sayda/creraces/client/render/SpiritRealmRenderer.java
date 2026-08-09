@@ -82,7 +82,7 @@ public class SpiritRealmRenderer {
         poseStack.mulPose(Axis.YP.rotationDegrees(180));
 
         if (isSecond) {
-            // Align perfectly at time = 210,000 ticks (the user's perfect Night 9 point)
+            // Align at 210,000 ticks: this is the Night 9 peak (Spirit Moon aligns here)
             double alignmentPoint = 210000.0 / 216000.0;
             double orbitAngle = (progress - alignmentPoint) * 360.0;
             double rad = Math.toRadians(orbitAngle);

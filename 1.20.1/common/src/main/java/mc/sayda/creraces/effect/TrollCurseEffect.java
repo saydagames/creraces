@@ -21,7 +21,7 @@ import javax.annotation.Nonnull;
 public class TrollCurseEffect extends MobEffect {
 
     public TrollCurseEffect() {
-        super(MobEffectCategory.HARMFUL, 0xFF5500); // dark orange
+        super(MobEffectCategory.NEUTRAL, 0xFF5500); // dark orange
     }
 
     @Override

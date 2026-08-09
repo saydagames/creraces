@@ -34,7 +34,15 @@ public class RaceTeamManager {
         List<mc.sayda.creraces.network.TeamUpdatePacket.MemberInfo> memberInfos = new ArrayList<>();
         for (UUID memberId : team.getMembers()) {
             ServerPlayer member = server.getPlayerList().getPlayer(Objects.requireNonNull(memberId));
-            String name = member != null ? member.getName().getString() : "Unknown";
+            String name;
+            if (member != null) {
+                name = member.getName().getString();
+            } else {
+                name = server.getProfileCache()
+                        .get(memberId)
+                        .map(com.mojang.authlib.GameProfile::getName)
+                        .orElse("Unknown");
+            }
             memberInfos.add(new mc.sayda.creraces.network.TeamUpdatePacket.MemberInfo(
                     memberId,
                     name,
@@ -85,8 +93,7 @@ public class RaceTeamManager {
         }
 
         public void setName(String name) {
-            int maxLen = mc.sayda.creraces.config.CreRacesConfig.NETWORK_TEAM_NAME_MAX_LEN.get(); // NETWORK_TEAM_NAME_MAX_LEN
-                                                                                                  // default
+            int maxLen = mc.sayda.creraces.config.CreRacesConfig.NETWORK_TEAM_NAME_MAX_LEN.get();
             if (name.length() > maxLen) {
                 this.name = name.substring(0, maxLen);
             } else {
@@ -159,9 +166,9 @@ public class RaceTeamManager {
                     // Shared Team ID: Follow Friendly Fire toggle
                     RaceTeam team = TEAMS.get(vTeam);
                     if (team != null && team.isFriendlyFire()) {
-                        return true; // Friendly Fire is ON, they are enemies
+                        return true;
                     }
-                    return false; // Friendly Fire is OFF, they are allies
+                    return false;
                 } else {
                     // Different teams or missing team: Absolute Authority (Treat as enemies)
                     return true;

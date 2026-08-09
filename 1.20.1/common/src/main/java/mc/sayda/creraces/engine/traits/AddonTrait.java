@@ -46,7 +46,28 @@ public class AddonTrait implements TraitRegistry.RaceTrait {
 
     @Override
     public void tick(Player player) {
-        // No-op - addons are applied statically by CosmeticIncidents
+        if (condition == null || !isEnabled()) return;
+        if (player.level().isClientSide()) return;
+        if (player.tickCount % 20 != 0) return;
+
+        mc.sayda.twilight_lib.capabilities.IAddons addons =
+                mc.sayda.twilight_lib.capabilities.DataUtils.getAddonsData(player);
+        if (addons == null) return;
+
+        boolean conditionMet = condition.evaluate(player, null, null, null);
+        boolean current = addons.getActiveAddons().contains(addonId);
+        if (conditionMet == current) return;
+
+        mc.sayda.creraces.race.CosmeticIncidents.setAddonActiveRobust(addons, addonId, conditionMet, false);
+
+        var pkt = mc.sayda.creraces.race.CosmeticIncidents.createSyncPacket(
+                player.getUUID(),
+                addons.getActiveAddons(),
+                mc.sayda.creraces.race.CosmeticIncidents.getExternalGrantsRobust(addons),
+                addons.getAllAddonTints());
+        if (pkt != null) {
+            mc.sayda.twilight_lib.network.NetworkHandler.sendAddonsToAll(pkt);
+        }
     }
 
     public String getAddonId() {

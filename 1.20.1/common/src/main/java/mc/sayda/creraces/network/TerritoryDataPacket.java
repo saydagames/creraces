@@ -34,7 +34,7 @@ public class TerritoryDataPacket {
             this.chunkZ = cz;
             this.relation = relation;
             this.dormant = dormant;
-            this.factionName = factionName;
+            this.factionName = factionName != null ? factionName : "";
             this.ownerName = ownerName != null ? ownerName : "";
         }
     }

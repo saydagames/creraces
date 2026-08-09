@@ -90,10 +90,8 @@ public class TargetFilter {
             return false;
 
         // 2. Process ALLOW rules
-        // If it's an ally, it is ONLY valid if "allies" or "self" (if victim is caster)
-        // is explicitly allowed.
-        // Otherwise, it must pass the category filters (players/mobs/all/enemies).
         if (isAlly) {
+            if (allow.contains("all")) return true;
             if (victim.equals(caster) && allow.contains("self"))
                 return true;
             return allow.contains("allies");

@@ -1,8 +1,0 @@
-{
-  "parent": "block/cube_all",
-  "textures": {
-    "all": "creraces:block/volcanic_rock",
-    "particle": "creraces:block/volcanic_rock"
-  },
-  "render_type": "solid"
-}

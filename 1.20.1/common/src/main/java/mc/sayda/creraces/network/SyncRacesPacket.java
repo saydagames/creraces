@@ -1,7 +1,5 @@
 package mc.sayda.creraces.network;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.race.RaceManager;
 import net.minecraft.network.FriendlyByteBuf;

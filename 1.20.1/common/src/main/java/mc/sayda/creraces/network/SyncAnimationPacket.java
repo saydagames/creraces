@@ -4,7 +4,8 @@ import dev.architectury.networking.NetworkManager;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import mc.sayda.creraces.CreRaces;
-import mc.sayda.creraces.client.render.AnimationHandler;
+import dev.architectury.utils.Env;
+import dev.architectury.utils.EnvExecutor;
 
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -38,7 +39,8 @@ public class SyncAnimationPacket {
         NetworkManager.PacketContext context = contextSupplier.get();
         context.queue(() -> {
             if (animation.equals("beam_casting")) {
-                AnimationHandler.setBeamCasting(playerId, active);
+                EnvExecutor.runInEnv(Env.CLIENT,
+                    () -> () -> mc.sayda.creraces.client.render.AnimationHandler.setBeamCasting(playerId, active));
             }
         });
     }

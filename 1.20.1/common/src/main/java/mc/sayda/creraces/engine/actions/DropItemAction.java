@@ -32,7 +32,7 @@ public class DropItemAction implements ActionRegistry.RaceAction {
             @Nullable net.minecraft.core.BlockPos interact_pos) {
         if (player.level() == null || player.level().isClientSide()) return true;
         Item item = BuiltInRegistries.ITEM.get(itemId);
-        if (item != null) {
+        if (item != null && item != net.minecraft.world.item.Items.AIR) {
             int c = (int) amount.evaluate(player, target, slot);
             if (c <= 0)
                 return true;

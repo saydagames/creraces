@@ -57,12 +57,15 @@ public class BeamAction implements ActionRegistry.RaceAction {
         if (dur > 0 || dr > 0) {
             DataUtils.getVariables(player).ifPresent(vars -> {
                 vars.setAbilityActive(true);
-                vars.setActiveAbility(vars.getAbilityInSlot(slot)); // Link to the ability being cast
+                ResourceLocation activeAbilityId = slot != null ? vars.getAbilityInSlot(slot) : null;
+                vars.setActiveAbility(activeAbilityId);
                 vars.setActiveAbilityDuration((int) dur);
                 vars.setActiveAbilityDrain(dr);
-                CACHED_INSTANCES.computeIfAbsent(player.getUUID(), k -> new ConcurrentHashMap<>()).put(
-                        vars.getActiveAbility(),
-                        this);
+                if (activeAbilityId != null) {
+                    CACHED_INSTANCES.computeIfAbsent(player.getUUID(), k -> new ConcurrentHashMap<>()).put(
+                            activeAbilityId,
+                            this);
+                }
 
                 // Sync start of beam
                 float rVal = (float) radius.evaluate(player, null, slot);
@@ -77,7 +80,6 @@ public class BeamAction implements ActionRegistry.RaceAction {
                 mc.sayda.creraces.network.SyncBeamPacket pkt = new mc.sayda.creraces.network.SyncBeamPacket(
                         player.getUUID(), true, color[0], color[1], color[2], color[3], rVal, lVal);
                 mc.sayda.creraces.network.BoundaryHandler.resyncForAllTrackers(player); // Fallback for general state
-                // We should probably broadcast this specific packet
                 broadcastBeamSync(player, pkt);
             });
             return true;
@@ -157,7 +159,6 @@ public class BeamAction implements ActionRegistry.RaceAction {
                     if (player.tickCount % Math.max(1, action.syncInterval) == 0) {
                         float rVal = (float) action.radius.evaluate(player, null, slot);
                         float lVal = (float) action.length.evaluate(player, null, slot);
-                        // Clamp radius/length by configuring max
                         int maxRadius = mc.sayda.creraces.config.CreRacesConfig.AOE_MAX_RADIUS.get();
                         if (maxRadius > 0)
                             rVal = Math.min(rVal, (float) maxRadius);

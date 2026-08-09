@@ -51,11 +51,12 @@ public class DomainTrait extends PeriodicTrait {
         if (maxAoeRadius > 0)
             r = Math.min(r, maxAoeRadius);
 
-        List<Player> others = player.level().getEntitiesOfClass(Player.class,
+        List<net.minecraft.world.entity.LivingEntity> others =
+                player.level().getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class,
                 Objects.requireNonNull(player.getBoundingBox().inflate(r)),
-                p -> p != player);
+                e -> e != player);
 
-        for (Player other : others) {
+        for (net.minecraft.world.entity.LivingEntity other : others) {
             for (ActionRegistry.RaceAction action : actions) {
                 action.execute(player, other, null, null);
             }

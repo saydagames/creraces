@@ -149,14 +149,15 @@ public class TrollPillarEntity extends TamableAnimal {
                     net.minecraft.sounds.SoundEvents.STONE_BREAK,
                     net.minecraft.sounds.SoundSource.NEUTRAL, 1.0f, 1.0f);
             this.discard();
-        } else if (this.level().isClientSide() || (ticksAlive % 2 == 0)) {
-            // Emit particles (Poison aura and cloud)
+        } else if (ticksAlive % 2 == 0) {
             double px = this.getX() + (this.random.nextDouble() - 0.5) * 1.5;
             double py = this.getY() + this.random.nextDouble() * 2.5;
             double pz = this.getZ() + (this.random.nextDouble() - 0.5) * 1.5;
-            this.level().addParticle(net.minecraft.core.particles.ParticleTypes.CLOUD, px, py, pz, 0.0, 0.05, 0.0);
+            ((net.minecraft.server.level.ServerLevel) this.level()).sendParticles(
+                    net.minecraft.core.particles.ParticleTypes.CLOUD, px, py, pz, 1, 0.0, 0.05, 0.0, 0.0);
             if (this.random.nextDouble() < 0.3) {
-                this.level().addParticle(net.minecraft.core.particles.ParticleTypes.SMOKE, px, py, pz, 0.0, 0.02, 0.0);
+                ((net.minecraft.server.level.ServerLevel) this.level()).sendParticles(
+                        net.minecraft.core.particles.ParticleTypes.SMOKE, px, py, pz, 1, 0.0, 0.02, 0.0, 0.0);
             }
         }
     }

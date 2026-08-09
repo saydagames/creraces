@@ -64,12 +64,12 @@ public class FairySourceBlock extends LiquidBlock {
             }
         }
 
-        // Living entity effects — throttled to once every 2 seconds per entity
+        // Living entity effects, throttled to once every 2 seconds per entity
         if (entity instanceof LivingEntity living && entity.tickCount % 40 == 0) {
             // Weak short regeneration
             living.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 100, 0, false, false, false));
 
-            // Remove broken wings — the source heals damaged wings and clears the state
+            // Remove broken wings: the source heals damaged wings and clears the state
             var brokenWings = ModMobEffects.BROKEN_WINGS.get();
             if (brokenWings != null) {
                 living.removeEffect(brokenWings);

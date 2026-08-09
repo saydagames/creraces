@@ -684,7 +684,7 @@ public class MicroBlockEntity extends BlockEntity {
                 if (slotState == null || slotState.isAir()
                         || !(slotState.getBlock() instanceof net.minecraft.world.level.block.BrewingStandBlock))
                     continue;
-                // Use the raw list — mirrors vanilla BrewingStandBlockEntity.doBrew exactly
+                // Use the raw list; mirrors vanilla BrewingStandBlockEntity.doBrew exactly
                 NonNullList<ItemStack> items = entity.getOrCreateInventory(i, 5);
                 int[] bs = entity.brewingStates.computeIfAbsent(i, k -> new int[]{0, 0});
                 // bs[0] = brewTime (counts down 400→0), bs[1] = fuel

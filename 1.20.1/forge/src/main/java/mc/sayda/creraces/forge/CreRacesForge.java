@@ -78,6 +78,9 @@ public class CreRacesForge {
                 net.minecraft.client.renderer.ItemBlockRenderTypes.setRenderLayer(
                         mc.sayda.creraces.registry.ModFluids.FAIRY_SOURCE_FLOWING.get(),
                         net.minecraft.client.renderer.RenderType.translucent());
+                net.minecraft.client.renderer.ItemBlockRenderTypes.setRenderLayer(
+                        mc.sayda.creraces.registry.ModBlocks.DRYAD_SAPLING.get(),
+                        net.minecraft.client.renderer.RenderType.cutout());
             }));
 
         CreRaces.init();

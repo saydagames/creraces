@@ -30,6 +30,11 @@ public class CreRacesFabricClient implements ClientModInitializer {
                 ModFluids.FAIRY_SOURCE.get(),
                 ModFluids.FAIRY_SOURCE_FLOWING.get());
 
+        // Dryad sapling has transparent pixels and must use cutout so they don't render black.
+        BlockRenderLayerMap.INSTANCE.putBlock(
+                mc.sayda.creraces.registry.ModBlocks.DRYAD_SAPLING.get(),
+                RenderType.cutout());
+
         CreRacesClient.init();
         // MenuGUIScreen is registered via MenuRegistry.registerScreenFactory inside
         // CreRacesClient.init() -> CLIENT_SETUP. Architectury delegates this call to

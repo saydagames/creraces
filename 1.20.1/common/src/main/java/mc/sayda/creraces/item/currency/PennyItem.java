@@ -32,7 +32,6 @@ public class PennyItem extends Item {
     public void appendHoverText(@Nonnull ItemStack stack, @Nullable Level level, @Nonnull List<Component> tooltip,
             @Nonnull TooltipFlag flag) {
         super.appendHoverText(stack, level, tooltip, flag);
-        // tooltip.add(Component.translatable("item.creraces.penny.description_0"));
     }
 
     @Override

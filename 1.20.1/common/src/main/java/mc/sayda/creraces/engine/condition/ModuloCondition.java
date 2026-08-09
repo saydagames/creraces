@@ -33,7 +33,7 @@ public class ModuloCondition implements Condition {
             int rem = (int) remainder.evaluate(player, target, slot, interact_pos);
 
             if (div == 0) return false;
-            return (current % div) == rem;
+            return Math.floorMod(current, div) == rem;
         }).orElse(false);
     }
 }

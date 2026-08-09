@@ -3,7 +3,7 @@
     "creraces:description": "ability.creraces.quick_escape.description",
     "creraces:type": "ACTIVE",
     "creraces:icon": "minecraft:textures/item/ender_pearl.png",
-    "creraces:cost": 40,
+    "creraces:cost": 200,
     "creraces:cooldown": 1800,
     "creraces:race": [
         "creraces:dryad"
@@ -16,34 +16,38 @@
                 "conditions": [
                     {
                         "type": "creraces:state",
-                        "state": "state:tx",
+                        "state": "state:node_x",
                         "operator": "!=",
                         "value": 0.0
                     },
                     {
                         "type": "creraces:state",
-                        "state": "state:ty",
+                        "state": "state:node_y",
                         "operator": "!=",
                         "value": 0.0
                     },
                     {
                         "type": "creraces:state",
-                        "state": "state:tz",
+                        "state": "state:node_z",
                         "operator": "!=",
                         "value": 0.0
+                    },
+                    {
+                        "type": "creraces:has_effect",
+                        "effect": "creraces:nymph_call"
                     }
                 ]
             },
             "if_true": [
                 {
                     "type": "creraces:teleport",
-                    "x": "state:tx",
+                    "x": "state:node_x",
                     "y": {
                         "base": 1.0,
-                        "scales_with": "state:ty",
+                        "scales_with": "state:node_y",
                         "factor": 1.0
                     },
-                    "z": "state:tz",
+                    "z": "state:node_z",
                     "dimension": "minecraft:overworld"
                 },
                 {

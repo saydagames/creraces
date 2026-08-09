@@ -1,8 +1,0 @@
-{
-    "parent": "creraces:block/weathered_torii_bell_floor",
-    "textures": {
-        "top": "creraces:block/weathered_torii_bell_top",
-        "side": "creraces:block/weathered_torii_bell_side",
-        "bottom": "creraces:block/weathered_torii_bell_bottom"
-    }
-}

@@ -157,14 +157,13 @@ public class CreRacesConfig {
     public static Supplier<String> DEVELOPER_RESOURCE_PATH = () -> "";
 
     // [SECTION: TERRITORY]
-    public static Supplier<Integer> TERRITORY_DEFAULT_CLAIM_RADIUS        = () -> 1;
-    public static Supplier<Integer> TERRITORY_MAX_NODES_PER_PLAYER        = () -> -1;
-    public static Supplier<Boolean> TERRITORY_INTER_RACE_BLOCKING         = () -> true;
-    public static Supplier<Long>    TERRITORY_LEADER_DECAY_THRESHOLD_DAYS = () -> 14L;
-    public static Supplier<Long>    TERRITORY_SUCCESSION_WINDOW_DAYS      = () -> 7L;
-    public static Supplier<Integer> TERRITORY_SUCCESSION_TICK_INTERVAL    = () -> 6000;
+    public static Supplier<Integer> TERRITORY_DEFAULT_CLAIM_RADIUS   = () -> 1;
+    public static Supplier<Integer> TERRITORY_MAX_NODES_PER_PLAYER   = () -> -1;
+    public static Supplier<Boolean> TERRITORY_INTER_RACE_BLOCKING    = () -> true;
     /** Max chunk-distance a player may be from a chunk when claiming via the territory map. -1 disables the check. */
-    public static Supplier<Integer> TERRITORY_MAP_CLAIM_MAX_DISTANCE      = () -> 256;
+    public static Supplier<Integer> TERRITORY_MAP_CLAIM_MAX_DISTANCE = () -> 256;
+    /** Coins deducted per chunk when claiming territory via the map. 0 = free. Default: 200 */
+    public static Supplier<Integer> TERRITORY_CLAIM_COST_PER_CHUNK   = () -> 200;
 
     // [SECTION: TEAM]
     public static Supplier<Boolean> TEAM_REQUIRE_SAME_RACE = () -> false;

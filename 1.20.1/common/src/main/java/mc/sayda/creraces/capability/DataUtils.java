@@ -42,6 +42,9 @@ public class DataUtils {
      */
     public static void performFantasySeal(Player player) {
         mc.sayda.creraces.race.CosmeticIncidents.clearAllRacialAddons(player);
+        if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
+            mc.sayda.creraces.race.AttributeIncidents.purgeRacialAttributes(sp);
+        }
         getVariables(player).ifPresent(IPlayerVariables::fantasySealReset);
     }
 

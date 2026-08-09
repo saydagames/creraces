@@ -33,7 +33,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 /**
- * Fairy realm chunk generator — hash-based value noise, no sine functions,
+ * Fairy realm chunk generator: hash-based value noise, no sine functions,
  * so no periodic grid or wave patterns in terrain or river banks.
  *
  * Terrain: domain-warped 6-octave fBm, always >= RIVER_LEVEL+2 (no ocean areas).
@@ -48,7 +48,7 @@ import java.util.concurrent.Executor;
  *
  * Island: forced flat plateau at y=69, smooth slope over the outer 12-block ring.
  *
- * applyCarvers: intentionally empty — caves are generated in fillFromNoise so
+ * applyCarvers: intentionally empty; caves are generated in fillFromNoise so
  * the vanilla aquifer never runs and floods caves with water.
  */
 public class FairyRealmChunkGenerator extends ChunkGenerator {
@@ -95,7 +95,7 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
     private static double lerp(double a, double b, double t) { return a + t * (b - a); }
     private static double smooth(double t) { return t * t * (3.0 - 2.0 * t); }
 
-    /** Long-mixed hash — no directional artifacts. Returns [-1, 1]. */
+    /** Long-mixed hash; no directional artifacts. Returns [-1, 1]. */
     private static double h2(int x, int z) {
         long h = (long) x * 374761393L + (long) z * 668265263L;
         h = (h ^ (h >>> 16)) * 2246822519L;
@@ -143,7 +143,7 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
         return (int) h;
     }
 
-    /** Multi-octave value noise meander — natural bends, not a sine wave. */
+    /** Multi-octave value noise meander: natural bends, not a sine wave. */
     static double meander(int coord) {
         return 18.0 * n2(coord * 0.0026, 17.3)
              +  6.0 * n2(coord * 0.0079, 83.1)
@@ -163,7 +163,7 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
 
     /**
      * Signed distance to nearest river-corridor wall (negative = inside water zone).
-     * Bank width varies with value noise — makes edges jagged and irregular.
+     * Bank width varies with value noise, making edges jagged and irregular.
      */
     static double riverEdgeDist(int x, int z) {
         double bankVar = 5.0 * n2(x * 0.027 + z * 0.019, z * 0.023 - x * 0.013);
@@ -183,7 +183,7 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
     // ─── Cave & block helpers ─────────────────────────────────────────────────────
 
     /**
-     * Two independent 3D value noises — tunnel forms where both approach zero.
+     * Two independent 3D value noises; tunnel forms where both approach zero.
      * Starts >= 12 blocks below surface to prevent craters and side-exposure on slopes.
      */
     private static boolean isCaveAt(int x, int y, int z, int surfaceY, int minY) {
@@ -336,13 +336,13 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
 
                 if (variant == 0) {
                     // Wide tuft: dense inner ring + sparse outer ring, no log
-                    // Inner 8 neighbours — always placed
+                    // Inner 8 neighbours: always placed
                     int[] dxN = {-1, 1, 0, 0,-1, 1,-1, 1};
                     int[] dzN = { 0, 0, 1,-1,-1,-1, 1, 1};
                     region.setBlock(mpos.set(wx, surfY + 1, wz), leaf, 3);
                     for (int i = 0; i < 8; i++)
                         region.setBlock(new BlockPos(wx + dxN[i], surfY + 1, wz + dzN[i]), leaf, 3);
-                    // Outer radius-2 cross arms — hash-gated (~60% each)
+                    // Outer radius-2 cross arms: hash-gated (~60% each)
                     int bits2 = (int)((h >>> 12) & 0xFF);
                     int[] dxO = {-2, 2, 0, 0, -2, 2, -2, 2};
                     int[] dzO = { 0, 0, 2,-2, -2,-2,  2,  2};
@@ -450,7 +450,7 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
                 int type = (int)((h >>> 8) & 0xF);
 
                 if (type < 5) {
-                    // Short grass — most common
+                    // Short grass (most common)
                     region.setBlock(above, Blocks.GRASS.defaultBlockState(), 3);
                 } else if (type == 5) {
                     region.setBlock(above, Blocks.FERN.defaultBlockState(), 3);
@@ -469,7 +469,7 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
                 } else if (type == 12) {
                     region.setBlock(above, Blocks.POPPY.defaultBlockState(), 3);
                 } else if (type == 13) {
-                    // Tall grass — check room above
+                    // Tall grass: check room above
                     BlockPos upper = above.above();
                     if (region.getBlockState(upper).isAir()) {
                         region.setBlock(above, Blocks.TALL_GRASS.defaultBlockState()
@@ -478,7 +478,7 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
                                 .setValue(DoublePlantBlock.HALF, DoubleBlockHalf.UPPER), 3);
                     }
                 } else if (type == 14) {
-                    // Large fern — check room above
+                    // Large fern: check room above
                     BlockPos upper = above.above();
                     if (region.getBlockState(upper).isAir()) {
                         region.setBlock(above, Blocks.LARGE_FERN.defaultBlockState()
@@ -609,7 +609,7 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
             }
         }
 
-        // Same noise pattern as blendTowardRiver — sand only within 1-4 blocks of
+        // Same noise pattern as blendTowardRiver; sand only within 1-4 blocks of
         // the bank edge; gravel/clay takes over for the majority of the river floor.
         double sandWidth = 4.5
                 + 1.5 * n2(wx * 0.055, wz * 0.058)
@@ -643,7 +643,7 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
             chunk.setBlockState(pos.set(wx, y, wz), Blocks.WATER.defaultBlockState(), false);
         }
 
-        // Plant life — deterministic hash per column, no grid patterns
+        // Plant life: deterministic hash per column, no grid patterns
         long h = ((long) wx * 374761393L) ^ ((long) wz * 668265263L) ^ 0xABCDEF12L;
         h = (h ^ (h >>> 16)) * 2246822519L; h ^= h >>> 13;
         int r = (int)(h & 0xFF);
@@ -679,7 +679,7 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
      * strip right where the slope meets the waterline regardless of edgeDist.
      *
      * Below water: sand for the first 3 depths, noise-blended sand/gravel for
-     * depths 4-5, pure gravel beyond — matching the user's request for a smooth
+     * depths 4-5, pure gravel beyond, producing a smooth
      * sand→gravel transition on the submerged bank.
      */
     private static void blendTowardRiver(ChunkAccess chunk, BlockPos.MutableBlockPos pos,

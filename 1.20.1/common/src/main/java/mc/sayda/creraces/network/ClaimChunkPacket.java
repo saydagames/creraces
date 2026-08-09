@@ -1,25 +1,24 @@
 package mc.sayda.creraces.network;
 
 import mc.sayda.creraces.CreRaces;
-import mc.sayda.creraces.territory.FactionData;
-import mc.sayda.creraces.territory.FactionRank;
+import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.capability.IPlayerVariables;
 import mc.sayda.creraces.territory.TerritoryManager;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 
-import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
- * C2S: player requests a chunk claim, unclaim, or transfer from the territory map.
+ * C2S: player requests a chunk claim or unclaim from the territory map.
  */
 @SuppressWarnings("null")
 public class ClaimChunkPacket {
     public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "claim_chunk");
 
-    public enum ClaimAction { CLAIM, UNCLAIM, REQUEST_TRANSFER }
+    public enum ClaimAction { CLAIM, UNCLAIM }
 
     private final int chunkX;
     private final int chunkZ;
@@ -47,60 +46,90 @@ public class ClaimChunkPacket {
         var context = contextSupplier.get();
         context.queue(() -> {
             if (!(context.getPlayer() instanceof ServerPlayer player)) return;
+
+            ResourceLocation raceId = DataUtils.getVariables(player)
+                    .map(IPlayerVariables::getRace)
+                    .orElse(null);
+            if (raceId == null || raceId.getPath().equals("none")) return;
+
             TerritoryManager tm = TerritoryManager.get();
-            UUID playerId = player.getUUID();
-            if (!tm.hasFaction(playerId)) return;
-
-            UUID factionId = tm.getFactionId(playerId);
-            FactionData faction = tm.getFaction(factionId);
-            if (faction == null) return;
-            FactionRank rank = faction.getRank(playerId);
-            if (rank == null) return;
-
             ChunkPos chunk = new ChunkPos(chunkX, chunkZ);
 
-            // Prevent remote claiming: player must be within a reasonable radius of the
-            // chunk they're targeting via the map UI.
+            // Prevent remote claiming: player must be within a reasonable radius.
             int playerCX = player.chunkPosition().x;
             int playerCZ = player.chunkPosition().z;
             int maxDist = mc.sayda.creraces.config.CreRacesConfig.TERRITORY_MAP_CLAIM_MAX_DISTANCE.get();
             if (maxDist >= 0 && (Math.abs(chunkX - playerCX) > maxDist || Math.abs(chunkZ - playerCZ) > maxDist)) {
-                BoundaryHandler.sendClaimResponse(player, new ClaimResponsePacket(TerritoryManager.ClaimResultType.INVALID_RANK));
+                BoundaryHandler.sendClaimResponse(player, new ClaimResponsePacket(TerritoryManager.ClaimResultType.OUT_OF_RANGE));
                 return;
             }
 
-            TerritoryManager.ClaimResultType result;
+            TerritoryManager.ClaimResultType result = TerritoryManager.ClaimResultType.ENEMY_TERRITORY;
 
             switch (claimAction) {
                 case CLAIM -> {
-                    mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(faction.getRaceId());
+                    mc.sayda.creraces.race.Race raceForLeaderCheck = mc.sayda.creraces.race.RaceRegistry.get(raceId);
+                    if (raceForLeaderCheck != null && raceForLeaderCheck.enableTerritory()
+                            && !mc.sayda.creraces.territory.FactionLeaderManager.isLeader(player)) {
+                        BoundaryHandler.sendClaimResponse(player,
+                                new ClaimResponsePacket(TerritoryManager.ClaimResultType.NOT_LEADER));
+                        return;
+                    }
+                    int costPerChunk = mc.sayda.creraces.config.CreRacesConfig.TERRITORY_CLAIM_COST_PER_CHUNK.get();
+                    mc.sayda.creraces.capability.IPlayerVariables vars$ =
+                            DataUtils.getVariables(player).orElse(null);
+                    if (costPerChunk > 0 && (vars$ == null || vars$.getCoins() < costPerChunk)) {
+                        BoundaryHandler.sendClaimResponse(player,
+                                new ClaimResponsePacket(TerritoryManager.ClaimResultType.INSUFFICIENT_COINS));
+                        return;
+                    }
+                    mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(raceId);
                     if (race != null && !race.claimValidBiomes().isEmpty()) {
                         net.minecraft.core.BlockPos checkPos = chunk.getMiddleBlockPosition(64);
-                        // Always use the overworld for biome validation regardless of which
-                        // dimension the requesting player is currently in.
-                        net.minecraft.server.level.ServerLevel biomeLevel =
-                                player.getServer().getLevel(net.minecraft.world.level.Level.OVERWORLD);
-                        if (biomeLevel == null) biomeLevel = player.serverLevel();
-                        if (!isBiomeValid(biomeLevel, checkPos, race.claimValidBiomes())) {
-                            result = TerritoryManager.ClaimResultType.INVALID_BIOME;
-                            break;
+                        if (!isBiomeValid(player.serverLevel(), checkPos, race.claimValidBiomes())) {
+                            BoundaryHandler.sendClaimResponse(player,
+                                    new ClaimResponsePacket(TerritoryManager.ClaimResultType.INVALID_BIOME));
+                            return;
                         }
                     }
-                    var cr = tm.claimAdjacentChunk(factionId, chunk, rank, player.getUUID());
+                    var cr = tm.claimChunk(raceId, chunk, player.getUUID());
                     result = cr.type;
-                }
-                case UNCLAIM -> result = tm.unclaimChunk(factionId, chunk, rank)
-                        ? TerritoryManager.ClaimResultType.SUCCESS
-                        : TerritoryManager.ClaimResultType.ENEMY_TERRITORY;
-                case REQUEST_TRANSFER -> {
-                    // Notify the owning faction's officers of the transfer request
-                    var claim = tm.getClaimAt(chunk);
-                    if (claim != null) {
-                        notifyTransferRequest(player, claim.getFactionId());
+                    if (result == TerritoryManager.ClaimResultType.SUCCESS && costPerChunk > 0) {
+                        final int cost = costPerChunk;
+                        DataUtils.getVariables(player).ifPresent(v -> {
+                            v.setCoins(Math.max(0, v.getCoins() - cost));
+                            v.sync(player);
+                        });
                     }
-                    result = TerritoryManager.ClaimResultType.PARTIAL;
                 }
-                default -> result = TerritoryManager.ClaimResultType.ENEMY_TERRITORY;
+                case UNCLAIM -> {
+                    mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(raceId);
+                    if (race != null && race.enableTerritory()
+                            && !mc.sayda.creraces.territory.FactionLeaderManager.isLeader(player)) {
+                        BoundaryHandler.sendClaimResponse(player,
+                                new ClaimResponsePacket(TerritoryManager.ClaimResultType.NOT_LEADER));
+                        return;
+                    }
+                    mc.sayda.creraces.territory.ClaimData existing = tm.getClaimAt(chunk);
+                    if (existing == null || !existing.getRaceId().equals(raceId)) {
+                        result = TerritoryManager.ClaimResultType.ENEMY_TERRITORY;
+                    } else if (existing.isPersistent()) {
+                        result = TerritoryManager.ClaimResultType.ANCHOR_CHUNK;
+                    } else {
+                        boolean unclaimed = tm.unclaimChunk(raceId, chunk);
+                        result = unclaimed ? TerritoryManager.ClaimResultType.UNCLAIM_SUCCESS
+                                           : TerritoryManager.ClaimResultType.ENEMY_TERRITORY;
+                        if (unclaimed) {
+                            int costPerChunk = mc.sayda.creraces.config.CreRacesConfig.TERRITORY_CLAIM_COST_PER_CHUNK.get();
+                            if (costPerChunk > 0) {
+                                DataUtils.getVariables(player).ifPresent(v -> {
+                                    v.setCoins(v.getCoins() + costPerChunk);
+                                    v.sync(player);
+                                });
+                            }
+                        }
+                    }
+                }
             }
 
             BoundaryHandler.sendClaimResponse(player, new ClaimResponsePacket(result));
@@ -125,20 +154,5 @@ public class ClaimChunkPacket {
             }
         }
         return false;
-    }
-
-    private static void notifyTransferRequest(ServerPlayer requester, UUID targetFactionId) {
-        FactionData targetFaction = TerritoryManager.get().getFaction(targetFactionId);
-        if (targetFaction == null) return;
-        var pkt = new JoinRequestNotifyPacket(requester.getUUID(),
-                requester.getName().getString(),
-                mc.sayda.creraces.capability.DataUtils.getVariables(requester)
-                        .map(mc.sayda.creraces.capability.IPlayerVariables::getRace)
-                        .orElse(new ResourceLocation("creraces", "none")));
-        for (java.util.Map.Entry<UUID, FactionRank> e : targetFaction.getMembers().entrySet()) {
-            if (!e.getValue().isAtLeast(FactionRank.OFFICER)) continue;
-            ServerPlayer officer = requester.getServer().getPlayerList().getPlayer(e.getKey());
-            if (officer != null) BoundaryHandler.sendJoinRequestNotify(officer, pkt);
-        }
     }
 }

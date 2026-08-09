@@ -22,7 +22,7 @@ public class TowelItem extends Item {
 
     @Override
     public UseAnim getUseAnimation(ItemStack stack) {
-        return UseAnim.CROSSBOW; // Legacy animation behavior
+        return UseAnim.CROSSBOW; // CROSSBOW anim plays the "pull-back" charge without showing a crossbow or arrow
     }
 
     @Override
@@ -54,6 +54,5 @@ public class TowelItem extends Item {
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip,
             TooltipFlag isAdvanced) {
         super.appendHoverText(stack, level, tooltip, isAdvanced);
-        // tooltip.add(Component.translatable("item.creraces.towel.description_0"));
     }
 }

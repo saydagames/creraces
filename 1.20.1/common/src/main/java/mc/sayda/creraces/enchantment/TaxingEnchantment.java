@@ -16,7 +16,7 @@ public class TaxingEnchantment extends Enchantment {
 
     @Override
     public int getMaxCost(int level) {
-        return super.getMinCost(level) + 20;
+        return this.getMinCost(level) + 20;
     }
 
     @Override

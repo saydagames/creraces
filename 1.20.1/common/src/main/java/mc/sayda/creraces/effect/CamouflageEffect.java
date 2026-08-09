@@ -12,6 +12,7 @@ public class CamouflageEffect extends TrueInvisibilityEffect {
         super(MobEffectCategory.BENEFICIAL, 0x1E511E);
         @SuppressWarnings("null")
         net.minecraft.world.entity.ai.attributes.Attribute speedAttr = java.util.Objects.requireNonNull(Attributes.MOVEMENT_SPEED);
+        // +20% speed compensates for the reduced threat detection while camouflaged
         this.addAttributeModifier(speedAttr, "6b6e7061-0016-4680-b3be-c6a4c37a0265", 0.2D, AttributeModifier.Operation.MULTIPLY_TOTAL);
     }
 

@@ -21,8 +21,7 @@ public class ModTabs {
                     .displayItems((parameters, output) -> {
                         // Add all items except scrolls
                         for (RegistrySupplier<net.minecraft.world.item.Item> itemSupplier : ModItems.ITEMS) {
-                            if (!(itemSupplier.get() instanceof ScrollItem)
-                                    && itemSupplier.get() != ModItems.ABILITY_SCROLL.get()) {
+                            if (!(itemSupplier.get() instanceof ScrollItem)) {
                                 output.accept(itemSupplier.get());
                             }
                         }

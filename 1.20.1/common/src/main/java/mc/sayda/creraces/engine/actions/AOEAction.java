@@ -85,7 +85,7 @@ public class AOEAction implements ActionRegistry.RaceAction {
         for (LivingEntity e : hitTargets) {
             for (ActionRegistry.RaceAction action : actions) {
                 if (!action.execute(player, e, slot, interact_pos)) {
-                    return false;
+                    break; // stop this target's action chain but continue to remaining targets
                 }
             }
         }

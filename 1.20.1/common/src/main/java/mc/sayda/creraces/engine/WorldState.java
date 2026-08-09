@@ -18,10 +18,10 @@ public class WorldState {
         long day = Math.floorDiv(time, 24000L);
         long timeOfDay = Math.floorMod(time, 24000L);
         
-        // Day 9 (day count 8) during Night (Sunset to Sunrise)
-        // Night window: 12500 (Dusk) to 23500 (Sunrise)
+        // Day 9 (day count 8) during Night (Sunset to Dawn)
+        // Night window: 12500 (Dusk) to 23500 (approx. dawn)
         boolean isDay9 = Math.floorMod(day, 9L) == 8L;
-        boolean isNightTime = timeOfDay >= 12500 && timeOfDay <= 23500;
+        boolean isNightTime = timeOfDay >= 12500 && timeOfDay < 23500;
         
         return isDay9 && isNightTime;
     }

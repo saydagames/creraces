@@ -1,9 +1,0 @@
-{
-  "parent": "block/door_bottom_right_open",
-  "textures": {
-    "particle": "creraces:block/dryad_door_top",
-    "bottom": "creraces:block/dryad_door_top",
-    "top": "creraces:block/dryad_door_bot"
-  },
-  "render_type": "cutout"
-}

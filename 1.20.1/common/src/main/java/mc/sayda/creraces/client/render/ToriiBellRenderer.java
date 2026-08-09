@@ -22,7 +22,7 @@ public class ToriiBellRenderer extends BellRenderer {
 
     public ToriiBellRenderer(BlockEntityRendererProvider.Context context) {
         super(context);
-        // Re-bake the same vanilla layer — correct geometry and UV guaranteed.
+        // Re-bake the same vanilla layer: correct geometry and UV guaranteed.
         this.bellBody = context.bakeLayer(ModelLayers.BELL).getChild("bell_body");
     }
 

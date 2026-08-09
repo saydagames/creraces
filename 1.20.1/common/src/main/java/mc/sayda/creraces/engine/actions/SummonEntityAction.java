@@ -122,12 +122,8 @@ public class SummonEntityAction implements ActionRegistry.RaceAction {
             proj.setOwner(player);
         }
 
-        if (entity instanceof TamableAnimal tamable) {
-            if (tame) {
-                tamable.tame(player);
-            } else {
-                tamable.setOwnerUUID(Objects.requireNonNull(player.getUUID()));
-            }
+        if (entity instanceof TamableAnimal tamable && tame) {
+            tamable.tame(player);
         }
 
         if (entity instanceof mc.sayda.creraces.util.IPersistentDataAccessor accessor) {

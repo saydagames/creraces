@@ -14,6 +14,7 @@ public class BoilingEffect extends SimpleEffect {
 
     @Override
     public void applyEffectTick(@javax.annotation.Nonnull LivingEntity entity, int amplifier) {
+        if (entity.level().isClientSide()) return;
         if (entity.isInWaterOrBubble()) {
             float damage = 1.0F; // Base damage (half heart)
             net.minecraft.world.entity.Entity source = null;

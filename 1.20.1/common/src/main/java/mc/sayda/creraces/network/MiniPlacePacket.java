@@ -203,11 +203,6 @@ public class MiniPlacePacket {
                 return;
             }
 
-            Block heldBlock = BuiltInRegistries.BLOCK.get(blockId);
-            if (heldBlock == Blocks.AIR) {
-                return;
-            }
-
             // Compute the correct BlockState (including rotation)
             InteractionHand handUsed = serverPlayer.getUsedItemHand();
             ItemStack held = serverPlayer.getItemInHand(handUsed);

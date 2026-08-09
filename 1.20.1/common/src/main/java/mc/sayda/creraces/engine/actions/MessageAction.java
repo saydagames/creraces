@@ -36,7 +36,7 @@ public class MessageAction implements ActionRegistry.RaceAction {
         Object arg = (evaluated == (int) evaluated) ? (int) evaluated : evaluated;
 
         Component msg;
-        // Detect translation keys: no spaces and no '&' color codes ↁEtranslatable
+        // Detect translation keys: no spaces and no '&' color codes -> translatable
         if (!text.contains(" ") && !text.contains("&")) {
             if (value != null) {
                 msg = Component.translatable(text, arg);
@@ -47,7 +47,7 @@ public class MessageAction implements ActionRegistry.RaceAction {
             String processed = text.replace("&", "§");
             if (value != null) {
                 try {
-                    if (processed.contains("%s") || processed.contains("%d") || processed.contains("%.f")) {
+                    if (processed.contains("%s") || processed.contains("%d") || processed.contains("%.0f")) {
                         processed = String.format(processed, arg);
                     } else {
                         processed += arg.toString();

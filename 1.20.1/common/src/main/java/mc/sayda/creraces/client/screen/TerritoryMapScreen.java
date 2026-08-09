@@ -49,6 +49,8 @@ public class TerritoryMapScreen extends Screen {
     private double dragStartX;
     private double dragStartZ;
     private boolean dragging = false;
+    private int dragBaseX = 0;
+    private int dragBaseZ = 0;
 
     /** Feedback from last claim/unclaim action. */
     private TerritoryManager.ClaimResultType lastResult = null;
@@ -65,19 +67,18 @@ public class TerritoryMapScreen extends Screen {
     private int cellsW;
     private int cellsH;
 
-    // Map panel background — solid brown (parchment-like) for unloaded chunks
+    // Map panel background: solid brown (parchment-like) for unloaded chunks
     private static final int COLOR_MAP_BG    = 0xFF8B7355;
 
-    // Colors — semi-transparent so terrain shows through claimed territory
+    // Colors: semi-transparent so terrain shows through claimed territory
     private static final int COLOR_OWN     = 0xAA4CAF50;
     private static final int COLOR_ALLIED  = 0xAA2196F3;
     private static final int COLOR_ENEMY   = 0xAAF44336;
     private static final int COLOR_DORMANT    = 0x88000000;
     private static final int COLOR_PLAYER     = 0xFFFFFFFF;
     private static final int COLOR_CLAIMABLE  = 0x55FFFFFF;
-    private static final int COLOR_EMPTY_LEGEND = 0xFF8B7355;
 
-    // Border colors — darker, fully opaque to mark territory boundaries
+    // Border colors: darker, fully opaque to mark territory boundaries
     private static final int BORDER_OWN    = 0xFF2E7D32;
     private static final int BORDER_ALLIED = 0xFF0D47A1;
     private static final int BORDER_ENEMY  = 0xFF7F0000;
@@ -107,10 +108,8 @@ public class TerritoryMapScreen extends Screen {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen instanceof TerritoryMapScreen s) {
             s.rebuildLookup();
-        } else {
-            // Auto-open: setScreen calls init() synchronously, which reads cachedChunks
-            mc.setScreen(new TerritoryMapScreen());
         }
+        // Cache data silently if no map screen is open
     }
 
     public static void updateTerrain(TerrainSamplePacket pkt) {
@@ -135,8 +134,9 @@ public class TerritoryMapScreen extends Screen {
         if (mc.screen instanceof TerritoryMapScreen s) {
             s.lastResult = result;
             s.resultTimer = 80;
-            if (result == TerritoryManager.ClaimResultType.SUCCESS) {
-                // Re-request fresh data
+            if (result == TerritoryManager.ClaimResultType.SUCCESS
+                    || result == TerritoryManager.ClaimResultType.PARTIAL
+                    || result == TerritoryManager.ClaimResultType.UNCLAIM_SUCCESS) {
                 BoundaryHandler.sendRequestTerritoryData();
             }
         }
@@ -198,23 +198,7 @@ public class TerritoryMapScreen extends Screen {
         int halfW = cellsW / 2;
         int halfH = cellsH / 2;
 
-        // ── Claimable zone set: biome-wide (server) or adjacent fallback ──────
-        Set<Long> claimableChunks;
-        if (!cachedBiomeClaimable.isEmpty()) {
-            claimableChunks = cachedBiomeClaimable;
-        } else {
-            claimableChunks = new HashSet<>();
-            int[] DX = {-1, 1, 0, 0};
-            int[] DZ = { 0, 0,-1, 1};
-            for (Map.Entry<Long, TerritoryDataPacket.ChunkInfo> e : chunkLookup.entrySet()) {
-                if (e.getValue().relation != TerritoryDataPacket.Relation.OWN) continue;
-                ChunkPos own = new ChunkPos(e.getValue().chunkX, e.getValue().chunkZ);
-                for (int i = 0; i < 4; i++) {
-                    long nkey = ChunkPos.asLong(own.x + DX[i], own.z + DZ[i]);
-                    if (!chunkLookup.containsKey(nkey)) claimableChunks.add(nkey);
-                }
-            }
-        }
+        // claimableChunks is maintained by rebuildLookup() / rebuildClaimable()
 
         // ── Base layer: single blit from pre-baked terrain texture ────────────
         if (terrainTexture != null && lastTerrain != null) {
@@ -257,7 +241,7 @@ public class TerritoryMapScreen extends Screen {
                     g.fill(px, pz, px + CELL, pz + CELL, COLOR_CLAIMABLE);
                 }
 
-                // Player position marker — white outline
+                // Player position marker (white outline)
                 if (cx == playerCX && cz == playerCZ) {
                     g.renderOutline(px, pz, CELL, CELL, COLOR_PLAYER);
                 }
@@ -278,13 +262,13 @@ public class TerritoryMapScreen extends Screen {
 
             String tip = "[" + hcx + ", " + hcz + "]";
             if (info != null && !info.factionName.isEmpty())
-                tip += " " + info.factionName + (info.dormant ? " (dormant)" : "");
+                tip += " " + info.factionName + (info.dormant ? " (anchor)" : "");
             if (hasShiftDown() && info != null && !info.ownerName.isEmpty())
                 tip += " | " + info.ownerName;
             g.renderTooltip(font, Component.literal(tip), mx, my);
         }
 
-        // ── Legend ────────────────────────────────────────────────────────────
+        // ── Legend row 1: territory colours ───────────────────────────────────
         int lx = mapLeft;
         int ly = mapTop + mapH + 8;
         g.fill(lx, ly, lx + 8, ly + 8, COLOR_OWN);
@@ -293,26 +277,48 @@ public class TerritoryMapScreen extends Screen {
         g.fill(lx, ly, lx + 8, ly + 8, COLOR_ALLIED);
         g.drawString(font, "Allied", lx + 10, ly, 0xCCCCCC, false);
         lx += 50;
+        g.fill(lx, ly, lx + 8, ly + 8, COLOR_MAP_BG);
+        g.drawString(font, "Neutral", lx + 10, ly, 0xCCCCCC, false);
+        lx += 55;
         g.fill(lx, ly, lx + 8, ly + 8, COLOR_ENEMY);
         g.drawString(font, "Enemy", lx + 10, ly, 0xCCCCCC, false);
         lx += 48;
+        // Anchor: claimable-gray background with dormant stripes
+        g.fill(lx, ly, lx + 8, ly + 8, COLOR_CLAIMABLE);
+        for (int s = 0; s < 8; s += 2) g.fill(lx + s, ly, lx + s + 1, ly + 8, COLOR_DORMANT);
+        g.drawString(font, "Anchor", lx + 10, ly, 0xCCCCCC, false);
+        lx += 50;
         g.fill(lx, ly, lx + 8, ly + 8, COLOR_CLAIMABLE);
         g.drawString(font, "Claimable", lx + 10, ly, 0xCCCCCC, false);
+
+        // Coins display (bottom-right, same row as legend)
+        if (minecraft != null && minecraft.player != null) {
+            double coins = mc.sayda.creraces.capability.DataUtils.getVariables(minecraft.player)
+                    .map(mc.sayda.creraces.capability.IPlayerVariables::getCoins)
+                    .orElse(0.0);
+            String coinStr = (int) coins + " coins";
+            g.drawString(font, coinStr, mapLeft + mapW - font.width(coinStr), ly, 0xFFD700, false);
+        }
 
         // ── Result feedback ───────────────────────────────────────────────────
         if (resultTimer > 0 && lastResult != null) {
             resultTimer--;
-            String msg = switch (lastResult) {
-                case SUCCESS -> "§aClaimed!";
-                case PARTIAL -> "§ePartial claim.";
-                case INVALID_RANK -> "§cInsufficient rank.";
-                case INVALID_BIOME -> "§cInvalid biome.";
-                case ENEMY_TERRITORY -> "§cEnemy territory.";
-                case INSIDE_OWN_TERRITORY -> "§eAlready claimed.";
-                default -> "";
+            Component msg = switch (lastResult) {
+                case SUCCESS -> Component.translatable("msg.creraces.territory.claimed");
+                case UNCLAIM_SUCCESS -> Component.translatable("msg.creraces.territory.unclaimed");
+                case PARTIAL -> Component.translatable("msg.creraces.territory.partial");
+                case INVALID_BIOME -> Component.translatable("msg.creraces.territory.wrong_biome");
+                case ENEMY_TERRITORY -> Component.translatable("msg.creraces.territory.enemy");
+                case INSIDE_OWN_TERRITORY -> Component.translatable("msg.creraces.territory.own");
+                case ANCHOR_CHUNK -> Component.translatable("msg.creraces.territory.anchor");
+                case INSUFFICIENT_COINS -> Component.translatable("msg.creraces.territory.insufficient_coins",
+                        mc.sayda.creraces.config.CreRacesConfig.TERRITORY_CLAIM_COST_PER_CHUNK.get());
+                case OUT_OF_RANGE -> Component.translatable("msg.creraces.territory.out_of_range");
+                case NOT_LEADER -> Component.translatable("msg.creraces.faction.not_leader");
+                default -> null;
             };
-            if (!msg.isEmpty())
-                g.drawCenteredString(font, Component.literal(msg), width / 2, height - 38, 0xFFFFFF);
+            if (msg != null)
+                g.drawCenteredString(font, msg, width / 2, height - 38, 0xFFFFFF);
         }
 
         super.render(g, mx, my, dt);
@@ -323,10 +329,12 @@ public class TerritoryMapScreen extends Screen {
     @Override
     public boolean mouseClicked(double mx, double my, int btn) {
         if (mx >= mapLeft && mx < mapLeft + mapW && my >= mapTop && my < mapTop + mapH) {
-            if (btn == 2) { // middle — start drag
+            if (btn == 2) { // middle-click: start drag (saves current offset so drags are additive)
                 dragging = true;
                 dragStartX = mx;
                 dragStartZ = my;
+                dragBaseX = offsetX;
+                dragBaseZ = offsetZ;
                 return true;
             }
 
@@ -340,21 +348,28 @@ public class TerritoryMapScreen extends Screen {
             long key = ChunkPos.asLong(cx, cz);
             TerritoryDataPacket.ChunkInfo info = chunkLookup.get(key);
 
-            if (btn == 0) { // left click → CLAIM unclaimed, or REQUEST_TRANSFER on allied/enemy
-                ClaimChunkPacket.ClaimAction action;
-                if (info == null) {
-                    action = ClaimChunkPacket.ClaimAction.CLAIM;
-                } else if (info.relation == TerritoryDataPacket.Relation.ALLIED
-                        || info.relation == TerritoryDataPacket.Relation.ENEMY) {
-                    action = ClaimChunkPacket.ClaimAction.REQUEST_TRANSFER;
-                } else return true; // already own
-                BoundaryHandler.sendClaimChunk(new ClaimChunkPacket(cx, cz, action));
+            if (btn == 0) { // left click → CLAIM
+                if (info != null) {
+                    // Already claimed: show immediate feedback without a roundtrip
+                    lastResult = info.relation == TerritoryDataPacket.Relation.OWN
+                            ? TerritoryManager.ClaimResultType.INSIDE_OWN_TERRITORY
+                            : TerritoryManager.ClaimResultType.ENEMY_TERRITORY;
+                    resultTimer = 80;
+                } else {
+                    // Unclaimed: let the server validate (biome, range, coins) and respond
+                    BoundaryHandler.sendClaimChunk(new ClaimChunkPacket(cx, cz, ClaimChunkPacket.ClaimAction.CLAIM));
+                }
                 return true;
             }
-            if (btn == 1) { // right click → UNCLAIM own
+            if (btn == 1) { // right click -> UNCLAIM own (anchor chunks are protected; remove in-world)
                 if (info != null && info.relation == TerritoryDataPacket.Relation.OWN) {
-                    BoundaryHandler.sendClaimChunk(new ClaimChunkPacket(cx, cz,
-                            ClaimChunkPacket.ClaimAction.UNCLAIM));
+                    if (info.dormant) {
+                        lastResult = TerritoryManager.ClaimResultType.ANCHOR_CHUNK;
+                        resultTimer = 80;
+                    } else {
+                        BoundaryHandler.sendClaimChunk(new ClaimChunkPacket(cx, cz,
+                                ClaimChunkPacket.ClaimAction.UNCLAIM));
+                    }
                     return true;
                 }
             }
@@ -367,8 +382,8 @@ public class TerritoryMapScreen extends Screen {
         if (dragging && btn == 2) {
             double totalDx = mx - dragStartX;
             double totalDz = my - dragStartZ;
-            offsetX = -(int)(totalDx / CELL);
-            offsetZ = -(int)(totalDz / CELL);
+            offsetX = dragBaseX - (int)(totalDx / CELL);
+            offsetZ = dragBaseZ - (int)(totalDz / CELL);
             return true;
         }
         return super.mouseDragged(mx, my, btn, dx, dy);
@@ -408,7 +423,7 @@ public class TerritoryMapScreen extends Screen {
                 for (int sy = 0; sy < TerrainSamplePacket.SUB; sy++) {
                     for (int sx = 0; sx < TerrainSamplePacket.SUB; sx++) {
                         byte packed = lastTerrain.colors[baseIdx + sy * TerrainSamplePacket.SUB + sx];
-                        if (packed == 0) continue; // unloaded — keep parchment
+                        if (packed == 0) continue; // unloaded; keep parchment
                         // NativeImage.setPixelRGBA takes the same ARGB format MapColor returns
                         int argb = TerrainSamplePacket.packedToArgb(packed);
                         int ipx = rx * CELL + sx * subCell;
@@ -433,11 +448,33 @@ public class TerritoryMapScreen extends Screen {
 
     // ── Helpers ────────────────────────────────────────────────────────────────
 
+    private Set<Long> claimableChunks = new HashSet<>();
+
     private void rebuildLookup() {
         chunkLookup = new HashMap<>(cachedChunks.size() * 2);
         for (TerritoryDataPacket.ChunkInfo info : cachedChunks) {
             chunkLookup.put(ChunkPos.asLong(info.chunkX, info.chunkZ), info);
         }
+        rebuildClaimable();
+    }
+
+    private void rebuildClaimable() {
+        if (!cachedBiomeClaimable.isEmpty()) {
+            claimableChunks = cachedBiomeClaimable;
+            return;
+        }
+        Set<Long> result = new HashSet<>();
+        int[] DX = {-1, 1, 0, 0};
+        int[] DZ = { 0, 0,-1, 1};
+        for (Map.Entry<Long, TerritoryDataPacket.ChunkInfo> e : chunkLookup.entrySet()) {
+            if (e.getValue().relation != TerritoryDataPacket.Relation.OWN) continue;
+            ChunkPos own = new ChunkPos(e.getValue().chunkX, e.getValue().chunkZ);
+            for (int i = 0; i < 4; i++) {
+                long nkey = ChunkPos.asLong(own.x + DX[i], own.z + DZ[i]);
+                if (!chunkLookup.containsKey(nkey)) result.add(nkey);
+            }
+        }
+        claimableChunks = result;
     }
 
     private static int colorFor(TerritoryDataPacket.Relation rel) {
@@ -445,7 +482,7 @@ public class TerritoryMapScreen extends Screen {
             case OWN    -> COLOR_OWN;
             case ALLIED -> COLOR_ALLIED;
             case ENEMY  -> COLOR_ENEMY;
-            default     -> 0x00000000; // fully transparent — bare terrain
+            default     -> 0x00000000; // fully transparent (bare terrain)
         };
     }
 

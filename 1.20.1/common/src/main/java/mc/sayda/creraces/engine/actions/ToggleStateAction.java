@@ -48,7 +48,7 @@ public class ToggleStateAction implements ActionRegistry.RaceAction {
                 String parsedStateVariable = stateVariable;
                 if (stateVariable.startsWith("ability:")) {
                     parsedStateVariable = stateVariable.substring(8);
-                } else if (stateVariable.startsWith("state:")) { // New alias for ability:
+                } else if (stateVariable.startsWith("state:")) { // Canonical prefix for state variables
                     parsedStateVariable = stateVariable.substring(6);
                 } else if (stateVariable.startsWith("custom:")) {
                     parsedStateVariable = stateVariable.substring(7);
@@ -63,17 +63,20 @@ public class ToggleStateAction implements ActionRegistry.RaceAction {
             double off = offValue.evaluate(player, target, slot);
 
             double current = vars.getPersistentState(targetAbilityId);
-            if (Math.abs(current - off) < 0.001) {
-                vars.setPersistentState(targetAbilityId, on);
-                for (ActionRegistry.RaceAction a : onEnable) {
+            // Compare against on_value: if currently on, disable; otherwise enable.
+            // This means any state that isn't exactly "on" (including intermediate values
+            // left by a crash or race condition) will always resolve to "enable".
+            if (Math.abs(current - on) < 0.001) {
+                vars.setPersistentState(targetAbilityId, off);
+                for (ActionRegistry.RaceAction a : onDisable) {
                     if (!a.execute(player, target, slot, interact_pos)) {
                         success[0] = false;
                         break;
                     }
                 }
             } else {
-                vars.setPersistentState(targetAbilityId, off);
-                for (ActionRegistry.RaceAction a : onDisable) {
+                vars.setPersistentState(targetAbilityId, on);
+                for (ActionRegistry.RaceAction a : onEnable) {
                     if (!a.execute(player, target, slot, interact_pos)) {
                         success[0] = false;
                         break;

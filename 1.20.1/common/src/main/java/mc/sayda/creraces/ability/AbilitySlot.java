@@ -2,7 +2,7 @@ package mc.sayda.creraces.ability;
 
 /**
  * Represents the slots available for equipping active abilities.
- * Currently supports R and G keys, but extensible for A3/A4.
+ * Defines five named slots: A1 (green), A2 (red), A3 (yellow), A4 (blue), A5 (orange).
  */
 public enum AbilitySlot {
     A1(0, "A1", "green"),

@@ -17,7 +17,7 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
 
 /**
  * Registers the fairy_realm biome source codec.
- * Must be called before any world loads — both loaders invoke this from a
+ * Must be called before any world loads; both loaders invoke this from a
  * BootstrapMixin so it runs before vanilla registries freeze.
  */
 public class ModWorldgen {
@@ -97,7 +97,7 @@ public class ModWorldgen {
         ResourceLocation treeId = new ResourceLocation(CreRaces.MODID, name);
         StructureTemplate template = mgr.getOrCreate(treeId);
         if (template == null) {
-            CreRaces.LOGGER.error("CreRaces: {} not found — skipping placement.", name);
+            CreRaces.LOGGER.error("CreRaces: {} not found; skipping placement.", name);
             return;
         }
         StructurePlaceSettings settings = new StructurePlaceSettings()
@@ -115,7 +115,7 @@ public class ModWorldgen {
      * Air blocks in the NBT are ignored so terrain integrates naturally.
      */
     public static void placeFairyTreeIfNeeded(ServerLevel fairyLevel) {
-        // Set world border every time — idempotent and needed because the level
+        // Set world border every time (idempotent); needed because the level
         // loads lazily so SERVER_STARTED fires before the level exists.
         net.minecraft.world.level.border.WorldBorder border = fairyLevel.getWorldBorder();
         border.setCenter(0, 0);
@@ -135,7 +135,7 @@ public class ModWorldgen {
         ResourceLocation treeId = new ResourceLocation(CreRaces.MODID, "giant_tree_paulzero");
         StructureTemplate template = mgr.getOrCreate(treeId);
         if (template == null) {
-            CreRaces.LOGGER.error("CreRaces: giant_tree_paulzero.nbt not found — skipping island tree placement.");
+            CreRaces.LOGGER.error("CreRaces: giant_tree_paulzero.nbt not found; skipping island tree placement.");
             return;
         }
 

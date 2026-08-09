@@ -72,6 +72,7 @@ public class ResourceTicker {
             if (abilityId != null) {
                 // 1. Drain Resource (use race's actual resource type, not always mana)
                 double drain = vars.getActiveAbilityDrain();
+                boolean deactivatedByDrain = false;
                 if (drain > 0) {
                     mc.sayda.creraces.ability.Ability ability = mc.sayda.creraces.ability.AbilityRegistry
                             .get(abilityId);
@@ -101,18 +102,21 @@ public class ResourceTicker {
                         };
                         if (outOfResource) {
                             deactivateAbility(player, vars, abilityId, ability, vars.getSlotForAbility(abilityId));
+                            deactivatedByDrain = true;
                         }
                     }
                 }
 
-                // 2. Tick Duration
-                int remaining = vars.getActiveAbilityDuration();
-                if (remaining > 0) {
-                    vars.setActiveAbilityDuration(remaining - 1);
-                    if (remaining - 1 <= 0) {
-                        mc.sayda.creraces.ability.Ability ability = mc.sayda.creraces.ability.AbilityRegistry
-                                .get(abilityId);
-                        deactivateAbility(player, vars, abilityId, ability, vars.getSlotForAbility(abilityId));
+                // 2. Tick Duration (skip if already deactivated by resource exhaustion this tick)
+                if (!deactivatedByDrain) {
+                    int remaining = vars.getActiveAbilityDuration();
+                    if (remaining > 0) {
+                        vars.setActiveAbilityDuration(remaining - 1);
+                        if (remaining - 1 <= 0) {
+                            mc.sayda.creraces.ability.Ability ability = mc.sayda.creraces.ability.AbilityRegistry
+                                    .get(abilityId);
+                            deactivateAbility(player, vars, abilityId, ability, vars.getSlotForAbility(abilityId));
+                        }
                     }
                 }
 
@@ -172,7 +176,7 @@ public class ResourceTicker {
         if (player.level().isClientSide())
             return;
 
-        // 6. Sunlight Burning Logic (Every 20 ticks)
+        // 6. Sunlight Burning Logic
         Race.Passives passives = race.passives();
         if (passives == null)
             return;
@@ -208,24 +212,21 @@ public class ResourceTicker {
             }
         }
 
-        // 6. Passive Effects
-        if (passives != null) {
-
-            if (passives.noHunger()) {
-                player.getFoodData()
-                        .setFoodLevel(CreRacesConfig.PASSIVE_DEFAULT_MAX_FOOD.get());
-                player.getFoodData()
-                        .setSaturation(CreRacesConfig.PASSIVE_DEFAULT_MAX_SATURATION.get().floatValue());
-            } else if (passives.fixedHunger() != null) {
-                double fixedH = passives.fixedHunger().evaluate(player);
-                if (fixedH > 0) {
-                    player.getFoodData().setFoodLevel((int) fixedH);
-                }
+        // 7. Passive Effects
+        if (passives.noHunger()) {
+            player.getFoodData()
+                    .setFoodLevel(CreRacesConfig.PASSIVE_DEFAULT_MAX_FOOD.get());
+            player.getFoodData()
+                    .setSaturation(CreRacesConfig.PASSIVE_DEFAULT_MAX_SATURATION.get().floatValue());
+        } else if (passives.fixedHunger() != null) {
+            double fixedH = passives.fixedHunger().evaluate(player);
+            if (fixedH > 0) {
+                player.getFoodData().setFoodLevel((int) fixedH);
             }
+        }
 
-            if (passives.cannotSprint() && player.isSprinting()) {
-                player.setSprinting(false);
-            }
+        if (passives.cannotSprint() && player.isSprinting()) {
+            player.setSprinting(false);
         }
     }
 

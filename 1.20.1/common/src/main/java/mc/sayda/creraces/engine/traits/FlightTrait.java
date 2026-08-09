@@ -89,7 +89,8 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
             boolean isSoggy = soggyWings && soggyEffectRef != null && player.hasEffect(soggyEffectRef);
             var brokenWingsRef = mc.sayda.creraces.registry.ModMobEffects.BROKEN_WINGS.get();
             boolean hasBrokenWings = brokenWingsRef != null && player.hasEffect(brokenWingsRef);
-            boolean canFly = conditionMet && currentResource >= evaluatedDrain && !isSoggy && !hasBrokenWings;
+            boolean resourceOk = resource == ResourceType.NONE || currentResource >= evaluatedDrain;
+            boolean canFly = conditionMet && resourceOk && !isSoggy && !hasBrokenWings;
             boolean wasMayfly = player.getAbilities().mayfly;
             boolean wasFlying = player.getAbilities().flying;
 
@@ -125,7 +126,7 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
                     ResourceLocation failId = new ResourceLocation(java.util.Objects.requireNonNull(traitId.getNamespace()),
                             java.util.Objects.requireNonNull(traitId.getPath()) + "_failed");
                     boolean alreadyFailed = vars.getPersistentState(failId) > 0;
-                    if (conditionMet && currentResource < evaluatedDrain && !alreadyFailed) {
+                    if (conditionMet && (!resourceOk || isSoggy || hasBrokenWings) && !alreadyFailed) {
                         vars.setPersistentState(failId, 1.0);
 
                         // Native exhaustion cooldown
@@ -148,7 +149,7 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
                 }
             }
 
-            if (conditionMet && currentResource >= evaluatedDrain) {
+            if (canFly) {
                 ResourceLocation failId = new ResourceLocation(java.util.Objects.requireNonNull(traitId.getNamespace()), java.util.Objects.requireNonNull(traitId.getPath()) + "_failed");
                 vars.setPersistentState(failId, 0.0);
             }
@@ -175,8 +176,7 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
             }
             ScalingValue drainRate = ScalingValue.fromJson(json, "drain_rate", 0.0);
             boolean forceFly = GsonHelper.getAsBoolean(json, "force_fly", false);
-            boolean soggyWings = GsonHelper.getAsBoolean(json, "creraces:soggy_wings",
-                    GsonHelper.getAsBoolean(json, "soggy_wings", false));
+            boolean soggyWings = GsonHelper.getAsBoolean(json, "creraces:soggy_wings", false);
 
             Condition soggyCondition = null;
             if (json.has("soggy_condition")) {
@@ -209,7 +209,7 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
             }
 
             String traitName = json.has("name") ? json.get("name").getAsString()
-                    : "flight_" + Math.abs(json.toString().hashCode());
+                    : "flight_" + resStr.toLowerCase() + "_" + Math.abs(drainRate.toString().hashCode());
             ResourceLocation traitId = new ResourceLocation(CreRaces.MODID, traitName);
 
             return new FlightTrait(traitId, resource, drainRate, forceFly, soggyWings, soggyCondition, condition, cooldownId,

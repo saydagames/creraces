@@ -48,6 +48,9 @@ public class TraitRegistry {
         default void onRespawn(Player player) {
         }
 
+        default void onSelect(Player player) {
+        }
+
         default void onItemPickup(Player player, net.minecraft.world.item.ItemStack stack) {
         }
 
@@ -128,6 +131,8 @@ public class TraitRegistry {
         mc.sayda.creraces.engine.traits.ItemInteractionTrait.register();
         mc.sayda.creraces.engine.traits.OnLandTrait.register();
         mc.sayda.creraces.engine.traits.OnRespawnTrait.register();
+        mc.sayda.creraces.engine.traits.OnSelectTrait.register();
+        mc.sayda.creraces.engine.traits.OnEventsTrait.register();
         mc.sayda.creraces.engine.traits.OnDeathTrait.register();
         mc.sayda.creraces.engine.traits.OnItemPickupTrait.register();
         mc.sayda.creraces.engine.traits.FoodMultiplierTrait.register();

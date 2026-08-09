@@ -37,7 +37,7 @@
                             "duration": 60,
                             "max_distance": 15.0,
                             "interval": 20,
-                            "texture": "minecraft:textures/entity/guardian_beam.png",
+                            "texture": "creraces:textures/entities/thorn_shackles.png",
                             "width": 1.0,
                             "actions": [
                                 {

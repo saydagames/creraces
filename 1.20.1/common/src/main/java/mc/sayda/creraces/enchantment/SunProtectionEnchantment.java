@@ -16,7 +16,7 @@ public class SunProtectionEnchantment extends Enchantment {
 
     @Override
     public int getMaxCost(int level) {
-        return super.getMinCost(level) + 30;
+        return this.getMinCost(level) + 30;
     }
 
     @Override

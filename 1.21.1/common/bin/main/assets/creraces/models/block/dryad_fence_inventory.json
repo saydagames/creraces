@@ -1,8 +1,0 @@
-{
-  "parent": "block/fence_inventory",
-  "textures": {
-    "texture": "creraces:block/dryad_planks",
-    "particle": "creraces:block/dryad_planks"
-  },
-  "render_type": "solid"
-}

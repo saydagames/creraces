@@ -161,7 +161,7 @@ public class UpdateBlockAction implements ActionRegistry.RaceAction {
                 if (changed) {
                     be.load(tag);
                     be.setChanged();
-                    level.sendBlockUpdated(finalPos, newState, newState, 3);
+                    level.sendBlockUpdated(finalPos, oldState, newState, 3);
                 }
             }
         }

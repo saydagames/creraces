@@ -46,7 +46,6 @@ public class TornadoEntity extends TamableAnimal {
         this.xpReward = 0;
         this.setNoAi(false);
         this.moveControl = new FlyingMoveControl(this, 10, true);
-        this.setInvulnerable(true);
     }
 
     @Override
@@ -204,7 +203,6 @@ public class TornadoEntity extends TamableAnimal {
 
     @Override
     protected void doPush(net.minecraft.world.entity.Entity entity) {
-        // Do not push entities
     }
 
     @Override

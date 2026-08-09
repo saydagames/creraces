@@ -148,8 +148,8 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
             // -----------------------------------------------------------------------
             // Pre-check: is there already a room on the other side of this panel?
             // Uses the floor-of-new-room check position (matching legacy logic):
-            // floor IS petrified_wood ↁEroom already placed ↁEdoor-only mode
-            // floor IS AIR / void ↁEno room yet ↁEfull expansion
+            // floor IS petrified_wood -> room already placed -> door-only mode
+            // floor IS AIR / void     -> no room yet         -> full expansion
             // -----------------------------------------------------------------------
             boolean roomAlreadyExists = false;
             if (!"SHELL".equalsIgnoreCase(rule.mode) && rule.checkBlock != null) {
@@ -209,8 +209,8 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
                 }
 
                 int r = rule.shellRadius;
-                BlockPos p1 = interact_pos.offset(r, 5, r);
-                BlockPos p2 = interact_pos.offset(-r, -2, -r);
+                BlockPos p1 = interact_pos.offset(r, rule.shellHeight - 2, r);
+                BlockPos p2 = interact_pos.offset(-r, 5 - rule.shellHeight, -r);
 
                 // Fill logic: box outline
                 for (BlockPos p : BlockPos.betweenClosed(p1, p2)) {

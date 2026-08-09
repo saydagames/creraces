@@ -6,7 +6,6 @@ import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.engine.ScalingValue;
 import mc.sayda.creraces.engine.TraitRegistry;
 import mc.sayda.creraces.capability.IPlayerVariables;
-import mc.sayda.creraces.CreRaces;
 
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -26,19 +25,15 @@ public class TetherTrait extends PeriodicTrait {
     private final TagKey<EntityType<?>> targetTag;
     private final ResourceLocation targetId;
     private final ScalingValue radius;
-    private final String texture;
-    private final float width;
     private final List<ActionRegistry.RaceAction> actions;
 
     public TetherTrait(ResourceLocation traitId, String targetStr,
             ScalingValue radius,
-            List<ActionRegistry.RaceAction> actions, ScalingValue interval, String texture, float width) {
+            List<ActionRegistry.RaceAction> actions, ScalingValue interval) {
         super(traitId, interval);
         this.targetStr = targetStr;
         this.radius = radius;
         this.actions = actions;
-        this.texture = texture;
-        this.width = width;
 
         if (this.targetStr.startsWith("#")) {
             this.targetTag = TagKey.create(Registries.ENTITY_TYPE, new ResourceLocation(this.targetStr.substring(1)));
@@ -51,7 +46,7 @@ public class TetherTrait extends PeriodicTrait {
 
     @Override
     protected boolean shouldExecute(Player player, IPlayerVariables vars) {
-        return true;
+        return !player.level().isClientSide();
     }
 
     @Override
@@ -96,10 +91,6 @@ public class TetherTrait extends PeriodicTrait {
 
             ScalingValue radius = ScalingValue.fromJson(json, "radius", 10.0);
             ScalingValue interval = ScalingValue.fromJson(json, "interval", 20.0);
-            String texture = json.has("texture") ? json.get("texture").getAsString()
-                    : "creraces:textures/misc/tether.png";
-            float width = json.has("width") ? json.get("width").getAsFloat() : 0.1f;
-
             List<ActionRegistry.RaceAction> actions = new ArrayList<>();
             if (json.has("actions")) {
                 JsonArray array = json.getAsJsonArray("actions");
@@ -107,7 +98,7 @@ public class TetherTrait extends PeriodicTrait {
                     actions.add(ActionRegistry.fromJson(array.get(i).getAsJsonObject()));
                 }
             }
-            return new TetherTrait(traitId, target, radius, actions, interval, texture, width);
+            return new TetherTrait(traitId, target, radius, actions, interval);
         });
     }
 }

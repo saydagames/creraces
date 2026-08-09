@@ -88,15 +88,14 @@ public class ModMobEffects {
                         () -> new mc.sayda.creraces.effect.BleedingEffect());
 
         /**
-         * Broken Wings — debuff applied to fairies when their wings are damaged.
+         * Broken Wings: debuff applied to fairies when their wings are damaged.
          * Disables or impairs flight; cleared by standing in fairy_source.
          */
         public static final RegistrySupplier<MobEffect> BROKEN_WINGS = MOB_EFFECTS.register("broken_wings",
                         () -> new mc.sayda.creraces.effect.BrokenWingsEffect());
 
         /**
-         * Fairy Dust — applied when a fairy consumes fairy dust.
-         * Temporarily restores Pehkui MOTION to 1.0 (full flight speed) for 60 seconds.
+         * Fairy Dust: temporarily restores Pehkui MOTION to 1.0 (full flight speed) for 60 seconds.
          */
         public static final RegistrySupplier<MobEffect> FAIRY_DUST_EFFECT = MOB_EFFECTS.register("fairy_dust",
                         () -> new mc.sayda.creraces.effect.FairyDustEffect());

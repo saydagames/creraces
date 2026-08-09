@@ -1,7 +1,5 @@
 package mc.sayda.creraces.block;
 
-import mc.sayda.creraces.capability.DataUtils;
-import mc.sayda.creraces.engine.ActionRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
@@ -60,11 +58,6 @@ public class DryadExpansionPanelBlock extends Block {
         if (world.isClientSide) {
             return InteractionResult.SUCCESS;
         }
-
-        DataUtils.getVariables(player).ifPresent(vars -> {
-            // Trigger generic interaction for this block via the trait system
-            // The trait system will look for a block_interaction trait matching this block.
-        });
 
         return InteractionResult.SUCCESS;
     }

@@ -51,7 +51,7 @@ public class PlayerVariables implements IPlayerVariables {
     private boolean hasPocket = false;
     private double pocketSize = 0.0;
     private int pocketIndex = 0;
-    private final Set<UUID> pocketInvitations = new HashSet<>();
+    private final Set<UUID> pocketInvitations = ConcurrentHashMap.newKeySet();
     private double pocketX = 0.0;
     private double pocketY = 0.0;
     private double pocketZ = 0.0;
@@ -214,8 +214,8 @@ public class PlayerVariables implements IPlayerVariables {
         this.resourceTimer = ticks;
     }
 
-    // getResourceTimer / setResourceTimer removed from interface.
-    // Field retained only for save-file backward-compat (loaded from disk, never
+    // getResourceTimer / setResourceTimer are declared in IPlayerVariables.
+    // Field is also retained for save-file compatibility (loaded from disk, never
     // sent over network).
 
     @Override
@@ -353,11 +353,16 @@ public class PlayerVariables implements IPlayerVariables {
         this.pocketIndex = 0;
         this.pocketSize = 0;
         this.pocketInvitations.clear();
+        this.managedModifiers.clear();
         this.returnX = 0;
         this.returnY = 0;
         this.returnZ = 0;
         this.returnDim = "minecraft:overworld";
         this.isInSpiritRealm = false;
+        this.isSpirit = false;
+        this.isTiny = false;
+        this.isAquatic = false;
+        this.isUndead = false;
         this.smallBuild = false;
         this.abilityActive = false;
         this.activeAbility = null;

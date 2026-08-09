@@ -10,50 +10,60 @@
     ],
     "creraces:actions": [
         {
-            "type": "creraces:apply_effect",
-            "effect": "creraces:rooted",
-            "duration": 200,
-            "amplifier": 0
-        },
-        {
-            "type": "creraces:apply_effect",
-            "effect": "minecraft:resistance",
-            "duration": 200,
-            "amplifier": 1
-        },
-        {
-            "type": "creraces:apply_effect",
-            "effect": "creraces:thorns",
-            "duration": 200,
-            "amplifier": 0
-        },
-        {
-            "type": "creraces:spawn_particles",
-            "particle": "minecraft:happy_villager",
-            "count": 15,
-            "spread_x": 0.5,
-            "spread_y": 1,
-            "spread_z": 0.5
-        },
-        {
-            "type": "creraces:spawn_particles",
-            "particle": "minecraft:composter",
-            "count": 10,
-            "spread_x": 0.3,
-            "spread_y": 0.5,
-            "spread_z": 0.3
-        },
-        {
-            "type": "creraces:play_sound",
-            "sound": "minecraft:item.bone_meal.use",
-            "volume": 1,
-            "pitch": 0.9
-        },
-        {
-            "type": "creraces:play_sound",
-            "sound": "minecraft:block.moss.place",
-            "volume": 0.8,
-            "pitch": 1.1
+            "type": "creraces:conditional",
+            "condition": {
+                "type": "creraces:has_effect",
+                "effect": "creraces:rooted"
+            },
+            "if_true": [
+                {
+                    "type": "creraces:remove_effect",
+                    "effect": "creraces:rooted"
+                },
+                {
+                    "type": "creraces:remove_effect",
+                    "effect": "minecraft:resistance"
+                },
+                {
+                    "type": "creraces:remove_effect",
+                    "effect": "creraces:thorns"
+                }
+            ],
+            "if_false": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "creraces:rooted",
+                    "duration": 1000000,
+                    "amplifier": 0
+                },
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:resistance",
+                    "duration": 1000000,
+                    "amplifier": 1
+                },
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "creraces:thorns",
+                    "duration": 1000000,
+                    "amplifier": 0
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:item.bone_meal.use",
+                    "volume": 1,
+                    "pitch": 0.9
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:block.moss.place",
+                    "volume": 0.8,
+                    "pitch": 1.1
+                },
+                {
+                    "type": "creraces:cancel"
+                }
+            ]
         }
     ],
     "creraces:wiki_page": "Ability:Rampant_Growth"

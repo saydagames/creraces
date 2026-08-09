@@ -327,7 +327,7 @@ public interface Condition {
                     boolean useinteract_pos = GsonHelper.getAsBoolean(json, "use_interact_pos", true);
                     boolean absolute = GsonHelper.getAsBoolean(json, "absolute", false);
 
-                    // Default FLOOR matches BlockPos.containing() — vanilla standard
+                    // Default FLOOR matches BlockPos.containing() (vanilla standard)
                     ScalingValue.MathOp math = ScalingValue.MathOp.FLOOR;
                     if (json.has("math")) {
                         try {
@@ -360,19 +360,13 @@ public interface Condition {
                     new InHabitableBiomeCondition();
                 case "has_faction" ->
                     new HasFactionCondition();
+                case "is_faction_leader" ->
+                    new IsFactionLeaderCondition();
+                case "has_faction_group" ->
+                    new HasFactionGroupCondition();
                 case "in_claimed_territory" -> {
                     String scope = GsonHelper.getAsString(json, "scope", "own");
                     yield new InClaimedTerritoryCondition(scope);
-                }
-                case "faction_rank" -> {
-                    String minRankStr = GsonHelper.getAsString(json, "min_rank", "MEMBER").toUpperCase();
-                    mc.sayda.creraces.territory.FactionRank minRank;
-                    try {
-                        minRank = mc.sayda.creraces.territory.FactionRank.valueOf(minRankStr);
-                    } catch (IllegalArgumentException ex) {
-                        minRank = mc.sayda.creraces.territory.FactionRank.MEMBER;
-                    }
-                    yield new FactionRankCondition(minRank);
                 }
                 case "is_spirit" -> {
                     boolean expected = GsonHelper.getAsBoolean(json, "value", true);
@@ -464,13 +458,13 @@ class HoldingItemCondition implements Condition {
             @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         // Smart Targeting: Prefer target if present, otherwise respect useTarget flag
         net.minecraft.world.entity.LivingEntity entity = (target != null) ? target : (useTarget ? null : player);
-        if (entity == null || definition == null)
+        if (entity == null)
             return false;
 
         for (net.minecraft.world.InteractionHand hand : net.minecraft.world.InteractionHand.values()) {
             @SuppressWarnings("null")
             net.minecraft.world.item.ItemStack stack = entity.getItemInHand(hand);
-            if (ItemUtils.matches(stack, definition))
+            if (definition == null ? !stack.isEmpty() : ItemUtils.matches(stack, definition))
                 return true;
         }
         return false;
@@ -877,7 +871,7 @@ class IsMovingCondition implements Condition {
             @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         net.minecraft.world.phys.Vec3 vel = player.getDeltaMovement();
         double t = threshold.evaluate(player, target);
-        boolean isMoving = (vel.x * vel.x + vel.z * vel.z) > (t * t);
+        boolean isMoving = (vel.x * vel.x + vel.y * vel.y + vel.z * vel.z) > (t * t);
         return isMoving == expected;
     }
 }
@@ -1671,16 +1665,32 @@ class InHabitableBiomeCondition implements Condition {
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
-        java.util.UUID factionId = mc.sayda.creraces.territory.TerritoryManager.get()
-                .getFactionId(player.getUUID());
-        if (factionId == null) return false;
-        net.minecraft.resources.ResourceLocation biome = player.level()
-                .getBiome(player.blockPosition())
-                .unwrapKey()
-                .map(k -> k.location())
-                .orElse(null);
-        if (biome == null) return false;
-        return mc.sayda.creraces.territory.TerritoryManager.get().isHabitable(factionId, biome);
+        return mc.sayda.creraces.capability.DataUtils.getVariables(player).map(vars -> {
+            net.minecraft.resources.ResourceLocation raceId = vars.getRace();
+            if (raceId == null || raceId.equals(mc.sayda.creraces.race.RaceRegistry.NONE)) return false;
+            mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(raceId);
+            if (race == null || !race.enableTerritory()) return false;
+            java.util.List<String> validBiomes = race.claimValidBiomes();
+            if (validBiomes.isEmpty()) return true;
+            @SuppressWarnings("null")
+            net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> biome =
+                    player.level().getBiome(player.blockPosition());
+            for (String entry : validBiomes) {
+                if (entry.startsWith("#")) {
+                    try {
+                        net.minecraft.tags.TagKey<net.minecraft.world.level.biome.Biome> tagKey =
+                                net.minecraft.tags.TagKey.create(
+                                        net.minecraft.core.registries.Registries.BIOME,
+                                        new net.minecraft.resources.ResourceLocation(entry.substring(1)));
+                        if (biome.is(tagKey)) return true;
+                    } catch (Exception ignored) {}
+                } else {
+                    if (biome.unwrapKey().map(k -> k.location().toString().equals(entry)).orElse(false))
+                        return true;
+                }
+            }
+            return false;
+        }).orElse(false);
     }
 }
 
@@ -1690,7 +1700,32 @@ class HasFactionCondition implements Condition {
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
-        return mc.sayda.creraces.territory.TerritoryManager.get().hasFaction(player.getUUID());
+        return mc.sayda.creraces.capability.DataUtils.getVariables(player).map(vars -> {
+            net.minecraft.resources.ResourceLocation raceId = vars.getRace();
+            if (raceId == null || raceId.equals(mc.sayda.creraces.race.RaceRegistry.NONE)) return false;
+            mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(raceId);
+            return race != null && race.effectiveFactionGroup() != null;
+        }).orElse(false);
+    }
+}
+
+class IsFactionLeaderCondition implements Condition {
+    @Override
+    public boolean evaluate(net.minecraft.world.entity.player.Player player,
+            @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
+        return mc.sayda.creraces.territory.FactionLeaderManager.isLeader(player);
+    }
+}
+
+class HasFactionGroupCondition implements Condition {
+    @Override
+    public boolean evaluate(net.minecraft.world.entity.player.Player player,
+            @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
+            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
+            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
+        return mc.sayda.creraces.territory.FactionLeaderManager.getFactionGroup(player) != null;
     }
 }
 
@@ -1715,49 +1750,21 @@ class InClaimedTerritoryCondition implements Condition {
 
         if ("any".equals(scope)) return true;
 
-        java.util.UUID playerFactionId = tm.getFactionId(player.getUUID());
+        net.minecraft.resources.ResourceLocation playerRace =
+                mc.sayda.creraces.capability.DataUtils.getVariables(player)
+                        .map(mc.sayda.creraces.capability.IPlayerVariables::getRace)
+                        .orElse(null);
+
         if ("own".equals(scope)) {
-            return playerFactionId != null && claim.getFactionId().equals(playerFactionId);
+            return playerRace != null && claim.getRaceId().equals(playerRace);
         }
         if ("allied".equals(scope)) {
-            if (playerFactionId != null && claim.getFactionId().equals(playerFactionId)) return true;
-            java.util.UUID playerTeamId = mc.sayda.creraces.capability.DataUtils
-                    .getVariables(player)
-                    .map(mc.sayda.creraces.capability.IPlayerVariables::getTeamId)
-                    .orElse(null);
-            if (playerTeamId == null) return false;
-            mc.sayda.creraces.team.RaceTeamManager.RaceTeam playerTeam =
-                    mc.sayda.creraces.team.RaceTeamManager.getTeam(playerTeamId).orElse(null);
-            if (playerTeam == null) return false;
-            mc.sayda.creraces.territory.FactionData claimFaction = tm.getFaction(claim.getFactionId());
-            if (claimFaction == null) return false;
-            for (java.util.UUID memberId : claimFaction.getMembers().keySet()) {
-                if (playerTeam.getMembers().contains(memberId)) return true;
-            }
+            if (playerRace == null) return false;
+            if (claim.getRaceId().equals(playerRace)) return true;
+            return tm.getDiplomacy(playerRace, claim.getRaceId())
+                    == mc.sayda.creraces.territory.DiplomacyStatus.ALLY;
         }
         return false;
     }
 }
 
-class FactionRankCondition implements Condition {
-    private final mc.sayda.creraces.territory.FactionRank minRank;
-
-    FactionRankCondition(mc.sayda.creraces.territory.FactionRank minRank) {
-        this.minRank = minRank;
-    }
-
-    @Override
-    public boolean evaluate(net.minecraft.world.entity.player.Player player,
-            @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
-            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
-        mc.sayda.creraces.territory.TerritoryManager tm =
-                mc.sayda.creraces.territory.TerritoryManager.get();
-        java.util.UUID factionId = tm.getFactionId(player.getUUID());
-        if (factionId == null) return false;
-        mc.sayda.creraces.territory.FactionData faction = tm.getFaction(factionId);
-        if (faction == null) return false;
-        mc.sayda.creraces.territory.FactionRank rank = faction.getRank(player.getUUID());
-        return rank != null && rank.isAtLeast(minRank);
-    }
-}

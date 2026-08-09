@@ -48,11 +48,18 @@ public class EnterSpiritRealmAction implements ActionRegistry.RaceAction {
             if (r > 0) {
                 net.minecraft.world.level.Level level = player.level();
                 net.minecraft.world.phys.AABB area = player.getBoundingBox().inflate(r);
+                boolean enteringRealm = vars.isInSpiritRealm();
                 for (Player nearby : level.getEntitiesOfClass(Player.class, area)) {
                     if (nearby == player)
                         continue;
                     DataUtils.getVariables(nearby).ifPresent(nVars -> {
-                        nVars.setInSpiritRealm(vars.isInSpiritRealm()); // Set nearby to the same state as player
+                        if (enteringRealm && !nVars.isInSpiritRealm()) {
+                            nVars.setReturnX(nearby.getX());
+                            nVars.setReturnY(nearby.getY());
+                            nVars.setReturnZ(nearby.getZ());
+                            nVars.setReturnDim(nearby.level().dimension().location().toString());
+                        }
+                        nVars.setInSpiritRealm(enteringRealm);
                         BoundaryHandler.resyncForAllTrackers(nearby);
                         BoundaryHandler.resyncVariables(nearby, nearby);
                     });

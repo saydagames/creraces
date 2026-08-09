@@ -3,11 +3,9 @@ package mc.sayda.creraces.engine.actions;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.capability.IPlayerVariables;
 import mc.sayda.creraces.engine.ActionRegistry;
-import mc.sayda.creraces.network.BoundaryHandler;
-import mc.sayda.creraces.territory.ClaimData;
-import mc.sayda.creraces.territory.FactionData;
-import mc.sayda.creraces.territory.FactionRank;
 import mc.sayda.creraces.territory.TerritoryManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
@@ -17,32 +15,10 @@ import net.minecraft.world.level.ChunkPos;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 public class ClaimTerritoryAction implements ActionRegistry.RaceAction {
 
     public static final ResourceLocation ID = new ResourceLocation("creraces", "claim_territory");
-
-    private record PendingClaim(List<ActionRegistry.RaceAction> onSuccess,
-                                @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
-                                @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-                                @javax.annotation.Nullable BlockPos interactPos) {}
-
-    private static final java.util.concurrent.ConcurrentHashMap<UUID, PendingClaim> PENDING = new java.util.concurrent.ConcurrentHashMap<>();
-
-    /** Called by FactionActionPacket after faction is confirmed to execute the deferred on_success branch. */
-    public static void resumePending(ServerPlayer player) {
-        PendingClaim pending = PENDING.remove(player.getUUID());
-        if (pending == null) return;
-        for (ActionRegistry.RaceAction action : pending.onSuccess()) {
-            action.execute(player, pending.target(), pending.slot(), pending.interactPos());
-        }
-    }
-
-    /** Called on PLAYER_QUIT to discard any stale pending claim for this player. */
-    public static void clearPending(java.util.UUID playerUUID) {
-        PENDING.remove(playerUUID);
-    }
 
     private final List<String> validBiomes;
     private final List<ActionRegistry.RaceAction> onSuccess;
@@ -50,28 +26,25 @@ public class ClaimTerritoryAction implements ActionRegistry.RaceAction {
     private final List<ActionRegistry.RaceAction> onInvalidBiome;
     private final List<ActionRegistry.RaceAction> onEnemyTerritory;
     private final List<ActionRegistry.RaceAction> onInsideOwn;
-    private final List<ActionRegistry.RaceAction> onInvalidRank;
 
     public ClaimTerritoryAction(List<String> validBiomes,
             List<ActionRegistry.RaceAction> onSuccess,
             List<ActionRegistry.RaceAction> onPartial,
             List<ActionRegistry.RaceAction> onInvalidBiome,
             List<ActionRegistry.RaceAction> onEnemyTerritory,
-            List<ActionRegistry.RaceAction> onInsideOwn,
-            List<ActionRegistry.RaceAction> onInvalidRank) {
+            List<ActionRegistry.RaceAction> onInsideOwn) {
         this.validBiomes = validBiomes;
         this.onSuccess = onSuccess;
         this.onPartial = onPartial;
         this.onInvalidBiome = onInvalidBiome;
         this.onEnemyTerritory = onEnemyTerritory;
         this.onInsideOwn = onInsideOwn;
-        this.onInvalidRank = onInvalidRank;
     }
 
     private static final ResourceLocation SPIRIT_REALM = new ResourceLocation("creraces", "spirit_realm");
-    private static final ResourceLocation TX = new ResourceLocation("creraces", "tx");
-    private static final ResourceLocation TY = new ResourceLocation("creraces", "ty");
-    private static final ResourceLocation TZ = new ResourceLocation("creraces", "tz");
+    private static final ResourceLocation NODE_X = new ResourceLocation("creraces", "node_x");
+    private static final ResourceLocation NODE_Y = new ResourceLocation("creraces", "node_y");
+    private static final ResourceLocation NODE_Z = new ResourceLocation("creraces", "node_z");
 
     @Override
     public boolean execute(Player player,
@@ -81,93 +54,116 @@ public class ClaimTerritoryAction implements ActionRegistry.RaceAction {
 
         if (!(player instanceof ServerPlayer serverPlayer)) return true;
 
-        if (!validBiomes.isEmpty() && !isBiomeValid(serverPlayer)) {
+        ResourceLocation raceId = DataUtils.getVariables(player)
+                .map(IPlayerVariables::getRace)
+                .orElse(null);
+        if (raceId == null || raceId.getPath().equals("none")) {
             return runBranch(onInvalidBiome, player, target, slot, interact_pos);
         }
 
-        TerritoryManager tm = TerritoryManager.get();
-        ChunkPos playerChunk = new ChunkPos(player.blockPosition());
-        ClaimData existingClaim = tm.getClaimAt(playerChunk);
-        boolean hasFaction = tm.hasFaction(player.getUUID());
+        mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(raceId);
+        if (race == null || !race.enableTerritory()) return false;
 
-        if (!hasFaction) {
-            if (existingClaim != null) {
-                // Inside another faction's territory: notify their officers and run the enemy branch.
-                notifyFactionOfficers(serverPlayer, existingClaim.getFactionId(), tm);
-                serverPlayer.displayClientMessage(
-                        net.minecraft.network.chat.Component.translatable(
-                                "creraces.territory.anchor.join_request_sent"),
-                        true);
-                return runBranch(onEnemyTerritory, player, target, slot, interact_pos);
+        // Prefer the action's own valid_biomes list; fall back to the race's territory_valid_biomes
+        // so the sapling placement check and the map preview always agree.
+        List<String> effectiveBiomes = validBiomes.isEmpty() ? race.claimValidBiomes() : validBiomes;
+
+        // Gate: the target block position (or player position) must be in a valid biome
+        if (!effectiveBiomes.isEmpty() && !isCenterBiomeValid(serverPlayer, interact_pos, effectiveBiomes)) {
+            return runBranch(onInvalidBiome, player, target, slot, interact_pos);
+        }
+
+        // Leader gate: all territory races require the player to be leader
+        if (race.enableTerritory()) {
+            mc.sayda.creraces.territory.FactionLeaderManager.electIfAbsent(serverPlayer);
+            if (!mc.sayda.creraces.territory.FactionLeaderManager.isLeader(player)) {
+                player.displayClientMessage(
+                        net.minecraft.network.chat.Component.translatable("msg.creraces.faction.not_leader"), false);
+                return false;
             }
-            // Outside all territory: store on_success for deferred execution after the player
-            // names and confirms their faction. Do NOT run onPartial here — it would fire costs
-            // (cooldowns, resource drain) before the player has committed to anything.
-            PENDING.put(player.getUUID(), new PendingClaim(onSuccess, target, slot, interact_pos));
-            BoundaryHandler.openFactionCreate(serverPlayer);
-            return true;
         }
 
-        // Player has a faction
-        UUID factionId = tm.getFactionId(player.getUUID());
-        FactionData faction = tm.getFaction(factionId);
-        if (faction == null) return true;
+        TerritoryManager tm = TerritoryManager.get();
+        // Center the claim on the target block's chunk (e.g. where the sapling is placed),
+        // falling back to the player's chunk for ability-cast usage where interact_pos is null.
+        ChunkPos centerChunk = interact_pos != null
+                ? new ChunkPos(interact_pos)
+                : new ChunkPos(player.blockPosition());
 
-        if (existingClaim != null && existingClaim.getFactionId().equals(factionId)) {
-            // Inside own territory: place as dormant node
-            return runBranch(onInsideOwn, player, target, slot, interact_pos);
+        // Per-chunk biome filter: only claim chunks that are in the valid biome
+        final int sampleY = interact_pos != null ? interact_pos.getY() : player.blockPosition().getY();
+        final List<String> biomesForFilter = effectiveBiomes;
+        java.util.function.Predicate<ChunkPos> biomeFilter = biomesForFilter.isEmpty()
+                ? cp -> true
+                : cp -> {
+                    @SuppressWarnings("null")
+                    net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> h =
+                            serverPlayer.level().getBiome(new BlockPos(cp.x * 16 + 8, sampleY, cp.z * 16 + 8));
+                    return matchesBiome(h, biomesForFilter);
+                };
+
+        TerritoryManager.ClaimResult result = tm.claimIsland(raceId, centerChunk, player.getUUID(), biomeFilter);
+        if ((result.type == TerritoryManager.ClaimResultType.SUCCESS
+                || result.type == TerritoryManager.ClaimResultType.INSIDE_OWN_TERRITORY)
+                && !result.newClaims.isEmpty()) {
+            // Anchor only the chunks this placement actually created — pre-existing claims from
+            // allies or earlier placements are not tracked here and survive tree removal untouched.
+            net.minecraft.core.BlockPos anchorPos = interact_pos != null ? interact_pos.below() : player.blockPosition();
+            tm.placeRootBlock(anchorPos, result.newClaims);
         }
-
-        if (existingClaim != null) {
-            // Inside another faction's claimed area
-            return runBranch(onEnemyTerritory, player, target, slot, interact_pos);
-        }
-
-        // Outside territory: expansion — officer+ only
-        FactionRank rank = faction.getRank(player.getUUID());
-        if (rank == null || !rank.isAtLeast(FactionRank.OFFICER)) {
-            return runBranch(onInvalidRank, player, target, slot, interact_pos);
-        }
-
-        TerritoryManager.ClaimResult result = tm.claimAdjacentChunk(factionId, playerChunk, rank, player.getUUID());
         return switch (result.type) {
-            case SUCCESS          -> runBranch(onSuccess, player, target, slot, interact_pos);
-            case PARTIAL          -> runBranch(onPartial, player, target, slot, interact_pos);
-            case ENEMY_TERRITORY  -> runBranch(onEnemyTerritory, player, target, slot, interact_pos);
+            case SUCCESS              -> runBranch(onSuccess, player, target, slot, interact_pos);
+            case PARTIAL              -> runBranch(onPartial, player, target, slot, interact_pos);
+            case ENEMY_TERRITORY      -> runBranch(onEnemyTerritory, player, target, slot, interact_pos);
             case INSIDE_OWN_TERRITORY -> runBranch(onInsideOwn, player, target, slot, interact_pos);
-            default               -> true;
+            case INVALID_BIOME        -> runBranch(onInvalidBiome, player, target, slot, interact_pos);
+            case INSUFFICIENT_COINS, ANCHOR_CHUNK, UNCLAIM_SUCCESS, OUT_OF_RANGE, NOT_LEADER -> false;
         };
     }
 
-    private boolean isBiomeValid(ServerPlayer player) {
-        // When in the spirit realm the player's position is not overworld — check the stored anchor instead
+    /**
+     * Gate check: is the target position in a valid biome?
+     * Uses interactPos when provided (block-place context), otherwise the player's own position.
+     * Spirit-realm players always check their stored overworld node position.
+     */
+    private boolean isCenterBiomeValid(ServerPlayer player, @javax.annotation.Nullable BlockPos interactPos,
+            List<String> biomes) {
         net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> holder;
         if (player.level().dimension().location().equals(SPIRIT_REALM)) {
-            var vars = mc.sayda.creraces.capability.DataUtils.getVariables(player).orElse(null);
-            if (vars == null) return true; // can't validate, allow through
-            double tx = vars.getPersistentState(TX);
-            double ty = vars.getPersistentState(TY);
-            double tz = vars.getPersistentState(TZ);
-            if (tx == 0 && ty == 0 && tz == 0) return true; // no anchor yet, allow through
+            var vars = DataUtils.getVariables(player).orElse(null);
+            if (vars == null) return true;
+            double nx = vars.getPersistentState(NODE_X);
+            double ny = vars.getPersistentState(NODE_Y);
+            double nz = vars.getPersistentState(NODE_Z);
+            if (nx == 0 && ny == 0 && nz == 0) return true;
             net.minecraft.server.level.ServerLevel overworld =
                     player.getServer().getLevel(net.minecraft.world.level.Level.OVERWORLD);
             if (overworld == null) return true;
-            holder = overworld.getBiome(new BlockPos((int) tx, (int) ty, (int) tz));
+            holder = overworld.getBiome(new BlockPos((int) nx, (int) ny, (int) nz));
+        } else if (interactPos != null) {
+            @SuppressWarnings("null")
+            net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> h =
+                    player.level().getBiome(interactPos);
+            holder = h;
         } else {
             @SuppressWarnings("null")
             net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> h =
                     player.level().getBiome(player.blockPosition());
             holder = h;
         }
-        for (String entry : validBiomes) {
+        return matchesBiome(holder, biomes);
+    }
+
+    private boolean matchesBiome(net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> holder,
+            List<String> biomes) {
+        for (String entry : biomes) {
             if (entry.startsWith("#")) {
-                String tagStr = entry.substring(1);
                 try {
                     @SuppressWarnings("null")
                     net.minecraft.tags.TagKey<net.minecraft.world.level.biome.Biome> tagKey =
                             net.minecraft.tags.TagKey.create(
                                     net.minecraft.core.registries.Registries.BIOME,
-                                    new ResourceLocation(tagStr));
+                                    new ResourceLocation(entry.substring(1)));
                     if (holder.is(tagKey)) return true;
                 } catch (Exception ignored) {}
             } else {
@@ -177,22 +173,6 @@ public class ClaimTerritoryAction implements ActionRegistry.RaceAction {
             }
         }
         return false;
-    }
-
-    private static void notifyFactionOfficers(ServerPlayer applicant, UUID targetFactionId, TerritoryManager tm) {
-        mc.sayda.creraces.territory.FactionData faction = tm.getFaction(targetFactionId);
-        if (faction == null) return;
-        var pkt = new mc.sayda.creraces.network.JoinRequestNotifyPacket(
-                applicant.getUUID(),
-                applicant.getName().getString(),
-                mc.sayda.creraces.capability.DataUtils.getVariables(applicant)
-                        .map(mc.sayda.creraces.capability.IPlayerVariables::getRace)
-                        .orElse(new ResourceLocation("creraces", "none")));
-        for (java.util.Map.Entry<UUID, mc.sayda.creraces.territory.FactionRank> e : faction.getMembers().entrySet()) {
-            if (!e.getValue().isAtLeast(mc.sayda.creraces.territory.FactionRank.OFFICER)) continue;
-            ServerPlayer officer = applicant.getServer().getPlayerList().getPlayer(e.getKey());
-            if (officer != null) mc.sayda.creraces.network.BoundaryHandler.sendJoinRequestNotify(officer, pkt);
-        }
     }
 
     private static boolean runBranch(List<ActionRegistry.RaceAction> branch, Player player,
@@ -220,8 +200,7 @@ public class ClaimTerritoryAction implements ActionRegistry.RaceAction {
                     parseList(json, "on_partial"),
                     parseList(json, "on_invalid_biome"),
                     parseList(json, "on_enemy_territory"),
-                    parseList(json, "on_inside_own"),
-                    parseList(json, "on_invalid_rank"));
+                    parseList(json, "on_inside_own"));
         });
     }
 

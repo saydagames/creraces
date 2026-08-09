@@ -175,7 +175,7 @@ public class AttributeIncidents {
             }
             toRemoveManaged.forEach(vars::removeManagedModifier);
 
-            // 5. Double Jump
+            // 4. Double Jump
             AttributeInstance doubleJumpAttr = player
                     .getAttribute(mc.sayda.creraces.registry.ModAttributes.DOUBLE_JUMP.get());
             if (doubleJumpAttr != null) {

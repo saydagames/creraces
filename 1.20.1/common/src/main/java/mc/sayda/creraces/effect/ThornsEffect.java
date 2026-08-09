@@ -1,5 +1,7 @@
 package mc.sayda.creraces.effect;
 
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.entity.LivingEntity;
@@ -20,7 +22,19 @@ public class ThornsEffect extends MobEffect {
 
     @Override
     public boolean isDurationEffectTick(int duration, int amplifier) {
-        return false;
+        return duration % 8 == 0;
+    }
+
+    @Override
+    public void applyEffectTick(@javax.annotation.Nonnull LivingEntity entity, int amplifier) {
+        if (!(entity.level() instanceof ServerLevel serverLevel)) return;
+        double x = entity.getX();
+        double y = entity.getY() + entity.getBbHeight() * 0.5;
+        double z = entity.getZ();
+
+        serverLevel.sendParticles(java.util.Objects.requireNonNull(ParticleTypes.HAPPY_VILLAGER),    x, y,             z, 3, 1.0, 1.2, 1.0, 0.02);
+        serverLevel.sendParticles(java.util.Objects.requireNonNull(ParticleTypes.COMPOSTER),         x, entity.getY(), z, 2, 0.7, 0.35, 0.7, 0.01);
+        serverLevel.sendParticles(java.util.Objects.requireNonNull(ParticleTypes.SPORE_BLOSSOM_AIR), x, y + 0.4,      z, 4, 0.9, 0.8, 0.9, 0.01);
     }
 
     /**

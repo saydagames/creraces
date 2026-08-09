@@ -39,7 +39,8 @@ public class SmeltItemAction implements ActionRegistry.RaceAction {
             ItemStack singleResult = recipe.get().getResultItem(player.level().registryAccess()).copy();
             int toSmelt = Math.min(amount, stack.getCount());
             stack.shrink(toSmelt);
-            ItemStack result = singleResult.copyWithCount(singleResult.getCount() * toSmelt);
+            ItemStack result = singleResult.copyWithCount(
+                    Math.min(singleResult.getCount() * toSmelt, 64));
             if (stack.isEmpty()) {
                 player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, result);
             } else {

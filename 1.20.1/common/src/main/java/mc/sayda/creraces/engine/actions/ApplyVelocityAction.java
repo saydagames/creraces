@@ -44,7 +44,7 @@ public class ApplyVelocityAction implements ActionRegistry.RaceAction {
         if (player == null) return false;
         LivingEntity entity = (target != null) ? target : (useTarget ? null : player);
         if (entity == null)
-            return false;
+            return true;
 
         double s = strength.evaluate(player, target, slot);
         double vx = x.evaluate(player, target, slot);

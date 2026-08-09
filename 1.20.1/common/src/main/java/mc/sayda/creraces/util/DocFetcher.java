@@ -19,9 +19,11 @@ import java.util.regex.Pattern;
  * etc.)
  */
 public class DocFetcher {
-    private static final HttpClient CLIENT = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(10))
-            .build();
+    private static HttpClient getClient() {
+        return HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(mc.sayda.creraces.config.CreRacesConfig.DOC_FETCH_TIMEOUT_SECONDS.get()))
+                .build();
+    }
 
     /**
      * Fetches documentation based on a RemoteDocConfig.
@@ -57,7 +59,7 @@ public class DocFetcher {
                         .GET()
                         .build();
 
-                HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+                HttpResponse<String> response = getClient().send(request, HttpResponse.BodyHandlers.ofString());
 
                 if (response.statusCode() != 200) {
                     CreRaces.LOGGER.warn("DocFetcher: HTTP error {} for {}", response.statusCode(), url);
@@ -138,19 +140,6 @@ public class DocFetcher {
                         String result = matcher.groupCount() > 0 ? matcher.group(1).trim() : matcher.group().trim();
                         CreRaces.LOGGER.debug("DocFetcher: Regex matched group for {}", url);
                         return WikitextUtil.clean(result);
-                    } else if (url.contains("action=parse") && (currentSelector == null || currentSelector.isEmpty())) {
-                        // Fallback: try to grab the lead section (before first header)
-                        Pattern leadPattern = Pattern.compile("(?i)^(.*?)(?===|$)", Pattern.DOTALL);
-                        Matcher leadMatcher = leadPattern.matcher(content);
-                        if (leadMatcher.find()) {
-                            String result = leadMatcher.group(1).trim();
-                            // If lead is too short or empty, it might be just a template, try harder?
-                            // For now, returning lead is better than null
-                            if (!result.isEmpty()) {
-                                CreRaces.LOGGER.info("DocFetcher: Fallback to lead section for {}", url);
-                                return WikitextUtil.clean(result);
-                            }
-                        }
                     }
 
                     CreRaces.LOGGER.warn("DocFetcher: Regex selector '{}' found no match in content for {}",

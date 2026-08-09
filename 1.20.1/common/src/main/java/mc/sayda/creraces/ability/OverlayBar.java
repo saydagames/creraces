@@ -53,7 +53,7 @@ public record OverlayBar(String sourceType, ResourceLocation sourceId, int max, 
                                 sourceType = resource.substring(0, colonIdx);
                                 sourceId = ResourceLocation.tryParse(resource.substring(colonIdx + 1));
                             } else {
-                                // Plain named resource (mana, energy, etc.) — no RL needed; skip bar.
+                                // Plain named resource (mana, energy, etc.): no RL needed; skip bar.
                                 sourceType = null;
                                 sourceId = null;
                             }

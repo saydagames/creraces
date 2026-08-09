@@ -4,6 +4,8 @@
         "creraces:nymph",
         "creraces:aquatic"
     ],
+    "creraces:enable_territory": true,
+    "creraces:faction_group": "nymph",
     "creraces:index": 9.2,
     "creraces:description": "race.creraces.naiad.description",
     "creraces:icon": "creraces:textures/screens/naiad_icon.png",

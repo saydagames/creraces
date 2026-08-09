@@ -111,7 +111,7 @@ public class AttributeModifierTrait implements TraitRegistry.RaceTrait {
         TraitRegistry.register(new ResourceLocation(CreRaces.MODID, "attribute_modifier"), json -> {
             String attrIdStr = GsonHelper.getAsString(json, "attribute", "minecraft:generic.attack_damage");
 
-            // Store the raw ResourceLocation  Edo NOT resolve the Attribute here.
+            // Store the raw ResourceLocation; do NOT resolve the Attribute here.
             ResourceLocation attrId = ResourceLocation.tryParse(attrIdStr);
             if (attrId == null) {
                 attrId = new ResourceLocation("creraces", attrIdStr.toLowerCase());
@@ -121,8 +121,15 @@ public class AttributeModifierTrait implements TraitRegistry.RaceTrait {
             String opStr = GsonHelper.getAsString(json, "operation", "addition").toUpperCase();
             AttributeModifier.Operation op = AttributeModifier.Operation.valueOf(opStr);
 
-            com.google.gson.JsonObject valueJson = json.has("value") && json.get("value").isJsonObject() 
-                    ? json.getAsJsonObject("value") : new com.google.gson.JsonObject();
+            com.google.gson.JsonObject valueJson;
+            if (json.has("value") && json.get("value").isJsonObject()) {
+                valueJson = json.getAsJsonObject("value");
+            } else if (json.has("value") && json.get("value").isJsonPrimitive()) {
+                valueJson = new com.google.gson.JsonObject();
+                valueJson.add("base", json.get("value"));
+            } else {
+                valueJson = new com.google.gson.JsonObject();
+            }
 
             Condition condition = null;
             com.google.gson.JsonObject rawCondition = null;

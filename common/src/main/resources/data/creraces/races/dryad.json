@@ -1,6 +1,8 @@
 {
     "creraces:name": "race.creraces.dryad.name",
     "creraces:parent_race": "creraces:nymph",
+    "creraces:enable_territory": true,
+    "creraces:faction_group": "nymph",
     "creraces:territory_biome_preview": true,
     "creraces:territory_valid_biomes": ["#minecraft:is_forest"],
     "creraces:index": 9.3,
@@ -34,7 +36,7 @@
         {
             "name": "nature_nymph_call",
             "type": "creraces:on_tick",
-            "interval": 1,
+            "interval": 20,
             "condition": {
                 "type": "or",
                 "conditions": [
@@ -46,15 +48,11 @@
                 {
                     "type": "creraces:apply_effect",
                     "effect": "creraces:nymph_call",
-                    "duration": -1,
+                    "duration": 30000,
+                    "amplifier": 0,
                     "visible": false,
+                    "show_icon": true,
                     "ambient": false
-                }
-            ],
-            "on_fail": [
-                {
-                    "type": "creraces:remove_effect",
-                    "effect": "creraces:nymph_call"
                 }
             ]
         }
@@ -68,7 +66,7 @@
                     "type": "creraces:conditional",
                     "condition": {
                         "type": "state",
-                        "state": "state:tx",
+                        "state": "state:node_x",
                         "operator": "!=",
                         "value": 0.0
                     },
@@ -88,30 +86,30 @@
                     "valid_biomes": ["#minecraft:is_forest"],
                     "on_success": [
                         {
+                            "type": "creraces:place_block",
+                            "block": "creraces:dryad_root",
+                            "use_target_block": true,
+                            "offset_y": -1,
+                            "overwrite": true
+                        },
+                        {
                             "type": "creraces:modify_value",
-                            "resource": "state:tx",
+                            "resource": "state:node_x",
                             "mode": "TARGET_BLOCK_X",
                             "persistent": true
                         },
                         {
                             "type": "creraces:modify_value",
-                            "resource": "state:ty",
+                            "resource": "state:node_y",
                             "mode": "TARGET_BLOCK_Y",
                             "offset_y": -1,
                             "persistent": true
                         },
                         {
                             "type": "creraces:modify_value",
-                            "resource": "state:tz",
+                            "resource": "state:node_z",
                             "mode": "TARGET_BLOCK_Z",
                             "persistent": true
-                        },
-                        {
-                            "type": "creraces:place_block",
-                            "block": "creraces:dryad_root",
-                            "use_target_block": true,
-                            "offset_y": -1,
-                            "overwrite": true
                         },
                         {
                             "type": "creraces:spawn_particles",
@@ -138,20 +136,20 @@
                     "on_partial": [
                         {
                             "type": "creraces:modify_value",
-                            "resource": "state:tx",
+                            "resource": "state:node_x",
                             "mode": "TARGET_BLOCK_X",
                             "persistent": true
                         },
                         {
                             "type": "creraces:modify_value",
-                            "resource": "state:ty",
+                            "resource": "state:node_y",
                             "mode": "TARGET_BLOCK_Y",
                             "offset_y": -1,
                             "persistent": true
                         },
                         {
                             "type": "creraces:modify_value",
-                            "resource": "state:tz",
+                            "resource": "state:node_z",
                             "mode": "TARGET_BLOCK_Z",
                             "persistent": true
                         }
@@ -175,25 +173,6 @@
                     ],
                     "on_inside_own": [
                         {
-                            "type": "creraces:modify_value",
-                            "resource": "state:tx",
-                            "mode": "TARGET_BLOCK_X",
-                            "persistent": true
-                        },
-                        {
-                            "type": "creraces:modify_value",
-                            "resource": "state:ty",
-                            "mode": "TARGET_BLOCK_Y",
-                            "offset_y": -1,
-                            "persistent": true
-                        },
-                        {
-                            "type": "creraces:modify_value",
-                            "resource": "state:tz",
-                            "mode": "TARGET_BLOCK_Z",
-                            "persistent": true
-                        },
-                        {
                             "type": "creraces:place_block",
                             "block": "creraces:dryad_root",
                             "use_target_block": true,
@@ -201,19 +180,28 @@
                             "overwrite": true
                         },
                         {
-                            "type": "creraces:message",
-                            "text": "message.creraces.dryad.dormant_node",
-                            "actionbar": true
-                        }
-                    ],
-                    "on_invalid_rank": [
-                        {
-                            "type": "creraces:message",
-                            "text": "message.creraces.territory.invalid_rank",
-                            "actionbar": true
+                            "type": "creraces:modify_value",
+                            "resource": "state:node_x",
+                            "mode": "TARGET_BLOCK_X",
+                            "persistent": true
                         },
                         {
-                            "type": "creraces:cancel"
+                            "type": "creraces:modify_value",
+                            "resource": "state:node_y",
+                            "mode": "TARGET_BLOCK_Y",
+                            "offset_y": -1,
+                            "persistent": true
+                        },
+                        {
+                            "type": "creraces:modify_value",
+                            "resource": "state:node_z",
+                            "mode": "TARGET_BLOCK_Z",
+                            "persistent": true
+                        },
+                        {
+                            "type": "creraces:message",
+                            "text": "message.creraces.dryad.tree_relocated",
+                            "actionbar": true
                         }
                     ]
                 }
@@ -235,9 +223,9 @@
                             {
                                 "type": "creraces:is_position",
                                 "use_target_block": true,
-                                "x": "state:tx",
-                                "y": "state:ty",
-                                "z": "state:tz"
+                                "x": "state:node_x",
+                                "y": "state:node_y",
+                                "z": "state:node_z"
                             }
                         ]
                     },
@@ -266,26 +254,21 @@
                         },
                         {
                             "type": "creraces:modify_value",
-                            "resource": "state:tx",
+                            "resource": "state:node_x",
                             "value": 0.0,
                             "persistent": true
                         },
                         {
                             "type": "creraces:modify_value",
-                            "resource": "state:ty",
+                            "resource": "state:node_y",
                             "value": 0.0,
                             "persistent": true
                         },
                         {
                             "type": "creraces:modify_value",
-                            "resource": "state:tz",
+                            "resource": "state:node_z",
                             "value": 0.0,
                             "persistent": true
-                        },
-                        {
-                            "type": "creraces:set_flag",
-                            "flag": "isInSpiritRealm",
-                            "value": true
                         },
                         {
                             "type": "creraces:message",
@@ -306,9 +289,9 @@
                                     {
                                         "type": "creraces:is_position",
                                         "use_target_block": true,
-                                        "x": "state:tx",
-                                        "y": "state:ty",
-                                        "z": "state:tz"
+                                        "x": "state:node_x",
+                                        "y": "state:node_y",
+                                        "z": "state:node_z"
                                     }
                                 ]
                             },

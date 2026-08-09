@@ -65,8 +65,6 @@ public class ItemInteractionTrait implements TraitRegistry.RaceTrait {
             }
 
             if (success && consumeItem && !player.isCreative()) {
-                // mc.sayda.creraces.CreRaces.LOGGER.debug("ItemInteractionTrait: Actions
-                // succeeded, consuming item: {}", stack.getItem());
                 stack.shrink(1);
             } else if (!success) {
                 mc.sayda.creraces.CreRaces.LOGGER

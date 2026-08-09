@@ -32,16 +32,18 @@ public class ApplyEffectAction implements ActionRegistry.RaceAction {
     private final java.util.List<EffectData> effects;
     private final boolean ambient;
     private final boolean visible;
+    private final boolean showIcon;
     private final ScalingValue radius;
     private final mc.sayda.creraces.engine.TargetFilter targets;
     private final boolean incrementAmplifier;
 
     public ApplyEffectAction(java.util.List<EffectData> effects, boolean ambient, boolean visible,
-            ScalingValue radius, mc.sayda.creraces.engine.TargetFilter targets,
+            boolean showIcon, ScalingValue radius, mc.sayda.creraces.engine.TargetFilter targets,
             boolean incrementAmplifier) {
         this.effects = effects;
         this.ambient = ambient;
         this.visible = visible;
+        this.showIcon = showIcon;
         this.radius = radius;
         this.targets = targets;
         this.incrementAmplifier = incrementAmplifier;
@@ -72,6 +74,7 @@ public class ApplyEffectAction implements ActionRegistry.RaceAction {
 
             boolean ambient = GsonHelper.getAsBoolean(json, "ambient", true);
             boolean visible = GsonHelper.getAsBoolean(json, "visible", true);
+            boolean showIcon = GsonHelper.getAsBoolean(json, "show_icon", visible);
             ScalingValue radius = ScalingValue.fromJson(json, "radius", 0.0);
             java.util.Set<String> defaultAllow = radius.isZero() ? java.util.Set.of("enemies", "self")
                     : java.util.Set.of("enemies");
@@ -79,7 +82,7 @@ public class ApplyEffectAction implements ActionRegistry.RaceAction {
                     "targets", defaultAllow);
             boolean incrementAmplifier = GsonHelper.getAsBoolean(json, "increment_amplifier", false);
 
-            return new ApplyEffectAction(effects, ambient, visible,
+            return new ApplyEffectAction(effects, ambient, visible, showIcon,
                     radius, targets, incrementAmplifier);
         });
     }
@@ -148,6 +151,6 @@ public class ApplyEffectAction implements ActionRegistry.RaceAction {
 
         // Vanilla MobEffectInstance treats -1 as infinite duration
         entity.addEffect(new MobEffectInstance(java.util.Objects.requireNonNull(data.effect), finalDuration == -1 ? -1 : finalDuration, finalAmplifier,
-                ambient, visible));
+                ambient, visible, showIcon));
     }
 }

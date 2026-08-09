@@ -22,10 +22,6 @@ public class UpdateGStatePacket {
         this.gState = buf.readInt();
     }
 
-    public void toBytes(FriendlyByteBuf buf) {
-        buf.writeInt(gState);
-    }
-
     public void encode(FriendlyByteBuf buf) {
         buf.writeInt(gState);
     }

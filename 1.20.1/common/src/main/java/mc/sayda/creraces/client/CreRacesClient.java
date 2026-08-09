@@ -138,7 +138,7 @@ public class CreRacesClient {
                                         net.minecraft.client.renderer.RenderType.translucent(),
                                         mc.sayda.creraces.registry.ModBlocks.MICRO_BLOCK.get());
 
-                        // Fairy source liquid block — rendered translucent like water
+                        // Fairy source liquid block, rendered translucent like water
                         dev.architectury.registry.client.rendering.RenderTypeRegistry.register(
                                         net.minecraft.client.renderer.RenderType.translucent(),
                                         mc.sayda.creraces.registry.ModBlocks.FAIRY_SOURCE_BLOCK.get());

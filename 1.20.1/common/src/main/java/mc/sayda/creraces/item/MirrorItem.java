@@ -31,17 +31,6 @@ public class MirrorItem extends Item {
         return java.util.Objects.requireNonNull(InteractionResultHolder.sidedSuccess(java.util.Objects.requireNonNull(itemStack), level.isClientSide()));
     }
 
-    @Override
-    public void inventoryTick(@Nonnull ItemStack stack, @Nonnull Level level, @Nonnull net.minecraft.world.entity.Entity entity, int slot,
-            boolean selected) {
-        if (!level.isClientSide && entity instanceof ServerPlayer player) {
-            if (!player.isCreative() && !player.isSpectator()) {
-                if (!(player.containerMenu instanceof mc.sayda.creraces.world.inventory.MirrorMenu)) {
-                    BoundaryHandler.sendOpenMirror(player);
-                }
-            }
-        }
-    }
 }
 
             

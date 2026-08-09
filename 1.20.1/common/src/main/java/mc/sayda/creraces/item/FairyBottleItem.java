@@ -36,13 +36,14 @@ public class FairyBottleItem extends Item {
     @Override
     public ItemStack finishUsingItem(ItemStack stack, Level level, LivingEntity entity) {
         if (!level.isClientSide() && entity instanceof Player player) {
-            // Grant short beneficial effects — regeneration and speed
+            // Grant short beneficial effects: regeneration and speed
             player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 200, 1, false, true, true));
             player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 600, 0, false, true, true));
-            if (!player.getAbilities().instabuild) {
-                stack.shrink(1);
-                player.getInventory().add(new ItemStack(Items.GLASS_BOTTLE));
-            }
+        }
+        // Return the empty glass bottle via the standard finishUsingItem contract;
+        // do not also add it to inventory or the player gets two bottles.
+        if (!entity.level().isClientSide() && !(entity instanceof Player p && p.getAbilities().instabuild)) {
+            stack.shrink(1);
         }
         return stack.isEmpty() ? new ItemStack(Items.GLASS_BOTTLE) : stack;
     }

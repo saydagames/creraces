@@ -52,7 +52,7 @@ public class BlockInteractionTrait implements TraitRegistry.RaceTrait {
             if (condition != null && !condition.evaluate(player, null, null, pos)) {
                 return false;
             }
-
+            if (actions.isEmpty()) return false;
             for (ActionRegistry.RaceAction action : actions) {
                 if (!action.execute(player, null, null, pos)) {
                     return false;

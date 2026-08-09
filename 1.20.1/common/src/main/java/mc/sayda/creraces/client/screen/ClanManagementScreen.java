@@ -3,30 +3,32 @@ package mc.sayda.creraces.client.screen;
 import mc.sayda.creraces.network.BoundaryHandler;
 import mc.sayda.creraces.network.ClanActionPacket;
 import mc.sayda.creraces.network.ClanUpdatePacket;
+import mc.sayda.creraces.race.Race;
+import mc.sayda.creraces.race.RaceRegistry;
+import mc.sayda.creraces.territory.DiplomacyStatus;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 
-import java.util.UUID;
+import java.util.ArrayList;
+import java.util.List;
 
 @SuppressWarnings("null")
 public class ClanManagementScreen extends Screen {
 
-    // ── Static state ───────────────────────────────────────────────────────────
+    private static final int PW = 320;
+    private static final int PH = 240;
+    private static final int ROW_H = 20;
+    private static final int LIST_TOP_OFFSET = 44; // from panel top to first row
+    private static final int LIST_BOTTOM_MARGIN = 28; // space reserved below list
+
     private static ClanUpdatePacket lastUpdate;
 
-    // ── Instance state ─────────────────────────────────────────────────────────
-    private ClanUpdatePacket.FactionInfo selectedFaction;
-    private boolean isLeader = false;
-
-    private EditBox inviteBox;
-
-    private static final int PW = 310;
-    private static final int PH = 240;
+    private int scrollOffset = 0;
 
     public ClanManagementScreen() {
         super(Component.translatable("creraces.screen.clan_management"));
@@ -53,59 +55,57 @@ public class ClanManagementScreen extends Screen {
         int pl = cx - PW / 2;
         int pt = cy - PH / 2;
 
-        // Resolve if local player is the clan leader
-        UUID localId = minecraft != null && minecraft.player != null ? minecraft.player.getUUID() : null;
-        isLeader = lastUpdate != null && localId != null && localId.equals(lastUpdate.leaderId);
+        List<Race> others = otherRaces();
+        int listTop = pt + LIST_TOP_OFFSET;
+        int listBottom = pt + PH - LIST_BOTTOM_MARGIN;
+        int maxVisible = Math.max(1, (listBottom - listTop) / ROW_H);
+        int maxOffset = Math.max(0, others.size() - maxVisible);
+        scrollOffset = Math.min(scrollOffset, maxOffset);
 
-        // Keep selected in sync
-        if (selectedFaction != null && lastUpdate != null) {
-            selectedFaction = lastUpdate.factions.stream()
-                    .filter(f -> f.factionId.equals(selectedFaction.factionId))
-                    .findFirst().orElse(null);
+        int btnW = 48;
+        int btnX = pl + PW - 3 * btnW - 8;
+
+        int end = Math.min(others.size(), scrollOffset + maxVisible);
+        for (int i = scrollOffset; i < end; i++) {
+            Race race = others.get(i);
+            ResourceLocation rid = race.id();
+            int rowY = listTop + (i - scrollOffset) * ROW_H;
+            DiplomacyStatus current = relationFor(rid);
+
+            for (DiplomacyStatus s : DiplomacyStatus.values()) {
+                final DiplomacyStatus chosen = s;
+                boolean active = current == s;
+                Component label = Component.literal(s.name())
+                        .withStyle(active ? statusFormat(s) : ChatFormatting.DARK_GRAY);
+                addRenderableWidget(Button.builder(label, b ->
+                        BoundaryHandler.sendClanAction(
+                                new ClanActionPacket(ClanActionPacket.Action.SET_RELATION, rid, chosen)))
+                        .bounds(btnX + s.ordinal() * btnW, rowY + 2, btnW - 2, 14).build());
+            }
         }
 
-        // ── Invite faction row (leader only) ──
-        if (isLeader) {
-            // Row 1 (from bottom -66): invite text field + button
-            inviteBox = new EditBox(font, pl + 5, pt + PH - 66, 140, 16,
-                    Component.translatable("creraces.screen.invite_faction_hint"));
-            inviteBox.setMaxLength(32);
-            addRenderableWidget(inviteBox);
-
-            addRenderableWidget(Button.builder(
-                    Component.translatable("creraces.screen.invite_faction"), b -> {
-                        if (inviteBox != null) {
-                            String name = inviteBox.getValue().trim();
-                            if (!name.isEmpty()) {
-                                BoundaryHandler.sendClanAction(new ClanActionPacket(
-                                        ClanActionPacket.Action.INVITE_FACTION, name));
-                                inviteBox.setValue("");
-                            }
-                        }
-                    }).bounds(pl + 148, pt + PH - 66, 85, 16).build());
-
-            // Row 2 (from bottom -46): kick selected faction
-            addRenderableWidget(Button.builder(
-                    Component.translatable("creraces.screen.kick_faction").withStyle(ChatFormatting.RED),
-                    b -> {
-                        if (selectedFaction != null)
-                            BoundaryHandler.sendClanAction(new ClanActionPacket(
-                                    ClanActionPacket.Action.KICK_FACTION, selectedFaction.factionId));
-                    }).bounds(pl + 5, pt + PH - 46, 130, 16).build());
-
-            // Row 3 (from bottom -22): disband on the left, done on the right — no overlap
-            addRenderableWidget(Button.builder(
-                    Component.translatable("creraces.screen.disband_clan").withStyle(ChatFormatting.DARK_RED),
-                    b -> {
-                        BoundaryHandler.sendClanAction(new ClanActionPacket(ClanActionPacket.Action.DISBAND));
-                        onClose();
-                    }).bounds(pl + 5, pt + PH - 22, 100, 16).build());
-        }
-
-        // Done: right-aligned when leader buttons are visible, centred otherwise
-        int doneX = isLeader ? pl + PW - 105 : cx - 50;
         addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> onClose())
-                .bounds(doneX, pt + PH - 22, 100, 16).build());
+                .bounds(cx - 50, pt + PH - 22, 100, 16).build());
+    }
+
+    // ── Input ──────────────────────────────────────────────────────────────────
+
+    @Override
+    public boolean mouseScrolled(double mx, double my, double delta) {
+        List<Race> others = otherRaces();
+        int cy = this.height / 2;
+        int pt = cy - PH / 2;
+        int listTop = pt + LIST_TOP_OFFSET;
+        int listBottom = pt + PH - LIST_BOTTOM_MARGIN;
+        int maxVisible = Math.max(1, (listBottom - listTop) / ROW_H);
+        int maxOffset = Math.max(0, others.size() - maxVisible);
+        int newOffset = (int) Math.max(0, Math.min(maxOffset, scrollOffset - delta));
+        if (newOffset != scrollOffset) {
+            scrollOffset = newOffset;
+            rebuildWidgets();
+            return true;
+        }
+        return super.mouseScrolled(mx, my, delta);
     }
 
     // ── Render ─────────────────────────────────────────────────────────────────
@@ -119,75 +119,91 @@ public class ClanManagementScreen extends Screen {
         int pl = cx - PW / 2;
         int pt = cy - PH / 2;
 
-        // Panel
         g.fill(pl, pt, pl + PW, pt + PH, 0xBB000000);
         g.renderOutline(pl, pt, PW, PH, 0xFFAAAAAA);
 
         // Title
         g.drawCenteredString(font, Component.translatable("creraces.screen.clan_management")
-                .withStyle(ChatFormatting.GOLD), cx, pt + 5, 0xFFFFFF);
+                .withStyle(ChatFormatting.GOLD), cx, pt + 6, 0xFFFFFF);
 
+        // Own race subtitle
         if (lastUpdate != null) {
-            // Leader line
-            g.drawString(font, Component.literal("Leader: " + lastUpdate.leaderName)
-                    .withStyle(ChatFormatting.YELLOW), pl + 5, pt + 18, -1, false);
+            Race own = RaceRegistry.get(lastUpdate.raceId);
+            String ownName = own != null ? own.name().getString() : lastUpdate.raceId.getPath();
+            g.drawCenteredString(font, Component.literal(ownName).withStyle(ChatFormatting.WHITE),
+                    cx, pt + 18, 0xAAAAAA);
+        }
 
-            // Column divider — stops above the invite/kick/disband rows
-            int divX = pl + PW / 2;
-            g.fill(divX, pt + 30, divX + 1, pt + PH - 78, 0x55FFFFFF);
+        // Column headers
+        int btnW = 48;
+        int btnX = pl + PW - 3 * btnW - 8;
+        g.drawString(font, Component.literal("Race").withStyle(ChatFormatting.GRAY), pl + 6, pt + 32, -1, false);
+        for (DiplomacyStatus s : DiplomacyStatus.values()) {
+            g.drawCenteredString(font, Component.literal(s.name().charAt(0) + "")
+                            .withStyle(statusFormat(s)),
+                    btnX + s.ordinal() * btnW + btnW / 2, pt + 32, -1);
+        }
 
-            // Left: faction list
-            g.drawString(font, Component.translatable("creraces.screen.factions"),
-                    pl + 5, pt + 32, 0xAAAAAA, false);
+        // Race rows (scissored to list area)
+        List<Race> others = otherRaces();
+        int listTop = pt + LIST_TOP_OFFSET;
+        int listBottom = pt + PH - LIST_BOTTOM_MARGIN;
+        int maxVisible = Math.max(1, (listBottom - listTop) / ROW_H);
 
-            int y = pt + 44;
-            for (ClanUpdatePacket.FactionInfo f : lastUpdate.factions) {
-                boolean sel = selectedFaction != null && selectedFaction.factionId.equals(f.factionId);
-                if (sel) g.fill(pl + 3, y - 1, divX - 3, y + 20, 0x44FFFFFF);
+        g.enableScissor(pl, listTop, pl + PW, listBottom);
+        int end = Math.min(others.size(), scrollOffset + maxVisible);
+        for (int i = scrollOffset; i < end; i++) {
+            Race race = others.get(i);
+            int rowY = listTop + (i - scrollOffset) * ROW_H;
+            DiplomacyStatus current = relationFor(race.id());
+            int color = switch (current) {
+                case ALLY    -> 0x5555FF;
+                case ENEMY   -> 0xFF5555;
+                case NEUTRAL -> 0xAAAAAA;
+            };
+            g.drawString(font, race.name().getString(), pl + 6, rowY + 6, color, false);
+        }
+        g.disableScissor();
 
-                g.drawString(font, Component.literal(f.factionName).withStyle(ChatFormatting.WHITE),
-                        pl + 5, y, -1, false);
-                g.drawString(font, Component.literal("  " + f.leaderName + " (" + f.memberCount + ")")
-                        .withStyle(ChatFormatting.GRAY), pl + 5, y + 10, -1, false);
-                y += 22;
-                if (y > pt + PH - 80) break;
-            }
-
-            // Right: info / settings placeholder
-            g.drawString(font, Component.literal("Clans: " + lastUpdate.factions.size()),
-                    divX + 5, pt + 32, 0xAAAAAA, false);
+        // Scrollbar
+        if (others.size() > maxVisible) {
+            int sbX = pl + PW - 5;
+            int sbH = listBottom - listTop;
+            int thumbH = Math.max(10, sbH * maxVisible / others.size());
+            int maxOffset = Math.max(1, others.size() - maxVisible);
+            int thumbY = listTop + (sbH - thumbH) * scrollOffset / maxOffset;
+            g.fill(sbX, listTop, sbX + 4, listBottom, 0x44FFFFFF);
+            g.fill(sbX, thumbY, sbX + 4, thumbY + thumbH, 0xCCFFFFFF);
         }
 
         super.render(g, mx, my, dt);
     }
 
-    // ── Mouse ──────────────────────────────────────────────────────────────────
-
-    @Override
-    public boolean mouseClicked(double mx, double my, int btn) {
-        if (btn == 0 && lastUpdate != null) {
-            int cx = this.width / 2;
-            int cy = this.height / 2;
-            int pl = cx - PW / 2;
-            int pt = cy - PH / 2;
-            int divX = pl + PW / 2;
-
-            if (mx >= pl + 3 && mx < divX - 3) {
-                int y = pt + 44;
-                for (ClanUpdatePacket.FactionInfo f : lastUpdate.factions) {
-                    if (my >= y - 1 && my < y + 21) {
-                        selectedFaction = (selectedFaction != null
-                                && selectedFaction.factionId.equals(f.factionId)) ? null : f;
-                        return true;
-                    }
-                    y += 22;
-                    if (y > pt + PH - 80) break;
-                }
-            }
-        }
-        return super.mouseClicked(mx, my, btn);
-    }
-
     @Override
     public boolean isPauseScreen() { return false; }
+
+    // ── Helpers ────────────────────────────────────────────────────────────────
+
+    private List<Race> otherRaces() {
+        if (lastUpdate == null) return java.util.Collections.emptyList();
+        ResourceLocation myId = lastUpdate.raceId;
+        List<Race> result = new ArrayList<>();
+        for (Race r : RaceRegistry.getAll()) {
+            if (!r.id().equals(myId)) result.add(r);
+        }
+        return result;
+    }
+
+    private DiplomacyStatus relationFor(ResourceLocation raceId) {
+        if (lastUpdate == null) return DiplomacyStatus.NEUTRAL;
+        return lastUpdate.relations.getOrDefault(raceId, DiplomacyStatus.NEUTRAL);
+    }
+
+    private static ChatFormatting statusFormat(DiplomacyStatus s) {
+        return switch (s) {
+            case ALLY    -> ChatFormatting.BLUE;
+            case ENEMY   -> ChatFormatting.RED;
+            case NEUTRAL -> ChatFormatting.GRAY;
+        };
+    }
 }

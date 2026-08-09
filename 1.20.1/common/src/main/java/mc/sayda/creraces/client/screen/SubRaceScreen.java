@@ -138,9 +138,6 @@ public class SubRaceScreen extends Screen {
             }
         }
 
-        // 3. Group title - Removed for clean grid view
-        // graphics.drawCenteredString(this.font, groupName, this.leftPos + 88,
-        // this.topPos + -38, 0xFFCC00);
 
         super.render(graphics, mouseX, mouseY, partialTick);
 

@@ -50,7 +50,7 @@ public class HUDEditorScreen extends Screen {
     private String  slotLabelOrientation;
     private double  hudScale;
 
-    // Drag state — -1 = nothing selected
+    // Drag state: -1 = nothing selected
     private int dragging     = -1;
     private int lastSelected = -1;
     private double dragStartMouseX, dragStartMouseY;
@@ -123,7 +123,7 @@ public class HUDEditorScreen extends Screen {
             btn -> loadPreset()
         ).bounds(122, row0Y, 110, 20).build());
 
-        // Scale EditBox — decimal value (1.0 = 100%)
+        // Scale EditBox: decimal value (1.0 = 100%)
         scaleBox = new net.minecraft.client.gui.components.EditBox(
                 this.font, 236, row0Y, 40, 20, Component.literal("Scale"));
         scaleBox.setMaxLength(7);
@@ -166,7 +166,7 @@ public class HUDEditorScreen extends Screen {
             Component.translatable("gui.creraces.hud_editor.btn.done"), btn -> saveAndClose()
         ).bounds(334, row2Y, 50, 20).build());
 
-        // Small square toggle in the top-right — always visible, not in toggleableButtons
+        // Small square toggle in the top-right; always visible, not in toggleableButtons
         this.addRenderableWidget(Button.builder(Component.literal("T"), btn -> {
             buttonsVisible = !buttonsVisible;
             toggleableButtons.forEach(b -> b.visible = buttonsVisible);
@@ -191,7 +191,7 @@ public class HUDEditorScreen extends Screen {
 
         graphics.fill(0, 0, this.width, this.height, 0x55000000);
 
-        // fill() teardown disables blend — restore before any blit work
+        // fill() teardown disables blend; restore before any blit work
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
@@ -239,7 +239,7 @@ public class HUDEditorScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        // Buttons take priority — check them first before any group drag logic
+        // Buttons take priority; check them first before any group drag logic
         if (super.mouseClicked(mouseX, mouseY, button)) return true;
 
         if (button == 0) {
@@ -407,7 +407,7 @@ public class HUDEditorScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        // EditBox (and other focused widgets) handle keys first — ensures cursor/delete work
+        // EditBox (and other focused widgets) handle keys first; ensures cursor/delete work
         if (scaleBox != null && scaleBox.isFocused()) {
             if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
                 applyScaleFromBox();

@@ -2,6 +2,7 @@ package mc.sayda.creraces.engine;
 
 import com.google.gson.JsonObject;
 import mc.sayda.creraces.util.GsonHelper;
+import mc.sayda.creraces.config.CreRacesConfig;
 import mc.sayda.creraces.registry.ModAttributes;
 import mc.sayda.creraces.capability.DataUtils;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -199,7 +200,7 @@ public class ScalingValue {
                 double val = s.getAttributeValue(attr);
                 if (ModAttributes.isPercentAttribute(attr))
                     val *= 100.0;
-                double cap = 40.0;
+                double cap = CreRacesConfig.ABILITY_HASTE_CAP.get();
                 return Math.min(val, cap);
             };
         }

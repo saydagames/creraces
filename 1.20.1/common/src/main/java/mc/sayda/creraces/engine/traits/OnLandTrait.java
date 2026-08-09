@@ -29,6 +29,7 @@ public class OnLandTrait implements TraitRegistry.RaceTrait {
 
     @Override
     public void tick(Player player) {
+        if (player.level().isClientSide()) return;
         DataUtils.getVariables(player).ifPresent(vars -> {
             boolean onGround = player.onGround();
             ResourceLocation stateId = new ResourceLocation(traitId.getNamespace(),
@@ -41,7 +42,7 @@ public class OnLandTrait implements TraitRegistry.RaceTrait {
             if (onGround && !wasOnGround) {
                 BlockPos pos = player.blockPosition();
                 if (condition == null || condition.evaluate(player, null, null, pos)) {
-                    CreRaces.LOGGER.info("OnLandTrait: Firing {} actions for player {}", actions.size(),
+                    CreRaces.LOGGER.debug("OnLandTrait: Firing {} actions for player {}", actions.size(),
                             player.getName().getString());
                     for (ActionRegistry.RaceAction action : actions) {
                         if (!action.execute(player, null, null, pos)) {

@@ -348,8 +348,12 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
                         LivingEntity le = (LivingEntity) currentAttacker;
                         if (currentAttacker != victimPlayer) {
                             var thornsSource = victimPlayer.damageSources().thorns(victimPlayer);
-                            if (thornsSource != null)
+                            if (thornsSource != null) {
                                 le.hurt(thornsSource, 2.0F);
+                                victimPlayer.level().playSound(null, victimPlayer.blockPosition(),
+                                        net.minecraft.sounds.SoundEvents.THORNS_HIT,
+                                        net.minecraft.sounds.SoundSource.PLAYERS, 0.5f, 1.0f);
+                            }
                         }
                     }
                 }

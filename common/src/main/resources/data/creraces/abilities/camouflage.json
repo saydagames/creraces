@@ -2,7 +2,7 @@
     "creraces:name": "ability.creraces.camouflage.name",
     "creraces:description": "ability.creraces.camouflage.description",
     "creraces:type": "ACTIVE",
-    "creraces:cooldown": 480,
+    "creraces:cooldown": 400,
     "creraces:icon": "creraces:textures/mob_effect/camouflage.png",
     "creraces:cost": 1,
     "creraces:race": [

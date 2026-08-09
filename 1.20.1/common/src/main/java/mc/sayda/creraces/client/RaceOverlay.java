@@ -105,12 +105,11 @@ public class RaceOverlay {
                 default:
                     break;
             }
-            // Old spacing was 36
             if (race.resourceType() != ResourceType.NONE) {
                 renderSteppedBar(graphics, resourceTex, basePosX + 4, basePosY + 33, currentRes, maxRes, 3);
             }
 
-            // Frame overlays — same 80x80 canvas, displayed at 40x40, same origin as BG
+            // Frame overlays: same 80x80 canvas, displayed at 40x40, same origin as BG
             graphics.blit(UI_FRAME, basePosX, basePosY, 0, 0, 40, 40, 40, 40);
             graphics.blit(UI_LVL,   basePosX, basePosY, 0, 0, 40, 40, 40, 40);
             graphics.blit(UI_RDY,   basePosX, basePosY, 0, 0, 40, 40, 40, 40);
@@ -119,12 +118,6 @@ public class RaceOverlay {
             int barStartX = globalX + CreRacesConfig.HUD_BARS_X.get();
             int barStartY = globalY + CreRacesConfig.HUD_BARS_Y.get();
             renderOverlayBars(graphics, vars, race, barStartX, barStartY);
-
-            // Stepped Bars (using legacy 31-step logic)
-            // Health Bar - legacy pos: 15, 46
-            // double maxHealth = player.getMaxHealth();
-            // double health = player.getHealth();
-            // renderSteppedBar(graphics, UI_H, basePosX + 1, basePosY + 33, health, maxHealth, 3);
 
             // Ability Slots - config-driven position
             int slotX = globalX + CreRacesConfig.HUD_ABILITIES_X.get();

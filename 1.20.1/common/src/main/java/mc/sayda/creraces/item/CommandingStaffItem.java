@@ -67,14 +67,13 @@ public class CommandingStaffItem extends Item {
                 } else {
                     if (!player.level().isClientSide) {
                         player.displayClientMessage(
-                                Component.literal("Entity is already a servant!").withStyle(ChatFormatting.YELLOW),
+                                Component.translatable("msg.creraces.staff_already_servant"),
                                 true);
                     }
                 }
             } else {
                 if (!player.level().isClientSide) {
-                    player.displayClientMessage(Component.literal("This creature does not respect your authority.")
-                            .withStyle(ChatFormatting.RED), true);
+                    player.displayClientMessage(Component.translatable("msg.creraces.staff_no_authority"), true);
                 }
             }
         }
@@ -131,9 +130,14 @@ public class CommandingStaffItem extends Item {
         Vec3 viewVec = player.getViewVector(1.0f);
         Vec3 endPos = eyePos.add(viewVec.scale(range));
 
-        String commandMode = stack.getOrCreateTag().contains("CommandMode")
-                ? stack.getOrCreateTag().getString("CommandMode")
-                : "follow";
+        CompoundTag tag = stack.getOrCreateTag();
+        if (tag.contains("PendingMode")) {
+            String pending = tag.getString("PendingMode");
+            tag.putString("CommandMode", pending);
+            tag.remove("PendingMode");
+        }
+
+        String commandMode = tag.contains("CommandMode") ? tag.getString("CommandMode") : "follow";
 
         if (commandMode.equals("attack")) {
             EntityHitResult entityHit = getEntityHitResult(player, eyePos, endPos, range);

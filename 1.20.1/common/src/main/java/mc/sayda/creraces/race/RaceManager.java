@@ -21,7 +21,7 @@ import java.util.Map;
  */
 public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLocation, JsonElement>> {
     private static final String FOLDER = "races";
-    private static Map<ResourceLocation, JsonElement> lastRawData = new java.util.HashMap<>();
+    private static volatile Map<ResourceLocation, JsonElement> lastRawData = new java.util.HashMap<>();
 
     public static mc.sayda.creraces.network.SyncRacesPacket createSyncPacket() {
         Map<ResourceLocation, String> data = new java.util.HashMap<>();
@@ -247,6 +247,18 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                     }
                 }
 
+                // Explicit creraces:traits list (namespaced key, not caught by discovery loop above)
+                if (jsonObject.has("creraces:traits") && jsonObject.get("creraces:traits").isJsonArray()) {
+                    JsonArray coreTraits = jsonObject.getAsJsonArray("creraces:traits");
+                    for (int i = 0; i < coreTraits.size(); i++) {
+                        JsonElement e = coreTraits.get(i);
+                        if (e.isJsonObject()) {
+                            traits.add(mc.sayda.creraces.engine.TraitRegistry.fromJson(
+                                    e.getAsJsonObject(), "creraces:traits:" + i));
+                        }
+                    }
+                }
+
                 // gState
                 mc.sayda.creraces.engine.GState gState = mc.sayda.creraces.engine.GState.BOTH;
                 @javax.annotation.Nullable
@@ -300,7 +312,7 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                     };
                 }
 
-                // Default respawn location (optional — used when no bed/anchor spawn is set)
+                // Default respawn location (optional; used when no bed/anchor spawn is set)
                 @javax.annotation.Nullable String respawnDimStr =
                         GsonHelper.getNullableString(jsonObject, "creraces:respawn_dimension", null);
                 @javax.annotation.Nullable ResourceLocation respawnDim =
@@ -365,6 +377,8 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                         .respawnPos(respawnPos)
                         .biomePreview(GsonHelper.getAsBoolean(jsonObject, "creraces:territory_biome_preview", false))
                         .claimValidBiomes(parseStringList(jsonObject, "creraces:territory_valid_biomes"))
+                        .enableTerritory(GsonHelper.getAsBoolean(jsonObject, "creraces:enable_territory", false))
+                        .factionGroup(GsonHelper.getNullableString(jsonObject, "creraces:faction_group", null))
                         .build();
 
                 RaceRegistry.register(race);
@@ -500,12 +514,6 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
             }
         }
 
-        // Debug logging for Mermaid inheritance
-        if (child.has("creraces:name") && child.get("creraces:name").getAsString().contains("mermaid")) {
-            mc.sayda.creraces.CreRaces.LOGGER.info("Merged Mermaid JSON. Liquid Multiplier: {}",
-                    merged.has("creraces:liquid_speed_multiplier") ? merged.get("creraces:liquid_speed_multiplier").toString() : "MISSING");
-        }
-
         return merged;
     }
 
@@ -632,7 +640,7 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                 landSuffocationInterval,
                 sunlightBurnInterval,
                 immuneToDamageTypes,
-                negateArray != null ? negateEffects : new ArrayList<>(), // Safety check
+                negateEffects,
 
                 // Vision & Perception
                 GsonHelper.getAsBoolean(p, "creraces:water_vision", false),

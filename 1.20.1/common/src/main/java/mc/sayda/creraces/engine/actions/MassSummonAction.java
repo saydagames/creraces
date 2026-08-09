@@ -64,14 +64,15 @@ public class MassSummonAction implements ActionRegistry.RaceAction {
             BlockPos spawnPos = spawnBase.offset((int)dx, 0, (int)dz);
             
             // Ground check
-            int attempts = 0;
-            while (!level.getBlockState(spawnPos).isAir() && attempts < 5 && spawnPos.getY() < level.getMaxBuildHeight()) {
+            int upAttempts = 0;
+            while (!level.getBlockState(spawnPos).isAir() && upAttempts < 5 && spawnPos.getY() < level.getMaxBuildHeight()) {
                 spawnPos = spawnPos.above();
-                attempts++;
+                upAttempts++;
             }
-            while (level.getBlockState(spawnPos.below()).isAir() && attempts < 10 && spawnPos.getY() > level.getMinBuildHeight()) {
+            int downAttempts = 0;
+            while (level.getBlockState(spawnPos.below()).isAir() && downAttempts < 10 && spawnPos.getY() > level.getMinBuildHeight()) {
                 spawnPos = spawnPos.below();
-                attempts++;
+                downAttempts++;
             }
 
             Entity summoned = type.spawn(level, spawnPos, MobSpawnType.MOB_SUMMONED);

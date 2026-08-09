@@ -132,12 +132,10 @@ public class FabricConfig {
         CreRacesConfig.MINI_BUILD_DIMENSION_BLACKLIST = () -> common.minibuild.mini_build_dimension_blacklist;
 
         // Territory
-        CreRacesConfig.TERRITORY_DEFAULT_CLAIM_RADIUS        = () -> common.territory.territory_default_claim_radius;
-        CreRacesConfig.TERRITORY_MAX_NODES_PER_PLAYER        = () -> common.territory.territory_max_nodes_per_player;
-        CreRacesConfig.TERRITORY_INTER_RACE_BLOCKING         = () -> common.territory.territory_inter_race_blocking;
-        CreRacesConfig.TERRITORY_LEADER_DECAY_THRESHOLD_DAYS = () -> common.territory.territory_leader_decay_threshold_days;
-        CreRacesConfig.TERRITORY_SUCCESSION_WINDOW_DAYS      = () -> common.territory.territory_succession_window_days;
-        CreRacesConfig.TERRITORY_SUCCESSION_TICK_INTERVAL    = () -> common.territory.territory_succession_tick_interval;
+        CreRacesConfig.TERRITORY_DEFAULT_CLAIM_RADIUS   = () -> common.territory.territory_default_claim_radius;
+        CreRacesConfig.TERRITORY_MAX_NODES_PER_PLAYER   = () -> common.territory.territory_max_nodes_per_player;
+        CreRacesConfig.TERRITORY_INTER_RACE_BLOCKING    = () -> common.territory.territory_inter_race_blocking;
+        CreRacesConfig.TERRITORY_CLAIM_COST_PER_CHUNK   = () -> common.territory.territory_claim_cost_per_chunk;
 
         // Team
         CreRacesConfig.TEAM_REQUIRE_SAME_RACE = () -> common.team.team_require_same_race;
@@ -307,12 +305,10 @@ public class FabricConfig {
         }
 
         public static class Territory {
-            public int  territory_default_claim_radius        = CreRacesConfig.TERRITORY_DEFAULT_CLAIM_RADIUS.get();
-            public int  territory_max_nodes_per_player        = CreRacesConfig.TERRITORY_MAX_NODES_PER_PLAYER.get();
-            public boolean territory_inter_race_blocking      = CreRacesConfig.TERRITORY_INTER_RACE_BLOCKING.get();
-            public long territory_leader_decay_threshold_days = CreRacesConfig.TERRITORY_LEADER_DECAY_THRESHOLD_DAYS.get();
-            public long territory_succession_window_days      = CreRacesConfig.TERRITORY_SUCCESSION_WINDOW_DAYS.get();
-            public int  territory_succession_tick_interval    = CreRacesConfig.TERRITORY_SUCCESSION_TICK_INTERVAL.get();
+            public int     territory_default_claim_radius = CreRacesConfig.TERRITORY_DEFAULT_CLAIM_RADIUS.get();
+            public int     territory_max_nodes_per_player = CreRacesConfig.TERRITORY_MAX_NODES_PER_PLAYER.get();
+            public boolean territory_inter_race_blocking  = CreRacesConfig.TERRITORY_INTER_RACE_BLOCKING.get();
+            public int     territory_claim_cost_per_chunk = CreRacesConfig.TERRITORY_CLAIM_COST_PER_CHUNK.get();
         }
 
         public static class Team {

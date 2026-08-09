@@ -39,13 +39,19 @@ public static void init() {
         // Tick Events
         TickEvent.SERVER_POST.register(IncidentResolver::onGensokyoTick);
 
-        // Disconnect: clear transient engine states and save teams
+        // Elect faction leader on join
+        PlayerEvent.PLAYER_JOIN.register(player -> {
+            mc.sayda.creraces.territory.FactionLeaderManager.onPlayerJoin((ServerPlayer) player);
+        });
+
+        // Disconnect: clear transient engine states and reassign faction leadership
         PlayerEvent.PLAYER_QUIT.register(player -> {
             mc.sayda.creraces.engine.ActionRegistry.cleanup(player);
-            mc.sayda.creraces.engine.actions.ClaimTerritoryAction.clearPending(player.getUUID());
-            mc.sayda.creraces.territory.TerritoryManager tm = mc.sayda.creraces.territory.TerritoryManager.get();
-            tm.updateActivity(player.getUUID(), System.currentTimeMillis());
-            tm.clearPlayerTracking(player.getUUID());
+            mc.sayda.creraces.territory.TerritoryManager.get().clearPlayerTracking(player.getUUID());
+            var server = ((ServerPlayer) player).getServer();
+            if (server != null) {
+                mc.sayda.creraces.territory.FactionLeaderManager.onPlayerLeave((ServerPlayer) player, server);
+            }
         });
 
         // Team persistence
@@ -59,6 +65,8 @@ public static void init() {
             mc.sayda.creraces.util.PocketManager.save(server);
             mc.sayda.creraces.territory.TerritoryManager.save(server);
             mc.sayda.creraces.util.Scheduler.clear();
+            mc.sayda.creraces.territory.FactionLeaderManager.clear();
+            mc.sayda.creraces.util.PocketManager.onServerStop();
             mc.sayda.creraces.worldgen.ModWorldgen.onServerStop();
         });
 
@@ -200,8 +208,7 @@ public static void init() {
             if (race != null && race.traits() != null) {
                 for (mc.sayda.creraces.engine.TraitRegistry.RaceTrait trait : race.traits()) {
                     if (trait.onBlockPlace(player, pos, state)) {
-                        return dev.architectury.event.EventResult.interruptTrue(); // Was always pass() - bug: trait
-                                                                                   // result was ignored
+                        return dev.architectury.event.EventResult.interruptTrue();
                     }
                 }
             }
@@ -287,9 +294,6 @@ public static void init() {
     private static void onIncidentBegin(ServerPlayer player) {
         mc.sayda.creraces.race.AttributeIncidents.eikiJudgment(player);
 
-        mc.sayda.creraces.territory.TerritoryManager.get().updateActivity(
-                player.getUUID(), System.currentTimeMillis());
-
         // Apply pending team removals for offline-kicked players (also called from onClientRequestedSync)
         mc.sayda.creraces.team.RaceTeamManager.handlePlayerJoin(player);
 
@@ -303,7 +307,7 @@ public static void init() {
         if (player.level().dimension().location().equals(fairyRealmLoc)) {
             net.minecraft.server.level.ServerLevel fairyLevel =
                     (net.minecraft.server.level.ServerLevel) player.serverLevel();
-            // Ensure world border is set — CHANGE_DIMENSION doesn't fire on direct login
+            // Ensure world border is set; CHANGE_DIMENSION doesn't fire on direct login
             mc.sayda.creraces.worldgen.ModWorldgen.placeFairyTreeIfNeeded(fairyLevel);
                 mc.sayda.creraces.worldgen.ModWorldgen.placeSeasonalTreesIfNeeded(fairyLevel);
 
@@ -325,13 +329,11 @@ public static void init() {
         // and sync all online players' data to the joining player.
         // NOTE: We iterate level().players() but avoid an O(n²) full cross-sync:
         // each existing player only needs to receive the new player's data once.
-        if (player.level() != null) {
-            player.level().players().forEach(other -> {
-                if (other != player && other instanceof ServerPlayer otherPlayer) {
-                    // Send this player's vars to the existing player
-                    BoundaryHandler.resyncVariables(player, otherPlayer);
-                    // Send the existing player's vars to this player
-                    BoundaryHandler.resyncVariables(otherPlayer, player);
+        if (player.getServer() != null) {
+            player.getServer().getPlayerList().getPlayers().forEach(other -> {
+                if (other != player) {
+                    BoundaryHandler.resyncVariables(player, other);
+                    BoundaryHandler.resyncVariables(other, player);
                 }
             });
         }
@@ -388,12 +390,12 @@ public static void init() {
     }
 
     private static void onIncidentClone(ServerPlayer oldPlayer, ServerPlayer newPlayer, boolean wasDeath) {
-        LOGGER.info("IncidentResolver: onIncidentClone triggered! wasDeath: {}", wasDeath);
+        LOGGER.debug("IncidentResolver: onIncidentClone triggered! wasDeath: {}", wasDeath);
         DataUtils.getVariables(oldPlayer).ifPresent(oldVars -> {
             LOGGER.debug("IncidentResolver: Found oldVars. Race: {}", oldVars.getRace());
             DataUtils.getVariables(newPlayer).ifPresent(newVars -> {
                 newVars.deserialize(oldVars.serialize());
-                LOGGER.info("IncidentResolver: Copied oldVars to newVars. New Race: {}", newVars.getRace());
+                LOGGER.debug("IncidentResolver: Copied oldVars to newVars. New Race: {}", newVars.getRace());
 
                 if (wasDeath) {
                     newVars.resetOnDeath();
@@ -407,7 +409,7 @@ public static void init() {
     }
 
     private static void onGensokyoTick(net.minecraft.server.MinecraftServer server) {
-        if (mc.sayda.creraces.config.CreRacesConfig.FORCED_SELECTION.get()) { // FORCED_SELECTION default is false
+        if (mc.sayda.creraces.config.CreRacesConfig.FORCED_SELECTION.get()) { // FORCED_SELECTION default is true
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                 DataUtils.getVariables(player).ifPresent(vars -> {
                     if (!vars.hasChosenRace()) {

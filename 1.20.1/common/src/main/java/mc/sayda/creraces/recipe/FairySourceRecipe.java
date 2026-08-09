@@ -18,7 +18,7 @@ import javax.annotation.Nonnull;
 
 /**
  * Defines a conversion that occurs when an item sits in fairy source fluid.
- * No time or experience — one item entity matching the ingredient is
+ * No time or experience; one item entity matching the ingredient is
  * immediately replaced by the result stack (scaled by input count).
  *
  * JSON format:
@@ -55,7 +55,7 @@ public class FairySourceRecipe implements Recipe<Container> {
         return out;
     }
 
-    // ── Recipe<Container> contract — not used (no inventory, entity-driven) ──
+    // ── Recipe<Container> contract (not used; no inventory, entity-driven) ──
 
     @Override public boolean matches(@Nonnull Container c, @Nonnull Level l) { return false; }
 

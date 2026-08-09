@@ -10,8 +10,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -26,7 +24,6 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
-import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.phys.BlockHitResult;
 
 
@@ -55,12 +52,13 @@ public class ToriiBellBlock extends BellBlock {
     @SuppressWarnings("null")
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand,
             BlockHitResult hit) {
-        // First, handle the spirit realm logic
+        boolean shouldRing = true;
         if (!level.isClientSide() && hand == InteractionHand.MAIN_HAND) {
-            handleInteraction(level, pos, player);
+            shouldRing = handleInteraction(level, pos, player);
         }
-
-        // Then, allow the bell to "ring" (vanilla behavior)
+        if (!shouldRing) {
+            return InteractionResult.CONSUME;
+        }
         return super.use(state, level, pos, player, hand, hit);
     }
 
@@ -72,26 +70,22 @@ public class ToriiBellBlock extends BellBlock {
         super.onProjectileHit(level, state, hit, projectile);
     }
 
-    private void handleInteraction(Level level, BlockPos pos, Player player) {
+    private boolean handleInteraction(Level level, BlockPos pos, Player player) {
+        boolean[] shouldRing = { true };
         DataUtils.getVariables(player).ifPresent(vars -> {
             Race playerRace = RaceRegistry.get(vars.getRace());
             boolean isKitsune = playerRace != null && vars.getRace().getPath().contains("kitsune");
 
             if (isWeathered) {
                 if (isKitsune && level.dimension() == Level.OVERWORLD) {
-                    if (checkAndPlaceStructure((ServerLevel) level, pos, player, vars)) {
-                        net.minecraft.sounds.SoundEvent ringSound = SoundEvents.BELL_BLOCK;
-                        if (ringSound != null) {
-                            level.playSound((net.minecraft.world.entity.player.Player) null,
-                                    java.util.Objects.requireNonNull(pos), ringSound, SoundSource.BLOCKS, 1.0f, 1.0f);
-                        }
-                    } else {
+                    if (!checkAndPlaceStructure((ServerLevel) level, pos, player, vars)) {
                         player.displayClientMessage(Component.translatable("block.creraces.torii_bell.pattern_missing"),
                                 true);
                     }
                 } else {
                     player.displayClientMessage(Component.translatable("block.creraces.torii_bell.weathered_silent"),
                             true);
+                    shouldRing[0] = false;
                 }
             } else {
                 boolean isSpirit = playerRace != null && playerRace.isSpirit();
@@ -100,9 +94,11 @@ public class ToriiBellBlock extends BellBlock {
                     toggleSpiritRealm(player, level, pos, vars);
                 } else {
                     player.displayClientMessage(Component.translatable("block.creraces.torii_bell.silent"), true);
+                    shouldRing[0] = false;
                 }
             }
         });
+        return shouldRing[0];
     }
 
     @SuppressWarnings("null")
@@ -115,32 +111,27 @@ public class ToriiBellBlock extends BellBlock {
         boolean foundEW = checkPattern(level, x, y, z, false);
 
         if (foundNS || foundEW) {
-            StructureTemplate template = level.getStructureManager()
-                    .getOrCreate(new ResourceLocation("creraces", "torii_gate"));
-            if (template != null) {
-                BlockPos placePos = foundNS ? new BlockPos(x - 6, y - 3, z - 1) : new BlockPos(x + 1, y - 3, z - 6);
-                Rotation rotation = foundNS ? Rotation.NONE : Rotation.CLOCKWISE_90;
+            return level.getStructureManager()
+                    .get(new ResourceLocation("creraces", "torii_gate"))
+                    .map(template -> {
+                        BlockPos placePos = foundNS ? new BlockPos(x - 6, y - 3, z - 1) : new BlockPos(x + 1, y - 3, z - 6);
+                        Rotation rotation = foundNS ? Rotation.NONE : Rotation.CLOCKWISE_90;
 
-                // 1. Place the structure first
-                template.placeInWorld(level, placePos, placePos,
-                        new StructurePlaceSettings().setRotation(rotation).setMirror(Mirror.NONE)
-                                .setIgnoreEntities(false),
-                        level.random, 3);
+                        // Place the structure first so its air blocks don't erase the bell
+                        template.placeInWorld(level, placePos, placePos,
+                                new StructurePlaceSettings().setRotation(rotation).setMirror(Mirror.NONE)
+                                        .setIgnoreEntities(false),
+                                level.random, 3);
 
-                // 2. Replace the weathered bell with a normal one AFTER the structure is
-                // placed.
-                // This prevents the structure's air blocks from overwriting the new bell.
-                BlockState currentState = level.getBlockState(pos);
-                level.setBlock(pos, ModBlocks.TORII_BELL.get().defaultBlockState()
-                        .setValue(FACING, currentState.getValue(FACING))
-                        .setValue(ATTACHMENT, currentState.getValue(ATTACHMENT)), 3);
+                        // Replace the weathered bell with a normal one after placement
+                        BlockState currentState = level.getBlockState(pos);
+                        level.setBlock(pos, ModBlocks.TORII_BELL.get().defaultBlockState()
+                                .setValue(FACING, currentState.getValue(FACING))
+                                .setValue(ATTACHMENT, currentState.getValue(ATTACHMENT)), 3);
 
-                vars.setPocketX(x);
-                vars.setPocketY(y);
-                vars.setPocketZ(z);
-
-                return true;
-            }
+                        return true;
+                    })
+                    .orElse(false);
         }
         return false;
     }
@@ -172,10 +163,5 @@ public class ToriiBellBlock extends BellBlock {
         vars.setInSpiritRealm(!vars.isInSpiritRealm());
         BoundaryHandler.resyncForAllTrackers(player);
         BoundaryHandler.resyncVariables(player, player);
-
-        net.minecraft.sounds.SoundEvent ringSound = SoundEvents.BELL_BLOCK;
-        if (ringSound != null) {
-            level.playSound((net.minecraft.world.entity.player.Player) null, pos, ringSound, SoundSource.BLOCKS, 1.0f, 1.0f);
-        }
     }
 }
