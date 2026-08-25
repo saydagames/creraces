@@ -1,0 +1,8 @@
+{
+  "parent": "creraces:custom/totem",
+  "render_type": "cutout",
+  "textures": {
+    "0": "creraces:block/volcanic_idol",
+    "particle": "creraces:block/volcanic_idol"
+  }
+}

@@ -8,6 +8,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+// FairySourceFluid is shared with Fabric and can't reference Forge's FluidType directly, so bind it here instead.
 @Mixin(Fluid.class)
 public class FairyFluidTypeMixin {
 

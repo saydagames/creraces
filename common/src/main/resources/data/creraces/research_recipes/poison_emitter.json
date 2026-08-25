@@ -1,0 +1,13 @@
+{
+  "ability": "creraces:poison_emitter",
+  "level": 1,
+  "pattern": [
+    { "q":  0, "r":  0, "essence": "earth" },
+    { "q":  0, "r": -1, "essence": "death" },
+    { "q":  1, "r": -1, "essence": "death" },
+    { "q": -1, "r":  0, "essence": "death" },
+    { "q":  0, "r": -2, "essence": "dark" },
+    { "q":  2, "r": -1, "essence": "dark" },
+    { "q": -2, "r":  0, "essence": "dark" }
+  ]
+}

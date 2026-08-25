@@ -21,6 +21,9 @@ import net.minecraft.core.Direction;
 @Mixin(ServerPlayer.class)
 public abstract class ServerPlayerMixin {
 
+    // Vanilla's startSleepInBed requires a real BedBlock state at the position,
+    // so this spoofs one for microblock beds and for the force-sleep tag set by
+    // SleepAction.
     @WrapOperation(method = "startSleepInBed", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;getBlockState(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/block/state/BlockState;"))
     private BlockState creraces$spoofMicroblockBedState(Level level, BlockPos pos, Operation<BlockState> original) {
         ServerPlayer player = (ServerPlayer) (Object) this;
@@ -39,12 +42,7 @@ public abstract class ServerPlayerMixin {
                 }
 
                 if (slotIdx < 0) {
-                    for (int i = 0; i < mc.sayda.creraces.block.entity.MicroBlockEntity.TOTAL; i++) {
-                        if (micro.getSlot(i % 4, (i / 4) % 4, i / 16).getBlock() instanceof BedBlock) {
-                            slotIdx = i;
-                            break;
-                        }
-                    }
+                    slotIdx = mc.sayda.creraces.block.entity.MicroBlockEntity.findBedSlot(micro);
                 }
 
                 if (slotIdx >= 0) {
@@ -67,7 +65,7 @@ public abstract class ServerPlayerMixin {
         ServerPlayer player = (ServerPlayer) (Object) this;
         BlockState state = player.level().getBlockState(pos);
         if (state.is(ModBlocks.MICRO_BLOCK.get())) {
-            cir.setReturnValue(false); // not blocked if it's a microblock
+            cir.setReturnValue(false);
         }
     }
 

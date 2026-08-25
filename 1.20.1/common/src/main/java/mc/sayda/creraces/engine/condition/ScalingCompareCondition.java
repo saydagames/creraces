@@ -1,6 +1,5 @@
 package mc.sayda.creraces.engine.condition;
 
-import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.engine.ScalingValue;
 import net.minecraft.world.entity.player.Player;
 
@@ -45,9 +44,6 @@ public class ScalingCompareCondition implements Condition {
             }
             default -> Math.abs(val1 - val2) < epsilon;
         };
-
-        CreRaces.LOGGER.debug("[ScalingCompareCondition] Evaluating: {} {} {} -> Result: {}", val1, operator, val2,
-                result);
 
         return result;
     }

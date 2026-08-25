@@ -32,6 +32,7 @@ dependencies {
 
     // Twilight Lib - Direct File Dependency
     modImplementation files("${rootProject.projectDir.parentFile}/twilight-lib/1.21.1/fabric/build/libs/twilight_lib-1.21.1-fabric-${rootProject.twilight_lib_version}.jar")
+    modImplementation "curse.maven:pehkui-319596:5419266"
 }
 
 processResources {

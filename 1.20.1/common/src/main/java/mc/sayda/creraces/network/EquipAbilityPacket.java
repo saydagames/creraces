@@ -84,7 +84,7 @@ public class EquipAbilityPacket {
                     mc.sayda.creraces.race.AttributeIncidents.eikiJudgment(sp);
                 }
 
-                // Sync back to client (and others)
+                // Sync back to the acting player.
                 BoundaryHandler.resyncVariables(context.getPlayer(), context.getPlayer());
             });
         });

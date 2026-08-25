@@ -19,7 +19,6 @@ public class DizzinessEffect extends MobEffect {
         if (entity.level().isClientSide())
             return;
 
-        // Legacy logic: random horizontal movement
         double randomX = (Math.random() - Math.random()) / 6.0;
         double randomZ = (Math.random() - Math.random()) / 6.0;
 

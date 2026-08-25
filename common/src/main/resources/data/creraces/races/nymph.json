@@ -1,6 +1,5 @@
 {
     "creraces:name": "race.creraces.nymph.name",
-    "creraces:faction_group": "nymph",
     "creraces:scale": {
         "base": 1.0,
         "height": 1.1
@@ -55,7 +54,7 @@
                 "type": "creraces:and",
                 "conditions": [
                     {
-                        "type": "spirit",
+                        "type": "creraces:spirit",
                         "value": false
                     },
                     {
@@ -102,6 +101,40 @@
                     "duration": 6000,
                     "amplifier": 0,
                     "visible": false,
+                    "ambient": false
+                }
+            ]
+        }
+    ],
+    "creraces:territory_biome_preview": true,
+    "creraces:territory_biome_threshold": 0.00390625,
+    "nature_passive": [
+        {
+            "name": "nature_nymph_call",
+            "type": "creraces:on_tick",
+            "interval": 20,
+            "condition": {
+                "type": "creraces:or",
+                "conditions": [
+                    { "type": "creraces:in_claimed_territory", "scope": "own" },
+                    { "type": "creraces:dimension", "value": "creraces:pocket" },
+                    {
+                        "type": "creraces:and",
+                        "conditions": [
+                            { "type": "creraces:in_habitable_biome" },
+                            { "type": "creraces:not", "condition": { "type": "creraces:in_claimed_territory", "scope": "other" } }
+                        ]
+                    }
+                ]
+            },
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "creraces:nymph_call",
+                    "duration": 30000,
+                    "amplifier": 0,
+                    "visible": false,
+                    "show_icon": true,
                     "ambient": false
                 }
             ]

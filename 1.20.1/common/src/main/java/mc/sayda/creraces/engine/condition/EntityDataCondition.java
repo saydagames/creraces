@@ -42,24 +42,22 @@ public class EntityDataCondition implements Condition {
     public boolean evaluate(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
-        // Smart Targeting: Prefer target if present, otherwise respect useTarget flag
-        net.minecraft.world.entity.LivingEntity entity = (target != null) ? target : (useTarget ? null : player);
+        net.minecraft.world.entity.LivingEntity entity = mc.sayda.creraces.engine.TargetFilter.resolveSmartTarget(player, target, useTarget);
         if (entity == null)
             return false;
 
-        // Use creraces$getPersistentData() from IPersistentDataAccessor
         net.minecraft.nbt.CompoundTag data = ((IPersistentDataAccessor) entity).creraces$getPersistentData();
 
         double current;
         if (entity instanceof Player entityPlayer) {
             current = DataUtils.getVariables(entityPlayer).map(vars -> {
-                if (key.equalsIgnoreCase("minibuild") || key.equalsIgnoreCase("smallBuild")) {
+                if (key.equalsIgnoreCase("is_minibuild")) {
                     return vars.isSmallBuild() ? 1.0 : 0.0;
                 }
-                if (key.equalsIgnoreCase("spirit") || key.equalsIgnoreCase("is_spirit")) {
+                if (key.equalsIgnoreCase("is_spirit")) {
                     return vars.isSpirit() ? 1.0 : 0.0;
                 }
-                if (key.equalsIgnoreCase("tiny") || key.equalsIgnoreCase("is_tiny")) {
+                if (key.equalsIgnoreCase("is_tiny")) {
                     return vars.isTiny() ? 1.0 : 0.0;
                 }
                 return data.getDouble(key);

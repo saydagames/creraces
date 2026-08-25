@@ -66,9 +66,8 @@ public class RacePackProvider implements RepositorySource {
                     String fileName = file.getName();
                     String baseName = fileName.contains(".") ? fileName.substring(0, fileName.lastIndexOf('.')) : fileName;
                     String id = "creraces_" + baseName.toLowerCase().replaceAll("[^a-z0-9_]", "_");
-                    
-                    // We need a ResourcesSupplier that creates the PackResources
-                    Pack.ResourcesSupplier resourcesSupplier = (name) -> isZip 
+
+                    Pack.ResourcesSupplier resourcesSupplier = (name) -> isZip
                         ? new FilePackResources(id, file, false)
                         : new PathPackResources(id, file.toPath(), false);
 

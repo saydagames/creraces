@@ -30,9 +30,6 @@ public class SocialPassivesHelper {
         return TAG_CACHE.computeIfAbsent(path, p -> TagKey.create(Registries.ENTITY_TYPE, new ResourceLocation(p)));
     }
 
-    /**
-     * Check if an entity type is hated by the player's race
-     */
     public static boolean isHatedBy(Player player, LivingEntity entity) {
         Race race = getPlayerRace(player);
         if (race == null || race.passives() == null)
@@ -41,9 +38,6 @@ public class SocialPassivesHelper {
         return matchesAnyEntry(entity, race.passives().hatedByEntities());
     }
 
-    /**
-     * Check if an entity type respects the player's race
-     */
     public static boolean isRespectedBy(Player player, LivingEntity entity) {
         Race race = getPlayerRace(player);
         if (race == null || race.passives() == null)
@@ -52,9 +46,6 @@ public class SocialPassivesHelper {
         return matchesAnyEntry(entity, race.passives().respectedByEntities());
     }
 
-    /**
-     * Check if an entity type defends the player's race
-     */
     public static boolean defendsRace(Player player, LivingEntity entity) {
         Race race = getPlayerRace(player);
         if (race == null || race.passives() == null)
@@ -63,9 +54,6 @@ public class SocialPassivesHelper {
         return matchesAnyEntry(entity, race.passives().defendedByEntities());
     }
 
-    /**
-     * Get the defenders for a player's race
-     */
     public static List<String> getDefenders(@Nullable Player player) {
         if (player == null)
             return List.of();
@@ -75,9 +63,6 @@ public class SocialPassivesHelper {
         return race.passives().defendedByEntities();
     }
 
-    /**
-     * Helper to get player's race from their variables
-     */
     @Nullable
     private static Race getPlayerRace(Player player) {
         if (!(player instanceof IPlayerVariables ipv))
@@ -104,27 +89,9 @@ public class SocialPassivesHelper {
                 continue; // Skip exclusions in first pass
             }
 
-            if (entry.startsWith("#")) {
-                // Tag reference
-                String tagPath = entry.substring(1); // Remove #
-                TagKey<EntityType<?>> tag = getOrCreateTag(java.util.Objects.requireNonNull(tagPath));
-
-                if (entityType.is(tag)) {
-                    matched = true;
-                    break;
-                }
-
-                // Fallback for UNDEAD tag using MobType if tag check is unreliable
-                if (tagPath.equals("minecraft:undead") && entity.getMobType() == MobType.UNDEAD) {
-                    matched = true;
-                    break;
-                }
-            } else {
-                // Direct entity ID
-                if (entityId.toString().equals(entry)) {
-                    matched = true;
-                    break;
-                }
+            if (matchesEntry(entity, entityType, entityId, entry)) {
+                matched = true;
+                break;
             }
         }
 
@@ -138,29 +105,39 @@ public class SocialPassivesHelper {
                 continue; // Skip non-exclusions
             }
 
-            String exclusion = entry.substring(1); // Remove !
+            String exclusion = entry.substring(1);
 
-            if (exclusion.startsWith("#")) {
-                // Tag exclusion
-                String tagPath = exclusion.substring(1); // Remove # after !
-                TagKey<EntityType<?>> tag = getOrCreateTag(java.util.Objects.requireNonNull(tagPath));
-
-                if (entityType.is(tag)) {
-                    return false; // Excluded by tag
-                }
-
-                // Fallback for UNDEAD tag exclusion
-                if (tagPath.equals("minecraft:undead") && entity.getMobType() == MobType.UNDEAD) {
-                    return false;
-                }
-            } else {
-                // Direct entity ID exclusion
-                if (entityId.toString().equals(exclusion)) {
-                    return false; // Excluded by ID
-                }
+            if (matchesEntry(entity, entityType, entityId, exclusion)) {
+                return false; // Excluded
             }
         }
 
         return true; // Matched and not excluded
+    }
+
+    /**
+     * Checks if an entity matches a single spec: either a direct entity id, or a
+     * #-prefixed entity type tag reference (with a MobType fallback for undead).
+     */
+    private static boolean matchesEntry(LivingEntity entity, EntityType<?> entityType, ResourceLocation entityId,
+            String spec) {
+        if (spec.startsWith("#")) {
+            // Tag reference
+            String tagPath = spec.substring(1);
+            TagKey<EntityType<?>> tag = getOrCreateTag(java.util.Objects.requireNonNull(tagPath));
+
+            if (entityType.is(tag)) {
+                return true;
+            }
+
+            // Fallback for UNDEAD tag using MobType if tag check is unreliable
+            if (tagPath.equals("minecraft:undead") && entity.getMobType() == MobType.UNDEAD) {
+                return true;
+            }
+            return false;
+        } else {
+            // Direct entity ID
+            return entityId.toString().equals(spec);
+        }
     }
 }

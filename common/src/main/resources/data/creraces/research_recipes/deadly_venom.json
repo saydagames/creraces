@@ -1,0 +1,13 @@
+{
+  "ability": "creraces:deadly_venom",
+  "level": 1,
+  "pattern": [
+    { "q":  0, "r": -1, "essence": "dark" },
+    { "q": -1, "r": -1, "essence": "earth" },
+    { "q": -2, "r":  0, "essence": "earth" },
+    { "q": -2, "r":  1, "essence": "death" },
+    { "q":  1, "r": -2, "essence": "earth" },
+    { "q":  2, "r": -2, "essence": "earth" },
+    { "q":  2, "r": -1, "essence": "death" }
+  ]
+}

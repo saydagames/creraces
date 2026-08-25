@@ -28,7 +28,7 @@ import java.util.List;
 /**
  * Poison Emitter - a stationary entity summoned by the Ratkin.
  * Pulses Ratvenom to enemies within 5.5 blocks.
- * Stacks increase every 120 ticks (0.2 of lifetime).
+ * Stacks increase every 0.2 of the emitter's lifetime.
  */
 @SuppressWarnings("null")
 public class PoisonEmitterEntity extends TamableAnimal {

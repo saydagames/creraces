@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=east,waterlogged=false":  { "model": "creraces:block/veil_willow_wall_hanging_sign", "y": 270 },
+    "facing=east,waterlogged=true":   { "model": "creraces:block/veil_willow_wall_hanging_sign", "y": 270 },
+    "facing=north,waterlogged=false": { "model": "creraces:block/veil_willow_wall_hanging_sign", "y": 180 },
+    "facing=north,waterlogged=true":  { "model": "creraces:block/veil_willow_wall_hanging_sign", "y": 180 },
+    "facing=south,waterlogged=false": { "model": "creraces:block/veil_willow_wall_hanging_sign" },
+    "facing=south,waterlogged=true":  { "model": "creraces:block/veil_willow_wall_hanging_sign" },
+    "facing=west,waterlogged=false":  { "model": "creraces:block/veil_willow_wall_hanging_sign", "y": 90 },
+    "facing=west,waterlogged=true":   { "model": "creraces:block/veil_willow_wall_hanging_sign", "y": 90 }
+  }
+}

@@ -35,7 +35,6 @@ public class MiniUsePacket {
         this.hand = hand;
     }
 
-    /** Decode from network buffer. */
     public MiniUsePacket(FriendlyByteBuf buf) {
         this.hostPos = Objects.requireNonNull(buf.readBlockPos());
         this.slotX = buf.readByte();

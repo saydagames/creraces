@@ -2,13 +2,10 @@ package mc.sayda.creraces.effect;
 
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.ai.attributes.AttributeMap;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 
 import java.util.UUID;
-import javax.annotation.Nonnull;
 
 /**
  * BLINDED - Severely reduces the entity's follow-range, simulating blindness by
@@ -24,17 +21,6 @@ public class BlindedEffect extends MobEffect {
         addAttributeModifier(java.util.Objects.requireNonNull(Attributes.FOLLOW_RANGE),
                 java.util.Objects.requireNonNull(FOLLOW_RANGE_UID.toString()), -0.9D,
                 AttributeModifier.Operation.MULTIPLY_TOTAL);
-    }
-
-    @Override
-    public void addAttributeModifiers(@Nonnull LivingEntity entity, @Nonnull AttributeMap attributes, int amplifier) {
-        super.addAttributeModifiers(entity, attributes, amplifier);
-    }
-
-    @Override
-    public void removeAttributeModifiers(@Nonnull LivingEntity entity, @Nonnull AttributeMap attributes,
-            int amplifier) {
-        super.removeAttributeModifiers(entity, attributes, amplifier);
     }
 
     @Override

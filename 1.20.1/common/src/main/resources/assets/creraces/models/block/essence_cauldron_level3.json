@@ -1,0 +1,11 @@
+{
+  "parent": "minecraft:block/template_cauldron_level2",
+  "textures": {
+    "content": "minecraft:block/water_still",
+    "particle": "creraces:block/essence_cauldron_side",
+    "top": "creraces:block/essence_cauldron_top",
+    "bottom": "creraces:block/essence_cauldron_bottom",
+    "side": "creraces:block/essence_cauldron_side",
+    "inside": "creraces:block/essence_cauldron_inner"
+  }
+}

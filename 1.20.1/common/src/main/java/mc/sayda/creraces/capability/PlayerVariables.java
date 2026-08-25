@@ -71,7 +71,6 @@ public class PlayerVariables implements IPlayerVariables {
     private long resourceTimer = 0;
     private final Map<UUID, mc.sayda.creraces.engine.ManagedModifier> managedModifiers = new ConcurrentHashMap<>();
     private final Set<ResourceLocation> persistentStateIds = ConcurrentHashMap.newKeySet();
-
     @Override
     public ResourceLocation getRace() {
         return race;
@@ -79,6 +78,10 @@ public class PlayerVariables implements IPlayerVariables {
 
     @Override
     public void setRace(ResourceLocation race) {
+        if (race == null) {
+            mc.sayda.creraces.CreRaces.LOGGER.warn("setRace() called with null; ignoring");
+            return;
+        }
         if (!Objects.equals(this.race, race)) {
             this.race = race;
         }
@@ -214,9 +217,7 @@ public class PlayerVariables implements IPlayerVariables {
         this.resourceTimer = ticks;
     }
 
-    // getResourceTimer / setResourceTimer are declared in IPlayerVariables.
-    // Field is also retained for save-file compatibility (loaded from disk, never
-    // sent over network).
+    // resourceTimer is retained for save-file compatibility; only omitted from delta syncs (see serialize(boolean) below), not full ones.
 
     @Override
     public double getPassiveCooldown() {
@@ -372,10 +373,7 @@ public class PlayerVariables implements IPlayerVariables {
 
     @Override
     public void sync(net.minecraft.world.entity.player.Player player) {
-        if (player instanceof net.minecraft.server.level.ServerPlayer) {
-            mc.sayda.creraces.network.BoundaryHandler.resyncVariables(player, player);
-            mc.sayda.creraces.network.BoundaryHandler.resyncForAllTrackers(player);
-        }
+        // Overridden by PlayerMixin; this body is never reached via DataUtils.getVariables().
     }
 
     @Override
@@ -778,10 +776,6 @@ public class PlayerVariables implements IPlayerVariables {
         tag.putString("race", Objects.requireNonNull(race.toString()));
         tag.putBoolean("hasChosenRace", hasChosenRace);
         tag.putDouble("karma", karma);
-        tag.putDouble("ap", ap);
-        tag.putDouble("ad", ad);
-        tag.putDouble("ah", ah);
-        tag.putDouble("cr", cr);
         tag.putDouble("coins", coins);
         tag.putDouble("mana", mana);
         tag.putDouble("rage", rage);
@@ -871,6 +865,7 @@ public class PlayerVariables implements IPlayerVariables {
             tag.put("managedModifiers", managedList);
         }
 
+
         return tag;
     }
 
@@ -883,8 +878,7 @@ public class PlayerVariables implements IPlayerVariables {
         // TODO: This feels cheep? What if others are added in the future, it would be
         // better if it can obtain them from a list or similar?
 
-        // Delta sync: omit resources (mana, rage, energy, grit, soul, stacks,
-        // passiveCooldown).
+        // Delta sync: omit resources (mana, rage, energy, grit, soul, passiveCooldown, resourceTimer).
         // The client predicts these every tick; a full sync fires on all discrete
         // events.
         CompoundTag tag = serialize();
@@ -912,14 +906,6 @@ public class PlayerVariables implements IPlayerVariables {
             this.resourceTimer = tag.getLong("resourceTimer");
         if (tag.contains("karma"))
             this.karma = tag.getDouble("karma");
-        if (tag.contains("ap"))
-            this.ap = tag.getDouble("ap");
-        if (tag.contains("ad"))
-            this.ad = tag.getDouble("ad");
-        if (tag.contains("ah"))
-            this.ah = tag.getDouble("ah");
-        if (tag.contains("cr"))
-            this.cr = tag.getDouble("cr");
         if (tag.contains("coins"))
             this.coins = tag.getDouble("coins");
         // Resources - directly assign server-authoritative values.
@@ -978,7 +964,6 @@ public class PlayerVariables implements IPlayerVariables {
         }
         this.abilityStates.clear();
         if (tag.contains("abilityStates", Tag.TAG_COMPOUND)) {
-            this.abilityStates.clear();
             CompoundTag statesTag = tag.getCompound("abilityStates");
             for (String key : statesTag.getAllKeys()) {
                 ResourceLocation id = ResourceLocation.tryParse(key);
@@ -1010,7 +995,6 @@ public class PlayerVariables implements IPlayerVariables {
         if (tag.contains("morphed"))
             this.morphed = tag.getBoolean("morphed");
 
-        // TODO: Ensure this is correct
         if (tag.contains("teamId")) {
             this.teamId = tag.getUUID("teamId");
         } else {
@@ -1093,9 +1077,10 @@ public class PlayerVariables implements IPlayerVariables {
             for (int i = 0; i < list.size(); i++) {
                 mc.sayda.creraces.engine.ManagedModifier mod = mc.sayda.creraces.engine.ManagedModifier
                         .fromNBT(list.getCompound(i));
-                this.managedModifiers.put(mod.uuid(), mod);
+                if (mod != null) this.managedModifiers.put(mod.uuid(), mod);
             }
         }
+
 
         if (tag.contains("abilityLevels", Tag.TAG_COMPOUND)) {
             this.abilityLevels.clear();
@@ -1132,4 +1117,5 @@ public class PlayerVariables implements IPlayerVariables {
     public void clearManagedModifiers() {
         managedModifiers.clear();
     }
+
 }

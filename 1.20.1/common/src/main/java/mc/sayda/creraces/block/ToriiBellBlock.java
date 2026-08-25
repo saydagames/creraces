@@ -13,7 +13,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BellBlock;
 import net.minecraft.world.level.block.Block;
@@ -60,14 +59,6 @@ public class ToriiBellBlock extends BellBlock {
             return InteractionResult.CONSUME;
         }
         return super.use(state, level, pos, player, hand, hit);
-    }
-
-    @Override
-    @SuppressWarnings("null")
-    public void onProjectileHit(Level level, BlockState state, BlockHitResult hit, Projectile projectile) {
-        // Optional: Do we want projectiles to trigger spirit realm? Probably not, just
-        // ring.
-        super.onProjectileHit(level, state, hit, projectile);
     }
 
     private boolean handleInteraction(Level level, BlockPos pos, Player player) {

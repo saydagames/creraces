@@ -2,8 +2,6 @@
     "creraces:name": "race.creraces.dryad.name",
     "creraces:parent_race": "creraces:nymph",
     "creraces:enable_territory": true,
-    "creraces:faction_group": "nymph",
-    "creraces:territory_biome_preview": true,
     "creraces:territory_valid_biomes": ["#minecraft:is_forest"],
     "creraces:index": 9.3,
     "creraces:description": "race.creraces.dryad.description",
@@ -32,29 +30,6 @@
                 "type": "creraces:entity",
                 "tag": "#minecraft:is_peaceful"
             }
-        },
-        {
-            "name": "nature_nymph_call",
-            "type": "creraces:on_tick",
-            "interval": 20,
-            "condition": {
-                "type": "or",
-                "conditions": [
-                    { "type": "creraces:in_claimed_territory", "scope": "own" },
-                    { "type": "dimension", "value": "creraces:pocket" }
-                ]
-            },
-            "actions": [
-                {
-                    "type": "creraces:apply_effect",
-                    "effect": "creraces:nymph_call",
-                    "duration": 30000,
-                    "amplifier": 0,
-                    "visible": false,
-                    "show_icon": true,
-                    "ambient": false
-                }
-            ]
         }
     ],
     "sapling_mechanics": [
@@ -65,7 +40,7 @@
                 {
                     "type": "creraces:conditional",
                     "condition": {
-                        "type": "state",
+                        "type": "creraces:state",
                         "state": "state:node_x",
                         "operator": "!=",
                         "value": 0.0
@@ -73,7 +48,7 @@
                     "if_true": [
                         {
                             "type": "creraces:message",
-                            "text": "message.creraces.dryad.already_has_tree",
+                            "text": "msg.creraces.dryad.already_has_tree",
                             "actionbar": true
                         },
                         {
@@ -129,7 +104,7 @@
                         },
                         {
                             "type": "creraces:message",
-                            "text": "message.creraces.dryad.sapling_claimed_success",
+                            "text": "msg.creraces.dryad.sapling_claimed_success",
                             "actionbar": true
                         }
                     ],
@@ -157,7 +132,7 @@
                     "on_invalid_biome": [
                         {
                             "type": "creraces:message",
-                            "text": "message.creraces.dryad.invalid_biome",
+                            "text": "msg.creraces.dryad.invalid_biome",
                             "actionbar": true
                         },
                         {
@@ -167,7 +142,7 @@
                     "on_enemy_territory": [
                         {
                             "type": "creraces:message",
-                            "text": "message.creraces.dryad.enemy_territory",
+                            "text": "msg.creraces.dryad.enemy_territory",
                             "actionbar": true
                         }
                     ],
@@ -200,7 +175,7 @@
                         },
                         {
                             "type": "creraces:message",
-                            "text": "message.creraces.dryad.tree_relocated",
+                            "text": "msg.creraces.dryad.tree_relocated",
                             "actionbar": true
                         }
                     ]
@@ -272,7 +247,7 @@
                         },
                         {
                             "type": "creraces:message",
-                            "text": "msg.creraces.tree_location_removed",
+                            "text": "msg.creraces.node_removed",
                             "actionbar": true
                         }
                     ],
@@ -319,7 +294,16 @@
                 {
                     "type": "creraces:enter_pocket",
                     "structure": "creraces:dryad_box_1",
-                    "return_offset_z": -1.0
+                    "return_offset_z": -1.0,
+                    "condition": {
+                        "type": "creraces:or",
+                        "conditions": [
+                            { "type": "creraces:state", "state": "node_x", "operator": "!=", "value": 0 },
+                            { "type": "creraces:state", "state": "node_y", "operator": "!=", "value": 0 },
+                            { "type": "creraces:state", "state": "node_z", "operator": "!=", "value": 0 }
+                        ]
+                    },
+                    "blocked_message": "msg.creraces.dryad.no_tree"
                 }
             ]
         },

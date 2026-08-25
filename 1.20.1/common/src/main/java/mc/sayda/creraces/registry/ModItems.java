@@ -4,6 +4,7 @@ import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.item.CommandingStaffItem;
+import mc.sayda.creraces.item.CustomBoatItem;
 import mc.sayda.creraces.item.MermaidArmorMaterial;
 import mc.sayda.creraces.item.ScrollItem;
 import net.minecraft.core.registries.Registries;
@@ -52,6 +53,19 @@ public class ModItems {
         public static final RegistrySupplier<Item> COMMANDING_STAFF = ITEMS.register("commanding_staff",
                         () -> new CommandingStaffItem(new Item.Properties().stacksTo(1)));
 
+        public static final RegistrySupplier<Item> ESSENCE_BUCKET = ITEMS.register("essence_bucket",
+                        () -> new mc.sayda.creraces.item.EssenceBucketItem(new Item.Properties().stacksTo(1)));
+
+        // Boats
+        public static final RegistrySupplier<Item> DRYAD_BOAT_ITEM = ITEMS.register("dryad_boat",
+                        () -> new CustomBoatItem(() -> ModEntities.DRYAD_BOAT.get(), new Item.Properties().stacksTo(1)));
+        public static final RegistrySupplier<Item> DRYAD_CHEST_BOAT_ITEM = ITEMS.register("dryad_chest_boat",
+                        () -> new CustomBoatItem(() -> ModEntities.DRYAD_CHEST_BOAT.get(), new Item.Properties().stacksTo(1)));
+        public static final RegistrySupplier<Item> VEIL_WILLOW_BOAT_ITEM = ITEMS.register("veil_willow_boat",
+                        () -> new CustomBoatItem(() -> ModEntities.VEIL_WILLOW_BOAT.get(), new Item.Properties().stacksTo(1)));
+        public static final RegistrySupplier<Item> VEIL_WILLOW_CHEST_BOAT_ITEM = ITEMS.register("veil_willow_chest_boat",
+                        () -> new CustomBoatItem(() -> ModEntities.VEIL_WILLOW_CHEST_BOAT.get(), new Item.Properties().stacksTo(1)));
+
         // Block Items
         public static final RegistrySupplier<Item> DRYAD_LOG_ITEM = registerBlockItem(ModBlocks.DRYAD_LOG);
         public static final RegistrySupplier<Item> DRYAD_LOG_CORE_ITEM = registerBlockItem(ModBlocks.DRYAD_LOG_CORE);
@@ -66,6 +80,9 @@ public class ModItems {
                         ModBlocks.DRYAD_LEAVES_FRUIT);
         public static final RegistrySupplier<Item> DRYAD_SAPLING_ITEM = registerBlockItem(ModBlocks.DRYAD_SAPLING);
         public static final RegistrySupplier<Item> DRYAD_ROOT_ITEM = registerBlockItem(ModBlocks.DRYAD_ROOT);
+        public static final RegistrySupplier<Item> AURAI_SCULPTURE_ITEM = registerBlockItem(ModBlocks.AURAI_SCULPTURE);
+        public static final RegistrySupplier<Item> NAIAD_STATUE_ITEM = registerBlockItem(ModBlocks.NAIAD_STATUE);
+        public static final RegistrySupplier<Item> OREAD_IDOL_ITEM = registerBlockItem(ModBlocks.OREAD_IDOL);
         public static final RegistrySupplier<Item> DRYAD_LANTERN_ITEM = registerBlockItem(ModBlocks.DRYAD_LANTERN);
         public static final RegistrySupplier<Item> DRYAD_EXPANSION_PANEL_ITEM = registerBlockItem(
                         ModBlocks.DRYAD_EXPANSION_PANEL);
@@ -107,6 +124,47 @@ public class ModItems {
                         ModBlocks.OAK_TREE_GATEWAY);
         public static final RegistrySupplier<Item> SPRUCE_TREE_GATEWAY_ITEM = registerBlockItem(
                         ModBlocks.SPRUCE_TREE_GATEWAY);
+        public static final RegistrySupplier<Item> VEIL_MUSHROOM_ITEM = registerBlockItem(ModBlocks.VEIL_MUSHROOM);
+        public static final RegistrySupplier<Item> VEIL_BLOOM_ITEM = registerBlockItem(
+                        ModBlocks.VEIL_BLOOM);
+        public static final RegistrySupplier<Item> VEIL_WILLOW_LOG_ITEM = registerBlockItem(ModBlocks.VEIL_WILLOW_LOG);
+        public static final RegistrySupplier<Item> VEIL_WILLOW_LEAVES_ITEM = registerBlockItem(ModBlocks.VEIL_WILLOW_LEAVES);
+        public static final RegistrySupplier<Item> VEIL_WILLOW_DRAPE_ITEM = registerBlockItem(ModBlocks.VEIL_WILLOW_DRAPE);
+        public static final RegistrySupplier<Item> VEIL_WILLOW_WOOD_ITEM = registerBlockItem(ModBlocks.VEIL_WILLOW_WOOD);
+        public static final RegistrySupplier<Item> VEIL_WILLOW_PLANKS_ITEM = registerBlockItem(ModBlocks.VEIL_WILLOW_PLANKS);
+        public static final RegistrySupplier<Item> VEIL_WILLOW_STAIRS_ITEM = registerBlockItem(ModBlocks.VEIL_WILLOW_STAIRS);
+        public static final RegistrySupplier<Item> VEIL_WILLOW_SLAB_ITEM = registerBlockItem(ModBlocks.VEIL_WILLOW_SLAB);
+        public static final RegistrySupplier<Item> VEIL_WILLOW_FENCE_ITEM = registerBlockItem(ModBlocks.VEIL_WILLOW_FENCE);
+        public static final RegistrySupplier<Item> VEIL_WILLOW_FENCE_GATE_ITEM = registerBlockItem(ModBlocks.VEIL_WILLOW_FENCE_GATE);
+        public static final RegistrySupplier<Item> VEIL_WILLOW_BUTTON_ITEM = registerBlockItem(ModBlocks.VEIL_WILLOW_BUTTON);
+        public static final RegistrySupplier<Item> VEIL_WILLOW_PRESSURE_PLATE_ITEM = registerBlockItem(ModBlocks.VEIL_WILLOW_PRESSURE_PLATE);
+        public static final RegistrySupplier<Item> VEIL_WILLOW_TRAPDOOR_ITEM = registerBlockItem(ModBlocks.VEIL_WILLOW_TRAPDOOR);
+        public static final RegistrySupplier<Item> VEIL_WILLOW_DOOR_ITEM = registerBlockItem(ModBlocks.VEIL_WILLOW_DOOR);
+        public static final RegistrySupplier<Item> VEIL_WILLOW_SAPLING_ITEM = registerBlockItem(ModBlocks.VEIL_WILLOW_SAPLING);
+
+        // Stripped Logs
+        public static final RegistrySupplier<Item> STRIPPED_DRYAD_LOG_ITEM = registerBlockItem(ModBlocks.STRIPPED_DRYAD_LOG);
+        public static final RegistrySupplier<Item> STRIPPED_DRYAD_WOOD_ITEM = registerBlockItem(ModBlocks.STRIPPED_DRYAD_WOOD);
+        public static final RegistrySupplier<Item> STRIPPED_VEIL_WILLOW_LOG_ITEM = registerBlockItem(ModBlocks.STRIPPED_VEIL_WILLOW_LOG);
+        public static final RegistrySupplier<Item> STRIPPED_VEIL_WILLOW_WOOD_ITEM = registerBlockItem(ModBlocks.STRIPPED_VEIL_WILLOW_WOOD);
+
+        // Signs
+        public static final RegistrySupplier<Item> DRYAD_SIGN_ITEM = ITEMS.register("dryad_sign",
+                        () -> new net.minecraft.world.item.SignItem(new Item.Properties().stacksTo(16),
+                                        ModBlocks.DRYAD_SIGN.get(), ModBlocks.DRYAD_WALL_SIGN.get()));
+        public static final RegistrySupplier<Item> VEIL_WILLOW_SIGN_ITEM = ITEMS.register("veil_willow_sign",
+                        () -> new net.minecraft.world.item.SignItem(new Item.Properties().stacksTo(16),
+                                        ModBlocks.VEIL_WILLOW_SIGN.get(), ModBlocks.VEIL_WILLOW_WALL_SIGN.get()));
+
+        // Hanging Signs
+        public static final RegistrySupplier<Item> DRYAD_HANGING_SIGN_ITEM = ITEMS.register("dryad_hanging_sign",
+                        () -> new net.minecraft.world.item.HangingSignItem(
+                                        ModBlocks.DRYAD_HANGING_SIGN.get(), ModBlocks.DRYAD_WALL_HANGING_SIGN.get(),
+                                        new Item.Properties().stacksTo(16)));
+        public static final RegistrySupplier<Item> VEIL_WILLOW_HANGING_SIGN_ITEM = ITEMS.register("veil_willow_hanging_sign",
+                        () -> new net.minecraft.world.item.HangingSignItem(
+                                        ModBlocks.VEIL_WILLOW_HANGING_SIGN.get(), ModBlocks.VEIL_WILLOW_WALL_HANGING_SIGN.get(),
+                                        new Item.Properties().stacksTo(16)));
 
         // Mermaid Armor - Blue
         public static final RegistrySupplier<Item> BLUE_MERMAID_HELMET = ITEMS.register("blue_mermaid_helmet",
@@ -174,7 +232,7 @@ public class ModItems {
                                                         .rarity(net.minecraft.world.item.Rarity.RARE),
                                         2200));
 
-        // ─── Fairy Source ──────────────────────────────────────────────────────────
+        // Fairy Source
         public static final RegistrySupplier<Item> FAIRY_DUST = ITEMS.register("fairy_dust",
                         () -> new Item(new Item.Properties()));
 
@@ -189,6 +247,21 @@ public class ModItems {
                         () -> new mc.sayda.creraces.item.FairyBottleItem(
                                         new Item.Properties().stacksTo(16)));
 
+        // Research Table
+        public static final RegistrySupplier<Item> INK_AND_QUILL = ITEMS.register("ink_and_quill",
+                        () -> new mc.sayda.creraces.item.InkAndQuillItem(new Item.Properties().durability(10)));
+        public static final RegistrySupplier<Item> RESEARCH_TABLE_ITEM = registerBlockItem(ModBlocks.RESEARCH_TABLE);
+
+        // Spirit Compass
+        public static final RegistrySupplier<Item> SPIRIT_COMPASS = ITEMS.register("spirit_compass",
+                        () -> new mc.sayda.creraces.item.SpiritCompassItem(new Item.Properties().stacksTo(1)));
+
+        // Essence Belt
+        public static final RegistrySupplier<Item> ESSENCE_BELT = ITEMS.register("essence_belt",
+                        () -> new mc.sayda.creraces.item.EssenceBeltItem(new Item.Properties().stacksTo(1)));
+
+        public static final RegistrySupplier<Item> ESSENCE_CAULDRON_ITEM = registerBlockItem(ModBlocks.ESSENCE_CAULDRON);
+
         private static RegistrySupplier<Item> registerBlockItem(
                         RegistrySupplier<? extends net.minecraft.world.level.block.Block> blockSupplier) {
                 return ITEMS.register(blockSupplier.getId().getPath(),
@@ -197,6 +270,7 @@ public class ModItems {
         }
 
         public static void register() {
+                mc.sayda.creraces.ability.EssenceRegistry.registerItems();
                 ITEMS.register();
         }
 }

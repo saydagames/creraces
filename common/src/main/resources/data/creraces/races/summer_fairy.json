@@ -53,7 +53,7 @@
                     "if_true": [
                         {
                             "type": "creraces:message",
-                            "text": "message.creraces.broken_wings_safe",
+                            "text": "msg.creraces.broken_wings_safe",
                             "actionbar": true
                         }
                     ]
@@ -79,7 +79,7 @@
                         {
                             "type": "creraces:modify_value",
                             "resource": "state:creraces:bw_exposure",
-                            "name": "Wings Exposure",
+                            "label": "Climate Exposure",
                             "value": 1,
                             "operation": "add",
                             "show_bar": true,
@@ -114,7 +114,7 @@
                                 },
                                 {
                                     "type": "creraces:message",
-                                    "text": "message.creraces.broken_wings_broken"
+                                    "text": "msg.creraces.broken_wings_broken"
                                 }
                             ],
                             "if_false": [
@@ -129,7 +129,7 @@
                                     "if_true": [
                                         {
                                             "type": "creraces:message",
-                                            "text": "message.creraces.broken_wings_warning",
+                                            "text": "msg.creraces.broken_wings_warning",
                                             "actionbar": true
                                         }
                                     ]

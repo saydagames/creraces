@@ -1,0 +1,40 @@
+﻿{
+    "parent": "minecraft:item/generated",
+    "textures": {
+        "layer0": "creraces:item/spirit_compass_00"
+    },
+    "overrides": [
+        { "predicate": { "creraces:angle": 0 }, "model": "creraces:item/spirit_compass_00" },
+        { "predicate": { "creraces:angle": 0.03125 }, "model": "creraces:item/spirit_compass_01" },
+        { "predicate": { "creraces:angle": 0.0625 }, "model": "creraces:item/spirit_compass_02" },
+        { "predicate": { "creraces:angle": 0.09375 }, "model": "creraces:item/spirit_compass_03" },
+        { "predicate": { "creraces:angle": 0.125 }, "model": "creraces:item/spirit_compass_04" },
+        { "predicate": { "creraces:angle": 0.15625 }, "model": "creraces:item/spirit_compass_05" },
+        { "predicate": { "creraces:angle": 0.1875 }, "model": "creraces:item/spirit_compass_06" },
+        { "predicate": { "creraces:angle": 0.21875 }, "model": "creraces:item/spirit_compass_07" },
+        { "predicate": { "creraces:angle": 0.25 }, "model": "creraces:item/spirit_compass_08" },
+        { "predicate": { "creraces:angle": 0.28125 }, "model": "creraces:item/spirit_compass_09" },
+        { "predicate": { "creraces:angle": 0.3125 }, "model": "creraces:item/spirit_compass_10" },
+        { "predicate": { "creraces:angle": 0.34375 }, "model": "creraces:item/spirit_compass_11" },
+        { "predicate": { "creraces:angle": 0.375 }, "model": "creraces:item/spirit_compass_12" },
+        { "predicate": { "creraces:angle": 0.40625 }, "model": "creraces:item/spirit_compass_13" },
+        { "predicate": { "creraces:angle": 0.4375 }, "model": "creraces:item/spirit_compass_14" },
+        { "predicate": { "creraces:angle": 0.46875 }, "model": "creraces:item/spirit_compass_15" },
+        { "predicate": { "creraces:angle": 0.5 }, "model": "creraces:item/spirit_compass_16" },
+        { "predicate": { "creraces:angle": 0.53125 }, "model": "creraces:item/spirit_compass_17" },
+        { "predicate": { "creraces:angle": 0.5625 }, "model": "creraces:item/spirit_compass_18" },
+        { "predicate": { "creraces:angle": 0.59375 }, "model": "creraces:item/spirit_compass_19" },
+        { "predicate": { "creraces:angle": 0.625 }, "model": "creraces:item/spirit_compass_20" },
+        { "predicate": { "creraces:angle": 0.65625 }, "model": "creraces:item/spirit_compass_21" },
+        { "predicate": { "creraces:angle": 0.6875 }, "model": "creraces:item/spirit_compass_22" },
+        { "predicate": { "creraces:angle": 0.71875 }, "model": "creraces:item/spirit_compass_23" },
+        { "predicate": { "creraces:angle": 0.75 }, "model": "creraces:item/spirit_compass_24" },
+        { "predicate": { "creraces:angle": 0.78125 }, "model": "creraces:item/spirit_compass_25" },
+        { "predicate": { "creraces:angle": 0.8125 }, "model": "creraces:item/spirit_compass_26" },
+        { "predicate": { "creraces:angle": 0.84375 }, "model": "creraces:item/spirit_compass_27" },
+        { "predicate": { "creraces:angle": 0.875 }, "model": "creraces:item/spirit_compass_28" },
+        { "predicate": { "creraces:angle": 0.90625 }, "model": "creraces:item/spirit_compass_29" },
+        { "predicate": { "creraces:angle": 0.9375 }, "model": "creraces:item/spirit_compass_30" },
+        { "predicate": { "creraces:angle": 0.96875 }, "model": "creraces:item/spirit_compass_31" }
+    ]
+}

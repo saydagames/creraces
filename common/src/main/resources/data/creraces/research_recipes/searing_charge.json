@@ -1,0 +1,13 @@
+{
+  "ability": "creraces:searing_charge",
+  "level": 1,
+  "pattern": [
+    { "q":  2, "r":  0, "essence": "air" },
+    { "q":  1, "r": -1, "essence": "air" },
+    { "q":  1, "r":  0, "essence": "air" },
+    { "q":  0, "r":  0, "essence": "fire" },
+    { "q": -1, "r":  0, "essence": "fire" },
+    { "q":  0, "r":  1, "essence": "fire" },
+    { "q": -1, "r":  1, "essence": "fire" }
+  ]
+}

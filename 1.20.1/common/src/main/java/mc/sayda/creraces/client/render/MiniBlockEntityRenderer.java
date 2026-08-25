@@ -39,14 +39,14 @@ public class MiniBlockEntityRenderer implements BlockEntityRenderer<MicroBlockEn
     private final Map<BlockPos, CachedMiniModel> modelCache = new LinkedHashMap<>(16, 0.75f, true) {
         @Override
         protected boolean removeEldestEntry(Map.Entry<BlockPos, CachedMiniModel> eldest) {
-            return size() > 128; // MINI_MODEL_CACHE_SIZE default
+            return size() > mc.sayda.creraces.config.CreRacesConfig.MINI_MODEL_CACHE_SIZE.get();
         }
     };
 
     private final Map<BlockState, BlockEntity> dummyCache = new LinkedHashMap<>(16, 0.75f, true) {
         @Override
         protected boolean removeEldestEntry(Map.Entry<BlockState, BlockEntity> eldest) {
-            return size() > 32; // MINI_DUMMY_CACHE_SIZE default
+            return size() > mc.sayda.creraces.config.CreRacesConfig.MINI_DUMMY_CACHE_SIZE.get();
         }
     };
 
@@ -154,10 +154,7 @@ public class MiniBlockEntityRenderer implements BlockEntityRenderer<MicroBlockEn
             long seed = state.getSeed(pos) + MicroBlockEntity.toIndex(x, y, z);
             net.minecraft.util.RandomSource random = net.minecraft.util.RandomSource.create(seed);
 
-            // Use entity-renderer-compatible render types (NOT chunk pipeline types).
-            // ItemBlockRenderTypes.getChunkRenderType returns types tied to the chunk
-            // tessellator which are NOT compatible with block entity renderer buffers
-            // on Fabric/Indigo. Map to the nearest entity-renderer equivalent instead.
+            // See getEntityCompatibleRenderType() below for why we can't use chunk render types here.
             RenderType rt = getEntityCompatibleRenderType(state);
             List<BakedQuad> quads = cached.quadsByRenderType.computeIfAbsent(rt, k -> new ArrayList<>());
 

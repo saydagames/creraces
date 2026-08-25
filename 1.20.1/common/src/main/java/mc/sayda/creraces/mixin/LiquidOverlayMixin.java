@@ -15,12 +15,13 @@ import com.mojang.blaze3d.vertex.PoseStack;
 /**
  * Suppresses the underwater and lava screen overlay (the blue/orange
  * translucent
- * layer drawn over the viewport) for races with waterVision or lavaVision
- * passives.
+ * layer drawn over the viewport) for races with waterVision/unaffectedByWater
+ * or lavaVision/unaffectedByLava passives.
  *
  * {@link ScreenEffectRenderer#renderScreenEffect} draws both the water overlay
- * (when submerged) and the fire overlay (when on fire). We only cancel the
- * liquid ones - fire from combat remains visible.
+ * (when submerged) and the fire overlay (when on fire) in one method, so
+ * cancelling it here also suppresses fire whenever that same tick would have
+ * shown it (e.g. a lavaVision race standing in lava).
  */
 @Mixin(ScreenEffectRenderer.class)
 public class LiquidOverlayMixin {
@@ -42,9 +43,10 @@ public class LiquidOverlayMixin {
 
             if ((inWater && (passives.waterVision() || passives.unaffectedByWater())) ||
                     (inLava && (passives.lavaVision() || passives.unaffectedByLava()))) {
-                // Cancel the whole overlay pass - only for liquid.
-                // Fire overlay (isOnFire) is handled in the same method; we only intercept
-                // here if the player is actually submerged, so fire still shows for combat.
+                // Cancels the whole overlay pass at HEAD. Note this also suppresses the fire
+                // overlay if this same tick would have shown one (e.g. a lavaVision race
+                // standing in lava), since fire and liquid overlays share this one vanilla
+                // method.
                 ci.cancel();
             }
         });

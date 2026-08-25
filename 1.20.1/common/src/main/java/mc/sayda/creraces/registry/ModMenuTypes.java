@@ -17,6 +17,14 @@ public class ModMenuTypes {
     public static final RegistrySupplier<MenuType<mc.sayda.creraces.world.inventory.MirrorMenu>> MIRROR_GUI = MENUS.register("mirror_gui",
             () -> MenuRegistry.ofExtended((syncId, inventory, buf) -> new mc.sayda.creraces.world.inventory.MirrorMenu(syncId, inventory, buf)));
 
+    public static final RegistrySupplier<MenuType<mc.sayda.creraces.world.inventory.ResearchTableMenu>> RESEARCH_TABLE = MENUS.register("research_table",
+            () -> MenuRegistry.ofExtended((syncId, inventory, buf) -> new mc.sayda.creraces.world.inventory.ResearchTableMenu(syncId, inventory, buf)));
+
+    public static final RegistrySupplier<MenuType<mc.sayda.creraces.world.inventory.EssenceBeltMenu>> ESSENCE_BELT = MENUS.register("essence_belt",
+            () -> MenuRegistry.ofExtended((syncId, inventory, buf) -> new mc.sayda.creraces.world.inventory.EssenceBeltMenu(
+                    syncId, inventory,
+                    mc.sayda.creraces.item.EssenceBeltItem.loadInventory(net.minecraft.world.item.ItemStack.EMPTY))));
+
     public static void register() {
         MENUS.register();
     }

@@ -10,7 +10,6 @@ import net.minecraft.commands.CommandSourceStack;
 
 /**
  * Executes a server-side command as if the player (or server) ran it.
- * Highly configurable via JSON.
  */
 public class CommandAction implements ActionRegistry.RaceAction {
     public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "command");

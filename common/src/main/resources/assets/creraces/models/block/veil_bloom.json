@@ -1,0 +1,8 @@
+{
+  "parent": "block/cross",
+  "textures": {
+    "cross": "creraces:block/veil_bloom_bud",
+    "particle": "creraces:block/veil_bloom_bud"
+  },
+  "render_type": "cutout"
+}

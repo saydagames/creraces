@@ -3,6 +3,9 @@
         "creraces:dryad_log",
         "creraces:dryad_log_core",
         "creraces:dryad_wood",
-        "creraces:weathered_red_stripped_oak_log"
+        "creraces:weathered_red_stripped_oak_log",
+        "creraces:red_stripped_oak_log",
+        "creraces:veil_willow_log",
+        "creraces:veil_willow_wood"
     ]
 }

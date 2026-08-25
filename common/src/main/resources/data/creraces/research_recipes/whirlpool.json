@@ -1,0 +1,13 @@
+{
+  "ability": "creraces:whirlpool",
+  "level": 1,
+  "pattern": [
+    { "q":  1, "r": -2, "essence": "water" },
+    { "q":  2, "r": -2, "essence": "water" },
+    { "q":  1, "r": -1, "essence": "water" },
+    { "q":  1, "r":  0, "essence": "water" },
+    { "q":  0, "r":  1, "essence": "water" },
+    { "q": -1, "r":  1, "essence": "water" },
+    { "q":  0, "r":  0, "essence": "dark" }
+  ]
+}

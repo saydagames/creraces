@@ -43,7 +43,7 @@ public class ServantAttackGoal extends Goal {
                         }
                     }
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception e) { mc.sayda.creraces.CreRaces.LOGGER.debug("Error reading servant NBT: {}", e.getMessage()); }
         }
         return false;
     }

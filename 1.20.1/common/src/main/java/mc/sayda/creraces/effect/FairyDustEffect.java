@@ -33,7 +33,8 @@ public class FairyDustEffect extends MobEffect {
             virtuoel.pehkui.api.ScaleData data = virtuoel.pehkui.api.ScaleTypes.FLIGHT.getScaleData(player);
             data.setScale(2.0f);
             data.setTargetScale(2.0f);
-        } catch (Throwable ignored) {}
+        } catch (NoClassDefFoundError ignored) {
+        } catch (Exception e) { mc.sayda.creraces.CreRaces.LOGGER.debug("Pehkui scale error: {}", e.getMessage()); }
     }
 
     @Override
@@ -49,6 +50,7 @@ public class FairyDustEffect extends MobEffect {
             virtuoel.pehkui.api.ScaleData data = virtuoel.pehkui.api.ScaleTypes.FLIGHT.getScaleData(player);
             data.setScale(1.0f);
             data.setTargetScale(1.0f);
-        } catch (Throwable ignored) {}
+        } catch (NoClassDefFoundError ignored) {
+        } catch (Exception e) { mc.sayda.creraces.CreRaces.LOGGER.debug("Pehkui scale error: {}", e.getMessage()); }
     }
 }

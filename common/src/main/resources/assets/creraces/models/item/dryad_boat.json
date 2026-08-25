@@ -1,0 +1,1 @@
+{ "parent": "minecraft:item/generated", "textures": { "layer0": "creraces:item/dryad_boat" } }

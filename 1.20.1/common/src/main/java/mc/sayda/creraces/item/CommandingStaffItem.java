@@ -43,7 +43,7 @@ public class CommandingStaffItem extends Item {
         if (!canCommandSocials(player)) {
             if (!player.level().isClientSide) {
                 player.displayClientMessage(
-                        Component.translatable("message.creraces.staff_fail").withStyle(ChatFormatting.RED), true);
+                        Component.translatable("msg.creraces.staff_fail").withStyle(ChatFormatting.RED), true);
             }
             return InteractionResult.FAIL;
         }
@@ -60,7 +60,7 @@ public class CommandingStaffItem extends Item {
                             serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER,
                                     mob.getX(), mob.getY() + 1, mob.getZ(), 20, 0.5, 0.5, 0.5, 0.05);
                         }
-                        player.displayClientMessage(Component.translatable("message.creraces.servant_claimed")
+                        player.displayClientMessage(Component.translatable("msg.creraces.servant_claimed")
                                 .withStyle(ChatFormatting.GREEN), true);
                     }
                     return InteractionResult.SUCCESS;
@@ -90,7 +90,7 @@ public class CommandingStaffItem extends Item {
         if (!canCommandSocials(player)) {
             if (!level.isClientSide) {
                 player.displayClientMessage(
-                        Component.translatable("message.creraces.staff_fail").withStyle(ChatFormatting.RED), true);
+                        Component.translatable("msg.creraces.staff_fail").withStyle(ChatFormatting.RED), true);
             }
             return InteractionResultHolder.fail(stack);
         }
@@ -110,15 +110,9 @@ public class CommandingStaffItem extends Item {
             tag.putString("PendingMode", nextMode);
 
             if (!level.isClientSide) {
-                MutableComponent modeComp = switch (nextMode) {
-                    case "follow" -> Component.translatable("message.creraces.mode_follow").withStyle(ChatFormatting.GREEN);
-                    case "move" -> Component.translatable("message.creraces.mode_move").withStyle(ChatFormatting.AQUA);
-                    case "attack" -> Component.translatable("message.creraces.mode_attack").withStyle(ChatFormatting.RED);
-                    case "free" -> Component.translatable("message.creraces.mode_free").withStyle(ChatFormatting.YELLOW);
-                    default -> Component.translatable("message.creraces.mode_unknown");
-                };
+                Component modeComp = modeComponent(nextMode, Component.translatable("msg.creraces.mode_unknown"));
 
-                player.displayClientMessage(Component.translatable("message.creraces.staff_selecting", modeComp), true);
+                player.displayClientMessage(Component.translatable("msg.creraces.staff_selecting", modeComp), true);
                 level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.EXPERIENCE_ORB_PICKUP,
                         SoundSource.PLAYERS, 0.5f, 1.5f);
             }
@@ -146,7 +140,7 @@ public class CommandingStaffItem extends Item {
                     stack.getOrCreateTag().putUUID("CommandTarget", target.getUUID());
                     stack.getOrCreateTag().remove("CommandPos");
                     player.displayClientMessage(
-                            Component.translatable("message.creraces.command_attack", target.getDisplayName())
+                            Component.translatable("msg.creraces.command_attack", target.getDisplayName())
                                     .withStyle(ChatFormatting.RED),
                             true);
                     if (level instanceof ServerLevel serverLevel) {
@@ -171,7 +165,7 @@ public class CommandingStaffItem extends Item {
                     stack.getOrCreateTag().put("CommandPos", posTag);
                     stack.getOrCreateTag().remove("CommandTarget");
 
-                    MutableComponent msg = Component.translatable("message.creraces.command_move").withStyle(ChatFormatting.AQUA);
+                    MutableComponent msg = Component.translatable("msg.creraces.command_move").withStyle(ChatFormatting.AQUA);
                     player.displayClientMessage(msg, true);
 
                     if (level instanceof ServerLevel serverLevel) {
@@ -204,6 +198,20 @@ public class CommandingStaffItem extends Item {
                 .orElse(false);
     }
 
+    /**
+     * Maps a command mode string to its display Component, falling back to
+     * {@code fallback} for any unrecognized mode.
+     */
+    private static Component modeComponent(String mode, Component fallback) {
+        return switch (mode) {
+            case "follow" -> Component.translatable("msg.creraces.mode_follow").withStyle(ChatFormatting.GREEN);
+            case "move" -> Component.translatable("msg.creraces.mode_move").withStyle(ChatFormatting.AQUA);
+            case "attack" -> Component.translatable("msg.creraces.mode_attack").withStyle(ChatFormatting.RED);
+            case "free" -> Component.translatable("msg.creraces.mode_free").withStyle(ChatFormatting.YELLOW);
+            default -> fallback;
+        };
+    }
+
     @Override
     public void appendHoverText(@Nonnull ItemStack stack, @Nullable Level level, @Nonnull List<Component> tooltip,
             @Nonnull TooltipFlag flag) {
@@ -212,13 +220,8 @@ public class CommandingStaffItem extends Item {
                 ? stack.getOrCreateTag().getString("CommandMode")
                 : "follow";
 
-        MutableComponent modeComp = switch (commandMode) {
-            case "follow" -> Component.translatable("message.creraces.mode_follow").withStyle(ChatFormatting.GREEN);
-            case "move" -> Component.translatable("message.creraces.mode_move").withStyle(ChatFormatting.AQUA);
-            case "attack" -> Component.translatable("message.creraces.mode_attack").withStyle(ChatFormatting.RED);
-            case "free" -> Component.translatable("message.creraces.mode_free").withStyle(ChatFormatting.YELLOW);
-            default -> Component.translatable("message.creraces.mode_follow").withStyle(ChatFormatting.GREEN);
-        };
+        Component modeComp = modeComponent(commandMode,
+                Component.translatable("msg.creraces.mode_follow").withStyle(ChatFormatting.GREEN));
 
         tooltip.add(
                 Component.translatable("item.creraces.commanding_staff.mode", modeComp).withStyle(ChatFormatting.GOLD));

@@ -1,0 +1,8 @@
+{
+  "parent": "creraces:custom/totem",
+  "render_type": "cutout",
+  "textures": {
+    "0": "creraces:block/oceanic_statue",
+    "particle": "creraces:block/oceanic_statue"
+  }
+}

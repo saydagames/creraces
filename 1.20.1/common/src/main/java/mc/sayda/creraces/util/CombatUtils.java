@@ -19,7 +19,12 @@ public class CombatUtils {
      */
     @Nullable
     public static Player getRootOwner(@Nullable Entity entity) {
-        if (entity == null) return null;
+        return getRootOwner(entity, 0);
+    }
+
+    @Nullable
+    private static Player getRootOwner(@Nullable Entity entity, int depth) {
+        if (entity == null || depth > 8) return null;
 
         if (entity instanceof Player player) {
             return player;
@@ -32,7 +37,7 @@ public class CombatUtils {
             }
             // Recurse in case of nested owners (e.g. projectile shot by a tame)
             if (owner != null && owner != entity) {
-                return getRootOwner(owner);
+                return getRootOwner(owner, depth + 1);
             }
         }
 
@@ -43,7 +48,7 @@ public class CombatUtils {
             }
             // Recurse for projectiles shot by tames/servants
             if (owner != null && owner != entity) {
-                return getRootOwner(owner);
+                return getRootOwner(owner, depth + 1);
             }
         }
 

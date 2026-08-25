@@ -21,14 +21,13 @@ public class DocCache {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Map<ResourceLocation, String> CACHE = new java.util.concurrent.ConcurrentHashMap<>();
     private static File cacheFile;
-    private static boolean isDirty = false;
+    private static volatile boolean isDirty = false;
 
     public static void init(Path configDir) {
         cacheFile = configDir.resolve(mc.sayda.creraces.config.CreRacesConfig.DOC_CACHE_DIR.get())
                 .resolve(mc.sayda.creraces.config.CreRacesConfig.DOC_CACHE_FILENAME.get()).toFile();
         load();
 
-        // Simple scheduled save every 30 seconds if dirty
         new java.util.Timer("DocCache-Saver", true).scheduleAtFixedRate(new java.util.TimerTask() {
             @Override
             public void run() {

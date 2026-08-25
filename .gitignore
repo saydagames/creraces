@@ -111,3 +111,5 @@ local.properties
 /.minecraft
 /.attributes
 /TestPack
+/1.21.1/common/bin
+/1.20.1/common/bin

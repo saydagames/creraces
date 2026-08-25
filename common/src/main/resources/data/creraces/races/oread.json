@@ -2,7 +2,6 @@
     "creraces:name": "race.creraces.oread.name",
     "creraces:parent_race": "creraces:nymph",
     "creraces:enable_territory": true,
-    "creraces:faction_group": "nymph",
     "creraces:index": 9.1,
     "creraces:description": "race.creraces.oread.description",
     "creraces:icon": "creraces:textures/screens/oread_icon.png",
@@ -98,7 +97,7 @@
                 },
                 {
                     "type": "creraces:message",
-                    "text": "Mountain's Fury Maxed!",
+                    "text": "msg.creraces.oread.mountains_fury_maxed",
                     "actionbar": true
                 }
             ]
@@ -125,7 +124,7 @@
             },
             "actions": [
                 {
-                    "name": "Fury Stacks",
+                    "label": "Fury Stacks",
                     "type": "creraces:modify_value",
                     "resource": "state:creraces:stacks",
                     "operation": "add",
@@ -148,7 +147,7 @@
                     },
                     {
                         "type": "creraces:holding_item",
-                        "item": "#forge:cobblestone"
+                        "item": "#c:cobblestones"
                     },
                     {
                         "type": "creraces:state",
@@ -161,7 +160,7 @@
             "actions": [
                 {
                     "type": "creraces:consume_item",
-                    "item": "#forge:cobblestone",
+                    "item": "#c:cobblestones",
                     "amount": 1
                 },
                 {
@@ -177,7 +176,7 @@
                     "value": 2
                 },
                 {
-                    "name": "Stored Material",
+                    "label": "Stored Material",
                     "type": "creraces:modify_value",
                     "resource": "state:creraces:stored_material",
                     "operation": "add",
@@ -263,6 +262,86 @@
                     "type": "creraces:set_on_fire",
                     "duration": 5,
                     "use_target": true
+                }
+            ]
+        }
+    ],
+    "creraces:territory_valid_biomes": ["temp>=1.0"],
+    "creraces:starting_items": [
+        "creraces:oread_idol"
+    ],
+    "sapling_mechanics": [
+        {
+            "type": "creraces:block_place",
+            "block": "creraces:oread_idol",
+            "actions": [
+                {
+                    "type": "creraces:conditional",
+                    "condition": {
+                        "type": "creraces:state",
+                        "state": "state:node_x",
+                        "operator": "!=",
+                        "value": 0.0
+                    },
+                    "if_true": [
+                        { "type": "creraces:message", "text": "msg.creraces.oread.already_has_node", "actionbar": true },
+                        { "type": "creraces:cancel" }
+                    ]
+                },
+                {
+                    "type": "creraces:claim_territory",
+                    "valid_biomes": ["temp>=1.0"],
+                    "anchor_y_offset": 0,
+                    "on_success": [
+                        { "type": "creraces:modify_value", "resource": "state:node_x", "mode": "TARGET_BLOCK_X", "persistent": true },
+                        { "type": "creraces:modify_value", "resource": "state:node_y", "mode": "TARGET_BLOCK_Y", "persistent": true },
+                        { "type": "creraces:modify_value", "resource": "state:node_z", "mode": "TARGET_BLOCK_Z", "persistent": true },
+                        { "type": "creraces:spawn_particles", "particle": "minecraft:happy_villager", "count": 15, "spread_x": 0.5, "spread_y": 0.5, "spread_z": 0.5, "use_target": true },
+                        { "type": "creraces:play_sound", "sound": "minecraft:item.bone_meal.use", "volume": 1.0, "pitch": 1.0, "use_target": true },
+                        { "type": "creraces:message", "text": "msg.creraces.oread.claimed_success", "actionbar": true }
+                    ],
+                    "on_partial": [
+                        { "type": "creraces:modify_value", "resource": "state:node_x", "mode": "TARGET_BLOCK_X", "persistent": true },
+                        { "type": "creraces:modify_value", "resource": "state:node_y", "mode": "TARGET_BLOCK_Y", "persistent": true },
+                        { "type": "creraces:modify_value", "resource": "state:node_z", "mode": "TARGET_BLOCK_Z", "persistent": true }
+                    ],
+                    "on_invalid_biome": [
+                        { "type": "creraces:message", "text": "msg.creraces.oread.invalid_biome", "actionbar": true },
+                        { "type": "creraces:cancel" }
+                    ],
+                    "on_enemy_territory": [
+                        { "type": "creraces:message", "text": "msg.creraces.oread.enemy_territory", "actionbar": true }
+                    ],
+                    "on_inside_own": [
+                        { "type": "creraces:modify_value", "resource": "state:node_x", "mode": "TARGET_BLOCK_X", "persistent": true },
+                        { "type": "creraces:modify_value", "resource": "state:node_y", "mode": "TARGET_BLOCK_Y", "persistent": true },
+                        { "type": "creraces:modify_value", "resource": "state:node_z", "mode": "TARGET_BLOCK_Z", "persistent": true },
+                        { "type": "creraces:message", "text": "msg.creraces.oread.node_relocated", "actionbar": true }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "creraces:block_interaction",
+            "block": "creraces:oread_idol",
+            "actions": [
+                {
+                    "type": "creraces:conditional",
+                    "condition": {
+                        "type": "creraces:and",
+                        "conditions": [
+                            { "type": "creraces:sneaking", "value": true },
+                            { "type": "creraces:is_position", "use_target_block": true, "x": "state:node_x", "y": "state:node_y", "z": "state:node_z" }
+                        ]
+                    },
+                    "if_true": [
+                        { "type": "creraces:give_item", "item": "creraces:oread_idol", "amount": 1 },
+                        { "type": "creraces:place_block", "block": "minecraft:air", "use_target_block": true, "overwrite": true },
+                        { "type": "creraces:modify_value", "resource": "state:node_x", "value": 0.0, "persistent": true },
+                        { "type": "creraces:modify_value", "resource": "state:node_y", "value": 0.0, "persistent": true },
+                        { "type": "creraces:modify_value", "resource": "state:node_z", "value": 0.0, "persistent": true },
+                        { "type": "creraces:message", "text": "msg.creraces.node_removed", "actionbar": true }
+                    ]
                 }
             ]
         }

@@ -42,7 +42,33 @@ public class ModWorldgen {
                 FairyRealmChunkGenerator.CODEC
         );
 
+        SurfaceOffsetJigsawStructure.TYPE = Registry.register(
+                BuiltInRegistries.STRUCTURE_TYPE,
+                new ResourceLocation(CreRaces.MODID, "surface_jigsaw"),
+                () -> SurfaceOffsetJigsawStructure.CODEC.codec()
+        );
+
+        registerVeilDrapeDecoratorType();
+
         CreRaces.LOGGER.info("CreRaces: Registered fairy_realm biome source + chunk generator codecs.");
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static void registerVeilDrapeDecoratorType() {
+        try {
+            java.lang.reflect.Constructor ctor =
+                    net.minecraft.world.level.levelgen.feature.treedecorators.TreeDecoratorType.class
+                            .getDeclaredConstructor(com.mojang.serialization.Codec.class);
+            ctor.setAccessible(true);
+            net.minecraft.world.level.levelgen.feature.treedecorators.TreeDecoratorType decoratorType =
+                    (net.minecraft.world.level.levelgen.feature.treedecorators.TreeDecoratorType)
+                            ctor.newInstance(mc.sayda.creraces.world.tree.VeilDrapeDecorator.CODEC);
+            Registry.register((Registry) BuiltInRegistries.TREE_DECORATOR_TYPE,
+                    new ResourceLocation(CreRaces.MODID, "veil_drape"), decoratorType);
+            mc.sayda.creraces.world.tree.VeilDrapeDecorator.TYPE = decoratorType;
+        } catch (Exception e) {
+            throw new RuntimeException("CreRaces: Failed to register veil_drape tree decorator type", e);
+        }
     }
 
     /**
@@ -56,13 +82,13 @@ public class ModWorldgen {
 
     /**
      * Places seasonal spawn trees at each quadrant's fairy tree position on first visit.
-     * Spring cherry → (+250, 64, -250), Summer oak → (+250, 64, +250),
-     * Winter/Autumn spruce → (±250, 64, ±250).
+     * Spring cherry → (+250, -250), Summer oak → (+250, +250), Winter/Autumn spruce → (±250, ±250)
+     * [X, Z only; see placeTreeAt calls below for exact Y].
      */
     public static void placeSeasonalTreesIfNeeded(ServerLevel fairyLevel) {
         if (seasonalTreesPlaced) return;
         // Each tree is 71×51×65. Origin = NW corner of footprint.
-        // Center at (±250, y, ±250): origin.x = ±250 ∓ 35, origin.z = ±250 ∓ 32.
+        // Center at (center.x, y, center.z): origin.x = center.x - 35, origin.z = center.z - 32 (same subtraction regardless of quadrant sign).
         placeTreeAt(fairyLevel, "fairy_tree_cherry", new BlockPos( 215, 72, -282), new BlockPos( 250, 90, -250));
         placeTreeAt(fairyLevel, "fairy_tree_oak",    new BlockPos( 215, 72,  218), new BlockPos( 250, 90,  250));
         placeTreeAt(fairyLevel, "fairy_tree_spruce", new BlockPos(-285, 72, -282), new BlockPos(-250, 90, -250));
@@ -110,8 +136,8 @@ public class ModWorldgen {
      * Places giant_tree_paulzero.nbt on the island center if it hasn't been placed yet.
      * Call when a player first enters the fairy realm (level is guaranteed loaded).
      *
-     * Structure is 132×154×114 blocks. Placement origin (-66, 53, -57) maps template
-     * position (0,0,0) so the structure is centered at X=0, Z=0 with the tree base at Y=69.
+     * Structure is 132×154×114 blocks. Placement origin (-66, 56, -57) maps template
+     * position (0,0,0) so the structure is centered at X=0, Z=0 with the tree base at Y=72.
      * Air blocks in the NBT are ignored so terrain integrates naturally.
      */
     public static void placeFairyTreeIfNeeded(ServerLevel fairyLevel) {
@@ -139,8 +165,8 @@ public class ModWorldgen {
             return;
         }
 
-        // Origin: template (0,0,0) → world (-66, 53, -57)
-        // Centers the 132×114 footprint at X=0,Z=0 and puts tree base (16 blocks up) at Y=69
+        // Origin: template (0,0,0) → world (-66, 56, -57)
+        // Centers the 132×114 footprint at X=0,Z=0 and puts tree base (16 blocks up) at Y=72
         BlockPos origin = new BlockPos(-66, 56, -57);
         StructurePlaceSettings settings = new StructurePlaceSettings()
                 .addProcessor(BlockIgnoreProcessor.STRUCTURE_AND_AIR);

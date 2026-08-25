@@ -14,9 +14,6 @@ import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nullable;
 
-/**
- * Action that gives an item to the player.
- */
 public class GiveItemAction implements ActionRegistry.RaceAction {
     private final ResourceLocation itemId;
     private final ScalingValue amount;

@@ -13,18 +13,18 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Removes the underwater and lava fog/screen overlay for races with
- * {@code waterVision} or {@code lavaVision} passives.
+ * Removes the underwater and lava fog when the camera is submerged, for races
+ * with {@code waterVision}/{@code lavaVision} or {@code unaffectedByWater}/
+ * {@code unaffectedByLava} passives.
  *
- * Minecraft normally applies a thick fog + blue/orange tint when the camera is
- * submerged. By injecting into {@code setupFog} and bailing early when the
- * race passive is active, the player effectively sees through the liquid as if
- * they were in air.
+ * By injecting into {@code setupFog} and bailing early when the passive is
+ * active, the player effectively sees through the liquid as if they were in
+ * air.
  *
- * The screen tint (the translucent water/fire overlay drawn over the HUD) is
- * controlled separately by Minecraft's {@code ItemInHandRenderer} and
- * {@code GameRenderer#renderItemActivationAnimation} for fire, not FogRenderer,
- * so we also hook the overlay via a {@code LiquidBlockRenderer} check below.
+ * The screen tint overlay (the translucent water/fire layer drawn over the
+ * HUD) is a separate vanilla mechanism, {@code ScreenEffectRenderer#renderScreenEffect}
+ * - see {@code LiquidOverlayMixin.java} for the equivalent suppression of that
+ * overlay.
  */
 @Mixin(FogRenderer.class)
 public class FogRendererMixin {

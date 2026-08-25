@@ -49,6 +49,8 @@ public class PlayerMixin implements IPlayerVariables {
 
     @Inject(method = "die", at = @At("HEAD"))
     private void creraces$onDeath(net.minecraft.world.damagesource.DamageSource source, CallbackInfo ci) {
+        Player player = (Player)(Object)this;
+        if (player.level().isClientSide()) return;
         this.resetOnDeath();
     }
 
@@ -862,14 +864,14 @@ public class PlayerMixin implements IPlayerVariables {
             tag.remove("PendingMode");
 
             MutableComponent modeComp = switch (activatedMode) {
-                case "follow" -> Component.translatable("message.creraces.mode_follow").withStyle(ChatFormatting.GREEN);
-                case "move" -> Component.translatable("message.creraces.mode_move").withStyle(ChatFormatting.AQUA);
-                case "attack" -> Component.translatable("message.creraces.mode_attack").withStyle(ChatFormatting.RED);
-                case "free" -> Component.translatable("message.creraces.mode_free").withStyle(ChatFormatting.YELLOW);
-                default -> Component.translatable("message.creraces.mode_unknown");
+                case "follow" -> Component.translatable("msg.creraces.mode_follow").withStyle(ChatFormatting.GREEN);
+                case "move" -> Component.translatable("msg.creraces.mode_move").withStyle(ChatFormatting.AQUA);
+                case "attack" -> Component.translatable("msg.creraces.mode_attack").withStyle(ChatFormatting.RED);
+                case "free" -> Component.translatable("msg.creraces.mode_free").withStyle(ChatFormatting.YELLOW);
+                default -> Component.translatable("msg.creraces.mode_unknown");
             };
 
-            player.displayClientMessage(Component.translatable("message.creraces.staff_activated", modeComp), true);
+            player.displayClientMessage(Component.translatable("msg.creraces.staff_activated", modeComp), true);
             player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
                     SoundEvents.ARROW_HIT_PLAYER, SoundSource.PLAYERS, 0.5f, 0.5f);
 

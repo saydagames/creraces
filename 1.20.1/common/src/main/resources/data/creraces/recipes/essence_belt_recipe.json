@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "LGL",
+    "L L"
+  ],
+  "key": {
+    "L": {
+      "item": "minecraft:leather"
+    },
+    "G": {
+      "item": "minecraft:glass_bottle"
+    }
+  },
+  "result": {
+    "item": "creraces:essence_belt",
+    "count": 1
+  }
+}

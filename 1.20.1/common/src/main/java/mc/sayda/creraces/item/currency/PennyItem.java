@@ -2,7 +2,6 @@ package mc.sayda.creraces.item.currency;
 
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.registry.ModSounds;
-import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
@@ -10,13 +9,9 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.level.Level;
-import org.jetbrains.annotations.Nullable;
 import javax.annotation.Nonnull;
-
-import java.util.List;
 
 public class PennyItem extends Item {
     public PennyItem(Properties properties) {
@@ -26,12 +21,6 @@ public class PennyItem extends Item {
     @Override
     public @Nonnull UseAnim getUseAnimation(@Nonnull ItemStack stack) {
         return UseAnim.EAT;
-    }
-
-    @Override
-    public void appendHoverText(@Nonnull ItemStack stack, @Nullable Level level, @Nonnull List<Component> tooltip,
-            @Nonnull TooltipFlag flag) {
-        super.appendHoverText(stack, level, tooltip, flag);
     }
 
     @Override

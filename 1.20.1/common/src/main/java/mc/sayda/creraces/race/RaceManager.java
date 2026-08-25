@@ -12,6 +12,7 @@ import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.network.chat.Component;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -84,8 +85,8 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                 String nameStr = java.util.Objects.requireNonNull(GsonHelper.getAsString(jsonObject, "creraces:name", path));
                 String descStr = GsonHelper.getAsString(jsonObject, "creraces:description", "");
 
-                // Portraits
-                @javax.annotation.Nonnull
+                // Race images (icon, portrait, splash, name texture, background)
+                @Nonnull
                 String iconStr = GsonHelper.getAsString(jsonObject, "creraces:icon",
                         "minecraft:textures/item/barrier.png");
                 @SuppressWarnings("null")
@@ -93,7 +94,7 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                 if (icon == null)
                     icon = new ResourceLocation("minecraft", "textures/item/barrier.png");
 
-                @javax.annotation.Nonnull
+                @Nonnull
                 String portraitStr = GsonHelper.getAsString(jsonObject, "creraces:portrait",
                         "creraces:textures/screens/race.png");
                 @SuppressWarnings("null")
@@ -101,7 +102,7 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                 if (portrait == null)
                     portrait = new ResourceLocation("creraces", "textures/screens/race.png");
 
-                @javax.annotation.Nonnull
+                @Nonnull
                 String splashStr = GsonHelper.getAsString(jsonObject, "creraces:splash",
                         "creraces:textures/screens/unknown_splash.png");
                 @SuppressWarnings("null")
@@ -109,11 +110,11 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                 if (splash == null)
                     splash = new ResourceLocation("creraces", "textures/screens/unknown_splash.png");
 
-                @javax.annotation.Nullable
+                @Nullable
                 String nameTextureStr = GsonHelper.getNullableString(jsonObject, "creraces:name_texture", null);
                 ResourceLocation nameTex = nameTextureStr != null ? ResourceLocation.tryParse(nameTextureStr) : null;
 
-                @javax.annotation.Nonnull
+                @Nonnull
                 String bgTextureStr = GsonHelper.getAsString(jsonObject, "creraces:bg_texture",
                         "creraces:textures/screens/selection_bg.png");
                 @SuppressWarnings("null")
@@ -261,7 +262,7 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
 
                 // gState
                 mc.sayda.creraces.engine.GState gState = mc.sayda.creraces.engine.GState.BOTH;
-                @javax.annotation.Nullable
+                @Nullable
                 String gStateStr = GsonHelper.getNullableString(jsonObject, "creraces:gstate", null);
                 if (gStateStr != null) {
                     gState = mc.sayda.creraces.engine.GState.fromString(gStateStr);
@@ -296,9 +297,9 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                 }
 
                 // Selection teleport (optional)
-                @javax.annotation.Nullable String selDimStr =
+                @Nullable String selDimStr =
                         GsonHelper.getNullableString(jsonObject, "creraces:selection_dimension", null);
-                @javax.annotation.Nullable ResourceLocation selDim =
+                @Nullable ResourceLocation selDim =
                         selDimStr != null ? ResourceLocation.tryParse(selDimStr) : null;
 
                 double[] selPos = null;
@@ -313,9 +314,9 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                 }
 
                 // Default respawn location (optional; used when no bed/anchor spawn is set)
-                @javax.annotation.Nullable String respawnDimStr =
+                @Nullable String respawnDimStr =
                         GsonHelper.getNullableString(jsonObject, "creraces:respawn_dimension", null);
-                @javax.annotation.Nullable ResourceLocation respawnDim =
+                @Nullable ResourceLocation respawnDim =
                         respawnDimStr != null ? ResourceLocation.tryParse(respawnDimStr) : null;
 
                 double[] respawnPos = null;
@@ -377,6 +378,7 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                         .respawnPos(respawnPos)
                         .biomePreview(GsonHelper.getAsBoolean(jsonObject, "creraces:territory_biome_preview", false))
                         .claimValidBiomes(parseStringList(jsonObject, "creraces:territory_valid_biomes"))
+                        .claimBiomeThreshold(GsonHelper.getAsFloat(jsonObject, "creraces:territory_biome_threshold", 0.5f))
                         .enableTerritory(GsonHelper.getAsBoolean(jsonObject, "creraces:enable_territory", false))
                         .factionGroup(GsonHelper.getNullableString(jsonObject, "creraces:faction_group", null))
                         .build();
@@ -409,7 +411,7 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
         JsonObject current = data.get(id).getAsJsonObject().deepCopy();
 
         // 1. Single Parent (Legacy)
-        @javax.annotation.Nullable
+        @Nullable
         String singleParent = GsonHelper.getNullableString(current, "creraces:parent_race", null);
         if (singleParent != null) {
             ResourceLocation pId = ResourceLocation.tryParse(singleParent);
@@ -476,7 +478,7 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                         for (JsonElement childElem : childArray) {
                             if (childElem.isJsonObject()) {
                                 JsonObject childObj = childElem.getAsJsonObject();
-                                @javax.annotation.Nullable
+                                @Nullable
                                 String childId = GsonHelper.getNullableString(childObj, "id", null);
                                 if (childId != null) {
                                     boolean found = false;
@@ -484,7 +486,7 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                                         JsonElement pElem = parentArray.get(i);
                                         if (pElem.isJsonObject()) {
                                             JsonObject pObj = pElem.getAsJsonObject();
-                                            @javax.annotation.Nullable
+                                            @Nullable
                                             String pId = GsonHelper.getNullableString(pObj, "id", null);
                                             if (childId.equals(pId)) {
                                                 // Child overrides parent entry
@@ -528,7 +530,6 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
     }
 
     private static mc.sayda.creraces.race.Race.Passives parsePassives(JsonObject p) {
-        // Support both creraces: prefixed and legacy flat keys
         List<String> immuneToDamageTypes = new ArrayList<>();
         JsonArray immuneArray = p.has("creraces:immune_to_damage") && p.get("creraces:immune_to_damage").isJsonArray()
                 ? p.getAsJsonArray("creraces:immune_to_damage")

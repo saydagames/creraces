@@ -133,7 +133,7 @@
             "if_false": [
                 {
                     "type": "creraces:message",
-                    "text": "Maximum tunnels reached!",
+                    "text": "msg.creraces.rat_tunnels.max_tunnels",
                     "actionbar": true
                 },
                 {

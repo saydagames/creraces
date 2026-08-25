@@ -8,15 +8,12 @@ import net.minecraft.world.entity.player.Player;
 import org.jetbrains.annotations.Nullable;
 
 public class DisplayResourceAction implements ActionRegistry.RaceAction {
-    // Empty payload for now, or just send a packet to client.
-    // DisplayResource historically updated action bar or UI temporarily.
-    // We can just implement it as an empty action.
+    // No-op: the resource bar is already driven client-side.
 
     @Override
     public boolean execute(Player player, @Nullable LivingEntity target,
             @Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @Nullable net.minecraft.core.BlockPos interact_pos) {
-        // Implement display logic or act as a NoOp since UI shows resource natively.
         return true;
     }
 

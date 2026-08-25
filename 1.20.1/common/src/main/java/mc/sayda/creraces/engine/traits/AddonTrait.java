@@ -10,7 +10,8 @@ import javax.annotation.Nullable;
 
 /**
  * Trait for racial addons (cosmetic attachments via Twilight Lib).
- * Applied via CosmeticIncidents on race selection/change.
+ * Conditional addons (condition != null) are continuously re-evaluated in
+ * tick(); CosmeticIncidents only performs the add/remove call itself.
  */
 public class AddonTrait implements TraitRegistry.RaceTrait {
 

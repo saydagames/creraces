@@ -77,6 +77,18 @@ public class SpiritMobilityHandler {
             return DataUtils.getVariables(player).map(v -> v.isInSpiritRealm() || v.isSpirit())
                     .orElse(false);
         }
-        return entity.getTags().contains("creraces:spirit");
+        return entity.getTags().contains("creraces:spirit") || entity.getTags().contains("creraces:in_spirit_realm");
+    }
+
+    @SuppressWarnings("null")
+    public static <T extends net.minecraft.core.particles.ParticleOptions> void sendParticlesIfSpirit(
+            net.minecraft.server.level.ServerLevel level, T particle,
+            double x, double y, double z, int count, double dx, double dy, double dz, double speed) {
+        for (net.minecraft.server.level.ServerPlayer p : level.players()) {
+            if (isSpirit(p)) {
+                p.connection.send(new net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket(
+                        particle, false, x, y, z, (float) dx, (float) dy, (float) dz, (float) speed, count));
+            }
+        }
     }
 }

@@ -21,6 +21,7 @@ public class ActionRegistry {
         // Server-side action state cleanup
         mc.sayda.creraces.engine.actions.BeamAction.clearForPlayer(player);
         mc.sayda.creraces.engine.actions.TetherAction.clearTethersFor(player);
+        mc.sayda.creraces.engine.ChannelingManager.clear(player);
 
         // Client-side renderer cleanup
         dev.architectury.utils.EnvExecutor.runInEnv(dev.architectury.utils.Env.CLIENT, () -> () -> {
@@ -51,24 +52,24 @@ public class ActionRegistry {
     public static RaceAction fromJson(JsonObject json) {
         if (!json.has("type")) {
             CreRaces.LOGGER.error("Action missing 'type' field - skipping. JSON: {}", json);
-            return (player, target, slot, interact_pos) -> true;
+            return (player, target, slot, interact_pos) -> false;
         }
         String typeStr = json.get("type").getAsString();
         ResourceLocation type = ResourceLocation.tryParse(typeStr);
         if (type == null) {
             CreRaces.LOGGER.error("Malformed action type '{}' - skipping.", typeStr);
-            return (player, target, slot, interact_pos) -> true;
+            return (player, target, slot, interact_pos) -> false;
         }
         ActionFactory factory = REGISTRY.get(type);
         if (factory == null) {
             CreRaces.LOGGER.error("Unknown action type '{}' - skipping. Did you forget to register it?", type);
-            return (player, target, slot, interact_pos) -> true;
+            return (player, target, slot, interact_pos) -> false;
         }
         try {
             RaceAction action = factory.create(json);
             if (action == null) {
                 CreRaces.LOGGER.error("Action factory for '{}' returned null - skipping.", type);
-                return (player, target, slot, interact_pos) -> true;
+                return (player, target, slot, interact_pos) -> false;
             }
 
             ScalingValue chance = json.has("chance") ? ScalingValue.fromJson(json, "chance", 1.0) : null;
@@ -77,7 +78,7 @@ public class ActionRegistry {
                 int depth = RECURSION_DEPTH.get();
                 if (depth >= MAX_RECURSION_DEPTH) {
                     CreRaces.LOGGER.warn(
-                            "Action recursion depth limit reached (16)! Skipping action to prevent stack overflow.");
+                            "Action recursion depth limit reached ({})! Skipping action to prevent stack overflow.", MAX_RECURSION_DEPTH);
                     return true;
                 }
 
@@ -96,7 +97,7 @@ public class ActionRegistry {
             CreRaces.LOGGER.error(
                     "Failed to parse action '{}': {} - action will be skipped at runtime. JSON: {}",
                     type, e.getMessage(), json);
-            return (player, target, slot, interact_pos) -> true;
+            return (player, target, slot, interact_pos) -> false;
         }
     }
 
@@ -159,5 +160,7 @@ public class ActionRegistry {
         mc.sayda.creraces.engine.actions.AttributeModifierAction.register();
         mc.sayda.creraces.engine.actions.InteractBlockAction.register();
         mc.sayda.creraces.engine.actions.ClaimTerritoryAction.register();
+        mc.sayda.creraces.engine.actions.UnclaimTerritoryAction.register();
+        mc.sayda.creraces.engine.actions.ChannelAction.register();
     }
 }

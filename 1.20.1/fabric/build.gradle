@@ -14,6 +14,7 @@ loom {
     mixin {
         defaultRefmapName = "creraces-fabric.refmap.json"
     }
+    accessWidenerPath = project(":1.20.1:common").file("src/main/resources/creraces.accesswidener")
 }
 
 
@@ -45,10 +46,22 @@ dependencies {
     modImplementation "com.github.Virtuoel:KanosConfig:0.4.1"
     modRuntimeOnly "io.github.llamalad7:mixinextras-fabric:0.5.3"
     modRuntimeOnly "mezz.jei:jei-1.20.1-fabric:15.2.0.27"
+    modImplementation "curse.maven:terrablender-fabric-565956:6290449"
+    // TerraBlender-Fabric jar-in-jars NightConfig (core+toml 3.6.7) for its own config file, but
+    // curse.maven jars don't carry Maven metadata for Loom to extract nested jars in dev runs.
+    // Declared directly so the classes are guaranteed to be on the runtime classpath.
+    implementation "com.electronwill.night-config:core:3.6.7"
+    implementation "com.electronwill.night-config:toml:3.6.7"
+    modImplementation "curse.maven:trinkets-341284:5173501"
 }
 
 processResources {
     inputs.property "version", project.version
+
+    // Fabric Loader reads the accessWidener file from this mod's own resource root at
+    // runtime (unlike Forge, which bakes AW into bytecode at build time), so the shared
+    // file from :1.20.1:common has to be physically copied in here too.
+    from(project(":1.20.1:common").file("src/main/resources/creraces.accesswidener"))
 
     filesMatching("fabric.mod.json") {
         expand "version": project.version

@@ -13,10 +13,7 @@ import javax.annotation.Nonnull;
 
 /**
  * Troll's Curse - applied by the Troll Pillar entity to nearby entities.
- * <ul>
- * <li>Troll-race players receive Speed I (friendly pulse).</li>
- * <li>All other entities receive Slowness I + Weakness I.</li>
- * </ul>
+ * Troll players get a friendly Speed I pulse; everyone else gets Slowness I + Weakness I.
  */
 public class TrollCurseEffect extends MobEffect {
 

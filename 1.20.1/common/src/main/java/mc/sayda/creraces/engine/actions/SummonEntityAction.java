@@ -80,16 +80,17 @@ public class SummonEntityAction implements ActionRegistry.RaceAction {
                 spawnPos = base.offset((int) dx, 0, (int) dz);
 
                 // Ground check
-                int attempts = 0;
-                while (!serverLevel.getBlockState(spawnPos).isAir() && attempts < 5
+                int upAttempts = 0;
+                while (!serverLevel.getBlockState(spawnPos).isAir() && upAttempts < 5
                         && spawnPos.getY() < serverLevel.getMaxBuildHeight()) {
                     spawnPos = spawnPos.above();
-                    attempts++;
+                    upAttempts++;
                 }
-                while (serverLevel.getBlockState(spawnPos.below()).isAir() && attempts < 10
+                int downAttempts = 0;
+                while (serverLevel.getBlockState(spawnPos.below()).isAir() && downAttempts < 10
                         && spawnPos.getY() > serverLevel.getMinBuildHeight()) {
                     spawnPos = spawnPos.below();
-                    attempts++;
+                    downAttempts++;
                 }
             } else {
                 spawnPos = base;

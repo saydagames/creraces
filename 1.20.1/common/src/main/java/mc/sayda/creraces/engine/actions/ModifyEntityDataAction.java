@@ -2,6 +2,7 @@ package mc.sayda.creraces.engine.actions;
 
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.engine.ActionRegistry;
+import mc.sayda.creraces.engine.TargetFilter;
 import mc.sayda.creraces.util.GsonHelper;
 import mc.sayda.creraces.util.IPersistentDataAccessor;
 import net.minecraft.nbt.CompoundTag;
@@ -11,6 +12,9 @@ import net.minecraft.world.entity.player.Player;
 
 @SuppressWarnings("null")
 public class ModifyEntityDataAction implements ActionRegistry.RaceAction {
+
+    private static final String KEY_MINIBUILD = "minibuild";
+    private static final String KEY_SMALL_BUILD = "smallBuild";
 
     public enum Operation {
         SET, ADD, REMOVE, MULTIPLY;
@@ -41,9 +45,10 @@ public class ModifyEntityDataAction implements ActionRegistry.RaceAction {
     public boolean execute(Player player, @javax.annotation.Nullable LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
-        // Smart Targeting: Prefer target if present, otherwise respect useTarget flag
-        LivingEntity entity = (target != null) ? target : (useTarget ? null : player);
+        LivingEntity entity = TargetFilter.resolveSmartTarget(player, target, useTarget);
         if (entity == null)
+            return true;
+        if (!(entity instanceof IPersistentDataAccessor))
             return true;
         CompoundTag persistentData = ((IPersistentDataAccessor) entity).creraces$getPersistentData();
         if (persistentData == null) return true;
@@ -72,7 +77,7 @@ public class ModifyEntityDataAction implements ActionRegistry.RaceAction {
         if (entity instanceof Player playerEntity) {
             final double finalNewValue = newValue;
             mc.sayda.creraces.capability.DataUtils.getVariables(playerEntity).ifPresent(vars -> {
-                if (key.equalsIgnoreCase("minibuild") || key.equalsIgnoreCase("smallBuild")) {
+                if (key.equalsIgnoreCase(KEY_MINIBUILD) || key.equalsIgnoreCase(KEY_SMALL_BUILD)) {
                     vars.setSmallBuild(finalNewValue >= 1.0);
                     // Sync to client
                     mc.sayda.creraces.network.BoundaryHandler.resyncVariables(playerEntity, playerEntity);

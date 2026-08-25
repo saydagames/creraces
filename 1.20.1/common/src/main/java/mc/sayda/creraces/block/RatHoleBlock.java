@@ -29,14 +29,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
- * Rat Hole - a flat, nearly invisible block placed by Ratkin's Rat Tunnels
- * ability.
- * <ul>
- * <li>No collision (entities walk through it).</li>
- * <li>No occlusion (transparent to light).</li>
- * <li>Gravel-like sound and feel.</li>
- * <li>Indestructible by normal means (unbreakable, explosion-immune).</li>
- * </ul>
+ * Flat, invisible, indestructible tunnel marker placed by Ratkin's Rat Tunnels ability.
  */
 public class RatHoleBlock extends Block implements EntityBlock {
 
@@ -67,9 +60,9 @@ public class RatHoleBlock extends Block implements EntityBlock {
 
         BlockEntity be = level.getBlockEntity(pos);
         if (be instanceof mc.sayda.creraces.block.entity.RatHoleBlockEntity hole) {
-            // SNEAK-CLICK DELETION
+            // Sneak-click deletion
             if (player.isSecondaryUseActive()) {
-                if (hole.getOwnerUUID().equals(player.getUUID())) {
+                if (player.getUUID().equals(hole.getOwnerUUID())) {
                     BlockPos destPos = hole.getDestination();
                     mc.sayda.creraces.capability.IPlayerVariables vars = mc.sayda.creraces.capability.DataUtils
                             .getVariables(player).orElse(null);
@@ -91,14 +84,14 @@ public class RatHoleBlock extends Block implements EntityBlock {
 
                     // Remove current hole
                     level.setBlockAndUpdate(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
-                    level.playSound(null, pos, net.minecraft.sounds.SoundEvents.ZOMBIE_BREAK_WOODEN_DOOR,
-                            net.minecraft.sounds.SoundSource.BLOCKS, 1.0f, 1.0f);
+                    level.playSound(null, pos, SoundEvents.ZOMBIE_BREAK_WOODEN_DOOR,
+                            SoundSource.BLOCKS, 1.0f, 1.0f);
                     
                     return InteractionResult.SUCCESS;
                 }
             }
 
-            // TELEPORTATION
+            // Teleportation
             BlockPos dest = hole.getDestination();
             if (dest != null && !dest.equals(BlockPos.ZERO)) {
                 // Perform tunneling

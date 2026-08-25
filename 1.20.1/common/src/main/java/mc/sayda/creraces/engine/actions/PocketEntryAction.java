@@ -1,6 +1,5 @@
 package mc.sayda.creraces.engine.actions;
 
-import com.google.gson.JsonObject;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.engine.ActionRegistry;
@@ -29,11 +28,17 @@ public class PocketEntryAction implements ActionRegistry.RaceAction {
     private final ScalingValue returnOffsetX;
     private final ScalingValue returnOffsetY;
     private final ScalingValue returnOffsetZ;
+    @javax.annotation.Nullable
+    private final mc.sayda.creraces.engine.condition.Condition condition;
+    @javax.annotation.Nullable
+    private final String blockedMessage;
 
     public PocketEntryAction(ResourceLocation dimension, ResourceLocation structure,
             ScalingValue spawnOffsetX, ScalingValue spawnOffsetY, ScalingValue spawnOffsetZ,
             ScalingValue structureOffsetX, ScalingValue structureOffsetY, ScalingValue structureOffsetZ,
-            ScalingValue returnOffsetX, ScalingValue returnOffsetY, ScalingValue returnOffsetZ) {
+            ScalingValue returnOffsetX, ScalingValue returnOffsetY, ScalingValue returnOffsetZ,
+            @javax.annotation.Nullable mc.sayda.creraces.engine.condition.Condition condition,
+            @javax.annotation.Nullable String blockedMessage) {
         this.dimension = dimension;
         this.structure = structure;
         this.spawnOffsetX = spawnOffsetX;
@@ -45,6 +50,8 @@ public class PocketEntryAction implements ActionRegistry.RaceAction {
         this.returnOffsetX = returnOffsetX;
         this.returnOffsetY = returnOffsetY;
         this.returnOffsetZ = returnOffsetZ;
+        this.condition = condition;
+        this.blockedMessage = blockedMessage;
     }
 
     @Override
@@ -75,15 +82,11 @@ public class PocketEntryAction implements ActionRegistry.RaceAction {
                 return;
             }
 
-            // Dryad Restriction
-            if (vars.getRace().toString().equals("creraces:dryad")) {
-                double tx = vars.getPersistentState(new ResourceLocation("creraces", "node_x"));
-                double ty = vars.getPersistentState(new ResourceLocation("creraces", "node_y"));
-                double tz = vars.getPersistentState(new ResourceLocation("creraces", "node_z"));
-                if (tx == 0 && ty == 0 && tz == 0) {
-                    serverPlayer.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.creraces.dryad.no_tree"), true);
-                    return;
-                }
+            // Entry restriction (race-agnostic; any race defines its own prerequisite via JSON)
+            if (condition != null && !condition.evaluate(player, target, slot, interact_pos)) {
+                serverPlayer.displayClientMessage(net.minecraft.network.chat.Component.translatable(
+                        blockedMessage != null ? blockedMessage : "msg.creraces.pocket.entry_blocked"), true);
+                return;
             }
 
             // Enter Pocket
@@ -178,8 +181,12 @@ public class PocketEntryAction implements ActionRegistry.RaceAction {
             ScalingValue returnX = ScalingValue.fromJson(json, "return_offset_x", 0.0);
             ScalingValue returnY = ScalingValue.fromJson(json, "return_offset_y", 0.0);
             ScalingValue returnZ = ScalingValue.fromJson(json, "return_offset_z", 0.0);
+            mc.sayda.creraces.engine.condition.Condition condition = json.has("condition")
+                    ? mc.sayda.creraces.engine.condition.Condition.fromJson(json.getAsJsonObject("condition"))
+                    : null;
+            String blockedMessage = GsonHelper.getNullableString(json, "blocked_message", null);
             return new PocketEntryAction(dimension, structure, spawnX, spawnY, spawnZ, structX, structY, structZ,
-                    returnX, returnY, returnZ);
+                    returnX, returnY, returnZ, condition, blockedMessage);
         });
     }
 }

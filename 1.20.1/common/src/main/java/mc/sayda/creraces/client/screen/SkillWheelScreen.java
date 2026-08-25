@@ -23,7 +23,7 @@ public class SkillWheelScreen extends Screen {
     private static final int ITEM_SIZE = 24;
 
     public SkillWheelScreen() {
-        super(Component.translatable("creraces.screen.skill_wheel"));
+        super(Component.translatable("screen.creraces.skill_wheel"));
     }
 
     private ResourceLocation hoveredAbility = null;
@@ -40,7 +40,7 @@ public class SkillWheelScreen extends Screen {
         DataUtils.getVariables(Minecraft.getInstance().player).ifPresent(vars -> {
             Set<ResourceLocation> unlocked = vars.getUnlockedAbilities();
             if (unlocked.isEmpty()) {
-                graphics.drawCenteredString(this.font, Component.translatable("creraces.screen.no_abilities"), centerX,
+                graphics.drawCenteredString(this.font, Component.translatable("screen.creraces.no_abilities"), centerX,
                         centerY, 0xFFFFFF);
                 return;
             }
@@ -76,7 +76,7 @@ public class SkillWheelScreen extends Screen {
                     tooltip.add(ability.name());
                     tooltip.add(description);
                     tooltip.add(Component.literal(""));
-                    tooltip.add(Component.translatable("creraces.screen.click_for_wiki")
+                    tooltip.add(Component.translatable("screen.creraces.click_for_wiki")
                             .withStyle(net.minecraft.ChatFormatting.BLUE, net.minecraft.ChatFormatting.ITALIC));
 
                     graphics.renderComponentTooltip(this.font, tooltip, mouseX, mouseY);

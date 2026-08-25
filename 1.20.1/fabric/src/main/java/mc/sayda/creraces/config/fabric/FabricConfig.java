@@ -124,7 +124,7 @@ public class FabricConfig {
         CreRacesConfig.RACE_SOCIAL_DEFENSE_RANGE = () -> common.minibuild.social_defense_range;
         CreRacesConfig.MICRO_BLOCK_LIGHT_PER_TORCH = () -> common.minibuild.micro_block_light_per_torch;
         CreRacesConfig.MICRO_BLOCK_MAX_LIGHT = () -> common.minibuild.micro_block_max_light;
-        CreRacesConfig.MINIBUILD_REQUIRES_LEARNED = () -> common.minibuild.mini_build_requires_learned;
+        CreRacesConfig.MINI_BUILD_REQUIRES_LEARNED = () -> common.minibuild.mini_build_requires_learned;
         CreRacesConfig.MINI_CRAFTING_DISTANCE_SQR = () -> common.minibuild.mini_crafting_distance_sqr;
         CreRacesConfig.MINI_PLACEMENT_SPAM_THRESHOLD_MS = () -> common.minibuild.mini_placement_spam_threshold_ms;
         CreRacesConfig.MINI_BLOCK_REACH_MARGIN = () -> common.minibuild.mini_block_reach_margin;
@@ -135,13 +135,20 @@ public class FabricConfig {
         CreRacesConfig.TERRITORY_DEFAULT_CLAIM_RADIUS   = () -> common.territory.territory_default_claim_radius;
         CreRacesConfig.TERRITORY_MAX_NODES_PER_PLAYER   = () -> common.territory.territory_max_nodes_per_player;
         CreRacesConfig.TERRITORY_INTER_RACE_BLOCKING    = () -> common.territory.territory_inter_race_blocking;
+        CreRacesConfig.TERRITORY_MAP_CLAIM_MAX_DISTANCE = () -> common.territory.territory_map_claim_max_distance;
         CreRacesConfig.TERRITORY_CLAIM_COST_PER_CHUNK   = () -> common.territory.territory_claim_cost_per_chunk;
+        CreRacesConfig.TERRITORY_ENTRY_MESSAGES         = () -> common.territory.territory_entry_messages;
 
         // Team
         CreRacesConfig.TEAM_REQUIRE_SAME_RACE = () -> common.team.team_require_same_race;
 
         // Fairy Realm
         CreRacesConfig.FAIRY_REALM_BORDER_SIZE = () -> common.fairyRealm.fairy_realm_border_size;
+        CreRacesConfig.VEILWOOD_FOREST_ENABLED = () -> common.fairyRealm.veilwood_forest_enabled;
+
+        // Essence
+        CreRacesConfig.ESSENCE_VORTEX_WORLDGEN_ENABLED = () -> common.essence.essence_vortex_worldgen_enabled;
+        CreRacesConfig.ESSENCE_VORTEX_CONVERSION_ENABLED = () -> common.essence.essence_vortex_conversion_enabled;
 
         // Pockets
         CreRacesConfig.POCKET_DIM_SPACING = () -> common.pockets.pocket_dim_spacing;
@@ -221,6 +228,12 @@ public class FabricConfig {
 
         CreRacesConfig.REMAINS_DECAY_TIME = () -> (int) balancing.specialized.remains_decay_time;
         CreRacesConfig.REMAINS_HEALTH = () -> balancing.specialized.remains_health;
+
+        // Resource defaults (requires restart; read at attribute registration time)
+        CreRacesConfig.DEFAULT_MAX_MANA   = () -> common.resourceDefaults.default_max_mana;
+        CreRacesConfig.DEFAULT_MAX_ENERGY = () -> common.resourceDefaults.default_max_energy;
+        CreRacesConfig.DEFAULT_MAX_RAGE   = () -> common.resourceDefaults.default_max_rage;
+        CreRacesConfig.DEFAULT_MAX_GRIT   = () -> common.resourceDefaults.default_max_grit;
     }
 
     public static class CommonConfig {
@@ -229,9 +242,11 @@ public class FabricConfig {
         public Safety safety = new Safety();
         public MiniBuild minibuild = new MiniBuild();
         public FairyRealm fairyRealm = new FairyRealm();
+        public Essence essence = new Essence();
         public Pockets pockets = new Pockets();
         public Territory territory = new Territory();
         public Team team = new Team();
+        public ResourceDefaults resourceDefaults = new ResourceDefaults();
 
         public static class Documentation {
             public String wiki_base_url = CreRacesConfig.WIKI_BASE_URL.get();
@@ -291,7 +306,7 @@ public class FabricConfig {
             public double social_defense_range = CreRacesConfig.RACE_SOCIAL_DEFENSE_RANGE.get();
             public int micro_block_light_per_torch = CreRacesConfig.MICRO_BLOCK_LIGHT_PER_TORCH.get();
             public int micro_block_max_light = CreRacesConfig.MICRO_BLOCK_MAX_LIGHT.get();
-            public boolean mini_build_requires_learned = CreRacesConfig.MINIBUILD_REQUIRES_LEARNED.get();
+            public boolean mini_build_requires_learned = CreRacesConfig.MINI_BUILD_REQUIRES_LEARNED.get();
             public double mini_crafting_distance_sqr = CreRacesConfig.MINI_CRAFTING_DISTANCE_SQR.get();
             public long mini_placement_spam_threshold_ms = CreRacesConfig.MINI_PLACEMENT_SPAM_THRESHOLD_MS.get();
             public double mini_block_reach_margin = CreRacesConfig.MINI_BLOCK_REACH_MARGIN.get();
@@ -302,13 +317,28 @@ public class FabricConfig {
 
         public static class FairyRealm {
             public int fairy_realm_border_size = CreRacesConfig.FAIRY_REALM_BORDER_SIZE.get();
+            public boolean veilwood_forest_enabled = CreRacesConfig.VEILWOOD_FOREST_ENABLED.get();
+        }
+
+        public static class Essence {
+            public boolean essence_vortex_worldgen_enabled = CreRacesConfig.ESSENCE_VORTEX_WORLDGEN_ENABLED.get();
+            public boolean essence_vortex_conversion_enabled = CreRacesConfig.ESSENCE_VORTEX_CONVERSION_ENABLED.get();
         }
 
         public static class Territory {
-            public int     territory_default_claim_radius = CreRacesConfig.TERRITORY_DEFAULT_CLAIM_RADIUS.get();
-            public int     territory_max_nodes_per_player = CreRacesConfig.TERRITORY_MAX_NODES_PER_PLAYER.get();
-            public boolean territory_inter_race_blocking  = CreRacesConfig.TERRITORY_INTER_RACE_BLOCKING.get();
-            public int     territory_claim_cost_per_chunk = CreRacesConfig.TERRITORY_CLAIM_COST_PER_CHUNK.get();
+            public int     territory_default_claim_radius  = CreRacesConfig.TERRITORY_DEFAULT_CLAIM_RADIUS.get();
+            public int     territory_max_nodes_per_player  = CreRacesConfig.TERRITORY_MAX_NODES_PER_PLAYER.get();
+            public boolean territory_inter_race_blocking   = CreRacesConfig.TERRITORY_INTER_RACE_BLOCKING.get();
+            public int     territory_map_claim_max_distance = CreRacesConfig.TERRITORY_MAP_CLAIM_MAX_DISTANCE.get();
+            public int     territory_claim_cost_per_chunk  = CreRacesConfig.TERRITORY_CLAIM_COST_PER_CHUNK.get();
+            public boolean territory_entry_messages        = CreRacesConfig.TERRITORY_ENTRY_MESSAGES.get();
+        }
+
+        public static class ResourceDefaults {
+            public double default_max_mana   = CreRacesConfig.DEFAULT_MAX_MANA.get();
+            public double default_max_energy = CreRacesConfig.DEFAULT_MAX_ENERGY.get();
+            public double default_max_rage   = CreRacesConfig.DEFAULT_MAX_RAGE.get();
+            public double default_max_grit   = CreRacesConfig.DEFAULT_MAX_GRIT.get();
         }
 
         public static class Team {

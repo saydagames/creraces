@@ -7,6 +7,9 @@ import net.minecraft.resources.ResourceLocation;
 
 import java.util.function.Supplier;
 
+/**
+ * Packet sent from server to client to open the HUD editor screen.
+ */
 public class OpenHUDEditorPacket {
     public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "open_hud_editor");
 

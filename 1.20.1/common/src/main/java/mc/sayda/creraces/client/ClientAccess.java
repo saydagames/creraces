@@ -52,14 +52,6 @@ public class ClientAccess {
                 mc.sayda.creraces.CreRaces.LOGGER.info("ClientAccess: smallBuild for {} changed from {} to {}",
                         finalTarget.getName().getString(), oldSmallBuild, vars.isSmallBuild());
             }
-            mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
-
-            // Skip cosmetic application if the local player is in the Mirror Screen
-            // (The Mirror handles its own preview logic and we don't want server sync to
-            // "snap back" unsaved edits)
-            boolean isInMirror = finalTarget == minecraft.player
-                    && minecraft.screen instanceof mc.sayda.creraces.client.screen.DynamicMirrorScreen;
-
             // We skip client-side application here.
             // Authority resides on the server, which sends SyncAddonsPacket.
             // Local player preview is handled by screens (DynamicMirrorScreen) separately.
@@ -94,12 +86,7 @@ public class ClientAccess {
         mc.sayda.creraces.race.RaceManager.syncFromServer(data);
         mc.sayda.creraces.CreRaces.LOGGER.info("Synced {} races from server.", raceData.size());
 
-        net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-        if (minecraft.player != null) {
-            mc.sayda.creraces.capability.DataUtils.getVariables(minecraft.player).ifPresent(vars -> {
-                // Server will send SyncAddonsPacket for the new race
-            });
-        }
+        // Server will send SyncAddonsPacket for the new race
     }
 
     public static void handleAbilitySync(java.util.Map<net.minecraft.resources.ResourceLocation, String> abilityData) {

@@ -140,7 +140,7 @@
             "if_false": [
                 {
                     "type": "creraces:message",
-                    "text": "message.creraces.fae_circle.failed",
+                    "text": "msg.creraces.fae_circle.failed",
                     "actionbar": true
                 },
                 {

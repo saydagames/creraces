@@ -30,14 +30,20 @@ public record OverlayBar(String sourceType, ResourceLocation sourceId, int max, 
                         ResourceLocation sourceId = ResourceLocation.tryParse(obj.get("id").getAsString());
                         int max = obj.get("value").getAsInt();
                         String label = sourceId != null ? sourceId.getPath() : "";
-                        if (obj.has("name")) label = obj.get("name").getAsString();
+                        if (obj.has("label")) label = obj.get("label").getAsString();
+                        if (sourceId != null) bars.add(new OverlayBar("cooldown", sourceId, max, color, label));
+                    } else if (type.equals("creraces:flight") && obj.has("exhaustion_cooldown") && obj.has("exhaustion_duration")) {
+                        ResourceLocation sourceId = ResourceLocation.tryParse(obj.get("exhaustion_cooldown").getAsString());
+                        int max = obj.get("exhaustion_duration").getAsInt();
+                        String label = sourceId != null ? sourceId.getPath() : "flight_exhaustion";
+                        if (obj.has("label")) label = obj.get("label").getAsString();
                         if (sourceId != null) bars.add(new OverlayBar("cooldown", sourceId, max, color, label));
                     } else if ((type.equals("creraces:modify_resource") || type.equals("creraces:modify_value"))
                             && obj.has("resource") && obj.has("bar_max")) {
                         String resource = obj.get("resource").getAsString();
                         int max = obj.get("bar_max").getAsInt();
                         String label = resource;
-                        if (obj.has("name")) label = obj.get("name").getAsString();
+                        if (obj.has("label")) label = obj.get("label").getAsString();
 
                         // modify_resource uses "prefix:key" encoding; modify_value uses "state:key" or a plain name.
                         String sourceType;

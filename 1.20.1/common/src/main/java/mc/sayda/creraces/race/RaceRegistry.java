@@ -16,8 +16,9 @@ public class RaceRegistry {
     private static final Map<ResourceLocation, mc.sayda.creraces.util.RemoteDocConfig> REMOTE_DOCS = new ConcurrentHashMap<>();
     private static final Map<ResourceLocation, mc.sayda.creraces.util.RemoteDocConfig> REMOTE_PASSIVES = new ConcurrentHashMap<>();
 
-    // Default race if none selected (Human or None)
+    // Default race when none is selected.
     public static final ResourceLocation NONE = new ResourceLocation("creraces", "none");
+    // Lookup constant for harpy-specific checks elsewhere (e.g. FeatherProjectile).
     public static final ResourceLocation HARPY = new ResourceLocation("creraces", "harpy");
 
     public static void register(Race race) {

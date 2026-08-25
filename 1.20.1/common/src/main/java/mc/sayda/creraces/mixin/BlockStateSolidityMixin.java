@@ -42,7 +42,6 @@ public abstract class BlockStateSolidityMixin {
                         for (int z = zStart; z <= zEnd; z++) {
                             BlockState slotState = micro.getSlot(x, y, z);
                             if (!slotState.isAir()) {
-                                // Any occupied slot provides enough support for mini-attachments
                                 cir.setReturnValue(true);
                                 return;
                             }

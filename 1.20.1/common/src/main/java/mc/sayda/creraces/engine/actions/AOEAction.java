@@ -47,9 +47,6 @@ public class AOEAction implements ActionRegistry.RaceAction {
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
-        if (player.level() == null)
-            return true;
-
         double r = radius.evaluate(player, target, slot);
         int maxRadius = mc.sayda.creraces.config.CreRacesConfig.AOE_MAX_RADIUS.get();
         if (maxRadius > 0)

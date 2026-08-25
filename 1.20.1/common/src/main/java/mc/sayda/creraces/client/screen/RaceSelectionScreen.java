@@ -14,7 +14,6 @@ import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Race selection screen matching legacy Race3GUIScreen precisely.
@@ -53,13 +52,8 @@ public class RaceSelectionScreen extends Screen {
         private int page = 0;
         private List<RaceEntry> raceEntries = new ArrayList<>();
 
-        // Info Panel State
-        private ResourceLocation selectedRaceId = null;
-        private int infoPage = 0;
-        private int maxInfoPages = 1;
-
         public RaceSelectionScreen() {
-                super(Component.translatable("creraces.screen.race_selection_grid"));
+                super(Component.translatable("screen.creraces.race_selection_grid"));
         }
 
         @Override
@@ -76,26 +70,7 @@ public class RaceSelectionScreen extends Screen {
                                 .toList();
                 }
 
-                if (!raceEntries.isEmpty() && selectedRaceId == null) {
-                        selectedRaceId = raceEntries.get(0).id;
-                        updateMaxInfoPages();
-                }
-
                 rebuildButtons();
-        }
-
-        private void updateMaxInfoPages() {
-                if (selectedRaceId == null) {
-                        maxInfoPages = 1;
-                        return;
-                }
-                Race race = RaceRegistry.get(selectedRaceId);
-                if (race == null) {
-                        maxInfoPages = 1;
-                        return;
-                }
-                // Page 1: Description, Page 2: Passives, Page 3+: Abilities
-                maxInfoPages = 2 + race.startingAbilities().size();
         }
 
         private void rebuildButtons() {
@@ -216,11 +191,13 @@ public class RaceSelectionScreen extends Screen {
                 // 3. Decorations based on date
                 Calendar now = Calendar.getInstance();
                 int month = now.get(Calendar.MONTH);
+                int day = now.get(Calendar.DAY_OF_MONTH);
                 if (month == Calendar.DECEMBER) {
                         graphics.blit(DECO_CHRISTMAS, this.leftPos + 11, this.topPos - 56, 0, 0, 151, 42, 151, 42);
                 } else if (month == Calendar.OCTOBER) {
                         graphics.blit(DECO_HALLOWEEN, this.leftPos + 11, this.topPos - 56, 0, 0, 151, 42, 151, 42);
-                } else if (month >= Calendar.JUNE && month <= Calendar.AUGUST) {
+                } else if (month == Calendar.JUNE && day >= 19 && day <= 26) {
+                        // Midsummer week: traditional Nordic celebration around the summer solstice, not the whole summer.
                         graphics.blit(DECO_MIDSUMMER, this.leftPos + 11, this.topPos - 56, 0, 0, 151, 42, 151, 42);
                 }
 

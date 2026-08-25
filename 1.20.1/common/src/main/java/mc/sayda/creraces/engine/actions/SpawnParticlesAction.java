@@ -16,7 +16,8 @@ import net.minecraft.world.entity.player.Player;
 public class SpawnParticlesAction implements ActionRegistry.RaceAction {
 
     public interface ParticlePattern {
-        void spawn(ServerLevel level, net.minecraft.world.entity.LivingEntity center,
+        void spawn(ServerLevel level, @javax.annotation.Nullable Player caster,
+                net.minecraft.world.entity.LivingEntity center,
                 ParticleOptions particle, int totalCount, double speed, double spin,
                 @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot);
 
@@ -43,6 +44,17 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
         }
     }
 
+    static void doSend(ServerLevel level, @javax.annotation.Nullable Player caster,
+            ParticleOptions particle, double x, double y, double z,
+            int count, double ddx, double ddy, double ddz, double speed) {
+        if (caster != null && mc.sayda.creraces.engine.SpiritMobilityHandler.isSpirit(caster)) {
+            mc.sayda.creraces.engine.SpiritMobilityHandler.sendParticlesIfSpirit(
+                    level, particle, x, y, z, count, ddx, ddy, ddz, speed);
+        } else {
+            level.sendParticles(particle, x, y, z, count, ddx, ddy, ddz, speed);
+        }
+    }
+
     private static class DiscPattern implements ParticlePattern {
         private final ScalingValue radius;
         private final ScalingValue points;
@@ -55,7 +67,8 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
         }
 
         @Override
-        public void spawn(ServerLevel level, net.minecraft.world.entity.LivingEntity center,
+        public void spawn(ServerLevel level, @javax.annotation.Nullable Player caster,
+                net.minecraft.world.entity.LivingEntity center,
                 ParticleOptions particle, int totalCount, double speed, double spin,
                 @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
             Player player = center instanceof Player p ? p : null;
@@ -86,7 +99,7 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
                     dx = Math.cos(angle) * r;
                     dy = Math.sin(angle) * r + 1.0;
                 }
-                level.sendParticles(particle, center.getX() + dx, center.getY() + dy, center.getZ() + dz,
+                doSend(level, caster, particle, center.getX() + dx, center.getY() + dy, center.getZ() + dz,
                         countAtThisPoint, 0, 0, 0, speed);
             }
         }
@@ -104,7 +117,8 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
         }
 
         @Override
-        public void spawn(ServerLevel level, net.minecraft.world.entity.LivingEntity center,
+        public void spawn(ServerLevel level, @javax.annotation.Nullable Player caster,
+                net.minecraft.world.entity.LivingEntity center,
                 ParticleOptions particle, int totalCount, double speed, double spin,
                 @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
             Player player = center instanceof Player p ? p : null;
@@ -134,7 +148,7 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
                     dx = Math.cos(angle) * r;
                     dy = Math.sin(angle) * r + 1.0;
                 }
-                level.sendParticles(particle, center.getX() + dx, center.getY() + dy, center.getZ() + dz,
+                doSend(level, caster, particle, center.getX() + dx, center.getY() + dy, center.getZ() + dz,
                         countAtThisPoint, 0, 0, 0, speed);
             }
         }
@@ -150,7 +164,8 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
         }
 
         @Override
-        public void spawn(ServerLevel level, net.minecraft.world.entity.LivingEntity center,
+        public void spawn(ServerLevel level, @javax.annotation.Nullable Player caster,
+                net.minecraft.world.entity.LivingEntity center,
                 ParticleOptions particle, int totalCount, double speed, double spin,
                 @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
             Player player = center instanceof Player p ? p : null;
@@ -167,12 +182,13 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
                 if (countAtThisPoint <= 0)
                     continue;
 
+                // Fibonacci sphere distribution: spreads points evenly using the golden angle.
                 double phi = Math.acos(1 - 2 * (i + 0.5) / pCount);
                 double theta = (Math.PI * (1 + Math.sqrt(5)) * (i + 0.5)) + spinOffset;
                 double dx = r * Math.sin(phi) * Math.cos(theta);
                 double dy = r * Math.sin(phi) * Math.sin(theta) + 1.0;
                 double dz = r * Math.cos(phi);
-                level.sendParticles(particle, center.getX() + dx, center.getY() + dy, center.getZ() + dz,
+                doSend(level, caster, particle, center.getX() + dx, center.getY() + dy, center.getZ() + dz,
                         countAtThisPoint, 0, 0, 0, speed);
             }
         }
@@ -192,7 +208,8 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
         }
 
         @Override
-        public void spawn(ServerLevel level, net.minecraft.world.entity.LivingEntity center,
+        public void spawn(ServerLevel level, @javax.annotation.Nullable Player caster,
+                net.minecraft.world.entity.LivingEntity center,
                 ParticleOptions particle, int totalCount, double speed, double spin,
                 @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
             Player player = center instanceof Player p ? p : null;
@@ -216,7 +233,7 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
                 double dx = Math.cos(angle) * r;
                 double dz = Math.sin(angle) * r;
                 double dy = t * h;
-                level.sendParticles(particle, center.getX() + dx, center.getY() + dy, center.getZ() + dz,
+                doSend(level, caster, particle, center.getX() + dx, center.getY() + dy, center.getZ() + dz,
                         countAtThisPoint, 0, 0, 0, speed);
             }
         }
@@ -257,14 +274,12 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
                 return true;
 
             if (target != null) {
-                // AoE Context: apply to valid target
                 if (targets.isValid(target, player)) {
-                    spawnOnTarget(sl, target, pCount, slot);
+                    spawnOnTarget(sl, target, pCount, slot, player);
                 }
             } else {
-                // Non-AoE Context: apply to player if valid (e.g. self)
                 if (targets.isValid(player, player)) {
-                    spawnOnTarget(sl, player, pCount, slot);
+                    spawnOnTarget(sl, player, pCount, slot, player);
                 }
             }
         }
@@ -272,12 +287,12 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
     }
 
     private void spawnOnTarget(ServerLevel sl, net.minecraft.world.entity.LivingEntity actualTarget,
-            int pCount, @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
+            int pCount, @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot, Player caster) {
         if (pattern != null) {
-            pattern.spawn(sl, actualTarget, particle, pCount, speed.evaluate(null, actualTarget, slot),
+            pattern.spawn(sl, caster, actualTarget, particle, pCount, speed.evaluate(null, actualTarget, slot),
                     spin.evaluate(null, actualTarget, slot), slot);
         } else {
-            sl.sendParticles(particle, actualTarget.getX(), actualTarget.getY() + 1.0, actualTarget.getZ(), pCount,
+            doSend(sl, caster, particle, actualTarget.getX(), actualTarget.getY() + 1.0, actualTarget.getZ(), pCount,
                     dx.evaluate(null, actualTarget, slot), dy.evaluate(null, actualTarget, slot),
                     dz.evaluate(null, actualTarget, slot),
                     speed.evaluate(null, actualTarget, slot));

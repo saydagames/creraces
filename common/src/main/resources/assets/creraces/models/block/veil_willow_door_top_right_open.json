@@ -1,0 +1,9 @@
+{
+  "parent": "block/door_top_right_open",
+  "textures": {
+    "particle": "creraces:block/veil_willow_door_top",
+    "bottom": "creraces:block/veil_willow_door_top",
+    "top": "creraces:block/veil_willow_door_bot"
+  },
+  "render_type": "cutout"
+}

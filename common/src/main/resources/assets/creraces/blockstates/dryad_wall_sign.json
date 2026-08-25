@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=east,waterlogged=false":  { "model": "creraces:block/dryad_wall_sign", "y": 90 },
+    "facing=east,waterlogged=true":   { "model": "creraces:block/dryad_wall_sign", "y": 90 },
+    "facing=north,waterlogged=false": { "model": "creraces:block/dryad_wall_sign", "y": 180 },
+    "facing=north,waterlogged=true":  { "model": "creraces:block/dryad_wall_sign", "y": 180 },
+    "facing=south,waterlogged=false": { "model": "creraces:block/dryad_wall_sign" },
+    "facing=south,waterlogged=true":  { "model": "creraces:block/dryad_wall_sign" },
+    "facing=west,waterlogged=false":  { "model": "creraces:block/dryad_wall_sign", "y": 270 },
+    "facing=west,waterlogged=true":   { "model": "creraces:block/dryad_wall_sign", "y": 270 }
+  }
+}

@@ -10,8 +10,15 @@ public class SpiritMobilityClient {
     private static boolean wasJumpKeyDown = false;
     private static boolean wasOnGround = true;
 
+    public static void reset() {
+        airJumps = 0;
+        wasJumpKeyDown = false;
+        wasOnGround = true;
+    }
+
     @SuppressWarnings("null")
     public static void init() {
+        // Named 'minecraft' instead of 'mc' to avoid shadowing the mc.sayda.creraces package prefix used throughout this scope.
         ClientTickEvent.CLIENT_POST.register(minecraft -> {
             LocalPlayer player = minecraft.player;
             if (player == null)
@@ -59,6 +66,8 @@ public class SpiritMobilityClient {
                 wasJumpKeyDown = isJumpKeyDown;
                 wasOnGround = onGround;
             });
+
+            mc.sayda.creraces.client.render.SpiritRealmRenderer.spawnSpiritFlameParticles(minecraft);
         });
     }
 }

@@ -1,0 +1,8 @@
+{
+  "parent": "block/leaves",
+  "textures": {
+    "all": "creraces:block/veil_willow_leaves",
+    "particle": "creraces:block/veil_willow_leaves"
+  },
+  "render_type": "cutout_mipped"
+}

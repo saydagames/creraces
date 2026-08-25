@@ -52,31 +52,9 @@ public class ScrollItem extends Item {
                             Race playerRace = RaceRegistry.get(playerRaceId);
 
                             for (ResourceLocation rId : allowed) {
-                                if (rId.equals(playerRaceId)) {
+                                if (raceMatches(rId, playerRaceId, playerRace)) {
                                     isAllowed = true;
                                     break;
-                                }
-                                if (isDescendantOf(playerRaceId, rId)) {
-                                    isAllowed = true;
-                                    break;
-                                }
-                                if (playerRace != null) {
-                                    if (rId.toString().equals("creraces:spirit") && playerRace.isSpirit()) {
-                                        isAllowed = true;
-                                        break;
-                                    }
-                                    if (rId.toString().equals("creraces:tiny") && playerRace.isTiny()) {
-                                        isAllowed = true;
-                                        break;
-                                    }
-                                    if (rId.toString().equals("creraces:aquatic") && playerRace.isAquatic()) {
-                                        isAllowed = true;
-                                        break;
-                                    }
-                                    if (rId.toString().equals("creraces:undead") && playerRace.isUndead()) {
-                                        isAllowed = true;
-                                        break;
-                                    }
                                 }
                             }
                         }
@@ -102,7 +80,7 @@ public class ScrollItem extends Item {
                                 if (i < allowed.size() - 1)
                                     racesStr.append(", ");
                             }
-                            serverPlayer.sendSystemMessage(Component.translatable("creraces.message.race_restricted",
+                            serverPlayer.sendSystemMessage(Component.translatable("msg.creraces.race_restricted",
                                     racesStr.toString()).withStyle(ChatFormatting.RED));
                             return;
                         }
@@ -112,7 +90,7 @@ public class ScrollItem extends Item {
 
                         if (vars.isAbilityUnlocked(abilityId) && currentLevel >= scrollLevel) {
                             serverPlayer.sendSystemMessage(
-                                    Component.translatable("creraces.message.ability_already_learned")
+                                    Component.translatable("msg.creraces.ability_already_learned")
                                             .withStyle(ChatFormatting.YELLOW));
                         } else {
                             // Race matches or no restriction - Consume Scroll
@@ -124,8 +102,8 @@ public class ScrollItem extends Item {
                             vars.setAbilityLevel(abilityId, scrollLevel);
 
                             Component learnedMsg = wasAlreadyLearned
-                                    ? Component.translatable("creraces.message.ability_upgraded", ability.name().getString(), scrollLevel)
-                                    : Component.translatable("creraces.message.ability_learned", ability.name().getString());
+                                    ? Component.translatable("msg.creraces.ability_upgraded", ability.name().getString(), scrollLevel)
+                                    : Component.translatable("msg.creraces.ability_learned", ability.name().getString());
 
                             serverPlayer.sendSystemMessage(((MutableComponent)learnedMsg).withStyle(ChatFormatting.GREEN));
 
@@ -148,11 +126,11 @@ public class ScrollItem extends Item {
                     });
                 } else {
                     player.sendSystemMessage(
-                            Component.translatable("creraces.message.ability_invalid").withStyle(ChatFormatting.RED));
+                            Component.translatable("msg.creraces.ability_invalid").withStyle(ChatFormatting.RED));
                 }
             } else {
                 player.sendSystemMessage(
-                        Component.translatable("creraces.message.ability_invalid").withStyle(ChatFormatting.RED));
+                        Component.translatable("msg.creraces.ability_invalid").withStyle(ChatFormatting.RED));
             }
         }
 
@@ -167,7 +145,7 @@ public class ScrollItem extends Item {
             ResourceLocation abilityId = ResourceLocation.tryParse(tag.getString("Ability"));
             Ability ability = abilityId != null ? AbilityRegistry.get(abilityId) : null;
             if (ability != null) {
-                tooltipComponents.add(Component.translatable("creraces.tooltip.scroll_ability", ability.name())
+                tooltipComponents.add(Component.translatable("tooltip.creraces.scroll_ability", ability.name())
                         .withStyle(ChatFormatting.GRAY));
 
                 // Race Restriction Tooltip (3rd line)
@@ -177,7 +155,6 @@ public class ScrollItem extends Item {
                     for (int i = 0; i < allowed.size(); i++) {
                         ResourceLocation rId = allowed.get(i);
                         String name;
-                        boolean matches = false;
 
                         ResourceLocation playerRaceId = null;
                         Race playerRace = null;
@@ -192,22 +169,17 @@ public class ScrollItem extends Item {
 
                         if (rId.toString().equals("creraces:spirit")) {
                             name = "Spirit";
-                            matches = (playerRace != null && playerRace.isSpirit());
                         } else if (rId.toString().equals("creraces:tiny")) {
                             name = "Tiny";
-                            matches = (playerRace != null && playerRace.isTiny());
                         } else if (rId.toString().equals("creraces:aquatic")) {
                             name = "Aquatic";
-                            matches = (playerRace != null && playerRace.isAquatic());
                         } else if (rId.toString().equals("creraces:undead")) {
                             name = "Undead";
-                            matches = (playerRace != null && playerRace.isUndead());
                         } else {
                             Race r = RaceRegistry.get(rId);
                             name = (r != null) ? r.name().getString() : rId.getPath();
-                            matches = (playerRaceId != null &&
-                                    (playerRaceId.equals(rId) || isDescendantOf(playerRaceId, rId)));
                         }
+                        boolean matches = raceMatches(rId, playerRaceId, playerRace);
 
                         ChatFormatting color = matches ? ChatFormatting.GREEN : ChatFormatting.RED;
 
@@ -228,7 +200,6 @@ public class ScrollItem extends Item {
             super.appendHoverText(stack, level, tooltipComponents, isAdvanced);
     }
 
-    // Helper to create a scroll stack for a specific ability
     public static ItemStack create(ResourceLocation abilityId, int level) {
         ItemStack stack = new ItemStack(mc.sayda.creraces.registry.ModItems.ABILITY_SCROLL.get());
         CompoundTag tag = new CompoundTag();
@@ -245,6 +216,36 @@ public class ScrollItem extends Item {
     public static int getLevel(ItemStack stack) {
         CompoundTag tag = stack.getTag();
         return (tag != null && tag.contains("Level")) ? tag.getInt("Level") : 0;
+    }
+
+    /**
+     * Returns true if the player's race satisfies race requirement {@code rId}, either by
+     * direct id match, race ancestry, or one of the special category markers
+     * (creraces:spirit / tiny / aquatic / undead).
+     */
+    private static boolean raceMatches(ResourceLocation rId, @Nullable ResourceLocation playerRaceId,
+            @Nullable Race playerRace) {
+        if (rId.equals(playerRaceId)) {
+            return true;
+        }
+        if (isDescendantOf(playerRaceId, rId)) {
+            return true;
+        }
+        if (playerRace != null) {
+            if (rId.toString().equals("creraces:spirit") && playerRace.isSpirit()) {
+                return true;
+            }
+            if (rId.toString().equals("creraces:tiny") && playerRace.isTiny()) {
+                return true;
+            }
+            if (rId.toString().equals("creraces:aquatic") && playerRace.isAquatic()) {
+                return true;
+            }
+            if (rId.toString().equals("creraces:undead") && playerRace.isUndead()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Returns true if {@code raceId}'s ancestry chain contains {@code ancestorId}. */

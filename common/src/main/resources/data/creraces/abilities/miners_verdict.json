@@ -3,7 +3,7 @@
     "creraces:description": "ability.creraces.miners_verdict.description",
     "creraces:type": "ACTIVE",
     "creraces:icon": "minecraft:furnace",
-    "creraces:cooldown": 0,
+    "creraces:cooldown": 5,
     "creraces:cost": 0,
     "creraces:race": [
         "creraces:dwarf"

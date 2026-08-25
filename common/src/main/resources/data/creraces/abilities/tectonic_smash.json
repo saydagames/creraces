@@ -74,7 +74,7 @@
                 },
                 {
                     "type": "creraces:message",
-                    "text": "&c&lTectonic Smash!",
+                    "text": "msg.creraces.tectonic_smash.activate",
                     "actionbar": true
                 }
             ],
@@ -89,7 +89,7 @@
                     "if_true": [
                         {
                             "type": "creraces:message",
-                            "text": "Combo 1/5",
+                            "text": "msg.creraces.tectonic_smash.combo_1",
                             "actionbar": true
                         }
                     ],
@@ -104,7 +104,7 @@
                             "if_true": [
                                 {
                                     "type": "creraces:message",
-                                    "text": "Combo 2/5",
+                                    "text": "msg.creraces.tectonic_smash.combo_2",
                                     "actionbar": true
                                 }
                             ],
@@ -119,14 +119,14 @@
                                     "if_true": [
                                         {
                                             "type": "creraces:message",
-                                            "text": "Combo 3/5",
+                                            "text": "msg.creraces.tectonic_smash.combo_3",
                                             "actionbar": true
                                         }
                                     ],
                                     "if_false": [
                                         {
                                             "type": "creraces:message",
-                                            "text": "Combo 4/5",
+                                            "text": "msg.creraces.tectonic_smash.combo_4",
                                             "actionbar": true
                                         }
                                     ]

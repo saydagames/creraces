@@ -9,6 +9,14 @@ public class ModGameRules {
             GameRules.Category.PLAYER,
             GameRules.BooleanValue.create(true)
     );
+
+    @SuppressWarnings("null")
+    public static final GameRules.Key<GameRules.BooleanValue> SPIRIT_FLAME_VISIBLE = GameRules.register(
+            "spiritFlameVisible",
+            GameRules.Category.MISC,
+            GameRules.BooleanValue.create(true, (server, rule) ->
+                mc.sayda.creraces.network.BoundaryHandler.broadcastSpiritFlameGamerule(rule.get()))
+    );
     public static void init() {
         // Forces class loading
     }

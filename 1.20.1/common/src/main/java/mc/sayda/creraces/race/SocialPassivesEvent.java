@@ -19,8 +19,6 @@ import java.util.List;
  */
 public class SocialPassivesEvent {
 
-    // private static final double DEFENSE_RANGE = 16.0; // Blocks
-
     public static void register() {
         // Listen to player damage events for defensive allies
         EntityEvent.LIVING_HURT.register(SocialPassivesEvent::onPlayerHurt);
@@ -30,17 +28,14 @@ public class SocialPassivesEvent {
      * When a player is hurt, nearby defending entities attack the source
      */
     private static EventResult onPlayerHurt(LivingEntity entity, DamageSource source, float amount) {
-        // Only handle player damage
         if (!(entity instanceof Player player)) {
             return EventResult.pass();
         }
 
-        // Only on server side
         if (player.level().isClientSide) {
             return EventResult.pass();
         }
 
-        // Get the attacker
         if (!(source.getEntity() instanceof LivingEntity attacker)) {
             return EventResult.pass();
         }
@@ -58,7 +53,6 @@ public class SocialPassivesEvent {
         List<Mob> nearbyMobs = level.getEntitiesOfClass(Mob.class, searchBox,
                 mob -> SocialPassivesHelper.defendsRace(player, mob));
 
-        // Make them target the attacker
         for (Mob defender : nearbyMobs) {
             if (defender.getTarget() == null || defender.getTarget() == player) {
                 defender.setTarget(attacker);

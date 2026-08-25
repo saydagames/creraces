@@ -1,19 +1,14 @@
 package mc.sayda.creraces.item;
 
 import mc.sayda.creraces.capability.DataUtils;
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.level.Level;
-import org.jetbrains.annotations.Nullable;
-
-import java.util.List;
 
 public class TowelItem extends Item {
     public TowelItem(Properties properties) {
@@ -40,7 +35,6 @@ public class TowelItem extends Item {
     @Override
     public ItemStack finishUsingItem(ItemStack stack, Level level, LivingEntity entity) {
         if (!level.isClientSide() && entity instanceof Player player) {
-            // Remove Soggy effect on use
             var effect = mc.sayda.creraces.registry.ModMobEffects.SOGGY.get();
             if (effect != null && player.hasEffect(effect)) {
                 player.removeEffect(effect);
@@ -48,11 +42,5 @@ public class TowelItem extends Item {
             }
         }
         return super.finishUsingItem(stack, level, entity);
-    }
-
-    @Override
-    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip,
-            TooltipFlag isAdvanced) {
-        super.appendHoverText(stack, level, tooltip, isAdvanced);
     }
 }

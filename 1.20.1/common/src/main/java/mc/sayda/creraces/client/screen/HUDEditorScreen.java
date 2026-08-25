@@ -479,7 +479,7 @@ public class HUDEditorScreen extends Screen {
     private void saveAndClose() {
         syncSuppliersToFields();
         CreRacesConfig.saveHudConfig();
-        this.onClose();
+        super.onClose();
     }
 
     private void cancelAndClose() {
@@ -505,7 +505,12 @@ public class HUDEditorScreen extends Screen {
         CreRacesConfig.HUD_ABILITIES_VERTICAL = () -> oav;
         CreRacesConfig.HUD_SLOT_LABEL_SIDE   = () -> oslo;
         CreRacesConfig.HUD_SCALE             = () -> ohs;
-        this.onClose();
+        super.onClose();
+    }
+
+    @Override
+    public void onClose() {
+        cancelAndClose();
     }
 
     private void cycleLabelMode() {

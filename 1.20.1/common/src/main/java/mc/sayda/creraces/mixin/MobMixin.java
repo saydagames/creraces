@@ -23,17 +23,22 @@ public abstract class MobMixin {
     public abstract LivingEntity getTarget();
 
     /**
-     * Prevent targeting of respected players.
-     * This handles "respectedByEntities" by blocking the setTarget call.
+     * Prevent targeting of respected players (the "respectedByEntities" passive),
+     * and prevent overworld mobs from targeting spirit-realm entities or vice
+     * versa.
      */
     @Inject(method = "setTarget", at = @At("HEAD"), cancellable = true)
     private void creraces$preventRespectedTargeting(LivingEntity target, CallbackInfo ci) {
         if (target instanceof Player player) {
             if (SocialPassivesHelper.isRespectedBy(player, (Mob) (Object) this)) {
-                // If it was already targeting this player, clear it.
-                // Otherwise, just prevent setting it.
                 ci.cancel();
+                return;
             }
+        }
+        if (target != null
+                && mc.sayda.creraces.engine.SpiritMobilityHandler.isSpirit(target)
+                && !mc.sayda.creraces.engine.SpiritMobilityHandler.isSpirit((LivingEntity) (Object) this)) {
+            ci.cancel();
         }
     }
 
@@ -60,7 +65,6 @@ public abstract class MobMixin {
                 16.0, // Range
                 entity -> entity instanceof Player player && SocialPassivesHelper.isHatedBy(player, mob));
 
-        // If we found a hated player, attack them
         if (nearestHatedPlayer != null) {
             this.setTarget(nearestHatedPlayer);
         }

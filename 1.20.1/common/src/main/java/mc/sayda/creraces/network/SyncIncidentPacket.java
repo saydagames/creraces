@@ -1,12 +1,8 @@
 package mc.sayda.creraces.network;
 
-import com.mojang.logging.LogUtils;
 import mc.sayda.creraces.CreRaces;
-import mc.sayda.creraces.capability.DataUtils;
-import mc.sayda.creraces.capability.IPlayerVariables;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
-import org.slf4j.Logger;
 
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -15,7 +11,6 @@ import java.util.function.Supplier;
  * Packet to sync player variables from server to client.
  */
 public class SyncIncidentPacket {
-    private static final Logger LOGGER = LogUtils.getLogger();
     public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "sync_incident");
 
     private final UUID playerId;

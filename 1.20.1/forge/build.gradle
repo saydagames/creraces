@@ -12,6 +12,7 @@ architectury {
 
 loom {
     mixin.defaultRefmapName = "creraces-forge.refmap.json"
+    accessWidenerPath = project(":1.20.1:common").file("src/main/resources/creraces.accesswidener")
     forge {
         mixinConfig "creraces-common.mixins.json"
         mixinConfig "creraces-forge.mixins.json"
@@ -28,6 +29,8 @@ configurations {
 
 dependencies {
     forge "net.minecraftforge:forge:${rootProject.property('1_20_1_minecraft_version')}-${rootProject.property('1_20_1_forge_version')}"
+    modImplementation "curse.maven:terrablender-563928:6290448"
+    modImplementation "curse.maven:curios-309927:6418456"
     modApi "dev.architectury:architectury-forge:${rootProject.property('1_20_1_architectury_version')}"
 
     common(project(path: ":1.20.1:common", configuration: "namedElements")) { transitive = false }

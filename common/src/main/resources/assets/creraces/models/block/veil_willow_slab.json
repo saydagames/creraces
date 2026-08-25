@@ -1,0 +1,10 @@
+{
+  "parent": "block/slab",
+  "textures": {
+    "particle": "creraces:block/veil_willow_planks",
+    "bottom": "creraces:block/veil_willow_planks",
+    "top": "creraces:block/veil_willow_planks",
+    "side": "creraces:block/veil_willow_planks"
+  },
+  "render_type": "solid"
+}

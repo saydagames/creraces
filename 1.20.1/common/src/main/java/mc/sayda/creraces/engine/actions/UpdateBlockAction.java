@@ -198,6 +198,7 @@ public class UpdateBlockAction implements ActionRegistry.RaceAction {
                 try {
                     coordinateMath = ScalingValue.MathOp.valueOf(json.get("math").getAsString().toUpperCase());
                 } catch (Exception e) {
+                    // Invalid "math" value: silently keep the default rather than failing the whole update.
                 }
             }
 

@@ -62,6 +62,7 @@ public class Race {
         @Nullable private final double[] respawnPos;
         private final boolean biomePreview;
         private final List<String> claimValidBiomes;
+        private final float claimBiomeThreshold;
         private final boolean enableTerritory;
         @Nullable private final String factionGroup;
 
@@ -110,6 +111,7 @@ public class Race {
                 this.respawnPos = builder.respawnPos;
                 this.biomePreview = builder.biomePreview;
                 this.claimValidBiomes = builder.claimValidBiomes;
+                this.claimBiomeThreshold = builder.claimBiomeThreshold;
                 this.enableTerritory = builder.enableTerritory;
                 this.factionGroup = builder.factionGroup;
         }
@@ -153,6 +155,7 @@ public class Race {
                 @Nullable private double[] respawnPos = null;
                 private boolean biomePreview = false;
                 private List<String> claimValidBiomes = new java.util.ArrayList<>();
+                private float claimBiomeThreshold = 0.5f;
                 private boolean enableTerritory = false;
                 @Nullable private String factionGroup = null;
 
@@ -346,6 +349,11 @@ public class Race {
                         return this;
                 }
 
+                public Builder claimBiomeThreshold(float claimBiomeThreshold) {
+                        this.claimBiomeThreshold = claimBiomeThreshold;
+                        return this;
+                }
+
                 public Builder enableTerritory(boolean enableTerritory) {
                         this.enableTerritory = enableTerritory;
                         return this;
@@ -513,6 +521,10 @@ public class Race {
 
         public List<String> claimValidBiomes() {
                 return claimValidBiomes;
+        }
+
+        public float claimBiomeThreshold() {
+                return claimBiomeThreshold;
         }
 
         public boolean enableTerritory() {

@@ -20,6 +20,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TetherAction implements ActionRegistry.RaceAction {
     public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "tether");
 
+    // Sent in the sync packet to tell the client to clear a tether visual.
+    private static final ResourceLocation NO_TEXTURE = new ResourceLocation("minecraft", "air");
+
     // Static tracking map for active tethers
     // Structure: map.get(casterUUID).get(targetUUID) -> TetherData
     private static final Map<UUID, Map<UUID, TetherData>> ACTIVE_TETHERS = new ConcurrentHashMap<>();
@@ -147,7 +150,7 @@ public class TetherAction implements ActionRegistry.RaceAction {
         // Cleanup
         for (UUID tId : toRemove) {
             tethers.remove(tId);
-            syncTetherToClients(caster, casterId, tId, false, new ResourceLocation("minecraft", "air"), 0f, false);
+            syncTetherToClients(caster, casterId, tId, false, NO_TEXTURE, 0f, false);
         }
     }
 
@@ -158,7 +161,7 @@ public class TetherAction implements ActionRegistry.RaceAction {
         Map<UUID, TetherData> tethers = ACTIVE_TETHERS.remove(casterId);
         if (tethers != null) {
             for (UUID tId : tethers.keySet()) {
-                syncTetherToClients(caster, casterId, tId, false, new ResourceLocation("minecraft", "air"), 0f, false);
+                syncTetherToClients(caster, casterId, tId, false, NO_TEXTURE, 0f, false);
             }
         }
     }

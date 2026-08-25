@@ -107,18 +107,12 @@ public class TetherRenderer {
         }
     }
 
-    // Fallback for retrieving client entities by UUID since older Forge versions or
-    // mappings
-    // might not expose it natively via simple iterators quickly.
     private static Entity getClientEntityByUUID(net.minecraft.client.multiplayer.ClientLevel level, UUID uuid) {
-        // level.entitiesForRendering() is available, but iterating is slow.
-        // Client levels track entities by ID, but also maintain a UUID map internally
-        // in 1.20+.
         for (Entity e : level.entitiesForRendering()) {
             if (e.getUUID().equals(uuid))
                 return e;
         }
-        return null; // fallback
+        return null;
     }
 
     // -------------------------------------------------------------------------
@@ -139,7 +133,7 @@ public class TetherRenderer {
         float n = (float) Math.acos(Mth.clamp((float) dirNorm.y, -1.0f, 1.0f));
         float o = (float) Math.atan2(dirNorm.z, dirNorm.x);
 
-        // Animation driven by game ticks — gameTime param is finishNanoTime (ns), unusable here
+        // Animation driven by game ticks - gameTime param is finishNanoTime (ns), unusable here
         long tick = mc.level.getGameTime();
         float j = (float)(tick % 100) + partialTick;
         float k = j * 0.5f % 1.0f;   // texture scroll offset
@@ -190,7 +184,7 @@ public class TetherRenderer {
         Tesselator tess = Tesselator.getInstance();
         BufferBuilder buf = tess.getBuilder();
 
-        // Two crossing quads — same X-shape geometry as vanilla guardian beam, U 0.0–0.5
+        // Two crossing quads - same X-shape geometry as vanilla guardian beam, U 0.0–0.5
         buf.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR_TEX);
         buf.vertex(af, beamLen, ag).color(1f, 1f, 1f, 1f).uv(0.4999f, vr).endVertex();
         buf.vertex(af, 0f,      ag).color(1f, 1f, 1f, 1f).uv(0.4999f, vq).endVertex();
@@ -202,7 +196,7 @@ public class TetherRenderer {
         buf.vertex(al, beamLen, am).color(1f, 1f, 1f, 1f).uv(0.0f,    vr).endVertex();
         tess.end();
 
-        // Effects cap — rotating diamond at the beam tip using right half of texture, U 0.5–1.0
+        // Effects cap - rotating diamond at the beam tip using right half of texture, U 0.5–1.0
         if (data.effects) {
             float ex = Mth.cos(q + 2.3561945f)            * outerR;
             float ey = Mth.sin(q + 2.3561945f)            * outerR;

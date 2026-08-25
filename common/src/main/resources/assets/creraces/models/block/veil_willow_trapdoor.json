@@ -1,0 +1,8 @@
+{
+  "parent": "block/template_orientable_trapdoor_bottom",
+  "textures": {
+    "texture": "creraces:block/veil_willow_trapdoor",
+    "particle": "creraces:block/veil_willow_trapdoor"
+  },
+  "render_type": "cutout"
+}

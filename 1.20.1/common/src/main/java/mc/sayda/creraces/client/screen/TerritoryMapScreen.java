@@ -84,7 +84,7 @@ public class TerritoryMapScreen extends Screen {
     private static final int BORDER_ENEMY  = 0xFF7F0000;
 
     public TerritoryMapScreen() {
-        super(Component.translatable("creraces.screen.territory_map"));
+        super(Component.translatable("screen.creraces.territory_map"));
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null) {
             this.playerCX = mc.player.chunkPosition().x;
@@ -135,7 +135,6 @@ public class TerritoryMapScreen extends Screen {
             s.lastResult = result;
             s.resultTimer = 80;
             if (result == TerritoryManager.ClaimResultType.SUCCESS
-                    || result == TerritoryManager.ClaimResultType.PARTIAL
                     || result == TerritoryManager.ClaimResultType.UNCLAIM_SUCCESS) {
                 BoundaryHandler.sendRequestTerritoryData();
             }
@@ -157,7 +156,7 @@ public class TerritoryMapScreen extends Screen {
 
         // Refresh button
         addRenderableWidget(Button.builder(
-                Component.translatable("creraces.screen.refresh"), b -> BoundaryHandler.sendRequestTerritoryData()
+                Component.translatable("screen.creraces.refresh"), b -> BoundaryHandler.sendRequestTerritoryData()
         ).bounds(width - 60, 2, 55, 16).build());
 
         // Close button
@@ -177,7 +176,7 @@ public class TerritoryMapScreen extends Screen {
         g.fill(0, 0, width, height, 0xAA000000);
 
         // Title
-        g.drawCenteredString(font, Component.translatable("creraces.screen.territory_map"),
+        g.drawCenteredString(font, Component.translatable("screen.creraces.territory_map"),
                 width / 2, 6, 0xFFFFFF);
 
         // ── Wood-frame border drawn behind the map area ───────────────────────
@@ -306,7 +305,6 @@ public class TerritoryMapScreen extends Screen {
             Component msg = switch (lastResult) {
                 case SUCCESS -> Component.translatable("msg.creraces.territory.claimed");
                 case UNCLAIM_SUCCESS -> Component.translatable("msg.creraces.territory.unclaimed");
-                case PARTIAL -> Component.translatable("msg.creraces.territory.partial");
                 case INVALID_BIOME -> Component.translatable("msg.creraces.territory.wrong_biome");
                 case ENEMY_TERRITORY -> Component.translatable("msg.creraces.territory.enemy");
                 case INSIDE_OWN_TERRITORY -> Component.translatable("msg.creraces.territory.own");

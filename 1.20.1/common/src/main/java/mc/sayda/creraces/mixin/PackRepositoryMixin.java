@@ -62,7 +62,6 @@ public class PackRepositoryMixin {
             @SuppressWarnings("unchecked")
             Set<RepositorySource> sources = (Set<RepositorySource>) sourcesField.get(this);
 
-            // Extra safe addition for cross-platform stability
             try {
                 sources.add(new RacePackProvider(detectedType));
             } catch (UnsupportedOperationException e) {

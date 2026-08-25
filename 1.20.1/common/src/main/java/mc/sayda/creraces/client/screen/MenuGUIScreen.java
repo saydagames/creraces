@@ -149,11 +149,13 @@ public class MenuGUIScreen extends AbstractContainerScreen<MenuGUIMenu> {
         // Decorations
         Calendar now = Calendar.getInstance();
         int month = now.get(Calendar.MONTH);
+        int day = now.get(Calendar.DAY_OF_MONTH);
         if (month == Calendar.DECEMBER) {
             graphics.blit(DECO_CHRISTMAS, this.leftPos + 11, this.topPos + -56, 0, 0, 151, 42, 151, 42);
         } else if (month == Calendar.OCTOBER) {
             graphics.blit(DECO_HALLOWEEN, this.leftPos + 11, this.topPos + -56, 0, 0, 151, 42, 151, 42);
-        } else if (month >= Calendar.JUNE && month <= Calendar.AUGUST) {
+        } else if (month == Calendar.JUNE && day >= 19 && day <= 26) {
+            // Midsummer week: traditional Nordic celebration around the summer solstice, not the whole summer.
             graphics.blit(DECO_MIDSUMMER, this.leftPos + 11, this.topPos + -56, 0, 0, 151, 42, 151, 42);
         }
 

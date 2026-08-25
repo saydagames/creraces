@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "creraces:veil_willow_log"
+    }
+  ],
+  "result": {
+    "item": "creraces:veil_willow_planks",
+    "count": 4
+  }
+}

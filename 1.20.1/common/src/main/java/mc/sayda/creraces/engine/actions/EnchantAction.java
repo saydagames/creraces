@@ -6,7 +6,6 @@ import mc.sayda.creraces.engine.ScalingValue;
 import mc.sayda.creraces.util.GsonHelper;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -40,7 +39,7 @@ public class EnchantAction implements ActionRegistry.RaceAction {
             @Nullable net.minecraft.core.BlockPos interact_pos) {
         
         LivingEntity actor = (useTarget && target != null) ? target : player;
-        ItemStack stack = getItemInSlot(actor, slot);
+        ItemStack stack = ItemSlotResolver.getItemInSlot(actor, slot);
 
         if (stack.isEmpty()) return true;
 
@@ -82,26 +81,6 @@ public class EnchantAction implements ActionRegistry.RaceAction {
 
         EnchantmentHelper.setEnchantments(enchants, stack);
         return true;
-    }
-
-    private ItemStack getItemInSlot(LivingEntity entity, String slot) {
-        if (slot.equalsIgnoreCase("mainhand")) return entity.getMainHandItem();
-        if (slot.equalsIgnoreCase("offhand")) return entity.getOffhandItem();
-        if (slot.equalsIgnoreCase("head")) return entity.getItemBySlot(EquipmentSlot.HEAD);
-        if (slot.equalsIgnoreCase("chest")) return entity.getItemBySlot(EquipmentSlot.CHEST);
-        if (slot.equalsIgnoreCase("legs")) return entity.getItemBySlot(EquipmentSlot.LEGS);
-        if (slot.equalsIgnoreCase("feet")) return entity.getItemBySlot(EquipmentSlot.FEET);
-
-        if (entity instanceof Player player) {
-            try {
-                int index = Integer.parseInt(slot);
-                if (index >= 0 && index < player.getInventory().getContainerSize()) {
-                    return player.getInventory().getItem(index);
-                }
-            } catch (NumberFormatException ignored) {}
-        }
-
-        return ItemStack.EMPTY;
     }
 
     public static void register() {

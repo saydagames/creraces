@@ -1,0 +1,8 @@
+{
+  "parent": "creraces:custom/totem",
+  "render_type": "cutout",
+  "textures": {
+    "0": "creraces:block/angelic_sculpture",
+    "particle": "creraces:block/angelic_sculpture"
+  }
+}

@@ -14,7 +14,7 @@ import java.util.List;
 
 /**
  * Trait for passive abilities that execute actions periodically.
- * Example: Harpy hunger drain while flying, auto-regen on low health, etc.
+ * Example: hunger drain while flying, auto-regen on low health, etc.
  */
 public class OnTickTrait extends PeriodicTrait {
 

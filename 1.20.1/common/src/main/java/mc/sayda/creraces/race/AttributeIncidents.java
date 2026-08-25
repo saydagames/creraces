@@ -12,7 +12,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import java.util.UUID;
 
 /**
- * Handles the application of RP attributes.
+ * Handles the application of racial attributes.
  */
 @SuppressWarnings("null")
 public class AttributeIncidents {
@@ -30,7 +30,7 @@ public class AttributeIncidents {
                 return;
             }
 
-            // 1. Attack Damage (AD) -> Vanilla Attack Damage (1% per point)
+            // 1. Attack Damage (AD) -> Vanilla Attack Damage, scaled by RACIAL_AD_MULTIPLIER
             AttributeInstance attackDamage = player.getAttribute(Attributes.ATTACK_DAMAGE);
             if (attackDamage != null) {
                 double racialAD = vars.getAd();
@@ -61,10 +61,10 @@ public class AttributeIncidents {
 
                     Attribute resolvedAttr = ModAttributes.resolve(attr);
                     String traitId = trait.getTraitId();
-                    UUID uuid = UUID.nameUUIDFromBytes(("creraces:" + traitId).getBytes());
+                    UUID uuid = UUID.nameUUIDFromBytes(("creraces:" + traitId).getBytes(java.nio.charset.StandardCharsets.UTF_8));
                     activeTraits.add(uuid);
 
-                    // (Optional) Method: REMOVE logic
+                    // Method == REMOVE: unregister and skip.
                     if (amt.getMethod() == mc.sayda.creraces.engine.AttributeMethod.REMOVE) {
                         AttributeInstance instance = player.getAttribute(resolvedAttr);
                         if (instance != null && instance.getModifier(uuid) != null) {
@@ -81,7 +81,7 @@ public class AttributeIncidents {
                         vars.getManagedModifier(uuid).ifPresentOrElse(mod -> {
                             if (!mod.valueJson().equals(amt.getValueJson()) || 
                                 (amt.getRawCondition() != null && !mod.conditionJson().equals(amt.getRawCondition()))) {
-                                // Update existing (resets timer if JSON changed, which is correct)
+                                // Update existing entry; this intentionally resets the timer.
                                 vars.addManagedModifier(new mc.sayda.creraces.engine.ManagedModifier(
                                     uuid, amt.getAttributeId(), amt.getValueJson(), amt.getOperation(),
                                     "creraces:" + traitId, 
@@ -155,7 +155,7 @@ public class AttributeIncidents {
                     if (instance == null) continue;
 
                     // A. Lifecycle Purge
-                    if (mod.hasLifecycle() && !mod.getCondition().evaluate(player, null, null, null)) {
+                    if (mod.hasLifecycle() && mod.getCondition() != null && !mod.getCondition().evaluate(player, null, null, null)) {
                         toRemoveManaged.add(mod.uuid());
                         instance.removeModifier(mod.uuid());
                         mc.sayda.creraces.CreRaces.LOGGER.debug("ManagedModifier: Purged lifecycle modifier {} from {}", mod.name(), player.getScoreboardName());
@@ -202,7 +202,7 @@ public class AttributeIncidents {
                 }
             }
 
-            // 6. Global Mana Scaling (30% AP)
+            // 5. Global Mana Scaling (30% AP)
             AttributeInstance maxMana = player.getAttribute(ModAttributes.resolve(ModAttributes.MAX_MANA));
             if (maxMana != null) {
                 double amount = vars.getAp() * 0.3;

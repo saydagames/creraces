@@ -1,0 +1,1 @@
+{ "parent": "minecraft:block/wall_hanging_sign", "textures": { "planks": "creraces:block/dryad_planks", "particle": "creraces:block/dryad_planks" } }

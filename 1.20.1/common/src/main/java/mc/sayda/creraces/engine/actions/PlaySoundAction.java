@@ -2,6 +2,7 @@ package mc.sayda.creraces.engine.actions;
 
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.engine.ActionRegistry;
+import mc.sayda.creraces.engine.TargetFilter;
 import mc.sayda.creraces.util.GsonHelper;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -12,7 +13,7 @@ import net.minecraft.world.entity.player.Player;
 import javax.annotation.Nullable;
 
 /**
- * Action that plays a sound at the player's location.
+ * Plays a sound at the caster's location, or the resolved target's if one is present.
  */
 public class PlaySoundAction implements ActionRegistry.RaceAction {
     private final ResourceLocation soundId;
@@ -39,8 +40,7 @@ public class PlaySoundAction implements ActionRegistry.RaceAction {
         }
 
         if (player.level() != null) {
-            // Smart Targeting: Prefer target if present, otherwise respect useTarget flag
-            net.minecraft.world.entity.LivingEntity subject = (target != null) ? target : (useTarget ? null : player);
+            net.minecraft.world.entity.LivingEntity subject = TargetFilter.resolveSmartTarget(player, target, useTarget);
             if (subject != null) {
                 player.level().playSound(null, subject.getX(), subject.getY(), subject.getZ(), sound,
                         SoundSource.PLAYERS, (float) volume.evaluate(player, target, slot),

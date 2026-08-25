@@ -1,0 +1,62 @@
+{
+    "creraces:name": "ability.creraces.phaseshift.name",
+    "creraces:description": "ability.creraces.phaseshift.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/ender_eye.png",
+    "creraces:cost": 100,
+    "creraces:cooldown": 400,
+    "creraces:race": [
+        "creraces:spirit"
+    ],
+    "creraces:actions": [
+        {
+            "type": "creraces:conditional",
+            "condition": {
+                "type": "creraces:sneaking"
+            },
+            "if_true": [
+                {
+                    "type": "creraces:modify_value",
+                    "resource": "mana",
+                    "value": 0,
+                    "operation": "set"
+                },
+                {
+                    "type": "creraces:enter_spirit_realm"
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:entity.enderman.teleport",
+                    "pitch": 0.5
+                }
+            ],
+            "if_false": [
+                {
+                    "type": "creraces:channel",
+                    "duration": 60,
+                    "cancelable_by_damage": true,
+                    "cancelable_by_movement": true,
+                    "during_effects": [
+                        { "id": "minecraft:slowness", "amplifier": 1, "duration": 10 }
+                    ],
+                    "on_complete": [
+                        {
+                            "type": "creraces:enter_spirit_realm"
+                        },
+                        {
+                            "type": "creraces:play_sound",
+                            "sound": "minecraft:entity.enderman.teleport"
+                        }
+                    ],
+                    "on_interrupt": [
+                        {
+                            "type": "creraces:play_sound",
+                            "sound": "minecraft:block.note_block.bass",
+                            "volume": 1.0
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

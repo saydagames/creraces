@@ -25,7 +25,7 @@ public final class ManagedModifier {
     private final int interval;
     private final long nextCheck;
 
-    // Cached at construction — never re-parsed
+    // Cached at construction - never re-parsed
     private final Condition cachedCondition;
     private final ScalingValue cachedScalingValue;
 
@@ -55,7 +55,7 @@ public final class ManagedModifier {
         this.cachedScalingValue = ScalingValue.fromJson(wrapper, "value", 0.0);
     }
 
-    // ── Accessors ─────────────────────────────────────────────────────────────
+    // Accessors
 
     public UUID uuid()              { return uuid; }
     public ResourceLocation attributeId() { return attributeId; }
@@ -67,12 +67,12 @@ public final class ManagedModifier {
     public int interval()           { return interval; }
     public long nextCheck()         { return nextCheck; }
 
-    // ── Cached accessors ──────────────────────────────────────────────────────
+    // Cached accessors
 
     public Condition getCondition()         { return cachedCondition; }
     public ScalingValue getScalingValue()   { return cachedScalingValue; }
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
+    // Lifecycle
 
     public boolean shouldCheck(long currentTick) {
         return currentTick >= nextCheck;
@@ -83,7 +83,7 @@ public final class ManagedModifier {
                 conditionJson, hasLifecycle, interval, currentTick + interval);
     }
 
-    // ── Serialization ─────────────────────────────────────────────────────────
+    // Serialization
 
     public CompoundTag toNBT() {
         CompoundTag tag = new CompoundTag();
@@ -100,16 +100,21 @@ public final class ManagedModifier {
     }
 
     public static ManagedModifier fromNBT(CompoundTag tag) {
-        return new ManagedModifier(
-                tag.getUUID("uuid"),
-                new ResourceLocation(tag.getString("attribute")),
-                JsonParser.parseString(tag.getString("value")).getAsJsonObject(),
-                net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.valueOf(tag.getString("operation")),
-                tag.getString("name"),
-                JsonParser.parseString(tag.getString("condition")).getAsJsonObject(),
-                tag.getBoolean("hasLifecycle"),
-                tag.getInt("interval"),
-                tag.getLong("nextCheck")
-        );
+        try {
+            return new ManagedModifier(
+                    tag.getUUID("uuid"),
+                    new ResourceLocation(tag.getString("attribute")),
+                    JsonParser.parseString(tag.getString("value")).getAsJsonObject(),
+                    net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.valueOf(tag.getString("operation")),
+                    tag.getString("name"),
+                    JsonParser.parseString(tag.getString("condition")).getAsJsonObject(),
+                    tag.getBoolean("hasLifecycle"),
+                    tag.getInt("interval"),
+                    tag.getLong("nextCheck")
+            );
+        } catch (Exception e) {
+            mc.sayda.creraces.CreRaces.LOGGER.error("Failed to deserialize ManagedModifier from NBT: {}", e.getMessage());
+            return null;
+        }
     }
 }

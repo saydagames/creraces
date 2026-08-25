@@ -25,362 +25,8 @@ public interface Condition {
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos);
 
-    @SuppressWarnings("null")
     static Condition fromJson(JsonObject json) {
-        if (json == null || json.size() == 0 || !json.has("type")) {
-            return (player, target, slot, interact_pos) -> true;
-        }
-        String typeStr = json.get("type").getAsString();
-        @SuppressWarnings("null")
-        ResourceLocation typeLoc = ResourceLocation.tryParse(typeStr);
-        if (typeLoc == null) {
-            CreRaces.LOGGER.error("Malformed condition type '{}' - skipping.", typeStr);
-            return (player, target, slot, interact_pos) -> false;
-        }
-        String type = typeLoc.getPath();
-
-        try {
-            return switch (type) {
-                case "state", "state_equals" -> {
-                    String stateKey = GsonHelper.getAsString(json, "state");
-                    ScalingValue value = ScalingValue.fromJson(json, "value", 1.0);
-                    String operator = GsonHelper.getAsString(json, "operator", "==");
-                    yield new StateCondition(stateKey, value, operator);
-                }
-                case "morphed" -> {
-                    boolean expected = GsonHelper.getAsBoolean(json, "value", true);
-                    yield new MorphedCondition(expected);
-                }
-                case "flying" -> {
-                    boolean expected = GsonHelper.getAsBoolean(json, "value", true);
-                    yield new FlyingCondition(expected);
-                }
-                case "sneaking" -> {
-                    boolean expected = GsonHelper.getAsBoolean(json, "value", true);
-                    yield new SneakingCondition(expected);
-                }
-                case "on_ground" -> {
-                    boolean expected = GsonHelper.getAsBoolean(json, "value", true);
-                    yield new OnGroundCondition(expected);
-                }
-                case "wearing_armor" -> {
-                    @javax.annotation.Nullable
-                    String item = GsonHelper.getNullableString(json, "item", null);
-                    @javax.annotation.Nullable
-                    String tag = GsonHelper.getNullableString(json, "tag", null);
-                    String slot = GsonHelper.getAsString(json, "slot", "0");
-                    if (tag != null && !tag.startsWith("#"))
-                        tag = "#" + tag;
-                    yield new WearingArmorCondition(item != null ? item : tag, slot);
-                }
-                case "holding_item" -> {
-                    @javax.annotation.Nullable
-                    String item = GsonHelper.getNullableString(json, "item", null);
-                    @javax.annotation.Nullable
-                    String tag = GsonHelper.getNullableString(json, "tag", null);
-                    boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
-                    if (tag != null && !tag.startsWith("#"))
-                        tag = "#" + tag;
-                    yield new HoldingItemCondition(item != null ? item : tag, useTarget);
-                }
-                case "item_interaction" -> {
-                    String item = GsonHelper.getAsString(json, "item", "minecraft:air");
-                    yield new ItemInteractionCondition(item);
-                }
-                case "and" -> {
-                    com.google.gson.JsonArray array = json.getAsJsonArray("conditions");
-                    Condition[] conditions = new Condition[array.size()];
-                    for (int i = 0; i < array.size(); i++) {
-                        conditions[i] = fromJson(array.get(i).getAsJsonObject());
-                    }
-                    yield new AndCondition(conditions);
-                }
-                case "or" -> {
-                    com.google.gson.JsonArray array = json.getAsJsonArray("conditions");
-                    Condition[] conditions = new Condition[array.size()];
-                    for (int i = 0; i < array.size(); i++) {
-                        conditions[i] = fromJson(array.get(i).getAsJsonObject());
-                    }
-                    yield new OrCondition(conditions);
-                }
-                case "not" -> {
-                    Condition condition = fromJson(json.getAsJsonObject("condition"));
-                    yield new NotCondition(condition);
-                }
-                case "biome" -> {
-                    @javax.annotation.Nullable
-                    String biomeId = GsonHelper.getNullableString(json, "biome", null);
-                    @javax.annotation.Nullable
-                    String tag = GsonHelper.getNullableString(json, "tag", null);
-                    yield new BiomeCondition(biomeId, tag);
-                }
-                case "weather" -> {
-                    String weatherType = GsonHelper.getAsString(json, "weather");
-                    yield new WeatherCondition(weatherType);
-                }
-                case "time" -> {
-                    ScalingValue min = ScalingValue.fromJson(json, "min", 0.0);
-                    ScalingValue max = ScalingValue.fromJson(json, "max", 24000.0);
-                    yield new TimeCondition(min, max);
-                }
-                case "in_water" -> {
-                    boolean expected = GsonHelper.getAsBoolean(json, "value", true);
-                    boolean includeRain = GsonHelper.getAsBoolean(json, "include_rain", false);
-                    yield new InWaterCondition(expected, includeRain);
-                }
-                case "in_sunlight" -> {
-                    boolean expected = GsonHelper.getAsBoolean(json, "value", true);
-                    yield new InSunlightCondition(expected);
-                }
-                case "altitude" -> {
-                    ScalingValue min = ScalingValue.fromJson(json, "min", Double.NEGATIVE_INFINITY);
-                    ScalingValue max = ScalingValue.fromJson(json, "max", Double.POSITIVE_INFINITY);
-                    yield new AltitudeCondition(min, max);
-                }
-                case "biome_temperature" -> {
-                    ScalingValue min = ScalingValue.fromJson(json, "min", (double) -Float.MAX_VALUE);
-                    ScalingValue max = ScalingValue.fromJson(json, "max", (double) Float.MAX_VALUE);
-                    yield (Condition) (player, target, slot, interact_pos) -> {
-                        float temp = player.level().getBiome(player.blockPosition()).value().getBaseTemperature();
-                        return temp >= (float) min.evaluate(player, target) && temp < (float) max.evaluate(player, target);
-                    };
-                }
-                case "is_burning" -> {
-                    boolean expected = GsonHelper.getAsBoolean(json, "value", true);
-                    yield new IsBurningCondition(expected);
-                }
-                case "is_moving" -> {
-                    boolean expected = GsonHelper.getAsBoolean(json, "value", true);
-                    ScalingValue threshold = ScalingValue.fromJson(json, "threshold", 0.1);
-                    yield new IsMovingCondition(expected, threshold);
-                }
-                case "resource_level" -> {
-                    String resource = GsonHelper.getAsString(json, "resource");
-                    String operator = GsonHelper.getAsString(json, "operator", ">=");
-                    ScalingValue value = ScalingValue.fromJson(json, "value", 0.0);
-                    yield new ResourceLevelCondition(resource, operator, value);
-                }
-                case "has_effect" -> {
-                    String id = GsonHelper.getAsString(json, "effect");
-                    ResourceLocation effectId = ResourceLocation.tryParse(id);
-                    if (effectId == null) {
-                        CreRaces.LOGGER.error("has_effect condition has malformed effect ID: '{}'", id);
-                        yield (Condition) (player, target, slot, interact_pos) -> false;
-                    }
-                    ScalingValue amp = ScalingValue.fromJson(json, "amplifier", 0);
-                    boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
-                    yield new HasEffectCondition(effectId, amp, useTarget);
-                }
-                case "modulo" -> {
-                    String stateKey = json.has("state") ? GsonHelper.getAsString(json, "state")
-                            : GsonHelper.getAsString(json, "id");
-                    if (!stateKey.contains(":")) {
-                        stateKey = "creraces:" + stateKey;
-                    }
-                    ResourceLocation stateId = ResourceLocation.tryParse(stateKey);
-                    ScalingValue divisor = ScalingValue.fromJson(json, "divisor", 2.0);
-                    ScalingValue remainder = ScalingValue.fromJson(json, "remainder", 0.0);
-                    yield new ModuloCondition(stateId, divisor, remainder);
-                }
-                case "scaling_compare" -> {
-                    ScalingValue first = ScalingValue.fromJson(json, "first", 0.0);
-                    ScalingValue second = ScalingValue.fromJson(json, "second", 0.0);
-                    String operator = GsonHelper.getAsString(json, "operator", "==");
-                    yield new ScalingCompareCondition(first, second, operator);
-                }
-                case "can_place_block" -> {
-                    ScalingValue ox = ScalingValue.fromJson(json, "offset_x", 0.0);
-                    ScalingValue oy = ScalingValue.fromJson(json, "offset_y", 0.0);
-                    ScalingValue oz = ScalingValue.fromJson(json, "offset_z", 0.0);
-                    boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
-                    boolean useTargetBlock = GsonHelper.getAsBoolean(json, "use_target_block", false);
-                    boolean absolute = GsonHelper.getAsBoolean(json, "absolute", false);
-
-                    ScalingValue.MathOp math = ScalingValue.MathOp.ROUND;
-                    if (json.has("math")) {
-                        try {
-                            math = ScalingValue.MathOp.valueOf(json.get("math").getAsString().toUpperCase());
-                        } catch (Exception e) {
-                            CreRaces.LOGGER.warn("Invalid math mode in CanPlaceBlockCondition: {}",
-                                    json.get("math").getAsString());
-                        }
-                    }
-                    yield new CanPlaceBlockCondition(ox, oy, oz, useTarget, useTargetBlock, absolute, math);
-                }
-                case "has_enchantment" -> {
-                    String id = GsonHelper.getAsString(json, "enchantment");
-                    ScalingValue level = ScalingValue.fromJson(json, "level", 1.0);
-                    String slot = GsonHelper.getAsString(json, "slot", "any");
-                    String operator = GsonHelper.getAsString(json, "operator", ">=");
-                    boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
-                    @SuppressWarnings("null")
-                    Condition c = new HasEnchantmentCondition(id, level, slot, operator, useTarget);
-                    yield c;
-                }
-                case "is_smeltable" -> {
-                    yield new IsSmeltableCondition();
-                }
-                case "exposed_to_rain" -> {
-                    boolean expected = GsonHelper.getAsBoolean(json, "value", true);
-                    yield new ExposedToRainCondition(expected);
-                }
-                case "spirit" -> {
-                    boolean expected = GsonHelper.getAsBoolean(json, "value", true);
-                    yield new SpiritCondition(expected);
-                }
-                case "is_spirit_moon" -> {
-                    boolean expected = GsonHelper.getAsBoolean(json, "value", true);
-                    yield new IsSpiritMoonCondition(expected);
-                }
-                case "block_data" -> {
-                    ScalingValue ox = ScalingValue.fromJson(json, "offset_x", 0.0);
-                    ScalingValue oy = ScalingValue.fromJson(json, "offset_y", 0.0);
-                    ScalingValue oz = ScalingValue.fromJson(json, "offset_z", 0.0);
-                    String key = GsonHelper.getAsString(json, "key");
-                    ScalingValue value = ScalingValue.fromJson(json, "value", 0.0);
-                    String operator = GsonHelper.getAsString(json, "operator", "==");
-                    boolean useInteractPos = GsonHelper.getAsBoolean(json, "use_interact_pos", true);
-                    yield new BlockDataCondition(ox, oy, oz, key, value, operator, useInteractPos);
-                }
-                case "entity_data" -> {
-                    yield EntityDataCondition.fromJson(json);
-                }
-                case "entity" -> {
-                    yield EntityCondition.fromJson(json);
-                }
-                case "distance" -> {
-                    // Accept "range" as the canonical name; "max" kept for backwards compatibility
-                    ScalingValue max = json.has("range")
-                            ? ScalingValue.fromJson(json, "range", 5.0)
-                            : ScalingValue.fromJson(json, "max", 5.0);
-                    ScalingValue x = ScalingValue.fromJson(json, "x", 0.0);
-                    ScalingValue y = ScalingValue.fromJson(json, "y", 0.0);
-                    ScalingValue z = ScalingValue.fromJson(json, "z", 0.0);
-                    yield new DistanceCondition(x, y, z, max);
-                }
-                case "attack_charged" -> {
-                    ScalingValue threshold = ScalingValue.fromJson(json, "threshold", 0.9);
-                    yield new AttackChargedCondition(threshold);
-                }
-                case "is_position" -> {
-                    ScalingValue x = ScalingValue.fromJson(json, "x", 0.0);
-                    ScalingValue y = ScalingValue.fromJson(json, "y", 0.0);
-                    ScalingValue z = ScalingValue.fromJson(json, "z", 0.0);
-                    boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
-                    boolean useTargetBlock = GsonHelper.getAsBoolean(json, "use_target_block", false);
-                    boolean absolute = GsonHelper.getAsBoolean(json, "absolute", true);
-
-                    ScalingValue.MathOp math = ScalingValue.MathOp.FLOOR;
-                    if (json.has("math")) {
-                        try {
-                            math = ScalingValue.MathOp.valueOf(json.get("math").getAsString().toUpperCase());
-                        } catch (Exception e) {
-                            CreRaces.LOGGER.warn("Invalid math mode in IsPositionCondition: {}",
-                                    json.get("math").getAsString());
-                        }
-                    }
-                    yield new IsPositionCondition(x, y, z, useTarget, useTargetBlock, absolute, math);
-                }
-                case "dimension" -> {
-                    String dim = GsonHelper.getAsString(json, "value", "minecraft:overworld");
-                    yield new DimensionCondition(dim);
-                }
-                case "customization_equals" -> {
-                    String id = GsonHelper.getAsString(json, "id");
-                    java.util.List<String> validVals = new java.util.ArrayList<>();
-                    if (json.has("values") && json.get("values").isJsonArray()) {
-                        for (com.google.gson.JsonElement e : json.getAsJsonArray("values")) {
-                            validVals.add(e.getAsString());
-                        }
-                    } else {
-                        CreRaces.LOGGER.error("customization_equals condition missing 'values' array");
-                    }
-                    yield new CustomizationEqualsCondition(id, validVals.toArray(new String[0]));
-                }
-                case "race_equals" -> {
-                    java.util.List<String> validRaces = new java.util.ArrayList<>();
-                    if (json.has("race")) {
-                        validRaces.add(GsonHelper.getAsString(json, "race"));
-                    }
-                    if (json.has("races")) {
-                        for (com.google.gson.JsonElement e : json.getAsJsonArray("races")) {
-                            validRaces.add(e.getAsString());
-                        }
-                    }
-                    yield new RaceEqualsCondition(validRaces);
-                }
-                case "has_customization" -> {
-                    String id = GsonHelper.getAsString(json, "id");
-                    yield new HasCustomizationCondition(id);
-                }
-                case "has_entities" -> {
-                    mc.sayda.creraces.engine.ScalingValue radius = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
-                            "radius", 5.0);
-                    TargetFilter targets = TargetFilter.fromJson(json, "targets", java.util.Set.of("enemies"));
-                    yield new HasEntitiesCondition(radius, targets);
-                }
-                case "is_block" -> {
-                    String blockStr = GsonHelper.getAsString(json, "block", "minecraft:air");
-                    ScalingValue ox = ScalingValue.fromJson(json, "offset_x", 0.0);
-                    ScalingValue oy = ScalingValue.fromJson(json, "offset_y", 0.0);
-                    ScalingValue oz = ScalingValue.fromJson(json, "offset_z", 0.0);
-                    boolean useinteract_pos = GsonHelper.getAsBoolean(json, "use_interact_pos", true);
-                    boolean absolute = GsonHelper.getAsBoolean(json, "absolute", false);
-
-                    // Default FLOOR matches BlockPos.containing() (vanilla standard)
-                    ScalingValue.MathOp math = ScalingValue.MathOp.FLOOR;
-                    if (json.has("math")) {
-                        try {
-                            math = ScalingValue.MathOp.valueOf(json.get("math").getAsString().toUpperCase());
-                        } catch (Exception e) {
-                            mc.sayda.creraces.CreRaces.LOGGER.warn("Invalid math mode in IsBlockCondition: {}",
-                                    json.get("math").getAsString());
-                        }
-                    }
-
-                    yield new IsBlockCondition(blockStr, ox, oy, oz, useinteract_pos, absolute, math);
-                }
-                case "cooldown" -> {
-                    String id = json.has("state") ? GsonHelper.getAsString(json, "state")
-                            : GsonHelper.getAsString(json, "id");
-                    if (!id.contains(":")) {
-                        id = "creraces:" + id;
-                    }
-                    String operator = GsonHelper.getAsString(json, "operator", "<=");
-                    ScalingValue value = ScalingValue.fromJson(json, "value", 0.0);
-                    yield new CooldownCondition(id, operator, value);
-                }
-                case "ability_level" -> {
-                    String id = json.has("id") ? GsonHelper.getAsString(json, "id") : "self";
-                    String operator = GsonHelper.getAsString(json, "operator", ">=");
-                    ScalingValue value = ScalingValue.fromJson(json, "value", 1.0);
-                    yield new AbilityLevelCondition(id, operator, value);
-                }
-                case "in_habitable_biome" ->
-                    new InHabitableBiomeCondition();
-                case "has_faction" ->
-                    new HasFactionCondition();
-                case "is_faction_leader" ->
-                    new IsFactionLeaderCondition();
-                case "has_faction_group" ->
-                    new HasFactionGroupCondition();
-                case "in_claimed_territory" -> {
-                    String scope = GsonHelper.getAsString(json, "scope", "own");
-                    yield new InClaimedTerritoryCondition(scope);
-                }
-                case "is_spirit" -> {
-                    boolean expected = GsonHelper.getAsBoolean(json, "value", true);
-                    yield new IsSpiritCondition(expected);
-                }
-                default ->
-                    throw new IllegalArgumentException("Unknown condition type '" + typeStr + "' - check your JSON");
-            };
-        } catch (Exception e) {
-            mc.sayda.creraces.CreRaces.LOGGER.error(
-                    "Failed to parse condition '{}': {} - condition will always return false. JSON: {}",
-                    typeStr, e.getMessage(), json);
-            return (player, target, slot, interact_pos) -> false;
-        }
+        return ConditionRegistry.fromJson(json);
     }
 }
 
@@ -456,8 +102,7 @@ class HoldingItemCondition implements Condition {
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
-        // Smart Targeting: Prefer target if present, otherwise respect useTarget flag
-        net.minecraft.world.entity.LivingEntity entity = (target != null) ? target : (useTarget ? null : player);
+        net.minecraft.world.entity.LivingEntity entity = (useTarget && target != null) ? target : player;
         if (entity == null)
             return false;
 
@@ -518,12 +163,16 @@ class StateCondition implements Condition {
             double val = value.evaluate(player, target);
 
             return switch (operator) {
+                case "==" -> Math.abs(current - val) < 0.001;
                 case "!=" -> Math.abs(current - val) >= 0.001;
                 case ">" -> current > val;
                 case ">=" -> current >= val;
                 case "<" -> current < val;
                 case "<=" -> current <= val;
-                default -> Math.abs(current - val) < 0.001;
+                default -> {
+                    mc.sayda.creraces.CreRaces.LOGGER.warn("StateCondition: unknown operator '{}', returning false", operator);
+                    yield false;
+                }
             };
         }).orElse(false);
     }
@@ -549,9 +198,11 @@ class MorphedCondition implements Condition {
 
 class FlyingCondition implements Condition {
     private final boolean expected;
+    private final boolean useTarget;
 
-    public FlyingCondition(boolean expected) {
+    public FlyingCondition(boolean expected, boolean useTarget) {
         this.expected = expected;
+        this.useTarget = useTarget;
     }
 
     @Override
@@ -559,16 +210,21 @@ class FlyingCondition implements Condition {
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
-        boolean isFlying = player.getAbilities().flying || player.isFallFlying();
+        net.minecraft.world.entity.LivingEntity entity = (useTarget && target != null) ? target : player;
+        boolean isFlying = entity instanceof Player p
+                ? p.getAbilities().flying || p.isFallFlying()
+                : entity.isFallFlying();
         return isFlying == expected;
     }
 }
 
 class SneakingCondition implements Condition {
     private final boolean expected;
+    private final boolean useTarget;
 
-    public SneakingCondition(boolean expected) {
+    public SneakingCondition(boolean expected, boolean useTarget) {
         this.expected = expected;
+        this.useTarget = useTarget;
     }
 
     @Override
@@ -576,15 +232,18 @@ class SneakingCondition implements Condition {
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
-        return player.isShiftKeyDown() == expected;
+        net.minecraft.world.entity.LivingEntity entity = (useTarget && target != null) ? target : player;
+        return entity.isCrouching() == expected;
     }
 }
 
 class OnGroundCondition implements Condition {
     private final boolean expected;
+    private final boolean useTarget;
 
-    public OnGroundCondition(boolean expected) {
+    public OnGroundCondition(boolean expected, boolean useTarget) {
         this.expected = expected;
+        this.useTarget = useTarget;
     }
 
     @Override
@@ -592,7 +251,8 @@ class OnGroundCondition implements Condition {
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
-        return player.onGround() == expected;
+        net.minecraft.world.entity.LivingEntity entity = (useTarget && target != null) ? target : player;
+        return entity.onGround() == expected;
     }
 }
 
@@ -634,8 +294,7 @@ class HasEffectCondition implements Condition {
         if (effect == null)
             return false;
 
-        // Smart Targeting: Prefer target if present, otherwise respect useTarget flag
-        net.minecraft.world.entity.LivingEntity subject = (target != null) ? target : (useTarget ? null : player);
+        net.minecraft.world.entity.LivingEntity subject = mc.sayda.creraces.engine.TargetFilter.resolveSmartTarget(player, target, useTarget);
         if (subject == null)
             return false;
         net.minecraft.world.effect.MobEffectInstance instance = subject.getEffect(effect);
@@ -841,9 +500,11 @@ class AltitudeCondition implements Condition {
 
 class IsBurningCondition implements Condition {
     private final boolean expected;
+    private final boolean useTarget;
 
-    public IsBurningCondition(boolean expected) {
+    public IsBurningCondition(boolean expected, boolean useTarget) {
         this.expected = expected;
+        this.useTarget = useTarget;
     }
 
     @Override
@@ -851,17 +512,20 @@ class IsBurningCondition implements Condition {
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
-        return player.isOnFire() == expected;
+        net.minecraft.world.entity.LivingEntity entity = (useTarget && target != null) ? target : player;
+        return entity.isOnFire() == expected;
     }
 }
 
 class IsMovingCondition implements Condition {
     private final boolean expected;
     private final ScalingValue threshold;
+    private final boolean useTarget;
 
-    public IsMovingCondition(boolean expected, ScalingValue threshold) {
+    public IsMovingCondition(boolean expected, ScalingValue threshold, boolean useTarget) {
         this.expected = expected;
         this.threshold = threshold;
+        this.useTarget = useTarget;
     }
 
     @Override
@@ -869,7 +533,8 @@ class IsMovingCondition implements Condition {
             @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
-        net.minecraft.world.phys.Vec3 vel = player.getDeltaMovement();
+        net.minecraft.world.entity.LivingEntity entity = (useTarget && target != null) ? target : player;
+        net.minecraft.world.phys.Vec3 vel = entity.getDeltaMovement();
         double t = threshold.evaluate(player, target);
         boolean isMoving = (vel.x * vel.x + vel.y * vel.y + vel.z * vel.z) > (t * t);
         return isMoving == expected;
@@ -1180,6 +845,46 @@ class HasEntitiesCondition implements Condition {
     }
 }
 
+/**
+ * Shared basePos resolution for conditions that support absolute / target-position /
+ * interact_pos / player-position (floor, round, or ceil) as their coordinate origin.
+ */
+final class BasePosResolver {
+    private BasePosResolver() {
+    }
+
+    static BlockPos resolve(Player player, @javax.annotation.Nullable LivingEntity target,
+            @javax.annotation.Nullable BlockPos interact_pos, boolean useTarget, boolean useTargetBlock,
+            boolean absolute, ScalingValue.MathOp coordinateMath) {
+        if (absolute) {
+            return BlockPos.ZERO;
+        } else if (useTarget && target != null) {
+            return target.blockPosition();
+        } else if (useTargetBlock && interact_pos != null) {
+            return interact_pos;
+        } else {
+            double tx = player.getX();
+            double ty = player.getY();
+            double tz = player.getZ();
+
+            int bx = (int) Math.floor(tx);
+            int by = (int) Math.floor(ty);
+            int bz = (int) Math.floor(tz);
+
+            if (coordinateMath == ScalingValue.MathOp.ROUND) {
+                bx = (int) Math.round(tx);
+                by = (int) Math.round(ty);
+                bz = (int) Math.round(tz);
+            } else if (coordinateMath == ScalingValue.MathOp.CEIL) {
+                bx = (int) Math.ceil(tx);
+                by = (int) Math.ceil(ty);
+                bz = (int) Math.ceil(tz);
+            }
+            return new BlockPos(bx, by, bz);
+        }
+    }
+}
+
 class IsPositionCondition implements Condition {
     private final ScalingValue x;
     private final ScalingValue y;
@@ -1205,33 +910,8 @@ class IsPositionCondition implements Condition {
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
 
-        BlockPos basePos;
-        if (absolute) {
-            basePos = BlockPos.ZERO;
-        } else if (useTarget && target != null) {
-            basePos = target.blockPosition();
-        } else if (useTargetBlock && interact_pos != null) {
-            basePos = interact_pos;
-        } else {
-            double tx = player.getX();
-            double ty = player.getY();
-            double tz = player.getZ();
-
-            int bx = (int) Math.floor(tx);
-            int by = (int) Math.floor(ty);
-            int bz = (int) Math.floor(tz);
-
-            if (coordinateMath == ScalingValue.MathOp.ROUND) {
-                bx = (int) Math.round(tx);
-                by = (int) Math.round(ty);
-                bz = (int) Math.round(tz);
-            } else if (coordinateMath == ScalingValue.MathOp.CEIL) {
-                bx = (int) Math.ceil(tx);
-                by = (int) Math.ceil(ty);
-                bz = (int) Math.ceil(tz);
-            }
-            basePos = new BlockPos(bx, by, bz);
-        }
+        BlockPos basePos = BasePosResolver.resolve(player, target, interact_pos, useTarget, useTargetBlock,
+                absolute, coordinateMath);
 
         double px = x.evaluate(player, target, slot);
         double py = y.evaluate(player, target, slot);
@@ -1253,9 +933,12 @@ class IsBlockCondition implements Condition {
     private final boolean useinteract_pos;
     private final boolean absolute;
     private final ScalingValue.MathOp coordinateMath;
+    private final boolean useRaycast;
+    private final ScalingValue rayRange;
 
     public IsBlockCondition(String blockDefinition, ScalingValue offsetX, ScalingValue offsetY, ScalingValue offsetZ,
-            boolean useinteract_pos, boolean absolute, ScalingValue.MathOp math) {
+            boolean useinteract_pos, boolean absolute, ScalingValue.MathOp math,
+            boolean useRaycast, ScalingValue rayRange) {
         this.blockDefinition = blockDefinition;
         this.offsetX = offsetX;
         this.offsetY = offsetY;
@@ -1263,6 +946,8 @@ class IsBlockCondition implements Condition {
         this.useinteract_pos = useinteract_pos;
         this.absolute = absolute;
         this.coordinateMath = math != null ? math : ScalingValue.MathOp.FLOOR;
+        this.useRaycast = useRaycast;
+        this.rayRange = rayRange;
     }
 
     @Override
@@ -1274,7 +959,18 @@ class IsBlockCondition implements Condition {
         int oz = (int) offsetZ.evaluate(player, target);
 
         BlockPos finalPos;
-        if (absolute) {
+        if (useRaycast) {
+            double range = rayRange.evaluate(player, target);
+            net.minecraft.world.phys.BlockHitResult hit = player.level().clip(
+                    new net.minecraft.world.level.ClipContext(
+                            player.getEyePosition(1f),
+                            player.getEyePosition(1f).add(player.getViewVector(1f).scale(range)),
+                            net.minecraft.world.level.ClipContext.Block.OUTLINE,
+                            net.minecraft.world.level.ClipContext.Fluid.NONE,
+                            player));
+            if (hit.getType() == net.minecraft.world.phys.HitResult.Type.MISS) return false;
+            finalPos = hit.getBlockPos().offset(ox, oy, oz);
+        } else if (absolute) {
             finalPos = new BlockPos(ox, oy, oz);
         } else {
             BlockPos base;
@@ -1481,33 +1177,8 @@ class CanPlaceBlockCondition implements Condition {
         if (player == null)
             return false;
 
-        BlockPos basePos;
-        if (absolute) {
-            basePos = BlockPos.ZERO;
-        } else if (useTarget && target != null) {
-            basePos = target.blockPosition();
-        } else if (useTargetBlock && interact_pos != null) {
-            basePos = interact_pos;
-        } else {
-            double tx = player.getX();
-            double ty = player.getY();
-            double tz = player.getZ();
-
-            int bx = (int) Math.floor(tx);
-            int by = (int) Math.floor(ty);
-            int bz = (int) Math.floor(tz);
-
-            if (coordinateMath == ScalingValue.MathOp.ROUND) {
-                bx = (int) Math.round(tx);
-                by = (int) Math.round(ty);
-                bz = (int) Math.round(tz);
-            } else if (coordinateMath == ScalingValue.MathOp.CEIL) {
-                bx = (int) Math.ceil(tx);
-                by = (int) Math.ceil(ty);
-                bz = (int) Math.ceil(tz);
-            }
-            basePos = new BlockPos(bx, by, bz);
-        }
+        BlockPos basePos = BasePosResolver.resolve(player, target, interact_pos, useTarget, useTargetBlock,
+                absolute, coordinateMath);
 
         int ox = (int) offsetX.evaluate(player, target, slot);
         int oy = (int) offsetY.evaluate(player, target, slot);
@@ -1675,21 +1346,7 @@ class InHabitableBiomeCondition implements Condition {
             @SuppressWarnings("null")
             net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> biome =
                     player.level().getBiome(player.blockPosition());
-            for (String entry : validBiomes) {
-                if (entry.startsWith("#")) {
-                    try {
-                        net.minecraft.tags.TagKey<net.minecraft.world.level.biome.Biome> tagKey =
-                                net.minecraft.tags.TagKey.create(
-                                        net.minecraft.core.registries.Registries.BIOME,
-                                        new net.minecraft.resources.ResourceLocation(entry.substring(1)));
-                        if (biome.is(tagKey)) return true;
-                    } catch (Exception ignored) {}
-                } else {
-                    if (biome.unwrapKey().map(k -> k.location().toString().equals(entry)).orElse(false))
-                        return true;
-                }
-            }
-            return false;
+            return mc.sayda.creraces.engine.BiomeChecker.matches(biome, validBiomes);
         }).orElse(false);
     }
 }
@@ -1730,7 +1387,7 @@ class HasFactionGroupCondition implements Condition {
 }
 
 class InClaimedTerritoryCondition implements Condition {
-    private final String scope; // "own", "allied", "any"
+    private final String scope; // "own", "allied", "any", "other"
 
     InClaimedTerritoryCondition(String scope) {
         this.scope = scope;
@@ -1763,6 +1420,9 @@ class InClaimedTerritoryCondition implements Condition {
             if (claim.getRaceId().equals(playerRace)) return true;
             return tm.getDiplomacy(playerRace, claim.getRaceId())
                     == mc.sayda.creraces.territory.DiplomacyStatus.ALLY;
+        }
+        if ("other".equals(scope)) {
+            return playerRace != null && !claim.getRaceId().equals(playerRace);
         }
         return false;
     }

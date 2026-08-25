@@ -30,13 +30,8 @@ public class EnterSpiritRealmAction implements ActionRegistry.RaceAction {
                 vars.setReturnY(player.getY());
                 vars.setReturnZ(player.getZ());
                 vars.setReturnDim(player.level().dimension().location().toString());
-
-                // Sync to client
-                mc.sayda.creraces.network.BoundaryHandler.resyncVariables(player, player);
             } else {
                 vars.setInSpiritRealm(false);
-                // Sync to client
-                mc.sayda.creraces.network.BoundaryHandler.resyncVariables(player, player);
             }
 
             // Sync to self and trackers (for visibility)

@@ -9,13 +9,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Arrow;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 
 import javax.annotation.Nullable;
 
-/**
- * Action that launches a projectile from the player.
- */
 public class LaunchProjectileAction implements ActionRegistry.RaceAction {
     private final String projectileType;
     private final mc.sayda.creraces.engine.ScalingValue damage;
@@ -91,25 +87,11 @@ public class LaunchProjectileAction implements ActionRegistry.RaceAction {
                 smallFireball.setPos(player.getX(), player.getEyeY(), player.getZ());
                 player.level().addFreshEntity(smallFireball);
             }
-            case "creraces:harpy_feather" -> {
-                FeatherProjectile harpy = new FeatherProjectile(player.level(), player);
-                harpy.setDamage(dmg);
-                harpy.setItem(new ItemStack(mc.sayda.creraces.registry.ModItems.HARPY_FEATHER.get()));
-                harpy.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, spd, acc);
-                player.level().addFreshEntity(harpy);
-            }
-            case "minecraft:feather" -> {
-                FeatherProjectile feather = new FeatherProjectile(player.level(), player);
-                feather.setDamage(dmg);
-                feather.setItem(new ItemStack(Items.FEATHER));
-                feather.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, spd, acc);
-                player.level().addFreshEntity(feather);
-            }
             default -> {
-                net.minecraft.world.entity.EntityType<?> entityType =
-                        BuiltInRegistries.ENTITY_TYPE.get(new ResourceLocation(type));
-                if (entityType != null) {
-                    net.minecraft.world.entity.Entity entity = entityType.create(player.level());
+                ResourceLocation typeLoc = new ResourceLocation(type);
+                var entityTypeOpt = BuiltInRegistries.ENTITY_TYPE.getOptional(typeLoc);
+                if (entityTypeOpt.isPresent()) {
+                    net.minecraft.world.entity.Entity entity = entityTypeOpt.get().create(player.level());
                     if (entity instanceof net.minecraft.world.entity.projectile.Projectile proj) {
                         entity.setPos(player.getX(), player.getEyeY(), player.getZ());
                         if (proj instanceof net.minecraft.world.entity.projectile.AbstractArrow arrow) {
@@ -119,6 +101,18 @@ public class LaunchProjectileAction implements ActionRegistry.RaceAction {
                             proj.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, spd, acc);
                         }
                         player.level().addFreshEntity(entity);
+                    }
+                } else {
+                    // Not a registered entity type - if it's a registered item, throw it as a
+                    // feather-style projectile carrying that item (generalizes the old
+                    // harpy_feather/feather special case to any race's item, no Java change needed).
+                    net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.getOptional(typeLoc).orElse(null);
+                    if (item != null) {
+                        FeatherProjectile feather = new FeatherProjectile(player.level(), player);
+                        feather.setDamage(dmg);
+                        feather.setItem(new ItemStack(item));
+                        feather.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, spd, acc);
+                        player.level().addFreshEntity(feather);
                     }
                 }
             }

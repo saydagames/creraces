@@ -26,12 +26,12 @@ public class ClanManagementScreen extends Screen {
     private static final int LIST_TOP_OFFSET = 44; // from panel top to first row
     private static final int LIST_BOTTOM_MARGIN = 28; // space reserved below list
 
-    private static ClanUpdatePacket lastUpdate;
+    private static volatile ClanUpdatePacket lastUpdate;
 
     private int scrollOffset = 0;
 
     public ClanManagementScreen() {
-        super(Component.translatable("creraces.screen.clan_management"));
+        super(Component.translatable("screen.creraces.clan_management"));
     }
 
     public static void open() {
@@ -123,7 +123,7 @@ public class ClanManagementScreen extends Screen {
         g.renderOutline(pl, pt, PW, PH, 0xFFAAAAAA);
 
         // Title
-        g.drawCenteredString(font, Component.translatable("creraces.screen.clan_management")
+        g.drawCenteredString(font, Component.translatable("screen.creraces.clan_management")
                 .withStyle(ChatFormatting.GOLD), cx, pt + 6, 0xFFFFFF);
 
         // Own race subtitle
@@ -189,7 +189,7 @@ public class ClanManagementScreen extends Screen {
         ResourceLocation myId = lastUpdate.raceId;
         List<Race> result = new ArrayList<>();
         for (Race r : RaceRegistry.getAll()) {
-            if (!r.id().equals(myId)) result.add(r);
+            if (!r.id().equals(myId) && r.selectable()) result.add(r);
         }
         return result;
     }

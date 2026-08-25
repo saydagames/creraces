@@ -21,6 +21,8 @@ public class Ability {
     private final List<mc.sayda.creraces.engine.ActionRegistry.RaceAction> onActivate;
     private final List<mc.sayda.creraces.engine.ActionRegistry.RaceAction> onDeactivate;
     private final mc.sayda.creraces.engine.condition.Condition condition;
+    @javax.annotation.Nullable
+    private final String conditionFailMessage;
     private final List<OverlayBar> overlayBars;
 
     public Ability(ResourceLocation id, net.minecraft.network.chat.Component name,
@@ -29,6 +31,7 @@ public class Ability {
             List<mc.sayda.creraces.engine.ActionRegistry.RaceAction> onActivate,
             List<mc.sayda.creraces.engine.ActionRegistry.RaceAction> onDeactivate,
             mc.sayda.creraces.engine.condition.Condition condition,
+            @javax.annotation.Nullable String conditionFailMessage,
             List<OverlayBar> overlayBars) {
         this.id = id;
         this.name = name;
@@ -42,11 +45,17 @@ public class Ability {
         this.onActivate = onActivate;
         this.onDeactivate = onDeactivate;
         this.condition = condition;
+        this.conditionFailMessage = conditionFailMessage;
         this.overlayBars = overlayBars;
     }
 
     public mc.sayda.creraces.engine.condition.Condition condition() {
         return condition;
+    }
+
+    @javax.annotation.Nullable
+    public String conditionFailMessage() {
+        return conditionFailMessage;
     }
 
     public ResourceLocation id() {

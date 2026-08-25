@@ -61,7 +61,7 @@ public class ModifyValueAction implements ActionRegistry.RaceAction {
 
         String res = resource.toLowerCase();
 
-        // ── State / ability persistent values ──────────────────────────────────
+        // State / ability persistent values
         if (res.equals("self") || res.startsWith("state:")) {
             return DataUtils.getVariables(player).map(vars -> {
                 ResourceLocation stateId;
@@ -105,13 +105,13 @@ public class ModifyValueAction implements ActionRegistry.RaceAction {
             }).orElse(true);
         }
 
-        // ── Targeting resolution for non-state resources ────────────────────────
+        // Targeting resolution for non-state resources
         LivingEntity entity = useTarget ? target : player;
         if (entity == null || !targets.isValid(entity, player)) return true;
 
         double evaluated = value.evaluate(player, target, slot);
 
-        // ── Vanilla entity resources ────────────────────────────────────────────
+        // Vanilla entity resources
         if (res.equals("air") || res.equals("health") || res.equals("food") || res.equals("saturation")) {
             double current = switch (res) {
                 case "air"        -> entity.getAirSupply();
@@ -131,7 +131,7 @@ public class ModifyValueAction implements ActionRegistry.RaceAction {
             return true;
         }
 
-        // ── Player-only resources ───────────────────────────────────────────────
+        // Player-only resources
         if (!(entity instanceof Player p)) return true;
 
         return DataUtils.getVariables(p).map(vars -> {

@@ -5,6 +5,7 @@
     "creraces:icon": "creraces:textures/icons/wave.png",
     "creraces:cooldown": 180,
     "creraces:cost": 0,
+    "creraces:condition_fail_message": "msg.creraces.water_fail_message",
     "creraces:race": [
         "creraces:mermaid",
         "creraces:naiad"

@@ -86,7 +86,7 @@ public class DynamicMirrorScreen extends AbstractContainerScreen<MirrorMenu> {
             this.race = RaceRegistry.get(vars.getRace());
             if (this.race != null && this.race.customization() != null && !this.race.id().equals(RaceRegistry.NONE)) {
                 this.initializedRaceWidgets = true;
-                
+
                 // Populate original state ONLY if empty (avoids revert on window resize)
                 if (this.originalCustomizations.isEmpty()) {
                     this.originalCustomizations.putAll(vars.getCustomizations());
@@ -161,7 +161,7 @@ public class DynamicMirrorScreen extends AbstractContainerScreen<MirrorMenu> {
         if (!saved && minecraft != null && minecraft.player != null) {
             DataUtils.getVariables(minecraft.player).ifPresent(vars -> {
                 // Clear all current temp changes
-                vars.getCustomizations().keySet().forEach(key -> vars.setCustomization(key, null));
+                new java.util.ArrayList<>(vars.getCustomizations().keySet()).forEach(key -> vars.setCustomization(key, null));
                 // Restore old values
                 originalCustomizations.forEach(vars::setCustomization);
                 if (this.race != null) {

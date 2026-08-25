@@ -1,0 +1,6 @@
+{
+  "variants": {
+    "stage=0": { "model": "creraces:block/veil_willow_sapling" },
+    "stage=1": { "model": "creraces:block/veil_willow_sapling" }
+  }
+}

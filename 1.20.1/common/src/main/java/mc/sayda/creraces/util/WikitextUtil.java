@@ -113,11 +113,7 @@ public class WikitextUtil {
                             int colorValue = Integer.parseInt(hex.toString(), 16);
 
                             // Flush current text with previous style
-                            if (currentText.length() > 0) {
-                                root.append(net.minecraft.network.chat.Component.literal(currentText.toString())
-                                        .withStyle(currentStyle));
-                                currentText.setLength(0);
-                            }
+                            flushBufferedText(root, currentText, currentStyle);
 
                             currentStyle = currentStyle.withColor(colorValue);
                             i += 14;
@@ -128,11 +124,7 @@ public class WikitextUtil {
                 }
 
                 // Flush previous text with previous style
-                if (currentText.length() > 0) {
-                    root.append(net.minecraft.network.chat.Component.literal(currentText.toString())
-                            .withStyle(currentStyle));
-                    currentText.setLength(0);
-                }
+                flushBufferedText(root, currentText, currentStyle);
 
                 // Handle standard codes
                 switch (code) {
@@ -167,10 +159,19 @@ public class WikitextUtil {
             }
         }
 
-        if (currentText.length() > 0) {
-            root.append(net.minecraft.network.chat.Component.literal(currentText.toString()).withStyle(currentStyle));
-        }
+        flushBufferedText(root, currentText, currentStyle);
 
         return root;
+    }
+
+    /**
+     * Flushes the buffered text onto the root component using the given style, then clears the buffer.
+     */
+    private static void flushBufferedText(net.minecraft.network.chat.MutableComponent root, StringBuilder buffer,
+            net.minecraft.network.chat.Style style) {
+        if (buffer.length() > 0) {
+            root.append(net.minecraft.network.chat.Component.literal(buffer.toString()).withStyle(style));
+            buffer.setLength(0);
+        }
     }
 }

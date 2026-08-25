@@ -28,6 +28,7 @@ public class DebugScreen extends Screen {
         private int maxScroll;
         private final List<LineMetadata> lineMetadata = new ArrayList<>();
         private LineMetadata selectedLine = null;
+        private long lastRefreshTick = -1;
         private EditBox editBox;
         private Button applyButton;
         private Button cancelButton;
@@ -163,10 +164,10 @@ public class DebugScreen extends Screen {
                                         .getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE)
                                         .getBaseValue();
                         debugLines.add(Component.literal("  AD: ").withStyle(ChatFormatting.GRAY)
-                                        .append(Component.literal(String.format("%.1f", vars.getAd())) // Total
+                                        .append(Component.literal(String.format("%.1f", vars.getAd()))
                                                         .withStyle(ChatFormatting.GREEN))
                                         .append(Component.literal(" / ").withStyle(ChatFormatting.GRAY))
-                                        .append(Component.literal(String.format("%.1f", adBase)) // Base
+                                        .append(Component.literal(String.format("%.1f", adBase))
                                                         .withStyle(ChatFormatting.GREEN)));
                         lineMetadata.add(new LineMetadata(debugLines.size() - 1, "variable", "ad",
                                         String.valueOf(vars.getAd())));
@@ -175,10 +176,10 @@ public class DebugScreen extends Screen {
                                         .resolve(mc.sayda.creraces.registry.ModAttributes.ABILITY_POWER))
                                         .getBaseValue();
                         debugLines.add(Component.literal("  AP: ").withStyle(ChatFormatting.GRAY)
-                                        .append(Component.literal(String.format("%.1f", vars.getAp())) // Total
+                                        .append(Component.literal(String.format("%.1f", vars.getAp()))
                                                         .withStyle(ChatFormatting.GREEN))
                                         .append(Component.literal(" / ").withStyle(ChatFormatting.GRAY))
-                                        .append(Component.literal(String.format("%.1f", apBase)) // Base
+                                        .append(Component.literal(String.format("%.1f", apBase))
                                                         .withStyle(ChatFormatting.GREEN)));
                         lineMetadata.add(new LineMetadata(debugLines.size() - 1, "variable", "ap",
                                         String.valueOf(vars.getAp())));
@@ -201,10 +202,10 @@ public class DebugScreen extends Screen {
                                         .getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR)
                                         .getBaseValue();
                         debugLines.add(Component.literal("  Armor: ").withStyle(ChatFormatting.GRAY)
-                                        .append(Component.literal(String.format("%.1f", armor)) // Total
+                                        .append(Component.literal(String.format("%.1f", armor))
                                                         .withStyle(ChatFormatting.GREEN))
                                         .append(Component.literal(" / ").withStyle(ChatFormatting.GRAY))
-                                        .append(Component.literal(String.format("%.1f", armorBase)) // Base
+                                        .append(Component.literal(String.format("%.1f", armorBase))
                                                         .withStyle(ChatFormatting.GREEN)));
                         lineMetadata.add(new LineMetadata(debugLines.size() - 1, "attribute",
                                         "minecraft:generic.armor", String.valueOf(armorBase)));
@@ -216,10 +217,10 @@ public class DebugScreen extends Screen {
                                         mc.sayda.creraces.registry.ModAttributes
                                                         .resolve(mc.sayda.creraces.registry.ModAttributes.ARMOR_SHRED));
                         debugLines.add(Component.literal("  ArmorPen: ").withStyle(ChatFormatting.GRAY)
-                                        .append(Component.literal(String.format("%.1f", armPierce)) // Flat
+                                        .append(Component.literal(String.format("%.1f", armPierce))
                                                         .withStyle(ChatFormatting.GREEN))
                                         .append(Component.literal(" / ").withStyle(ChatFormatting.GRAY))
-                                        .append(Component.literal(String.format("%.1f%%", armShred * 100)) // Pct
+                                        .append(Component.literal(String.format("%.1f%%", armShred * 100))
                                                         .withStyle(ChatFormatting.GREEN)));
                         lineMetadata.add(new LineMetadata(debugLines.size() - 1, "attribute",
                                         "creraces:armor_pierce", String.valueOf(armPierce)));
@@ -232,10 +233,10 @@ public class DebugScreen extends Screen {
                                                         mc.sayda.creraces.registry.ModAttributes.MAGIC_RESIST))
                                         .getBaseValue();
                         debugLines.add(Component.literal("  MR: ").withStyle(ChatFormatting.GRAY)
-                                        .append(Component.literal(String.format("%.1f", magResist)) // Total
+                                        .append(Component.literal(String.format("%.1f", magResist))
                                                         .withStyle(ChatFormatting.GREEN))
                                         .append(Component.literal(" / ").withStyle(ChatFormatting.GRAY))
-                                        .append(Component.literal(String.format("%.1f", magResistBase)) // Base
+                                        .append(Component.literal(String.format("%.1f", magResistBase))
                                                         .withStyle(ChatFormatting.GREEN)));
                         lineMetadata.add(new LineMetadata(debugLines.size() - 1, "attribute",
                                         "creraces:magic_resist", String.valueOf(magResistBase)));
@@ -247,10 +248,10 @@ public class DebugScreen extends Screen {
                                         mc.sayda.creraces.registry.ModAttributes
                                                         .resolve(mc.sayda.creraces.registry.ModAttributes.MAGIC_SHRED));
                         debugLines.add(Component.literal("  MagicPen: ").withStyle(ChatFormatting.GRAY)
-                                        .append(Component.literal(String.format("%.1f", magPierce)) // Flat
+                                        .append(Component.literal(String.format("%.1f", magPierce))
                                                         .withStyle(ChatFormatting.GREEN))
                                         .append(Component.literal(" / ").withStyle(ChatFormatting.GRAY))
-                                        .append(Component.literal(String.format("%.1f%%", magShred * 100)) // Pct
+                                        .append(Component.literal(String.format("%.1f%%", magShred * 100))
                                                         .withStyle(ChatFormatting.GREEN)));
                         lineMetadata.add(new LineMetadata(debugLines.size() - 1, "attribute",
                                         "creraces:magic_pierce", String.valueOf(magPierce)));
@@ -263,10 +264,10 @@ public class DebugScreen extends Screen {
                                                         mc.sayda.creraces.registry.ModAttributes.HEALING_RECEIVED))
                                         .getBaseValue();
                         debugLines.add(Component.literal("  Heal: ").withStyle(ChatFormatting.GRAY)
-                                        .append(Component.literal(String.format("%.1f%%", healing * 100)) // Total
+                                        .append(Component.literal(String.format("%.1f%%", healing * 100))
                                                         .withStyle(ChatFormatting.GREEN))
                                         .append(Component.literal(" / ").withStyle(ChatFormatting.GRAY))
-                                        .append(Component.literal(String.format("%.1f%%", healingBase * 100)) // Base
+                                        .append(Component.literal(String.format("%.1f%%", healingBase * 100))
                                                         .withStyle(ChatFormatting.GREEN)));
                         lineMetadata.add(new LineMetadata(debugLines.size() - 1, "attribute",
                                         "creraces:healing_received", String.valueOf(healingBase)));
@@ -626,7 +627,11 @@ public class DebugScreen extends Screen {
         @Override
         @SuppressWarnings("null")
         public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-                refreshDebugInfo();
+                long currentTick = minecraft != null && minecraft.level != null ? minecraft.level.getGameTime() : 0;
+                if (currentTick != lastRefreshTick) {
+                        lastRefreshTick = currentTick;
+                        refreshDebugInfo();
+                }
                 this.renderBackground(graphics);
 
                 graphics.drawCenteredString(Objects.requireNonNull(this.font), this.title, this.width / 2, 8, 0xFFD700);
@@ -636,7 +641,7 @@ public class DebugScreen extends Screen {
                 int listTop = 25;
                 int listBottom = this.height - 45;
 
-                // Draw Panel // Background for list
+                // Background panel for the list
                 graphics.fill(listLeft, listTop, listLeft + listWidth, listBottom, 0x88000000);
                 graphics.renderOutline(listLeft, listTop, listWidth, listBottom - listTop, 0xFFAAAAAA);
 
@@ -726,21 +731,23 @@ public class DebugScreen extends Screen {
                 int listBottom = this.height - 45;
 
                 if (mouseX >= listLeft && mouseX <= listLeft + listWidth && mouseY >= listTop && mouseY <= listBottom) {
-                        double clickedY = mouseY - listTop + scrollAmount;
-                        int entryIndex = (int) (clickedY / LINE_HEIGHT);
+                        if (minecraft != null && minecraft.player != null && minecraft.player.hasPermissions(2)) {
+                                double clickedY = mouseY - listTop + scrollAmount;
+                                int entryIndex = (int) (clickedY / LINE_HEIGHT);
 
-                        // Find metadata for this index
-                        for (LineMetadata meta : lineMetadata) {
-                                if (meta.index == entryIndex) {
-                                        selectedLine = meta;
-                                        editBox.visible = true;
-                                        applyButton.visible = true;
-                                        cancelButton.visible = true;
-                                        editBox.setValue(java.util.Objects.requireNonNull(meta.currentValue));
-                                        editBox.setFocused(true);
-                                        this.setFocused(editBox);
-                                        editBox.setCursorPosition(editBox.getValue().length());
-                                        return true;
+                                // Find metadata for this index
+                                for (LineMetadata meta : lineMetadata) {
+                                        if (meta.index == entryIndex) {
+                                                selectedLine = meta;
+                                                editBox.visible = true;
+                                                applyButton.visible = true;
+                                                cancelButton.visible = true;
+                                                editBox.setValue(java.util.Objects.requireNonNull(meta.currentValue));
+                                                editBox.setFocused(true);
+                                                this.setFocused(editBox);
+                                                editBox.setCursorPosition(editBox.getValue().length());
+                                                return true;
+                                        }
                                 }
                         }
 
@@ -753,11 +760,11 @@ public class DebugScreen extends Screen {
         @Override
         public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
                 if (selectedLine != null) {
-                        if (keyCode == 257 || keyCode == 335) { // Enter or Numpad Enter
+                        if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER || keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_KP_ENTER) {
                                 applyEdit();
                                 return true;
                         }
-                        if (keyCode == 256) { // Escape
+                        if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE) {
                                 cancelEdit();
                                 return true;
                         }

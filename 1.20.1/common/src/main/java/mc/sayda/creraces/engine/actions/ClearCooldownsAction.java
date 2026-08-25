@@ -8,9 +8,6 @@ import net.minecraft.world.entity.player.Player;
 
 import javax.annotation.Nullable;
 
-/**
- * Action that clears all ability cooldowns for the player.
- */
 public class ClearCooldownsAction implements ActionRegistry.RaceAction {
 
     @Override

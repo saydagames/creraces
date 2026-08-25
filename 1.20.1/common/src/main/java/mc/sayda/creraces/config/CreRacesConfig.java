@@ -5,7 +5,7 @@ import java.util.function.Supplier;
 public class CreRacesConfig {
     // [SECTION: COMMON]
     public static Supplier<Boolean> MINI_BUILD_ENABLED = () -> true;
-    public static Supplier<Boolean> MINIBUILD_REQUIRES_LEARNED = () -> true;
+    public static Supplier<Boolean> MINI_BUILD_REQUIRES_LEARNED = () -> true;
     public static Supplier<java.util.List<String>> MINI_BUILD_DIMENSION_BLACKLIST = () -> java.util.List
             .of("creraces:fairy_realm");
     public static Supplier<Boolean> MINI_FURNACE_ENABLED = () -> true;
@@ -21,6 +21,12 @@ public class CreRacesConfig {
 
     // [SECTION: FAIRY REALM]
     public static Supplier<Integer> FAIRY_REALM_BORDER_SIZE = () -> 1000;
+    public static Supplier<Boolean> VEILWOOD_FOREST_ENABLED = () -> true;
+
+    // [SECTION: ESSENCE]
+    public static Supplier<Boolean> ESSENCE_VORTEX_WORLDGEN_ENABLED = () -> true;
+    /** Right-clicking a vortex with a shard converts it to that shard's essence type. */
+    public static Supplier<Boolean> ESSENCE_VORTEX_CONVERSION_ENABLED = () -> true;
 
     // [SECTION: POCKET DIMENSION]
     public static Supplier<String> ACTION_DEFAULT_POCKET_DIM = () -> "creraces:pocket";
@@ -48,7 +54,7 @@ public class CreRacesConfig {
     public static Supplier<Integer> ENTITY_POISON_EMITTER_LIFETIME_TICKS = () -> 2400; // 2 minutes
 
     // [SECTION: POTION EFFECTS]
-    public static Supplier<Double> RAT_VENOM_SCALING = () -> 0.05; // from 0.2
+    public static Supplier<Double> RAT_VENOM_SCALING = () -> 0.05;
     public static Supplier<Double> BOILING_SCALING = () -> 5.0 / 300.0;
     public static Supplier<Double> BLEEDING_SCALING = () -> 3.0 / 300.0;
 
@@ -164,6 +170,7 @@ public class CreRacesConfig {
     public static Supplier<Integer> TERRITORY_MAP_CLAIM_MAX_DISTANCE = () -> 256;
     /** Coins deducted per chunk when claiming territory via the map. 0 = free. Default: 200 */
     public static Supplier<Integer> TERRITORY_CLAIM_COST_PER_CHUNK   = () -> 200;
+    public static Supplier<Boolean> TERRITORY_ENTRY_MESSAGES         = () -> true;
 
     // [SECTION: TEAM]
     public static Supplier<Boolean> TEAM_REQUIRE_SAME_RACE = () -> false;

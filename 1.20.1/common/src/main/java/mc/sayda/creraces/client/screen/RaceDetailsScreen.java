@@ -237,18 +237,20 @@ public class RaceDetailsScreen extends Screen {
 
                 graphics.blit(diffTex, this.leftPos + 41, this.topPos + 179, 0, 0, 93, 12, 93, 12);
 
-                // 6. Decorations
+                // 5. Decorations
                 Calendar now = Calendar.getInstance();
                 int month = now.get(Calendar.MONTH);
+                int day = now.get(Calendar.DAY_OF_MONTH);
                 if (month == Calendar.DECEMBER) {
                         graphics.blit(DECO_CHRISTMAS, this.leftPos + 11, this.topPos + -65, 0, 0, 151, 42, 151, 42);
                 } else if (month == Calendar.OCTOBER) {
                         graphics.blit(DECO_HALLOWEEN, this.leftPos + 11, this.topPos + -65, 0, 0, 151, 42, 151, 42);
-                } else if (month >= Calendar.JUNE && month <= Calendar.AUGUST) {
+                } else if (month == Calendar.JUNE && day >= 19 && day <= 26) {
+                        // Midsummer week: traditional Nordic celebration around the summer solstice, not the whole summer.
                         graphics.blit(DECO_MIDSUMMER, this.leftPos + 11, this.topPos + -65, 0, 0, 151, 42, 151, 42);
                 }
 
-                // 7. Gender Indicator
+                // 6. Gender Indicator
                 if (mc.sayda.creraces.config.CreRacesConfig.GSTATE_ENABLED.get()) {
                         if (race.getGState() == mc.sayda.creraces.engine.GState.MALE) {
                                 graphics.blit(M_ICON, this.leftPos - 142, this.topPos - 35, 0, 0, 16, 16, 16, 16);

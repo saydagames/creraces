@@ -17,6 +17,9 @@ public class ModParticles {
     public static final RegistrySupplier<SimpleParticleType> MAGIC_DAMAGE = PARTICLES.register("magic_damage", () -> new SimpleParticleType(false) {});
     public static final RegistrySupplier<SimpleParticleType> PHYSICAL_DAMAGE = PARTICLES.register("physical_damage", () -> new SimpleParticleType(false) {});
     public static final RegistrySupplier<SimpleParticleType> TRUE_DAMAGE = PARTICLES.register("true_damage", () -> new SimpleParticleType(false) {});
+    public static final RegistrySupplier<SimpleParticleType> VEIL_EMBER = PARTICLES.register("veil_ember", () -> new SimpleParticleType(false) {});
+    public static final RegistrySupplier<SimpleParticleType> ESSENCE_PARTICLE = PARTICLES.register("essence_particle", () -> new SimpleParticleType(false) {});
+    public static final RegistrySupplier<SimpleParticleType> VEIL_MIST = PARTICLES.register("veil_mist", () -> new SimpleParticleType(false) {});
 
     public static void register() {
         PARTICLES.register();

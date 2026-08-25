@@ -12,7 +12,7 @@ import org.joml.Matrix4f;
 
 import org.joml.Vector3f;
 
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -40,7 +40,7 @@ public class BeamRenderer {
 
     private static final ResourceLocation BEAM_TEXTURE = new ResourceLocation(
             "minecraft", "textures/entity/beacon_beam.png");
-    private static final Map<UUID, BeamData> ACTIVE_BEAMS = new HashMap<>();
+    private static final Map<UUID, BeamData> ACTIVE_BEAMS = new ConcurrentHashMap<>();
 
     // -------------------------------------------------------------------------
     // Public API

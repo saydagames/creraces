@@ -30,13 +30,14 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
     private final ScalingValue limit;
     private final Map<Direction, ExpansionRule> rules;
     private final boolean defaultDoorwayClearance;
+    @Nullable
     private final ResourceLocation doorBlock;
     private final int doorWidth;
     private final int doorHeight;
     private final int doorDepth;
 
     public ExpandPocketAction(ScalingValue cost, ScalingValue limit, Map<Direction, ExpansionRule> rules,
-            boolean defaultDoorwayClearance, ResourceLocation doorBlock, int doorWidth, int doorHeight, int doorDepth) {
+            boolean defaultDoorwayClearance, @Nullable ResourceLocation doorBlock, int doorWidth, int doorHeight, int doorDepth) {
         this.cost = cost;
         this.limit = limit;
         this.rules = rules;
@@ -53,6 +54,7 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
         final ScalingValue offsetY;
         final ScalingValue offsetZ;
         final String mode; // "STRUCTURE" or "SHELL"
+        @Nullable
         final ResourceLocation shellBlock;
         final int shellRadius;
         final int shellHeight;
@@ -76,7 +78,7 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
         final Integer checkZ;
 
         ExpansionRule(ResourceLocation structure, ScalingValue offsetX, ScalingValue offsetY, ScalingValue offsetZ,
-                String mode, ResourceLocation shellBlock, int shellRadius, int shellHeight,
+                String mode, @Nullable ResourceLocation shellBlock, int shellRadius, int shellHeight,
                 @Nullable ResourceLocation checkBlock,
                 @Nullable Integer checkX, @Nullable Integer checkY, @Nullable Integer checkZ) {
             this.structure = structure;
@@ -122,6 +124,13 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
             return false;
         }
 
+        if (doorBlock == null) {
+            CreRaces.LOGGER.warn("ExpandPocketAction: No door_block configured; expansion cannot proceed.");
+            player.displayClientMessage(
+                    net.minecraft.network.chat.Component.translatable("msg.creraces.expand_pocket.not_supported"), true);
+            return false;
+        }
+
         DataUtils.getVariables(player).ifPresentOrElse(vars -> {
             double currentCost = cost.evaluate(player, target, slot);
             int maxLimit = (int) Math.round(limit.evaluate(player, target, slot));
@@ -138,7 +147,7 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
                 world.playSound(null, interact_pos, net.minecraft.sounds.SoundEvents.NOTE_BLOCK_BASS.value(),
                         net.minecraft.sounds.SoundSource.NEUTRAL, 1.0f, 1.0f);
                 player.displayClientMessage(
-                        net.minecraft.network.chat.Component.translatable("message.creraces.pocket.boundary"),
+                        net.minecraft.network.chat.Component.translatable("msg.creraces.pocket.boundary"),
                         true);
                 return;
             }
@@ -201,6 +210,12 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
             }
 
             if ("SHELL".equalsIgnoreCase(rule.mode)) {
+                if (rule.shellBlock == null) {
+                    CreRaces.LOGGER.error("ExpandPocketAction: No shell_block configured for face {}.", facing);
+                    player.displayClientMessage(
+                            net.minecraft.network.chat.Component.translatable("msg.creraces.expand_pocket.not_supported"), true);
+                    return;
+                }
                 // Legacy "fill" logic
                 Block shellBlock = BuiltInRegistries.BLOCK.get(rule.shellBlock);
                 if (shellBlock == Blocks.AIR && !rule.shellBlock.equals(new ResourceLocation("minecraft:air"))) {
@@ -274,8 +289,8 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
             ScalingValue cost = ScalingValue.fromJson(json, "cost", 200.0);
             ScalingValue limit = ScalingValue.fromJson(json, "limit", 9.0);
             boolean doorwayClearance = GsonHelper.getAsBoolean(json, "doorway_clearance", true);
-            ResourceLocation doorwayMatch = new ResourceLocation(
-                    GsonHelper.getAsString(json, "door_block", "creraces:dryad_expansion_panel"));
+            String doorBlockStr = GsonHelper.getNullableString(json, "door_block", null);
+            ResourceLocation doorwayMatch = doorBlockStr != null ? new ResourceLocation(doorBlockStr) : null;
             int doorWidth = GsonHelper.getAsInt(json, "door_width", 3);
             int doorHeight = GsonHelper.getAsInt(json, "door_height", 3);
             int doorDepth = GsonHelper.getAsInt(json, "door_depth", 2);
@@ -293,8 +308,8 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
                         ScalingValue oy = ScalingValue.fromJson(faceJson, "offset_y", 0.0);
                         ScalingValue oz = ScalingValue.fromJson(faceJson, "offset_z", 0.0);
                         String mode = GsonHelper.getAsString(faceJson, "mode", "STRUCTURE");
-                        ResourceLocation shellBlock = new ResourceLocation(
-                                GsonHelper.getAsString(faceJson, "shell_block", "creraces:dryad_petrified_wood"));
+                        String shellBlockStr = GsonHelper.getNullableString(faceJson, "shell_block", null);
+                        ResourceLocation shellBlock = shellBlockStr != null ? new ResourceLocation(shellBlockStr) : null;
                         int shellRadius = GsonHelper.getAsInt(faceJson, "shell_radius", 14);
                         int shellHeight = GsonHelper.getAsInt(faceJson, "shell_height", 7);
                         @javax.annotation.Nullable String checkBlockStr = GsonHelper.getNullableString(faceJson, "check_block", null);

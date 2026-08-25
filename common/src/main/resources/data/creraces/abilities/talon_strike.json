@@ -30,7 +30,7 @@
                 },
                 {
                     "type": "creraces:modify_value",
-                    "resource": "self",
+                    "resource": "state:creraces:talon_strike",
                     "value": 1.0
                 }
             ],

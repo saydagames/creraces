@@ -44,16 +44,7 @@ public class ToggleStateAction implements ActionRegistry.RaceAction {
             if (targetAbilityId == null && "self".equalsIgnoreCase(stateVariable) && slot != null) {
                 targetAbilityId = vars.getAbilityInSlot(slot);
             } else if (targetAbilityId == null) {
-                // Handle stateVariable as a potential ResourceLocation string with prefixes
-                String parsedStateVariable = stateVariable;
-                if (stateVariable.startsWith("ability:")) {
-                    parsedStateVariable = stateVariable.substring(8);
-                } else if (stateVariable.startsWith("state:")) { // Canonical prefix for state variables
-                    parsedStateVariable = stateVariable.substring(6);
-                } else if (stateVariable.startsWith("custom:")) {
-                    parsedStateVariable = stateVariable.substring(7);
-                }
-                targetAbilityId = ResourceLocation.tryParse(java.util.Objects.requireNonNull(parsedStateVariable));
+                mc.sayda.creraces.CreRaces.LOGGER.warn("ToggleStateAction: could not resolve state '{}': no slot context and no valid resource location", stateVariable);
             }
 
             if (targetAbilityId == null)

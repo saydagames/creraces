@@ -14,6 +14,19 @@
     "creraces:dryad_pressure_plate",
     "creraces:dryad_trapdoor",
     "creraces:dryad_door",
-    "creraces:weathered_red_stripped_oak_log"
+    "creraces:weathered_red_stripped_oak_log",
+    "creraces:red_stripped_oak_log",
+    "creraces:veil_willow_log",
+    "creraces:veil_willow_wood",
+    "creraces:veil_willow_planks",
+    "creraces:veil_willow_stairs",
+    "creraces:veil_willow_slab",
+    "creraces:veil_willow_fence",
+    "creraces:veil_willow_fence_gate",
+    "creraces:veil_willow_button",
+    "creraces:veil_willow_pressure_plate",
+    "creraces:veil_willow_trapdoor",
+    "creraces:veil_willow_door",
+    "creraces:research_table"
   ]
 }

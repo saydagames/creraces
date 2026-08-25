@@ -29,7 +29,6 @@ public class MorphAction implements ActionRegistry.RaceAction {
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         DataUtils.getVariables(player).ifPresent(vars -> {
-            // Get Twilight Lib morph data
             mc.sayda.twilight_lib.capabilities.IMorph morphData = mc.sayda.twilight_lib.capabilities.DataUtils
                     .getMorphData(player);
 
@@ -38,13 +37,13 @@ public class MorphAction implements ActionRegistry.RaceAction {
                 vars.setMorphed(false);
                 morphData.setEntityType(Optional.empty());
 
-                // Sync to Twilight Lib
                 mc.sayda.twilight_lib.network.NetworkHandler.sendMorphToAll(
                         mc.sayda.twilight_lib.network.SyncMorphPacket.of(
                                 player.getUUID(), Optional.empty()));
 
                 // Reset scale
                 if (player.getServer() != null && player instanceof ServerPlayer) {
+                    // Pehkui's scale API isn't directly accessible here, so drive it via its scale command instead.
                     player.getServer().getCommands().performPrefixedCommand(
                             player.createCommandSourceStack().withPermission(4).withSuppressedOutput(),
                             "scale reset @s");
@@ -59,7 +58,6 @@ public class MorphAction implements ActionRegistry.RaceAction {
                 vars.setMorphed(true);
                 morphData.setEntityType(Optional.of(entityId));
 
-                // Sync to Twilight Lib
                 mc.sayda.twilight_lib.network.NetworkHandler.sendMorphToAll(
                         mc.sayda.twilight_lib.network.SyncMorphPacket.of(
                                 player.getUUID(), Optional.of(entityId)));
@@ -67,13 +65,13 @@ public class MorphAction implements ActionRegistry.RaceAction {
                 // Apply scale if specified
                 double s = scale.evaluate(player, target, slot);
                 if (s > 0 && s != 1.0 && player.getServer() != null && player instanceof ServerPlayer sp) {
+                    // Pehkui's scale API isn't directly accessible here, so drive it via its scale command instead.
                     sp.getServer().getCommands().performPrefixedCommand(
                             sp.createCommandSourceStack().withPermission(4).withSuppressedOutput(),
                             "scale set pehkui:base " + s + " @s");
                 }
             }
 
-            // Sync variables
             mc.sayda.creraces.network.BoundaryHandler.resyncVariables(player, player);
         });
         return true;

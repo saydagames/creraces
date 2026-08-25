@@ -5,12 +5,13 @@
     "creraces:icon": "creraces:textures/mob_effect/rooted.png",
     "creraces:cooldown": 480,
     "creraces:cost": 15,
+    "creraces:condition_fail_message": "msg.creraces.rain_fail_message",
     "creraces:race": [
         "creraces:naiad"
     ],
     "creraces:condition": {
         "type": "creraces:in_water",
-        "include_rain": false
+        "include_rain": true
     },
     "creraces:actions": [
         {

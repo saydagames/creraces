@@ -148,6 +148,9 @@
             },
             "exhaustion_cooldown": "creraces:flight_exhaustion",
             "exhaustion_duration": 400,
+            "show_bar": true,
+            "bar_color": "#87CEEB",
+            "label": "Flight Exhaustion",
             "condition": {
                 "type": "creraces:and",
                 "conditions": [
@@ -221,7 +224,7 @@
                     "if_false": [
                         {
                             "type": "creraces:message",
-                            "text": "Not enough energy",
+                            "text": "msg.creraces.harpy.not_enough_energy",
                             "actionbar": true
                         },
                         {
@@ -270,7 +273,7 @@
                     "if_false": [
                         {
                             "type": "creraces:message",
-                            "text": "Not enough energy",
+                            "text": "msg.creraces.harpy.not_enough_energy",
                             "actionbar": true
                         },
                         {

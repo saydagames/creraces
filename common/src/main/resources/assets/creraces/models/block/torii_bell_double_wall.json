@@ -1,5 +1,5 @@
 {
-    "parent": "minecraft:block/bell_double_wall",
+    "parent": "minecraft:block/bell_between_walls",
     "textures": {
         "top": "creraces:block/torii_bell_top",
         "side": "creraces:block/torii_bell_side",

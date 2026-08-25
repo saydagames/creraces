@@ -1,0 +1,13 @@
+{
+  "ability": "creraces:rageful_bloodlust",
+  "level": 1,
+  "pattern": [
+    { "q":  0, "r":  1, "essence": "fire" },
+    { "q":  0, "r":  0, "essence": "death" },
+    { "q": -1, "r":  0, "essence": "death" },
+    { "q": -1, "r": -1, "essence": "dark" },
+    { "q": -2, "r": -1, "essence": "dark" },
+    { "q":  1, "r": -1, "essence": "dark" },
+    { "q":  2, "r": -2, "essence": "dark" }
+  ]
+}

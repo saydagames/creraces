@@ -390,35 +390,35 @@ public class CreracesCommand {
                 boolean isOp = source.hasPermission(2);
 
                 source.sendSuccess(
-                                () -> java.util.Objects.requireNonNull(Component.translatable("creraces.help.header")
+                                () -> java.util.Objects.requireNonNull(Component.translatable("help.creraces.header")
                                                 .withStyle(ChatFormatting.GOLD)),
                                 false);
 
                 // Public Commands
-                sendHelp(source, "/creraces hud",                           "creraces.help.hud");
-                sendHelp(source, "/creraces abilities",                      "creraces.help.abilities");
-                sendHelp(source, "/creraces select" + (isOp ? " [player]" : ""), "creraces.help.selection");
-                sendHelp(source, "/creraces mirror"  + (isOp ? " [player]" : ""), "creraces.help.mirror");
-                sendHelp(source, "/creraces debug"   + (isOp ? " [player]" : ""), "creraces.help.debug");
-                sendHelp(source, "/creraces team",                           "creraces.help.team");
-                sendHelp(source, "/creraces territory",                      "creraces.help.territory");
-                sendHelp(source, "/creraces clan",                           "creraces.help.clan");
-                sendHelp(source, "/creraces pocket <invite|join|leave|list|kick|revoke>", "creraces.help.pocket");
-                sendHelp(source, "/creraces refresh",                        "creraces.help.refresh");
+                sendHelp(source, "/creraces hud",                           "help.creraces.hud");
+                sendHelp(source, "/creraces abilities",                      "help.creraces.abilities");
+                sendHelp(source, "/creraces select" + (isOp ? " [player]" : ""), "help.creraces.selection");
+                sendHelp(source, "/creraces mirror"  + (isOp ? " [player]" : ""), "help.creraces.mirror");
+                sendHelp(source, "/creraces debug"   + (isOp ? " [player]" : ""), "help.creraces.debug");
+                sendHelp(source, "/creraces team",                           "help.creraces.team");
+                sendHelp(source, "/creraces territory",                      "help.creraces.territory");
+                sendHelp(source, "/creraces clan",                           "help.creraces.clan");
+                sendHelp(source, "/creraces pocket <invite|join|leave|list|kick|revoke>", "help.creraces.pocket");
+                sendHelp(source, "/creraces refresh",                        "help.creraces.refresh");
 
                 // OP-Only Commands
                 if (isOp) {
-                        sendHelp(source, "/creraces reset <player>",              "creraces.help.reset");
-                        sendHelp(source, "/creraces setrace <player> <id>",       "creraces.help.setrace");
-                        sendHelp(source, "/creraces setrandom <player>",          "creraces.help.setrandom");
-                        sendHelp(source, "/creraces grant <player> <ability>",    "creraces.help.grant");
-                        sendHelp(source, "/creraces revoke <player> <ability>",   "creraces.help.revoke");
-                        sendHelp(source, "/creraces modify <player> <var> <val>", "creraces.help.modify");
-                        sendHelp(source, "/creraces reload",                                          "creraces.help.reload");
-                        sendHelp(source, "/creraces pocket goto <index>",                             "creraces.help.pocket_goto");
-                        sendHelp(source, "/creraces territory race unclaim <race_id>",                "creraces.help.territory_race_unclaim");
-                        sendHelp(source, "/creraces territory chunk unclaim <x> <z>",                "creraces.help.territory_chunk_unclaim");
-                        sendHelp(source, "/creraces territory chunk info <x> <z>",                   "creraces.help.territory_chunk_info");
+                        sendHelp(source, "/creraces reset <player>",              "help.creraces.reset");
+                        sendHelp(source, "/creraces setrace <player> <id>",       "help.creraces.setrace");
+                        sendHelp(source, "/creraces setrandom <player>",          "help.creraces.setrandom");
+                        sendHelp(source, "/creraces grant <player> <ability>",    "help.creraces.grant");
+                        sendHelp(source, "/creraces revoke <player> <ability>",   "help.creraces.revoke");
+                        sendHelp(source, "/creraces modify <player> <var> <val>", "help.creraces.modify");
+                        sendHelp(source, "/creraces reload",                                          "help.creraces.reload");
+                        sendHelp(source, "/creraces pocket goto <index>",                             "help.creraces.pocket_goto");
+                        sendHelp(source, "/creraces territory race unclaim <race_id>",                "help.creraces.territory_race_unclaim");
+                        sendHelp(source, "/creraces territory chunk unclaim <x> <z>",                "help.creraces.territory_chunk_unclaim");
+                        sendHelp(source, "/creraces territory chunk info <x> <z>",                   "help.creraces.territory_chunk_info");
                 }
 
                 return 1;
@@ -473,7 +473,7 @@ public class CreracesCommand {
 
                 RaceIncidents.transformPlayer(target, race.id());
                 source.sendSuccess(() -> java.util.Objects
-                                .requireNonNull(Component.translatable("creraces.command.set_success",
+                                .requireNonNull(Component.translatable("cmd.creraces.set_success",
                                                 race.name(), target.getGameProfile().getName())),
                                 true);
                 return 1;
@@ -514,7 +514,9 @@ public class CreracesCommand {
         }
 
         private static int executeSetRandom(CommandSourceStack source, ServerPlayer target) {
-                List<Race> races = new ArrayList<>(RaceRegistry.getAll());
+                List<Race> races = RaceRegistry.getAll().stream()
+                        .filter(Race::selectable)
+                        .collect(java.util.stream.Collectors.toList());
                 if (races.isEmpty())
                         return 0;
 
@@ -524,7 +526,7 @@ public class CreracesCommand {
 
         private static int executeReload(CommandSourceStack source) {
                 source.sendSuccess(() -> java.util.Objects
-                                .requireNonNull(Component.translatable("creraces.command.reloading")
+                                .requireNonNull(Component.translatable("cmd.creraces.reloading")
                                                 .withStyle(ChatFormatting.YELLOW)),
                                 true);
 
@@ -550,7 +552,7 @@ public class CreracesCommand {
                         mc.sayda.creraces.network.BoundaryHandler.broadcastClearCache();
 
                         source.sendSuccess(() -> java.util.Objects
-                                        .requireNonNull(Component.translatable("creraces.command.reloaded")
+                                        .requireNonNull(Component.translatable("cmd.creraces.reloaded")
                                                         .withStyle(ChatFormatting.GREEN)),
                                         true);
                         
@@ -566,7 +568,7 @@ public class CreracesCommand {
                         String varLower = variable.toLowerCase();
                         String normalizedValue = value.toLowerCase();
 
-                        // Smart numeric mapping for booleans
+                        // modify's setters are numeric, so map true/false to 1.0/0.0
                         if (normalizedValue.equals("true"))
                                 normalizedValue = "1.0";
                         else if (normalizedValue.equals("false"))
@@ -715,29 +717,29 @@ public class CreracesCommand {
                 if (player == null)
                         return 0;
                 if (player == target) {
-                        source.sendFailure(Component.translatable("message.creraces.pocket.cannot_invite_self"));
+                        source.sendFailure(Component.translatable("msg.creraces.pocket.cannot_invite_self"));
                         return 0;
                 }
 
                 return mc.sayda.creraces.capability.DataUtils.getVariables(player).map(vars -> {
                         if (!vars.hasPocket()) {
-                                source.sendFailure(Component.translatable("message.creraces.pocket.no_pocket_to_manage"));
+                                source.sendFailure(Component.translatable("msg.creraces.pocket.no_pocket_to_manage"));
                                 return 0;
                         }
 
                         int maxInvites = mc.sayda.creraces.config.CreRacesConfig.POCKET_INVITE_MAX.get();
                         if (maxInvites >= 0 && vars.getPocketInvitations().size() >= maxInvites) {
-                                source.sendFailure(Component.translatable("message.creraces.pocket.max_invites_reached", maxInvites));
+                                source.sendFailure(Component.translatable("msg.creraces.pocket.max_invites_reached", maxInvites));
                                 return 0;
                         }
 
                         vars.inviteToPocket(target.getUUID());
-                        source.sendSuccess(() -> Component.translatable("message.creraces.pocket.invite_success", target.getDisplayName())
+                        source.sendSuccess(() -> Component.translatable("msg.creraces.pocket.invite_success", target.getDisplayName())
                                         .withStyle(ChatFormatting.GREEN), true);
                         
-                        target.sendSystemMessage(Component.translatable("message.creraces.pocket.invite_received", player.getDisplayName())
+                        target.sendSystemMessage(Component.translatable("msg.creraces.pocket.invite_received", player.getDisplayName())
                                         .append("\n")
-                                        .append(Component.translatable("message.creraces.pocket.join_command_hint", player.getGameProfile().getName()))
+                                        .append(Component.translatable("msg.creraces.pocket.join_command_hint", player.getGameProfile().getName()))
                                         .withStyle(ChatFormatting.GOLD));
                         return 1;
                 }).orElse(0);
@@ -750,11 +752,11 @@ public class CreracesCommand {
 
                 return mc.sayda.creraces.capability.DataUtils.getVariables(player).map(vars -> {
                         if (!vars.hasPocket()) {
-                                source.sendFailure(Component.translatable("message.creraces.pocket.no_pocket_to_manage"));
+                                source.sendFailure(Component.translatable("msg.creraces.pocket.no_pocket_to_manage"));
                                 return 0;
                         }
                         vars.revokePocketInvitation(target.getUUID());
-                        source.sendSuccess(() -> Component.translatable("message.creraces.pocket.revoke_success", target.getDisplayName())
+                        source.sendSuccess(() -> Component.translatable("msg.creraces.pocket.revoke_success", target.getDisplayName())
                                         .withStyle(ChatFormatting.YELLOW), true);
                         return 1;
                 }).orElse(0);
@@ -768,13 +770,13 @@ public class CreracesCommand {
                 // Check if target is in the player's pocket
                 String pocketDim = mc.sayda.creraces.config.CreRacesConfig.ACTION_DEFAULT_POCKET_DIM.get();
                 if (!target.level().dimension().location().toString().equals(pocketDim)) {
-                        source.sendFailure(Component.translatable("message.creraces.pocket.not_in_pocket_dim"));
+                        source.sendFailure(Component.translatable("msg.creraces.pocket.not_in_pocket_dim"));
                         return 0;
                 }
 
                 return mc.sayda.creraces.capability.DataUtils.getVariables(player).map(hostVars -> {
                         if (!hostVars.hasPocket()) {
-                                source.sendFailure(Component.translatable("message.creraces.pocket.no_pocket_to_manage"));
+                                source.sendFailure(Component.translatable("msg.creraces.pocket.no_pocket_to_manage"));
                                 return 0;
                         }
 
@@ -802,13 +804,13 @@ public class CreracesCommand {
 
                                         target.teleportTo(world, targetVars.getReturnX(), targetVars.getReturnY(), targetVars.getReturnZ(), target.getYRot(), target.getXRot());
 
-                                        source.sendSuccess(() -> Component.translatable("message.creraces.pocket.kick_success_server", target.getDisplayName())
+                                        source.sendSuccess(() -> Component.translatable("msg.creraces.pocket.kick_success_server", target.getDisplayName())
                                                         .withStyle(ChatFormatting.RED), true);
-                                        target.sendSystemMessage(Component.translatable("message.creraces.pocket.kick_success_client", player.getDisplayName())
+                                        target.sendSystemMessage(Component.translatable("msg.creraces.pocket.kick_success_client", player.getDisplayName())
                                                         .withStyle(ChatFormatting.RED));
                                         return 1;
                                 } else {
-                                        source.sendFailure(Component.translatable("message.creraces.pocket.kick_not_in_area"));
+                                        source.sendFailure(Component.translatable("msg.creraces.pocket.kick_not_in_area"));
                                         return 0;
                                 }
                         }).orElse(0);
@@ -822,14 +824,14 @@ public class CreracesCommand {
 
                 return mc.sayda.creraces.capability.DataUtils.getVariables(player).map(vars -> {
                         if (!vars.hasPocket()) {
-                                source.sendFailure(Component.translatable("message.creraces.pocket.no_pocket_to_manage"));
+                                source.sendFailure(Component.translatable("msg.creraces.pocket.no_pocket_to_manage"));
                                 return 0;
                         }
                         java.util.Set<java.util.UUID> invites = vars.getPocketInvitations();
                         if (invites.isEmpty()) {
-                                source.sendSuccess(() -> Component.translatable("message.creraces.pocket.list_empty"), false);
+                                source.sendSuccess(() -> Component.translatable("msg.creraces.pocket.list_empty"), false);
                         } else {
-                                source.sendSuccess(() -> Component.translatable("message.creraces.pocket.list_header")
+                                source.sendSuccess(() -> Component.translatable("msg.creraces.pocket.list_header")
                                                 .withStyle(ChatFormatting.GOLD), false);
                                 for (java.util.UUID uuid : invites) {
                                         String name = uuid.toString();
@@ -859,7 +861,7 @@ public class CreracesCommand {
                                                 new ResourceLocation(net.minecraft.resources.ResourceLocation.tryParse(pocketDimName) != null ? pocketDimName : "minecraft:overworld")));
 
                 if (pocketWorld == null) {
-                        source.sendFailure(Component.translatable("message.creraces.pocket.not_found"));
+                        source.sendFailure(Component.translatable("msg.creraces.pocket.not_found"));
                         return 0;
                 }
 
@@ -870,7 +872,7 @@ public class CreracesCommand {
 
                 player.teleportTo(pocketWorld, tx + 0.5, ty + 1.0, tz + 0.5, 0, 0);
 
-                source.sendSuccess(() -> Component.translatable("message.creraces.pocket.teleport_success", index, (int) tx, (int) ty, (int) tz)
+                source.sendSuccess(() -> Component.translatable("msg.creraces.pocket.teleport_success", index, (int) tx, (int) ty, (int) tz)
                                 .withStyle(ChatFormatting.GREEN), false);
                 return 1;
         }
@@ -881,7 +883,7 @@ public class CreracesCommand {
 
                 String pocketDim = mc.sayda.creraces.config.CreRacesConfig.ACTION_DEFAULT_POCKET_DIM.get();
                 if (!player.level().dimension().location().toString().equals(pocketDim)) {
-                        source.sendFailure(Component.translatable("message.creraces.pocket.not_in_pocket_dim"));
+                        source.sendFailure(Component.translatable("msg.creraces.pocket.not_in_pocket_dim"));
                         return 0;
                 }
 
@@ -901,7 +903,7 @@ public class CreracesCommand {
 
                         player.teleportTo(world, vars.getReturnX(), vars.getReturnY(), vars.getReturnZ(),
                                 player.getYRot(), player.getXRot());
-                        source.sendSuccess(() -> Component.translatable("message.creraces.pocket.leave_success")
+                        source.sendSuccess(() -> Component.translatable("msg.creraces.pocket.leave_success")
                                 .withStyle(ChatFormatting.GREEN), false);
                         return 1;
                 }).orElse(0);
@@ -920,27 +922,26 @@ public class CreracesCommand {
 
                 mc.sayda.creraces.capability.IPlayerVariables hostVars = optVars.get();
 
-                // Ensure pocket exists
                 if (!hostVars.hasPocket()) {
-                        source.sendFailure(Component.translatable("message.creraces.pocket.no_pocket_initialized", host.getDisplayName()));
+                        source.sendFailure(Component.translatable("msg.creraces.pocket.no_pocket_initialized", host.getDisplayName()));
                         return 0;
                 }
 
                 // Check permissions: always allow if self, if invited, or if OP
                 if (!player.getUUID().equals(host.getUUID()) && !hostVars.getPocketInvitations().contains(player.getUUID())
                                 && !source.hasPermission(2)) {
-                        source.sendFailure(Component.translatable("message.creraces.pocket.no_invite_to_join", host.getDisplayName()));
+                        source.sendFailure(Component.translatable("msg.creraces.pocket.no_invite_to_join", host.getDisplayName()));
                         return 0;
                 }
 
-                // Dryad Restriction: block entry to own pocket if tree is not set
-                var hostRace = hostVars.getRace();
-                if (player == host && hostRace != null && hostRace.toString().equals("creraces:dryad")) {
+                // Block entry to your own pocket if you haven't claimed a node yet (any race,
+                // not just Dryad - node_x/y/z is the same race-agnostic anchor used everywhere else)
+                if (player == host) {
                     double tx = hostVars.getPersistentState(new ResourceLocation("creraces", "node_x"));
                     double ty = hostVars.getPersistentState(new ResourceLocation("creraces", "node_y"));
                     double tz = hostVars.getPersistentState(new ResourceLocation("creraces", "node_z"));
                     if (tx == 0 && ty == 0 && tz == 0) {
-                        source.sendFailure(Component.translatable("message.creraces.dryad.no_tree"));
+                        source.sendFailure(Component.translatable("msg.creraces.dryad.no_tree"));
                         return 0;
                     }
                 }
@@ -953,7 +954,7 @@ public class CreracesCommand {
                                                 new ResourceLocation(net.minecraft.resources.ResourceLocation.tryParse(pocketDimName) != null ? pocketDimName : "minecraft:overworld")));
 
                 if (pocketWorld == null) {
-                        source.sendFailure(Component.translatable("message.creraces.pocket.not_found"));
+                        source.sendFailure(Component.translatable("msg.creraces.pocket.not_found"));
                         return 0;
                 }
 
@@ -971,7 +972,7 @@ public class CreracesCommand {
 
                 player.teleportTo(pocketWorld, tx, ty, tz, player.getYRot(), player.getXRot());
 
-                source.sendSuccess(() -> Component.translatable("message.creraces.pocket.joined", host.getDisplayName())
+                source.sendSuccess(() -> Component.translatable("msg.creraces.pocket.joined", host.getDisplayName())
                                 .withStyle(ChatFormatting.GREEN), false);
                 return 1;
         }
@@ -1034,7 +1035,7 @@ public class CreracesCommand {
 
         private static CompletableFuture<Suggestions> suggestRaces(CommandContext<CommandSourceStack> context,
                         SuggestionsBuilder builder) {
-                RaceRegistry.getAll().forEach(race -> {
+                RaceRegistry.getAll().stream().filter(Race::selectable).forEach(race -> {
                         builder.suggest(race.id().toString());
                 });
                 return builder.buildFuture();

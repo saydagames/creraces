@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    { "item": "creraces:dryad_boat" },
+    { "item": "minecraft:chest" }
+  ],
+  "result": { "item": "creraces:dryad_chest_boat", "count": 1 }
+}

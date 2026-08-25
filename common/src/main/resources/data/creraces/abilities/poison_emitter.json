@@ -2,7 +2,7 @@
     "creraces:name": "ability.creraces.poison_emitter.name",
     "creraces:description": "ability.creraces.poison_emitter.description",
     "creraces:icon": "minecraft:textures/item/poisonous_potato.png",
-    "category": "UTILITY",
+    "creraces:type": "ACTIVE",
     "creraces:cooldown": 360,
     "creraces:race": [
         "creraces:ratkin"

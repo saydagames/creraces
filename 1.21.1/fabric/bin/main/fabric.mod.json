@@ -1,0 +1,35 @@
+{
+    "schemaVersion": 1,
+    "id": "creraces",
+    "version": "${version}",
+    "name": "CreRaces",
+    "description": "CreRaces is a fantasy race mod for Minecraft. Choose your race, unlock abilities, and forge your destiny.",
+    "authors": [
+        "mc_jojo3"
+    ],
+    "contact": {},
+    "license": "All Rights Reserved",
+    "icon": "logo.png",
+    "environment": "*",
+    "entrypoints": {
+        "main": [
+            "mc.sayda.creraces.fabric.CreRacesFabric"
+        ],
+        "client": [
+            "mc.sayda.creraces.fabric.CreRacesFabricClient"
+        ]
+    },
+    "mixins": [
+        "creraces-common.mixins.json",
+        "creraces-fabric.mixins.json"
+    ],
+    "depends": {
+        "fabricloader": ">=0.16.5",
+        "minecraft": ">=1.21.1",
+        "java": ">=21",
+        "architectury": ">=13.0.8",
+        "twilight_lib": ">=2.0.0",
+        "pehkui": "*",
+        "fabric-api": "*"
+    }
+}

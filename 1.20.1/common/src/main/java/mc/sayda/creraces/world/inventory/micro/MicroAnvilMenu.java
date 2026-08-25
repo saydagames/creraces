@@ -15,12 +15,6 @@ public class MicroAnvilMenu extends AnvilMenu {
 
     @Override
     public boolean stillValid(Player player) {
-        return this.access.evaluate((level, pos) -> {
-            if (!level.getBlockState(pos).is(mc.sayda.creraces.registry.ModBlocks.MICRO_BLOCK.get())) {
-                return false;
-            }
-            return player.distanceToSqr((double) pos.getX() + 0.5, (double) pos.getY() + 0.5,
-                    (double) pos.getZ() + 0.5) <= 64.0;
-        }, true);
+        return this.access.evaluate((level, pos) -> MicroMenuUtils.isValidMicroBlockAccess(level, pos, player), true);
     }
 }

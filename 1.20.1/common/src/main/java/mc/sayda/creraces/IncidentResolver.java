@@ -6,7 +6,6 @@ import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.network.BoundaryHandler;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Resolves incidents (events) within the world.
@@ -14,7 +13,6 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class IncidentResolver {
     private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
-    private static final AtomicLong sakuyaWatchTick = new AtomicLong(0);
 
 public static void init() {
         // Player Events
@@ -37,7 +35,7 @@ public static void init() {
         });
 
         // Tick Events
-        TickEvent.SERVER_POST.register(IncidentResolver::onGensokyoTick);
+        TickEvent.SERVER_POST.register(IncidentResolver::onIncidentTick);
 
         // Elect faction leader on join
         PlayerEvent.PLAYER_JOIN.register(player -> {
@@ -54,12 +52,13 @@ public static void init() {
             }
         });
 
-        // Team persistence
+        // Load persisted server state (teams, pockets, territory)
         dev.architectury.event.events.common.LifecycleEvent.SERVER_STARTED.register(server -> {
             mc.sayda.creraces.team.RaceTeamManager.load(server);
             mc.sayda.creraces.util.PocketManager.load(server);
             mc.sayda.creraces.territory.TerritoryManager.load(server);
         });
+        // Save persisted server state (teams, pockets, territory), then clean up transient state
         dev.architectury.event.events.common.LifecycleEvent.SERVER_STOPPING.register(server -> {
             mc.sayda.creraces.team.RaceTeamManager.save(server);
             mc.sayda.creraces.util.PocketManager.save(server);
@@ -127,18 +126,22 @@ public static void init() {
         });
     }
 
-    private static dev.architectury.event.CompoundEventResult<net.minecraft.world.item.ItemStack> onIncidentInteraction(
-            ServerPlayer player, net.minecraft.world.InteractionHand hand) {
-        // Lockdown/Stun check
+    private static boolean isPlayerLocked(ServerPlayer player) {
         var stunned = mc.sayda.creraces.registry.ModMobEffects.STUNNED.get();
         if (stunned != null && player.hasEffect(stunned)) {
-            return dev.architectury.event.CompoundEventResult.interruptTrue(player.getItemInHand(hand));
+            return true;
         }
         if (mc.sayda.creraces.config.CreRacesConfig.FORCED_SELECTION.get()) {
-            if (!DataUtils.getVariables(player).map(mc.sayda.creraces.capability.IPlayerVariables::hasChosenRace)
-                    .orElse(true)) {
-                return dev.architectury.event.CompoundEventResult.interruptTrue(player.getItemInHand(hand));
-            }
+            return !DataUtils.getVariables(player).map(mc.sayda.creraces.capability.IPlayerVariables::hasChosenRace)
+                    .orElse(true);
+        }
+        return false;
+    }
+
+    private static dev.architectury.event.CompoundEventResult<net.minecraft.world.item.ItemStack> onIncidentInteraction(
+            ServerPlayer player, net.minecraft.world.InteractionHand hand) {
+        if (isPlayerLocked(player)) {
+            return dev.architectury.event.CompoundEventResult.interruptTrue(player.getItemInHand(hand));
         }
 
         net.minecraft.world.item.ItemStack stack = player.getItemInHand(hand);
@@ -159,16 +162,8 @@ public static void init() {
 
     private static dev.architectury.event.EventResult onIncidentBlockInteraction(ServerPlayer player,
             net.minecraft.world.InteractionHand hand, net.minecraft.core.BlockPos pos) {
-        // Lockdown/Stun check
-        var stunned = mc.sayda.creraces.registry.ModMobEffects.STUNNED.get();
-        if (stunned != null && player.hasEffect(stunned)) {
+        if (isPlayerLocked(player)) {
             return dev.architectury.event.EventResult.interruptTrue();
-        }
-        if (mc.sayda.creraces.config.CreRacesConfig.FORCED_SELECTION.get()) {
-            if (!DataUtils.getVariables(player).map(mc.sayda.creraces.capability.IPlayerVariables::hasChosenRace)
-                    .orElse(true)) {
-                return dev.architectury.event.EventResult.interruptTrue();
-            }
         }
 
         net.minecraft.world.level.block.state.BlockState state = player.level().getBlockState(pos);
@@ -189,16 +184,8 @@ public static void init() {
 
     private static dev.architectury.event.EventResult onIncidentBlockPlace(ServerPlayer player,
             net.minecraft.core.BlockPos pos, net.minecraft.world.level.block.state.BlockState state) {
-        // Lockdown/Stun check
-        var stunned = mc.sayda.creraces.registry.ModMobEffects.STUNNED.get();
-        if (stunned != null && player.hasEffect(stunned)) {
+        if (isPlayerLocked(player)) {
             return dev.architectury.event.EventResult.interruptTrue();
-        }
-        if (mc.sayda.creraces.config.CreRacesConfig.FORCED_SELECTION.get()) {
-            if (!DataUtils.getVariables(player).map(mc.sayda.creraces.capability.IPlayerVariables::hasChosenRace)
-                    .orElse(true)) {
-                return dev.architectury.event.EventResult.interruptTrue();
-            }
         }
 
         java.util.Optional<mc.sayda.creraces.capability.IPlayerVariables> varsOpt = DataUtils.getVariables(player);
@@ -221,17 +208,9 @@ public static void init() {
             return;
         }
 
-        // Lockdown/Stun check (Attack cancellation is also in PlayerMixin, but double
-        // checking here)
-        var stunned = mc.sayda.creraces.registry.ModMobEffects.STUNNED.get();
-        if (stunned != null && player.hasEffect(stunned)) {
+        // Attack cancellation is also in PlayerMixin, but double checking here
+        if (isPlayerLocked(player)) {
             return;
-        }
-        if (mc.sayda.creraces.config.CreRacesConfig.FORCED_SELECTION.get()) {
-            if (!DataUtils.getVariables(player).map(mc.sayda.creraces.capability.IPlayerVariables::hasChosenRace)
-                    .orElse(true)) {
-                return;
-            }
         }
 
         mc.sayda.creraces.util.DamageGuard.setProcessing(true);
@@ -260,7 +239,7 @@ public static void init() {
             }
         });
 
-        // 7. Coin Drop Logic
+        // Coin drop logic
         if (mc.sayda.creraces.config.CreRacesConfig.COIN_DROP_ENABLED.get()
                 && victim instanceof net.minecraft.world.entity.monster.AbstractIllager) {
             var taxingEnchant = mc.sayda.creraces.registry.ModEnchantments.TAXING.get();
@@ -313,9 +292,11 @@ public static void init() {
 
             // Send border packet once the client has fully loaded in (20-tick delay on login)
             net.minecraft.world.level.border.WorldBorder border = fairyLevel.getWorldBorder();
-            mc.sayda.creraces.util.Scheduler.delay(20, () ->
+            mc.sayda.creraces.util.Scheduler.delay(20, () -> {
+                    if (player.isRemoved() || player.connection == null) return;
                     player.connection.send(
-                            new net.minecraft.network.protocol.game.ClientboundInitializeBorderPacket(border)));
+                            new net.minecraft.network.protocol.game.ClientboundInitializeBorderPacket(border));
+            });
 
             mc.sayda.creraces.capability.DataUtils.getVariables(player).ifPresent(vars -> {
                 mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
@@ -327,7 +308,7 @@ public static void init() {
 
         // Sync the joining player's data to all currently online players,
         // and sync all online players' data to the joining player.
-        // NOTE: We iterate level().players() but avoid an O(n²) full cross-sync:
+        // Iterates all online players but avoids an O(n²) full cross-sync:
         // each existing player only needs to receive the new player's data once.
         if (player.getServer() != null) {
             player.getServer().getPlayerList().getPlayers().forEach(other -> {
@@ -373,9 +354,11 @@ public static void init() {
                 // CHANGE_DIMENSION fires before the client finishes loading the new level,
                 // so the broadcast from setSize() misses them; we must send it directly.
                 net.minecraft.world.level.border.WorldBorder border = fairyLevel.getWorldBorder();
-                mc.sayda.creraces.util.Scheduler.delay(2, () ->
+                mc.sayda.creraces.util.Scheduler.delay(2, () -> {
+                        if (player.isRemoved() || player.connection == null) return;
                         player.connection.send(
-                                new net.minecraft.network.protocol.game.ClientboundInitializeBorderPacket(border)));
+                                new net.minecraft.network.protocol.game.ClientboundInitializeBorderPacket(border));
+                });
             }
 
             DataUtils.getVariables(player).ifPresent(vars -> {
@@ -399,8 +382,8 @@ public static void init() {
 
                 if (wasDeath) {
                     newVars.resetOnDeath();
-                    mc.sayda.creraces.race.RaceIncidents.refreshPlayer(newPlayer);
                 }
+                mc.sayda.creraces.race.RaceIncidents.refreshPlayer(newPlayer);
 
                 // After cloning, sync to the new player
                 BoundaryHandler.resyncVariables(newPlayer, newPlayer);
@@ -408,7 +391,7 @@ public static void init() {
         });
     }
 
-    private static void onGensokyoTick(net.minecraft.server.MinecraftServer server) {
+    private static void onIncidentTick(net.minecraft.server.MinecraftServer server) {
         if (mc.sayda.creraces.config.CreRacesConfig.FORCED_SELECTION.get()) { // FORCED_SELECTION default is true
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                 DataUtils.getVariables(player).ifPresent(vars -> {
@@ -428,8 +411,6 @@ public static void init() {
             }
         }
 
-        sakuyaWatchTick.incrementAndGet();
-
         // Ticking down resources/cooldowns
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             mc.sayda.creraces.race.ResourceTicker.tick(player);
@@ -438,6 +419,7 @@ public static void init() {
         mc.sayda.creraces.util.Scheduler.tick();
         mc.sayda.creraces.team.RaceTeamManager.tick(server);
         mc.sayda.creraces.territory.TerritoryManager.get().tick(server);
+        mc.sayda.creraces.engine.ChannelingManager.tick(server);
     }
 
 public static void onTrackingBegin(ServerPlayer tracker, net.minecraft.world.entity.Entity target) {
@@ -453,10 +435,10 @@ public static void onTrackingBegin(ServerPlayer tracker, net.minecraft.world.ent
 
         // Set default respawn states for resources
         DataUtils.getVariables(player).ifPresent(vars -> {
-            vars.setMana(player.getAttributeValue(
-                    java.util.Objects.requireNonNull(mc.sayda.creraces.registry.ModAttributes.MAX_MANA.get())));
-            vars.setEnergy(player.getAttributeValue(
-                    java.util.Objects.requireNonNull(mc.sayda.creraces.registry.ModAttributes.MAX_ENERGY.get())));
+            net.minecraft.world.entity.ai.attributes.Attribute maxMana = mc.sayda.creraces.registry.ModAttributes.MAX_MANA.get();
+            net.minecraft.world.entity.ai.attributes.Attribute maxEnergy = mc.sayda.creraces.registry.ModAttributes.MAX_ENERGY.get();
+            if (maxMana != null) vars.setMana(player.getAttributeValue(maxMana));
+            if (maxEnergy != null) vars.setEnergy(player.getAttributeValue(maxEnergy));
             vars.setRage(0);
             vars.setGrit(0);
 
@@ -471,16 +453,18 @@ public static void onTrackingBegin(ServerPlayer tracker, net.minecraft.world.ent
             // Race-defined default respawn: used when the player has no bed/anchor spawn set
             if (race != null && race.respawnPos() != null && player.getRespawnPosition() == null) {
                 double[] pos = race.respawnPos();
-                net.minecraft.server.level.ServerLevel targetLevel = player.serverLevel();
-                if (race.respawnDimension() != null) {
-                    net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimKey =
-                            net.minecraft.resources.ResourceKey.create(
-                                    net.minecraft.core.registries.Registries.DIMENSION,
-                                    race.respawnDimension());
-                    net.minecraft.server.level.ServerLevel dimLevel = player.server.getLevel(dimKey);
-                    if (dimLevel != null) targetLevel = dimLevel;
+                if (pos != null && pos.length >= 3) {
+                    net.minecraft.server.level.ServerLevel targetLevel = player.serverLevel();
+                    if (race.respawnDimension() != null) {
+                        net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimKey =
+                                net.minecraft.resources.ResourceKey.create(
+                                        net.minecraft.core.registries.Registries.DIMENSION,
+                                        race.respawnDimension());
+                        net.minecraft.server.level.ServerLevel dimLevel = player.server.getLevel(dimKey);
+                        if (dimLevel != null) targetLevel = dimLevel;
+                    }
+                    player.teleportTo(targetLevel, pos[0], pos[1], pos[2], player.getYRot(), player.getXRot());
                 }
-                player.teleportTo(targetLevel, pos[0], pos[1], pos[2], player.getYRot(), player.getXRot());
             }
         });
     }

@@ -26,7 +26,7 @@ public abstract class PlayerFoodMixin {
     @Shadow
     public abstract FoodData getFoodData();
 
-    // ThreadLocal so we don't need a field (avoids Mixin field conflicts).
+    // ThreadLocal instead of a permanent field, since this snapshot is only needed transiently during eat().
     private static final ThreadLocal<long[]> PRE_EAT_SNAPSHOT = ThreadLocal.withInitial(() -> new long[] { 0L, 0L });
 
     @Inject(method = "eat", at = @At("HEAD"))

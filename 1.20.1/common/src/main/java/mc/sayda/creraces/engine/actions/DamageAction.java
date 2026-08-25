@@ -38,16 +38,7 @@ public class DamageAction implements ActionRegistry.RaceAction {
             @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
             @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
         
-        // Single Target Mode logic: Check both player and target if they exist
-        if (target != null) {
-            if (targets.isValid(target, player)) {
-                applyDamage(player, target, slot);
-            }
-        } else {
-            if (targets.isValid(player, player)) {
-                applyDamage(player, player, slot);
-            }
-        }
+        targets.applyToSingleTarget(player, target, (p, e) -> applyDamage(p, e, slot));
         return true;
     }
 
@@ -94,7 +85,18 @@ public class DamageAction implements ActionRegistry.RaceAction {
                                     .getHolderOrThrow(net.minecraft.world.damagesource.DamageTypes.PLAYER_ATTACK)),
                             damageSourceEntity, damageSourceEntity);
                 } else {
-                    source = player.damageSources().playerAttack(player);
+                    // No namespace: treat as minecraft: shorthand
+                    var registry = player.level().registryAccess()
+                            .registryOrThrow(net.minecraft.core.registries.Registries.DAMAGE_TYPE);
+                    var holder = registry.getHolder(net.minecraft.resources.ResourceKey.create(
+                            net.minecraft.core.registries.Registries.DAMAGE_TYPE,
+                            new net.minecraft.resources.ResourceLocation("minecraft", damageTypeId)));
+                    source = new net.minecraft.world.damagesource.DamageSource(
+                            holder.orElseGet(() -> {
+                                mc.sayda.creraces.CreRaces.LOGGER.warn("DamageAction: unknown damage type 'minecraft:{}', falling back to player_attack", damageTypeId);
+                                return registry.getHolderOrThrow(net.minecraft.world.damagesource.DamageTypes.PLAYER_ATTACK);
+                            }),
+                            damageSourceEntity, damageSourceEntity);
                 }
             } else {
                 source = player.damageSources().playerAttack(player);

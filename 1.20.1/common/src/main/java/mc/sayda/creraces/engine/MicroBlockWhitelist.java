@@ -6,13 +6,11 @@ import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
 /**
  * Determines which blocks are safe to place inside a MicroBlock.
  *
- * Phase 1 rules (solid full-cube blocks only):
- * - Not a tile entity / EntityBlock (no chests, furnaces, hoppers, etc.)
- * - Not a multi-block structure (beds, doors, tall plants)
- * - Not stateful active blocks (pistons, redstone, portals, fire)
- * - Not liquids or portal blocks
- *
- * Phase 2 will whitelist specific EntityBlocks like BarrelBlock.
+ * EntityBlocks are denied by default except the explicit whitelist in
+ * isInteractive() below (chests, furnaces, crafting stations, and similar).
+ * Non-EntityBlocks are filtered by category further down: multi-block
+ * structures, liquids, redstone/active blocks, and portals are handled case
+ * by case.
  */
 public class MicroBlockWhitelist {
 
@@ -80,8 +78,6 @@ public class MicroBlockWhitelist {
             return false;
         if (block instanceof JigsawBlock)
             return false;
-        if (block instanceof JukeboxBlock)
-            return true;
 
         // Liquids / fire / void
         if (block instanceof LiquidBlock) {
@@ -113,7 +109,7 @@ public class MicroBlockWhitelist {
         if (block instanceof ComparatorBlock)
             return false;
         if (block instanceof ButtonBlock)
-            return false; // 1.20.1: ButtonBlock (abstract)
+            return false;
         if (block instanceof LeverBlock)
             return false;
         if (block instanceof PressurePlateBlock)

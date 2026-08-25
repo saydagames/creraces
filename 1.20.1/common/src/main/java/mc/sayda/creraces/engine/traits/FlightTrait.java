@@ -17,7 +17,7 @@ import mc.sayda.creraces.engine.ActionRegistry;
 
 /**
  * Trait that allows flight while draining a resource.
- * Can be conditional (e.g., only while Foxfire is active).
+ * Can be conditional (e.g., only while a specific buff/state is active).
  */
 public class FlightTrait implements TraitRegistry.RaceTrait {
     private final ResourceLocation traitId;
@@ -139,10 +139,7 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
                         }
                     }
 
-                    // Reset failure flag if the condition is no longer met (e.g. ability toggled
-                    // off)
-                    // This allows the failure to trigger again if the ability is re-enabled with
-                    // low mana
+                    // Reset the failure flag once the condition clears, so a later re-enable can fail again.
                     if (!conditionMet) {
                         vars.setPersistentState(failId, 0.0);
                     }
@@ -176,7 +173,7 @@ public class FlightTrait implements TraitRegistry.RaceTrait {
             }
             ScalingValue drainRate = ScalingValue.fromJson(json, "drain_rate", 0.0);
             boolean forceFly = GsonHelper.getAsBoolean(json, "force_fly", false);
-            boolean soggyWings = GsonHelper.getAsBoolean(json, "creraces:soggy_wings", false);
+            boolean soggyWings = GsonHelper.getAsBoolean(json, "soggy_wings", false);
 
             Condition soggyCondition = null;
             if (json.has("soggy_condition")) {

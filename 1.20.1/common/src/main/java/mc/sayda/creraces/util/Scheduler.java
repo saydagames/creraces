@@ -12,8 +12,11 @@ public class Scheduler {
         PENDING.add(new DelayedTask(ticks, task));
     }
 
+    /**
+     * Must be called on the server thread only. TASKS is not thread-safe;
+     * tasks are submitted via PENDING (a concurrent queue) and drained here.
+     */
     public static void tick() {
-        // Drain pending into main list (only called on server thread)
         DelayedTask p;
         while ((p = PENDING.poll()) != null) {
             TASKS.add(p);

@@ -1,0 +1,10 @@
+﻿{
+  "variants": {
+    "facing=up":    {"model": "creraces:block/essence_cluster"},
+    "facing=down":  {"model": "creraces:block/essence_cluster", "x": 180},
+    "facing=north": {"model": "creraces:block/essence_cluster", "x": 90},
+    "facing=south": {"model": "creraces:block/essence_cluster", "x": 90, "y": 180},
+    "facing=east":  {"model": "creraces:block/essence_cluster", "x": 90, "y": 90},
+    "facing=west":  {"model": "creraces:block/essence_cluster", "x": 90, "y": 270}
+  }
+}

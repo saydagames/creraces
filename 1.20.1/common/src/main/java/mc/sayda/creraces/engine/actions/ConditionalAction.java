@@ -10,9 +10,6 @@ import java.util.ArrayList;
 import java.util.List;
 import mc.sayda.creraces.engine.condition.Condition;
 
-/**
- * Action that executes sub-actions based on conditions.
- */
 public class ConditionalAction implements ActionRegistry.RaceAction {
 
     public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "conditional");

@@ -30,6 +30,7 @@ dependencies {
 
     // Twilight Lib - Direct File Dependency
     modImplementation files("${rootProject.projectDir.parentFile}/twilight-lib/1.21.1/neoforge/build/libs/twilight_lib-1.21.1-neoforge-${rootProject.twilight_lib_version}.jar")
+    modImplementation "curse.maven:pehkui-319596:5446174"
 }
 
 processResources {

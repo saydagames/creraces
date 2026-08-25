@@ -3,7 +3,6 @@ package mc.sayda.creraces.race;
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.network.BoundaryHandler;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.resources.ResourceLocation;
 
 public class RaceIncidents {
@@ -140,7 +139,7 @@ public class RaceIncidents {
         if (race.selectionDimension() != null && player.getServer() != null) {
             boolean hasRoot = DataUtils.getVariables(player)
                 .map(v -> v.getPersistentState(new net.minecraft.resources.ResourceLocation("creraces", "node_x")) != 0.0)
-                .orElse(false);
+                .orElse(true);
             if (!hasRoot) {
                 net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimKey =
                     net.minecraft.resources.ResourceKey.create(
@@ -220,28 +219,21 @@ public class RaceIncidents {
             return;
 
         try {
-            float multiplier = 1.0f;
-            Player playerFromEntity = entity instanceof Player ? (Player) entity : null;
-            mc.sayda.creraces.capability.IPlayerVariables vars = DataUtils.getVariables(playerFromEntity).orElse(null);
-            if (vars != null && vars.isTiny()) {
-                multiplier = 0.5f;
-            }
-
-            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.BASE, (float) scale.base().evaluate(player) * multiplier);
-            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.WIDTH, (float) scale.width().evaluate(player) * multiplier);
-            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.HEIGHT, (float) scale.height().evaluate(player) * multiplier);
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.BASE, (float) scale.base().evaluate(player));
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.WIDTH, (float) scale.width().evaluate(player));
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.HEIGHT, (float) scale.height().evaluate(player));
             applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.HITBOX_WIDTH,
-                    (float) scale.hitboxWidth().evaluate(player) * multiplier);
+                    (float) scale.hitboxWidth().evaluate(player));
             applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.HITBOX_HEIGHT,
-                    (float) scale.hitboxHeight().evaluate(player) * multiplier);
+                    (float) scale.hitboxHeight().evaluate(player));
             applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.EYE_HEIGHT,
-                    (float) scale.eyeHeight().evaluate(player) * multiplier);
-            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.REACH, (float) scale.reach().evaluate(player) * multiplier);
+                    (float) scale.eyeHeight().evaluate(player));
+            applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.REACH, (float) scale.reach().evaluate(player));
             applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.MINING_SPEED,
                     (float) scale.miningSpeed().evaluate(player));
             applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.MOTION, (float) scale.motion().evaluate(player));
             applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.STEP_HEIGHT,
-                    (float) scale.stepHeight().evaluate(player) * multiplier);
+                    (float) scale.stepHeight().evaluate(player));
             applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.JUMP_HEIGHT,
                     (float) scale.jumpHeight().evaluate(player));
             applyScaleType(entity, virtuoel.pehkui.api.ScaleTypes.KNOCKBACK,
@@ -256,14 +248,11 @@ public class RaceIncidents {
     }
 
     /**
-     * Sets only the Pehkui BASE scale to 4× the player's normal effective BASE scale,
+     * Sets only the Pehkui BASE scale to 4× the race's configured BASE scale,
      * letting Pehkui derive all other scale types from BASE automatically.
-     * "Normal effective BASE" = race.base × 0.5 if isTiny, × 1.0 otherwise.
      */
     public static void applyFairyRealmScale(net.minecraft.server.level.ServerPlayer player, Race race) {
-        mc.sayda.creraces.capability.IPlayerVariables vars = DataUtils.getVariables(player).orElse(null);
-        float tinyMul = (vars != null && vars.isTiny()) ? 0.5f : 1.0f;
-        float base = (float) race.scale().base().evaluate(player) * tinyMul * 4.0f;
+        float base = (float) race.scale().base().evaluate(player) * 4.0f;
         applyFlatBaseScale(player, base);
     }
 

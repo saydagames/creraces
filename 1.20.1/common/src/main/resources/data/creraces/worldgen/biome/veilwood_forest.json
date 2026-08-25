@@ -1,0 +1,62 @@
+{
+    "has_precipitation": true,
+    "temperature": 0.3,
+    "downfall": 0.7,
+    "effects": {
+        "sky_color": 0,
+        "fog_color": 795184,
+        "water_color": 1059386,
+        "water_fog_color": 463384,
+        "grass_color": 3037527,
+        "foliage_color": 65535
+    },
+    "spawners": {
+        "monster": [],
+        "creature": [],
+        "ambient": [
+            { "type": "creraces:floating_mote", "weight": 2, "minCount": 1, "maxCount": 1 }
+        ],
+        "underground_water_creature": [],
+        "water_creature": [],
+        "water_ambient": [],
+        "misc": []
+    },
+    "spawn_costs": {},
+    "carvers": {},
+    "features": [
+        [],
+        ["minecraft:lake_lava_underground", "minecraft:lake_lava_surface"],
+        ["minecraft:disk_clay", "minecraft:disk_gravel", "minecraft:amethyst_geode"],
+        [],
+        [],
+        [],
+        [
+            "minecraft:ore_gravel",
+            "minecraft:ore_granite_upper", "minecraft:ore_granite_lower",
+            "minecraft:ore_diorite_upper", "minecraft:ore_diorite_lower",
+            "minecraft:ore_andesite_upper", "minecraft:ore_andesite_lower",
+            "minecraft:ore_tuff",
+            "minecraft:ore_coal_upper", "minecraft:ore_coal_lower",
+            "minecraft:ore_iron_upper", "minecraft:ore_iron_middle", "minecraft:ore_iron_small",
+            "minecraft:ore_gold", "minecraft:ore_gold_lower",
+            "minecraft:ore_redstone", "minecraft:ore_redstone_lower",
+            "minecraft:ore_diamond", "minecraft:ore_diamond_large", "minecraft:ore_diamond_buried",
+            "minecraft:ore_lapis", "minecraft:ore_lapis_buried",
+            "minecraft:ore_copper"
+        ],
+        ["minecraft:glow_lichen"],
+        ["minecraft:spring_water", "minecraft:spring_lava"],
+        [
+            "creraces:veil_willow_tree",
+            "creraces:veilwood_flowers",
+            "creraces:veil_mushroom",
+            "minecraft:flower_swamp",
+            "minecraft:patch_grass_forest",
+            "minecraft:brown_mushroom_normal",
+            "minecraft:red_mushroom_normal",
+            "minecraft:patch_sugar_cane",
+            "minecraft:seagrass_swamp"
+        ],
+        ["minecraft:freeze_top_layer"]
+    ]
+}

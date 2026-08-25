@@ -1,5 +1,6 @@
 package mc.sayda.creraces.network;
 
+import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.race.Race;
 import mc.sayda.creraces.race.RaceRegistry;
@@ -20,7 +21,7 @@ import java.util.function.Supplier;
  * Server responds with TerritoryDataPacket.
  */
 public class RequestTerritoryDataPacket {
-    public static final ResourceLocation ID = new ResourceLocation("creraces", "request_territory_data");
+    public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "request_territory_data");
 
     public RequestTerritoryDataPacket() {}
     public RequestTerritoryDataPacket(FriendlyByteBuf buf) {}
@@ -35,7 +36,7 @@ public class RequestTerritoryDataPacket {
         });
     }
 
-    /** Builds a TerritoryDataPacket covering a 65×65 chunk radius around the player. */
+    /** Builds a TerritoryDataPacket covering a 129×129 chunk area around the player (matches TerrainSamplePacket.RADIUS). */
     public static TerritoryDataPacket buildFor(ServerPlayer player) {
         TerritoryManager tm = TerritoryManager.get();
 
@@ -49,22 +50,9 @@ public class RequestTerritoryDataPacket {
 
         int pCX = player.chunkPosition().x;
         int pCZ = player.chunkPosition().z;
-        int radius = 32;
+        int radius = TerrainSamplePacket.RADIUS;
 
-        // Pre-build owner name map
         Map<UUID, String> ownerNameCache = new HashMap<>();
-        for (ClaimData cd : tm.getClaims().values()) {
-            UUID ownerUUID = cd.getOwnerUUID();
-            if (ownerUUID == null || ownerNameCache.containsKey(ownerUUID)) continue;
-            ServerPlayer ownerOnline = player.getServer().getPlayerList().getPlayer(ownerUUID);
-            if (ownerOnline != null) {
-                ownerNameCache.put(ownerUUID, ownerOnline.getName().getString());
-            } else {
-                var optProfile = player.getServer().getProfileCache().get(ownerUUID);
-                ownerNameCache.put(ownerUUID, optProfile.isPresent() ? optProfile.get().getName() : "");
-            }
-        }
-
         List<TerritoryDataPacket.ChunkInfo> list = new ArrayList<>();
         for (Map.Entry<Long, ClaimData> entry : tm.getClaims().entrySet()) {
             long key = entry.getKey();
@@ -76,9 +64,23 @@ public class RequestTerritoryDataPacket {
             ResourceLocation claimRace = claim.getRaceId();
 
             Race race = RaceRegistry.get(claimRace);
-            String raceName = race != null ? race.name().getString() : claimRace.getPath();
-            String ownerName = claim.getOwnerUUID() != null
-                    ? ownerNameCache.getOrDefault(claim.getOwnerUUID(), "") : "";
+            String fg = race != null ? race.factionGroup() : null;
+            String groupKey = (fg != null && !fg.isEmpty()) ? fg
+                    : (race != null ? race.id().getPath() : claimRace.getPath());
+            String raceName = (groupKey == null || groupKey.isEmpty()) ? claimRace.getPath()
+                    : Character.toUpperCase(groupKey.charAt(0)) + groupKey.substring(1);
+
+            UUID ownerUUID = claim.getOwnerUUID();
+            if (ownerUUID != null && !ownerNameCache.containsKey(ownerUUID)) {
+                ServerPlayer ownerOnline = player.getServer().getPlayerList().getPlayer(ownerUUID);
+                if (ownerOnline != null) {
+                    ownerNameCache.put(ownerUUID, ownerOnline.getName().getString());
+                } else {
+                    var optProfile = player.getServer().getProfileCache().get(ownerUUID);
+                    ownerNameCache.put(ownerUUID, optProfile.isPresent() ? optProfile.get().getName() : "");
+                }
+            }
+            String ownerName = ownerUUID != null ? ownerNameCache.getOrDefault(ownerUUID, "") : "";
 
             TerritoryDataPacket.Relation rel;
             if (myRace != null && claimRace.equals(myRace)) {
@@ -104,6 +106,7 @@ public class RequestTerritoryDataPacket {
         if (race == null || !race.biomePreview() || race.claimValidBiomes().isEmpty()) return List.of();
 
         List<String> validBiomes = race.claimValidBiomes();
+        float threshold = race.claimBiomeThreshold();
         List<Long> result = new ArrayList<>();
         net.minecraft.server.level.ServerLevel level = player.serverLevel();
 
@@ -116,33 +119,12 @@ public class RequestTerritoryDataPacket {
 
                 BlockPos center = new BlockPos(cx * 16 + 8, 64, cz * 16 + 8);
                 if (!level.isLoaded(center)) continue;
-
-                net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> biomeHolder =
-                        level.getBiome(center);
-                if (matchesBiome(biomeHolder, validBiomes)) result.add(key);
+                int sampleY = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                        cx * 16 + 8, cz * 16 + 8);
+                if (mc.sayda.creraces.engine.BiomeChecker.matchesChunk(level, new ChunkPos(cx, cz), sampleY, validBiomes, threshold))
+                    result.add(key);
             }
         }
         return result;
-    }
-
-    @SuppressWarnings("null")
-    private static boolean matchesBiome(
-            net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> holder,
-            List<String> validBiomes) {
-        for (String entry : validBiomes) {
-            if (entry.startsWith("#")) {
-                try {
-                    net.minecraft.tags.TagKey<net.minecraft.world.level.biome.Biome> tag =
-                            net.minecraft.tags.TagKey.create(
-                                    net.minecraft.core.registries.Registries.BIOME,
-                                    new ResourceLocation(entry.substring(1)));
-                    if (holder.is(tag)) return true;
-                } catch (Exception ignored) {}
-            } else {
-                if (holder.unwrapKey().map(k -> k.location().toString().equals(entry)).orElse(false))
-                    return true;
-            }
-        }
-        return false;
     }
 }

@@ -18,6 +18,7 @@
             "type": "creraces:aoe",
             "radius": 2.5,
             "source": "caster",
+            "targets": ["enemies"],
             "actions": [
                 {
                     "type": "creraces:damage",

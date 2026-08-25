@@ -25,10 +25,12 @@ public class RemoveBlockAction implements ActionRegistry.RaceAction {
     private final String sound;
     private final int particleCount;
     private final boolean bypass;
+    private final boolean useRaycast;
+    private final ScalingValue rayRange;
 
     public RemoveBlockAction(ScalingValue x, ScalingValue y, ScalingValue z, boolean useTarget, boolean useTargetBlock,
             boolean absolute, ScalingValue.MathOp coordinateMath, String particle, String sound, int particleCount,
-            boolean bypass) {
+            boolean bypass, boolean useRaycast, ScalingValue rayRange) {
         this.x = x;
         this.y = y;
         this.z = z;
@@ -40,6 +42,8 @@ public class RemoveBlockAction implements ActionRegistry.RaceAction {
         this.sound = sound;
         this.particleCount = particleCount;
         this.bypass = bypass;
+        this.useRaycast = useRaycast;
+        this.rayRange = rayRange;
     }
 
     @Override
@@ -54,7 +58,17 @@ public class RemoveBlockAction implements ActionRegistry.RaceAction {
         }
 
         BlockPos basePos;
-        if (absolute) {
+        if (useRaycast) {
+            double range = rayRange.evaluate(player, target, slot);
+            net.minecraft.world.phys.BlockHitResult hit = player.level().clip(new net.minecraft.world.level.ClipContext(
+                    player.getEyePosition(1f),
+                    player.getEyePosition(1f).add(player.getViewVector(1f).scale(range)),
+                    net.minecraft.world.level.ClipContext.Block.OUTLINE,
+                    net.minecraft.world.level.ClipContext.Fluid.NONE,
+                    player));
+            if (hit.getType() == net.minecraft.world.phys.HitResult.Type.MISS) return false;
+            basePos = hit.getBlockPos();
+        } else if (absolute) {
             basePos = BlockPos.ZERO;
         } else if (useTarget && target != null) {
             basePos = target.blockPosition();
@@ -104,60 +118,7 @@ public class RemoveBlockAction implements ActionRegistry.RaceAction {
         if (canRemove) {
             player.level().setBlockAndUpdate(finalPos, Blocks.AIR.defaultBlockState());
 
-            if (particle != null && !particle.isEmpty()) {
-                try {
-                    ResourceLocation res = new ResourceLocation(particle);
-                    net.minecraft.core.particles.ParticleOptions options = null;
-
-                    var optParticle = net.minecraft.core.registries.BuiltInRegistries.PARTICLE_TYPE.getOptional(res);
-                    if (optParticle.isPresent()
-                            && optParticle.get() instanceof net.minecraft.core.particles.ParticleOptions opt) {
-                        options = opt;
-                    } else {
-                        var optBlock = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getOptional(res);
-                        if (optBlock.isPresent() && optBlock.get() != net.minecraft.world.level.block.Blocks.AIR) {
-                            options = new net.minecraft.core.particles.BlockParticleOption(
-                                    net.minecraft.core.particles.ParticleTypes.BLOCK,
-                                    optBlock.get().defaultBlockState());
-                        }
-                    }
-
-                    if (options != null) {
-                        if (player.level() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
-                            for (int i = 0; i < particleCount; i++) {
-                                serverLevel.sendParticles(options,
-                                        finalPos.getX() + 0.5 + player.level().random.nextGaussian() * 0.2,
-                                        finalPos.getY() + 0.5 + player.level().random.nextGaussian() * 0.2,
-                                        finalPos.getZ() + 0.5 + player.level().random.nextGaussian() * 0.2,
-                                        1, 0, 0.05, 0, 0.0);
-                            }
-                        } else if (player.level().isClientSide()) {
-                            for (int i = 0; i < particleCount; i++) {
-                                player.level().addParticle(options,
-                                        finalPos.getX() + 0.5 + player.level().random.nextGaussian() * 0.2,
-                                        finalPos.getY() + 0.5 + player.level().random.nextGaussian() * 0.2,
-                                        finalPos.getZ() + 0.5 + player.level().random.nextGaussian() * 0.2,
-                                        0, 0.05, 0);
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    // Ignore particle errors
-                }
-            }
-
-            // Sound
-            if (sound != null && !sound.isEmpty()) {
-                try {
-                    ResourceLocation res = new ResourceLocation(sound);
-                    net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT.getOptional(res).ifPresent(s -> {
-                        player.level().playSound(null, finalPos, s, net.minecraft.sounds.SoundSource.BLOCKS, 1.0f,
-                                1.0f);
-                    });
-                } catch (Exception e) {
-                    // Ignore sound errors
-                }
-            }
+            BlockActionEffects.spawnResilientEffects(player, finalPos, particle, sound, particleCount);
             return true;
         }
 
@@ -176,6 +137,8 @@ public class RemoveBlockAction implements ActionRegistry.RaceAction {
             int particleCount = GsonHelper.getAsInt(json, "particle_count", 10);
             String sound = GsonHelper.getAsString(json, "sound", "");
             boolean bypass = GsonHelper.getAsBoolean(json, "bypass", false);
+            boolean useRaycast = GsonHelper.getAsBoolean(json, "use_raycast", false);
+            ScalingValue rayRange = ScalingValue.fromJson(json, "ray_range", 10.0);
 
             ScalingValue.MathOp coordinateMath = ScalingValue.MathOp.FLOOR;
             if (json.has("math")) {
@@ -193,7 +156,7 @@ public class RemoveBlockAction implements ActionRegistry.RaceAction {
                 }
             }
             return new RemoveBlockAction(x, y, z, useTarget, useTargetBlock, absolute, coordinateMath, particle,
-                    sound, particleCount, bypass);
+                    sound, particleCount, bypass, useRaycast, rayRange);
         });
     }
 }

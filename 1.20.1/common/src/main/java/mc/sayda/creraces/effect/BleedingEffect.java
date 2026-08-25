@@ -29,7 +29,7 @@ public class BleedingEffect extends SimpleEffect {
             return;
 
         float damage = 0.5f; // Base damage (quarter heart)
-        net.minecraft.world.entity.Entity source = null;
+        Entity source = null;
 
         // Try to find the source player and their AP
         if (entity instanceof IPersistentDataAccessor accessor) {

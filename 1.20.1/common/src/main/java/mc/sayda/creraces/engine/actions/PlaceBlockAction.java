@@ -21,6 +21,8 @@ public class PlaceBlockAction implements ActionRegistry.RaceAction {
     private final ResourceLocation block;
     private final boolean useTarget;
     private final boolean useTargetBlock;
+    private final boolean useRaycast;
+    private final ScalingValue rayRange;
     private final ScalingValue offsetX;
     private final ScalingValue offsetY;
     private final ScalingValue offsetZ;
@@ -44,13 +46,15 @@ public class PlaceBlockAction implements ActionRegistry.RaceAction {
         }
     }
 
-    public PlaceBlockAction(ResourceLocation block, boolean useTarget, boolean useTargetBlock, ScalingValue offsetX,
-            ScalingValue offsetY, ScalingValue offsetZ, boolean overwrite, boolean absolute,
-            ScalingValue.MathOp coordinateMath, List<DataModification> dataModifications,
-            String particle, int particleCount, String sound) {
+    public PlaceBlockAction(ResourceLocation block, boolean useTarget, boolean useTargetBlock, boolean useRaycast,
+            ScalingValue rayRange, ScalingValue offsetX, ScalingValue offsetY, ScalingValue offsetZ,
+            boolean overwrite, boolean absolute, ScalingValue.MathOp coordinateMath,
+            List<DataModification> dataModifications, String particle, int particleCount, String sound) {
         this.block = block;
         this.useTarget = useTarget;
         this.useTargetBlock = useTargetBlock;
+        this.useRaycast = useRaycast;
+        this.rayRange = rayRange;
         this.offsetX = offsetX;
         this.offsetY = offsetY;
         this.offsetZ = offsetZ;
@@ -81,6 +85,16 @@ public class PlaceBlockAction implements ActionRegistry.RaceAction {
         BlockPos targetPos;
         if (absolute) {
             targetPos = BlockPos.ZERO;
+        } else if (useRaycast) {
+            double range = rayRange.evaluate(player, target, slot);
+            net.minecraft.world.phys.BlockHitResult hit = player.level().clip(new net.minecraft.world.level.ClipContext(
+                    player.getEyePosition(1f),
+                    player.getEyePosition(1f).add(player.getViewVector(1f).scale(range)),
+                    net.minecraft.world.level.ClipContext.Block.OUTLINE,
+                    net.minecraft.world.level.ClipContext.Fluid.NONE,
+                    player));
+            if (hit.getType() == net.minecraft.world.phys.HitResult.Type.MISS) return false;
+            targetPos = hit.getBlockPos().relative(hit.getDirection());
         } else if (useTarget && target != null) {
             targetPos = target.blockPosition();
         } else if (useTargetBlock && interact_pos != null) {
@@ -157,6 +171,7 @@ public class PlaceBlockAction implements ActionRegistry.RaceAction {
                     CompoundTag tag = be.saveWithFullMetadata();
                     boolean changed = false;
                     for (DataModification mod : dataModifications) {
+                        // "owner" is a reserved key: auto-filled with the caster's UUID instead of evaluated normally.
                         if ("owner".equalsIgnoreCase(mod.key)) {
                             tag.putUUID("owner", player.getUUID());
                             changed = true;
@@ -184,58 +199,8 @@ public class PlaceBlockAction implements ActionRegistry.RaceAction {
                 }
             }
 
-            // 4. Particles (Resilient)
-            if (particle != null && !particle.isEmpty()) {
-                try {
-                ResourceLocation res = new ResourceLocation(particle);
-                net.minecraft.core.particles.ParticleOptions options = null;
-
-                var optParticle = net.minecraft.core.registries.BuiltInRegistries.PARTICLE_TYPE.getOptional(res);
-                if (optParticle.isPresent() && optParticle.get() instanceof net.minecraft.core.particles.ParticleOptions opt) {
-                    options = opt;
-                } else {
-                    var optBlock = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getOptional(res);
-                    if (optBlock.isPresent() && optBlock.get() != net.minecraft.world.level.block.Blocks.AIR) {
-                        options = new net.minecraft.core.particles.BlockParticleOption(
-                                net.minecraft.core.particles.ParticleTypes.BLOCK, optBlock.get().defaultBlockState());
-                    }
-                }
-
-                if (options != null) {
-                    if (player.level() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
-                        for (int i = 0; i < particleCount; i++) {
-                            serverLevel.sendParticles(options,
-                                    finalPos.getX() + 0.5 + player.level().random.nextGaussian() * 0.2,
-                                    finalPos.getY() + 0.5 + player.level().random.nextGaussian() * 0.2,
-                                    finalPos.getZ() + 0.5 + player.level().random.nextGaussian() * 0.2,
-                                    1, 0, 0.05, 0, 0.0);
-                        }
-                    } else if (player.level().isClientSide()) {
-                        for (int i = 0; i < particleCount; i++) {
-                            player.level().addParticle(options,
-                                    finalPos.getX() + 0.5 + player.level().random.nextGaussian() * 0.2,
-                                    finalPos.getY() + 0.5 + player.level().random.nextGaussian() * 0.2,
-                                    finalPos.getZ() + 0.5 + player.level().random.nextGaussian() * 0.2,
-                                    0, 0.05, 0);
-                        }
-                    }
-                }
-                } catch (Exception e) {
-                    // Ignore particle errors
-                }
-            }
-
-            // 5. Sound (Resilient)
-            if (sound != null && !sound.isEmpty()) {
-                try {
-                    ResourceLocation res = new ResourceLocation(sound);
-                    net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT.getOptional(res).ifPresent(s -> {
-                        player.level().playSound(null, finalPos, s, net.minecraft.sounds.SoundSource.BLOCKS, 1.0f, 1.0f);
-                    });
-                } catch (Exception e) {
-                    // Ignore sound errors
-                }
-            }
+            // 4. Particles + 5. Sound (Resilient)
+            BlockActionEffects.spawnResilientEffects(player, finalPos, particle, sound, particleCount);
             return true;
         } else {
             player.displayClientMessage(
@@ -252,6 +217,8 @@ public class PlaceBlockAction implements ActionRegistry.RaceAction {
             ResourceLocation block = new ResourceLocation(blockId);
             boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
             boolean useTargetBlock = GsonHelper.getAsBoolean(json, "use_target_block", false);
+            boolean useRaycast = GsonHelper.getAsBoolean(json, "use_raycast", false);
+            ScalingValue rayRange = ScalingValue.fromJson(json, "ray_range", 10.0);
             ScalingValue offsetX = ScalingValue.fromJson(json, "offset_x", 0.0);
             ScalingValue offsetY = ScalingValue.fromJson(json, "offset_y", 0.0);
             ScalingValue offsetZ = ScalingValue.fromJson(json, "offset_z", 0.0);
@@ -286,9 +253,8 @@ public class PlaceBlockAction implements ActionRegistry.RaceAction {
                 }
             }
 
-            return new PlaceBlockAction(block, useTarget, useTargetBlock, offsetX, offsetY, offsetZ, overwrite,
-                    absolute,
-                    coordinateMath, mods, particle, particleCount, sound);
+            return new PlaceBlockAction(block, useTarget, useTargetBlock, useRaycast, rayRange,
+                    offsetX, offsetY, offsetZ, overwrite, absolute, coordinateMath, mods, particle, particleCount, sound);
         });
     }
 }

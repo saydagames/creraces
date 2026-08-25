@@ -114,7 +114,8 @@ public class CosmeticIncidents {
             JsonElement element = data.get(value);
             if (element.isJsonArray()) {
                 for (JsonElement e : element.getAsJsonArray()) {
-                    if (applyComplexAddon(player, e, value, custMap, addons)) {
+                    boolean hasCondition = e.isJsonObject() && e.getAsJsonObject().has("condition");
+                    if (applyComplexAddon(player, e, value, custMap, addons) && hasCondition) {
                         break;
                     }
                 }
@@ -370,7 +371,7 @@ public class CosmeticIncidents {
                         Set.class, Map.class);
                 return (mc.sayda.twilight_lib.network.SyncAddonsPacket) c3.newInstance(playerUUID, active, tints);
             } catch (Exception e2) {
-                // Fallback to minimal buffer constructor if all else fails (unlikely, but safe)
+                // Give up; caller checks for null.
                 return null;
             }
         }

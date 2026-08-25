@@ -15,6 +15,9 @@ import mc.sayda.creraces.CreRaces;
 
 import java.util.function.Supplier;
 
+/**
+ * Packet sent from client to server to open the menu GUI.
+ */
 public class OpenMenuPacket {
     public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "open_menu");
 

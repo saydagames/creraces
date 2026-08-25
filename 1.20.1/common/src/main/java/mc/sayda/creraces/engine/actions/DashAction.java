@@ -42,8 +42,14 @@ public class DashAction implements ActionRegistry.RaceAction {
             dashVec = new Vec3(0, 1, 0);
         } else if ("down".equalsIgnoreCase(direction)) {
             dashVec = new Vec3(0, -1, 0);
+        } else if ("toward_target".equalsIgnoreCase(direction) && target != null) {
+            dashVec = target.position().add(0, target.getBbHeight() * 0.5, 0)
+                    .subtract(player.getEyePosition()).normalize();
+        } else if ("away_from_target".equalsIgnoreCase(direction) && target != null) {
+            dashVec = player.getEyePosition()
+                    .subtract(target.position().add(0, target.getBbHeight() * 0.5, 0)).normalize();
         } else {
-            // "forward" or "look" (default)
+            // "forward", "look", toward/away_from_target with no target (default)
             dashVec = look;
         }
 

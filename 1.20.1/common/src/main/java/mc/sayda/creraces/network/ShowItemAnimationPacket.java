@@ -28,10 +28,10 @@ public class ShowItemAnimationPacket {
     }
 
     public void handle(Supplier<dev.architectury.networking.NetworkManager.PacketContext> contextSupplier) {
-        bunbunmaruDeliver(contextSupplier);
+        displayAnimationOnClient(contextSupplier);
     }
 
-    private void bunbunmaruDeliver(Supplier<dev.architectury.networking.NetworkManager.PacketContext> contextSupplier) {
+    private void displayAnimationOnClient(Supplier<dev.architectury.networking.NetworkManager.PacketContext> contextSupplier) {
         var context = contextSupplier.get();
         context.queue(() -> {
             dev.architectury.utils.EnvExecutor.runInEnv(dev.architectury.utils.Env.CLIENT, () -> () -> {

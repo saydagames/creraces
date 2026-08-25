@@ -1,0 +1,56 @@
+{
+    "credit": "Made with Blockbench",
+    "parent": "minecraft:block/block",
+    "textures": {
+        "0": "creraces:block/research_table",
+        "particle": "creraces:block/research_table"
+    },
+    "elements": [
+        {
+            "from": [1, 0, 1],
+            "to": [3, 14, 3],
+            "faces": {
+                "north": {"uv": [8, 6.25, 8.5, 9.75], "texture": "#0"},
+                "east": {"uv": [9.5, 6.25, 10, 9.75], "texture": "#0"},
+                "south": {"uv": [8.5, 6.25, 9, 9.75], "texture": "#0"},
+                "west": {"uv": [9, 6.25, 9.5, 9.75], "texture": "#0"},
+                "up": {"uv": [8, 8.5, 7.5, 8], "texture": "#0"},
+                "down": {"uv": [8, 8.5, 7.5, 9], "texture": "#0", "cullface": "down"}
+            }
+        },
+        {
+            "from": [1, 0, 13],
+            "to": [3, 14, 15],
+            "faces": {
+                "north": {"uv": [8, 6.25, 8.5, 9.75], "texture": "#0"},
+                "east": {"uv": [9.5, 6.25, 10, 9.75], "texture": "#0"},
+                "south": {"uv": [8.5, 6.25, 9, 9.75], "texture": "#0"},
+                "west": {"uv": [9, 6.25, 9.5, 9.75], "texture": "#0"},
+                "up": {"uv": [8, 8.5, 7.5, 8], "texture": "#0"},
+                "down": {"uv": [8, 8.5, 7.5, 9], "texture": "#0", "cullface": "down"}
+            }
+        },
+        {
+            "from": [0, 14, 0],
+            "to": [16, 16, 16],
+            "faces": {
+                "north": {"uv": [8, 3.5, 12, 4], "texture": "#0", "cullface": "north"},
+                "south": {"uv": [8, 4, 12, 4.5], "texture": "#0", "cullface": "south"},
+                "west": {"uv": [8, 5, 12, 5.5], "texture": "#0", "cullface": "west"},
+                "up": {"uv": [8, 4, 4, 0], "texture": "#0", "cullface": "up"},
+                "down": {"uv": [8, 4, 4, 8], "texture": "#0"}
+            }
+        },
+        {
+            "from": [1.1, 8, 1.1],
+            "to": [16, 9, 14.9],
+            "faces": {
+                "north": {"uv": [8, 5.5, 11.75, 5.75], "texture": "#0"},
+                "south": {"uv": [8, 5.75, 11.75, 6], "texture": "#0"},
+                "west": {"uv": [11.5, 6, 15, 6.25], "texture": "#0"},
+                "up": {"uv": [7.5, 11.5, 3.75, 8], "texture": "#0"},
+                "down": {"uv": [15.5, 0, 11.75, 3.5], "texture": "#0"}
+            }
+        }
+    ]
+}

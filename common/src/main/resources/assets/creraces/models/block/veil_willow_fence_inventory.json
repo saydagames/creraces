@@ -1,0 +1,8 @@
+{
+  "parent": "block/fence_inventory",
+  "textures": {
+    "texture": "creraces:block/veil_willow_planks",
+    "particle": "creraces:block/veil_willow_planks"
+  },
+  "render_type": "solid"
+}

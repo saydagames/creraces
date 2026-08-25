@@ -26,8 +26,9 @@ public class PocketManager {
 
     public static int getNextIndex() {
         int index = NEXT_POCKET_INDEX.getAndIncrement();
-        if (currentServer != null) {
-            save(currentServer);
+        MinecraftServer srv = currentServer;
+        if (srv != null) {
+            save(srv);
         }
         return index;
     }

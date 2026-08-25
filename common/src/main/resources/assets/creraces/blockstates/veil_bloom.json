@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "blooming=false": {
+      "model": "creraces:block/veil_bloom"
+    },
+    "blooming=true": {
+      "model": "creraces:block/veil_bloom_blooming"
+    }
+  }
+}

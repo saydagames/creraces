@@ -1,0 +1,1 @@
+{ "parent": "minecraft:block/hanging_sign", "textures": { "log": "creraces:block/veil_willow_log", "planks": "creraces:block/veil_willow_planks", "particle": "creraces:block/veil_willow_planks" } }

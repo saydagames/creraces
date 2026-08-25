@@ -4,6 +4,7 @@
     "creraces:type": "ACTIVE",
     "creraces:icon": "creraces:textures/mob_effect/boiling.png",
     "creraces:cooldown": 600,
+    "creraces:condition_fail_message": "msg.creraces.water_fail_message",
     "creraces:cost": 0,
     "creraces:race": [
         "creraces:mermaid"

@@ -11,7 +11,6 @@ import net.minecraft.world.entity.player.Player;
 import java.util.Optional;
 import java.util.List;
 
-@SuppressWarnings("null")
 public class ResourceTicker {
 
     public static void tick(Player player) {
@@ -36,12 +35,17 @@ public class ResourceTicker {
         vars.sakuyaTimeLeap();
 
         // 2. Resource Regeneration Logic (Every tick)
-        double maxMana = player.getAttributeValue(ModAttributes.resolve(ModAttributes.MAX_MANA));
-        double maxEnergy = player.getAttributeValue(ModAttributes.resolve(ModAttributes.MAX_ENERGY));
+        var maxManaAttr = ModAttributes.resolve(ModAttributes.MAX_MANA);
+        var maxEnergyAttr = ModAttributes.resolve(ModAttributes.MAX_ENERGY);
+        var manaRegenAttr = ModAttributes.resolve(ModAttributes.MANA_REGEN);
+        var energyRegenAttr = ModAttributes.resolve(ModAttributes.ENERGY_REGEN);
+        if (maxManaAttr == null || maxEnergyAttr == null || manaRegenAttr == null || energyRegenAttr == null) return;
+        double maxMana = player.getAttributeValue(maxManaAttr);
+        double maxEnergy = player.getAttributeValue(maxEnergyAttr);
 
         // Regeneration (absolute per tick)
-        double manaRegen = player.getAttributeValue(ModAttributes.resolve(ModAttributes.MANA_REGEN));
-        double energyRegen = player.getAttributeValue(ModAttributes.resolve(ModAttributes.ENERGY_REGEN));
+        double manaRegen = player.getAttributeValue(manaRegenAttr);
+        double energyRegen = player.getAttributeValue(energyRegenAttr);
 
         if (vars.getMana() < maxMana) {
             vars.setMana(Math.min(maxMana, vars.getMana() + manaRegen));
@@ -54,8 +58,11 @@ public class ResourceTicker {
         long graceThreshold = mc.sayda.creraces.config.CreRacesConfig.RESOURCE_DECAY_GRACE_PERIOD.get();
         boolean inGracePeriod = (player.level().getGameTime() - vars.getResourceTimer()) < graceThreshold;
 
-        double gritDecay = player.getAttributeValue(ModAttributes.resolve(ModAttributes.GRIT_DECAY));
-        double rageDecay = player.getAttributeValue(ModAttributes.resolve(ModAttributes.RAGE_DECAY));
+        var gritDecayAttr = ModAttributes.resolve(ModAttributes.GRIT_DECAY);
+        var rageDecayAttr = ModAttributes.resolve(ModAttributes.RAGE_DECAY);
+        if (gritDecayAttr == null || rageDecayAttr == null) return;
+        double gritDecay = player.getAttributeValue(gritDecayAttr);
+        double rageDecay = player.getAttributeValue(rageDecayAttr);
 
         if (!inGracePeriod) {
             if (vars.getGrit() > 0) {
@@ -193,9 +200,10 @@ public class ResourceTicker {
                 net.minecraft.world.item.ItemStack headItem = player
                         .getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD);
 
-                boolean hasProtection = !headItem.isEmpty() &&
+                net.minecraft.world.item.enchantment.Enchantment sunProtEnch = mc.sayda.creraces.registry.ModEnchantments.SUN_PROTECTION.get();
+                boolean hasProtection = !headItem.isEmpty() && sunProtEnch != null &&
                         net.minecraft.world.item.enchantment.EnchantmentHelper.getEnchantmentLevel(
-                                mc.sayda.creraces.registry.ModEnchantments.SUN_PROTECTION.get(), player) > 0;
+                                sunProtEnch, player) > 0;
 
                 if (!headItem.isEmpty()) {
                     if (interval > 0 && player.tickCount % interval == 0 && headItem.isDamageableItem() && !hasProtection) {
@@ -206,7 +214,7 @@ public class ResourceTicker {
                                     net.minecraft.world.item.ItemStack.EMPTY);
                         }
                     }
-                } else if (player.tickCount % 20 == 0 && !hasProtection) {
+                } else if (player.tickCount % 20 == 0) {
                     player.setSecondsOnFire(mc.sayda.creraces.config.CreRacesConfig.SUNLIGHT_BURN_SECONDS.get());
                 }
             }

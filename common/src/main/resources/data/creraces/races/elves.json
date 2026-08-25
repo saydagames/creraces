@@ -21,7 +21,7 @@
                     "type": "creraces:conditional",
                     "condition": {
                         "type": "creraces:wearing_armor",
-                        "tag": "#forge:armors/iron"
+                        "tag": "#c:armors/iron"
                     },
                     "if_true": [
                         {

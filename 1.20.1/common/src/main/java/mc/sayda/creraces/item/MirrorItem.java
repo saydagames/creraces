@@ -12,7 +12,7 @@ import javax.annotation.Nonnull;
 
 /**
  * An item that opens the racial customization Mirror screen.
- * Consumed on use.
+ * Does not consume the item on use.
  */
 public class MirrorItem extends Item {
     public MirrorItem(Properties properties) {

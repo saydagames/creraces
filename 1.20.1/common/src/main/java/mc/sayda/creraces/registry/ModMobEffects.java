@@ -127,6 +127,14 @@ public class ModMobEffects {
         public static final RegistrySupplier<MobEffect> AD_SHIELD = MOB_EFFECTS.register("ad_shield",
                         () -> new mc.sayda.creraces.effect.ShieldEffect(MobEffectCategory.BENEFICIAL, 0xFF00FF));
 
+        /** Instantaneously forces the target into the spirit realm. */
+        public static final RegistrySupplier<MobEffect> BANISHMENT = MOB_EFFECTS.register("banishment",
+                        () -> new mc.sayda.creraces.effect.BanishmentEffect());
+
+        /** Instantaneously forces the target out of the spirit realm. */
+        public static final RegistrySupplier<MobEffect> REVEALING = MOB_EFFECTS.register("revealing",
+                        () -> new mc.sayda.creraces.effect.RevealingEffect());
+
         /** Grievous Wounds - reduces healing received by 40% (multiplier 0.6). */
         public static final RegistrySupplier<MobEffect> GRIEVOUS_WOUNDS = MOB_EFFECTS.register("grievous_wounds",
                         () -> new mc.sayda.creraces.effect.SimpleEffect(MobEffectCategory.HARMFUL, 0x8B0000)

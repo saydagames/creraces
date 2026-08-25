@@ -11,26 +11,10 @@ import net.minecraft.world.item.Items;
 /**
  * Shared utility for rendering ability icons uniformly across all UI surfaces.
  *
- * <h3>Icon format</h3>
- * Ability JSONs may specify the {@code "icon"} field in one of two ways:
- * <ul>
- * <li><b>Item ID</b> &mdash; a bare registry key pointing to a Minecraft item,
- * e.g. {@code "minecraft:feather"} or {@code "minecraft:iron_sword"}.
- * Rendered via {@link GuiGraphics#renderItem} (supports 3-D model, foil,
- * enchantment glint, etc.).</li>
- * <li><b>Texture path</b> &mdash; a path that contains {@code /} or ends with
- * {@code .png}, e.g. {@code "minecraft:textures/item/feather.png"} or
- * {@code "creraces:textures/screens/kitsune_icon.png"}.
- * Rendered via {@link GuiGraphics#blit}.</li>
- * </ul>
- *
- * <p>
- * Both paths produce the same visual size: {@code size × size} pixels
- * at {@code (x, y)}.
- *
- * <p>
- * All callers (HUD overlay, skill wheel, debug screen …) should use this
- * class instead of duplicating the detection logic.
+ * An icon can be either an item ID, e.g. {@code "minecraft:feather"}, rendered
+ * via {@link GuiGraphics#renderItem}, or an explicit texture path containing
+ * {@code "textures/"} or ending in {@code ".png"}, rendered via
+ * {@link GuiGraphics#blit}. Both are drawn at {@code size × size} pixels.
  */
 public final class AbilityIconRenderer {
 
@@ -73,10 +57,6 @@ public final class AbilityIconRenderer {
         }
     }
 
-    /**
-     * Returns {@code true} if the icon location looks like an explicit texture path
-     * (contains {@code "textures/"} somewhere, or ends with {@code ".png"}).
-     */
     public static boolean isTexturePath(ResourceLocation icon) {
         String path = icon.getPath();
         return path.contains("textures/") || path.endsWith(".png");

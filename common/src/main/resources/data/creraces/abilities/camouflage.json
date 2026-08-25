@@ -5,6 +5,7 @@
     "creraces:cooldown": 400,
     "creraces:icon": "creraces:textures/mob_effect/camouflage.png",
     "creraces:cost": 1,
+    "creraces:condition_fail_message": "msg.creraces.rain_fail_message",
     "creraces:race": [
         "creraces:dryad",
         "creraces:naiad"

@@ -13,13 +13,13 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 
 /**
- * Opens a nearby inventory or crafting surface on behalf of the player.
- * Action that forces a container GUI to open for the player.
+ * Forces a container GUI to open for the player, searching nearby for a container block of the appropriate type.
  * It searches the area around the interaction position or player position for a
  * container block of the appropriate type.
- * Supported UI types: "crafting", "enderchest", "chest", "barrel", "anvil",
- * "furnace", "smoker", "blast_furnace", "loom", "cartography", "grindstone",
- * "stonecutter"
+ * Supported UI types: "crafting_table"/"crafting", "ender_chest"/"enderchest",
+ * "inventory", "chest", "barrel", "furnace", "smoker", "blast_furnace", "loom",
+ * "cartography", "grindstone", "stonecutter", "anvil", "race_selection"/"race_menu",
+ * "skill_wheel", "team_menu", "mirror", "debug"
  * The scan radius is controlled by the {@code "radius"} JSON field (default 4).
  */
 public class OpenGUIAction implements ActionRegistry.RaceAction {
@@ -102,7 +102,7 @@ public class OpenGUIAction implements ActionRegistry.RaceAction {
     }
 
     /**
-     * Opens a full 3ÁE crafting grid for the player without requiring a nearby
+     * Opens a full 3x3 crafting grid for the player without requiring a nearby
      * CraftingTable block - equivalent to right-clicking a crafting table but
      * available anywhere.
      */

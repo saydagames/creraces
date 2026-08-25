@@ -21,6 +21,18 @@ import javax.annotation.Nonnull;
 import java.util.Map;
 
 public class RaceOverlay {
+    /** The raw current-value reading for a resource type that has a dedicated PlayerVariables getter. */
+    private static double resourceValue(mc.sayda.creraces.capability.IPlayerVariables vars, ResourceType type) {
+        switch (type) {
+            case MANA: return vars.getMana();
+            case RAGE: return vars.getRage();
+            case ENERGY: return vars.getEnergy();
+            case GRIT: return vars.getGrit();
+            case SOUL: return vars.getSoul();
+            default: return 0;
+        }
+    }
+
     private static final ResourceLocation UI_BG = new ResourceLocation("creraces", "textures/screens/ui_bg.png");
     private static final ResourceLocation UI_BG2 = new ResourceLocation("creraces", "textures/screens/ui_bg2.png");
     private static final ResourceLocation UI_FRAME = new ResourceLocation("creraces", "textures/screens/ui.png");
@@ -53,8 +65,6 @@ public class RaceOverlay {
             if (race == null)
                 return;
 
-            // Modern 1.20.1 HUD rendering uses GuiGraphics state management
-
             // Group positions driven by HUD editor config
             int globalX = CreRacesConfig.HUD_ANCHOR_X.get();
             int globalY = CreRacesConfig.HUD_ANCHOR_Y.get();
@@ -85,19 +95,19 @@ public class RaceOverlay {
             switch (race.resourceType()) {
                 case RAGE:
                     resourceTex = UI_R;
-                    currentRes = vars.getRage();
+                    currentRes = resourceValue(vars, ResourceType.RAGE);
                     var maxRageAttr = ModAttributes.MAX_RAGE.get();
                     maxRes = maxRageAttr != null ? player.getAttributeValue(maxRageAttr) : 0.0;
                     break;
                 case ENERGY:
                     resourceTex = UI_E;
-                    currentRes = vars.getEnergy();
+                    currentRes = resourceValue(vars, ResourceType.ENERGY);
                     var maxEnergyAttr = ModAttributes.MAX_ENERGY.get();
                     maxRes = maxEnergyAttr != null ? player.getAttributeValue(maxEnergyAttr) : 0.0;
                     break;
                 case GRIT:
                     resourceTex = UI_G;
-                    currentRes = vars.getGrit();
+                    currentRes = resourceValue(vars, ResourceType.GRIT);
                     var maxGritAttr = ModAttributes.MAX_GRIT.get();
                     maxRes = maxGritAttr != null ? player.getAttributeValue(maxGritAttr) : 0.0;
                     break;
@@ -309,28 +319,10 @@ public class RaceOverlay {
         if (race == null)
             return true;
 
-        double currentRes = 0;
-        switch (race.resourceType()) {
-            case MANA:
-                currentRes = vars.getMana();
-                break;
-            case RAGE:
-                currentRes = vars.getRage();
-                break;
-            case ENERGY:
-                currentRes = vars.getEnergy();
-                break;
-            case GRIT:
-                currentRes = vars.getGrit();
-                break;
-            case SOUL:
-                currentRes = vars.getSoul();
-                break;
-            case NONE:
-            default:
-                return true;
+        if (race.resourceType() == ResourceType.NONE) {
+            return true;
         }
-
+        double currentRes = resourceValue(vars, race.resourceType());
         return currentRes >= ability.cost();
     }
 

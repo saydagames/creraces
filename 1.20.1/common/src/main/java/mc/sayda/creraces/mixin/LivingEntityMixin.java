@@ -9,7 +9,6 @@ import mc.sayda.creraces.capability.IPlayerVariables;
 import mc.sayda.creraces.race.Race;
 import mc.sayda.creraces.race.RaceRegistry;
 import mc.sayda.creraces.registry.ModAttributes;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -100,7 +99,7 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
                 DataUtils.getVariables(player).ifPresent(vars -> {
                     Race race = RaceRegistry.get(vars.getRace());
                     if (race != null) {
-                        mc.sayda.creraces.race.Race.Passives passives = race.passives();
+                        Race.Passives passives = race.passives();
                         if (passives != null) {
                             // Underwater Air Refill (Aquatic/Undead Races)
                             boolean canBreatheWater = vars.isAquatic() || vars.isUndead()
@@ -134,18 +133,6 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
                                 }
                             }
                         }
-
-                        // Water Transition Recheck
-                        if (player instanceof ServerPlayer) {
-                            ServerPlayer sp = (ServerPlayer) player;
-                            boolean inWater = player.isInWater();
-                            boolean wasInWater = ((IPersistentDataAccessor) sp).creraces$getPersistentData()
-                                    .getBoolean("creraces:was_in_water");
-                            if (inWater != wasInWater) {
-                                ((IPersistentDataAccessor) sp).creraces$getPersistentData()
-                                        .putBoolean("creraces:was_in_water", inWater);
-                            }
-                        }
                     }
                 });
             }
@@ -163,7 +150,7 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
                 }
                 Race race = RaceRegistry.get(vars.getRace());
                 if (race != null) {
-                    mc.sayda.creraces.race.Race.Passives passives = race.passives();
+                    Race.Passives passives = race.passives();
                     if (passives != null && passives.canBreatheUnderwater()) {
                         cir.setReturnValue(true);
                     }
@@ -265,18 +252,27 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
     @Inject(method = "hurt", at = @At("HEAD"), cancellable = true)
     private void creraces$onHitLogic(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         this.creraces$lastDamageSource = source;
-        // TODO: Improve Global Spirit Realm damage immunity
         if (mc.sayda.creraces.engine.SpiritMobilityHandler.isSpirit((LivingEntity) (Object) this)) {
             if (!source.is(net.minecraft.world.damagesource.DamageTypes.FELL_OUT_OF_WORLD)
                     && !source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY)) {
-                cir.setReturnValue(false);
-                return;
+                if (!source.is(mc.sayda.creraces.registry.ModDamageTags.IS_MAGIC) && !source.is(mc.sayda.creraces.registry.ModDamageTags.IS_TRUE)) {
+                    net.minecraft.world.entity.Entity attacker = source.getEntity();
+                    if (!(attacker instanceof LivingEntity livingAttacker)
+                            || !mc.sayda.creraces.engine.SpiritMobilityHandler.isSpirit(livingAttacker)) {
+                        cir.setReturnValue(false);
+                        return;
+                    }
+                }
             }
         }
 
         if (amount <= 0) {
             cir.setReturnValue(false);
             return;
+        }
+
+        if (!this.level().isClientSide() && (Object) this instanceof Player channelTarget) {
+            mc.sayda.creraces.engine.ChannelingManager.onDamage(channelTarget);
         }
 
         // Friendly fire / Team check
@@ -411,7 +407,7 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
                 if (varsOpt.isPresent()) {
                     mc.sayda.creraces.capability.IPlayerVariables vars = varsOpt.get();
                     Race race = RaceRegistry.get(vars.getRace());
-                    mc.sayda.creraces.race.Race.Passives passives = race != null ? race.passives() : null;
+                    Race.Passives passives = race != null ? race.passives() : null;
 
                     int airInterval = passives != null ? passives.landSuffocationInterval() : -1;
                     boolean mustBeInWater = (vars.isAquatic() || airInterval > 0) && !vars.isUndead();
@@ -419,8 +415,6 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
                     var waterBreathing = net.minecraft.world.effect.MobEffects.WATER_BREATHING;
                     if (mustBeInWater && !player.isInWaterRainOrBubble()
                             && (waterBreathing == null || !player.hasEffect(waterBreathing))) {
-                        // Return air unchanged - do not let vanilla refill it while we're draining on
-                        // land
                         cir.setReturnValue(air);
                     }
                 }
@@ -487,12 +481,11 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
 
     private boolean checkGridClimbable(LivingEntity entity, BlockPos hostPos,
             mc.sayda.creraces.block.entity.MicroBlockEntity micro, double ox, double oz) {
-        // Use consistent scale and slot math
+        // Check a few offset points so thin ladders/vines near slot boundaries aren't missed.
         double x = entity.getX() + ox;
         double y = entity.getY();
         double z = entity.getZ() + oz;
 
-        // Check multiple Y points
         return isClimbableAt(hostPos, micro, x, y, z) ||
                 isClimbableAt(hostPos, micro, x, y + 0.5, z) ||
                 isClimbableAt(hostPos, micro, x, y + 1.0, z);
@@ -562,8 +555,6 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
             }
         }
 
-        // Pehkui Defense Scale (applied independently, does NOT set 'applied'
-        // to avoid bypassing vanilla armor for untagged damage sources)
         try {
             var defScaleType = virtuoel.pehkui.api.ScaleTypes.DEFENSE;
             if (defScaleType != null) {
@@ -706,6 +697,7 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
 
                 var inst = victim.getEffect(shield);
                 if (inst != null) {
+                    // Shield level (amplifier + 1) doubles as the shield's remaining HP.
                     float shieldHp = inst.getAmplifier() + 1.0f;
                     if (shieldHp >= currentAmount) {
                         float remaining = shieldHp - currentAmount;
@@ -778,6 +770,8 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
         }
     }
 
+    // 0.02F is vanilla's base swim-force constant in LivingEntity#travel, used
+    // for both water and lava - scaling it here affects both liquids at once.
     @ModifyConstant(method = "travel", constant = @Constant(floatValue = 0.02F))
     private float creraces$applyLiquidSpeedMultiplier(float constant) {
         if ((Object) this instanceof Player player) {

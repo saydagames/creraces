@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "type=bottom": { "model": "creraces:block/veil_willow_slab" },
+    "type=top": { "model": "creraces:block/veil_willow_slab_top" },
+    "type=double": { "model": "creraces:block/veil_willow_slab_full" }
+  }
+}

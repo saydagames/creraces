@@ -1,13 +1,14 @@
 package mc.sayda.creraces.network;
 
 import dev.architectury.networking.NetworkManager;
+import mc.sayda.creraces.CreRaces;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import java.util.function.Supplier;
 
 public class RequestMirrorPacket {
-    public static final ResourceLocation ID = new ResourceLocation("creraces", "request_mirror");
+    public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "request_mirror");
 
     public RequestMirrorPacket() {
     }

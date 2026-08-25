@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class AbilityExecutionRegistry {
     private static final Map<ResourceLocation, AbilityExecutor> EXECUTORS = new ConcurrentHashMap<>();
+    private static final double DEFAULT_PICK_RANGE = 5.0;
 
     public static void register(ResourceLocation id, AbilityExecutor executor) {
         EXECUTORS.put(id, executor);
@@ -17,17 +18,14 @@ public class AbilityExecutionRegistry {
     public static AbilityExecutor get(ResourceLocation id) {
         AbilityExecutor exec = EXECUTORS.get(id);
         if (exec == null) {
-            // Fallback to JSON actions
             return (player, ability, slot) -> {
                 if (ability.onActivate() != null && !ability.onActivate().isEmpty()) {
                     // Raytrace the block the player is looking at so actions using
-                    // use_target_block (e.g. rat_tunnels place_block) get a meaningful pos.
+                    // use_target_block get a meaningful interact position.
                     net.minecraft.core.BlockPos lookTarget = null;
-                    net.minecraft.world.phys.HitResult hit = player.pick(5.0, 0f, false);
+                    net.minecraft.world.phys.HitResult hit = player.pick(DEFAULT_PICK_RANGE, 0f, false);
                     if (hit instanceof net.minecraft.world.phys.BlockHitResult bhr &&
                             bhr.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
-                        // Use the face-adjacent block position so the rat hole goes
-                        // ON TOP of the surface the player is looking at.
                         lookTarget = bhr.getBlockPos().relative(bhr.getDirection());
                     }
                     mc.sayda.creraces.CreRaces.LOGGER.debug(

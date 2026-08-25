@@ -148,6 +148,10 @@ public class AbilityManager extends SimplePreparableReloadListener<Map<ResourceL
                     condition = mc.sayda.creraces.engine.condition.Condition.fromJson(jsonObject.getAsJsonObject("creraces:condition"));
                 }
 
+                String conditionFailMessage = jsonObject.has("creraces:condition_fail_message")
+                        ? jsonObject.get("creraces:condition_fail_message").getAsString()
+                        : null;
+
                 java.util.List<mc.sayda.creraces.ability.OverlayBar> overlayBars = new java.util.ArrayList<>();
                 mc.sayda.creraces.ability.OverlayBar.collectOverlayBars(jsonObject, overlayBars);
 
@@ -164,6 +168,7 @@ public class AbilityManager extends SimplePreparableReloadListener<Map<ResourceL
                         onActivate,
                         onDeactivate,
                         condition,
+                        conditionFailMessage,
                         overlayBars);
 
                 AbilityRegistry.register(ability);

@@ -1,0 +1,9 @@
+accessWidener   v1   named
+
+accessible method net/minecraft/world/level/block/state/properties/WoodType register (Lnet/minecraft/world/level/block/state/properties/WoodType;)Lnet/minecraft/world/level/block/state/properties/WoodType;
+accessible field net/minecraft/client/renderer/entity/BoatRenderer boatResources Ljava/util/Map;
+mutable field net/minecraft/client/renderer/entity/BoatRenderer boatResources Ljava/util/Map;
+accessible field net/minecraft/world/level/block/entity/BlockEntityType validBlocks Ljava/util/Set;
+mutable field net/minecraft/world/level/block/entity/BlockEntityType validBlocks Ljava/util/Set;
+accessible field net/minecraft/world/item/AxeItem STRIPPABLES Ljava/util/Map;
+mutable field net/minecraft/world/item/AxeItem STRIPPABLES Ljava/util/Map;

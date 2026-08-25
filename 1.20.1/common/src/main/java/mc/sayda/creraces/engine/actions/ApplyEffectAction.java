@@ -23,7 +23,9 @@ public class ApplyEffectAction implements ActionRegistry.RaceAction {
         private final ScalingValue amplifier;
 
         public EffectData(ResourceLocation effectId, ScalingValue duration, ScalingValue amplifier) {
-            this.effect = Objects.requireNonNull(BuiltInRegistries.MOB_EFFECT.get(Objects.requireNonNull(effectId)));
+            MobEffect resolved = BuiltInRegistries.MOB_EFFECT.get(effectId);
+            if (resolved == null) throw new IllegalArgumentException("Unknown effect ID: " + effectId);
+            this.effect = resolved;
             this.duration = duration;
             this.amplifier = amplifier;
         }
@@ -104,16 +106,7 @@ public class ApplyEffectAction implements ActionRegistry.RaceAction {
             player.level().getEntitiesOfClass(LivingEntity.class, area, e -> e != null && targets.isValid(e, player))
                     .forEach(e -> applyAllToEntity(player, e, slot));
         } else {
-            // Single Target Mode logic: Check both player and target if they exist
-            if (target != null) {
-                if (targets.isValid(target, player)) {
-                    applyAllToEntity(player, target, slot);
-                }
-            } else {
-                if (targets.isValid(player, player)) {
-                    applyAllToEntity(player, player, slot);
-                }
-            }
+            targets.applyToSingleTarget(player, target, (p, e) -> applyAllToEntity(p, e, slot));
         }
         return true;
     }

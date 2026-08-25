@@ -36,7 +36,6 @@ public class FairyBottleItem extends Item {
     @Override
     public ItemStack finishUsingItem(ItemStack stack, Level level, LivingEntity entity) {
         if (!level.isClientSide() && entity instanceof Player player) {
-            // Grant short beneficial effects: regeneration and speed
             player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 200, 1, false, true, true));
             player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 600, 0, false, true, true));
         }

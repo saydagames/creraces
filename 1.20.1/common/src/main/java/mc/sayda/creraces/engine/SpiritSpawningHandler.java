@@ -15,8 +15,7 @@ public class SpiritSpawningHandler {
                 return EventResult.pass();
 
             if (entity.getTags().contains("creraces:spirit")) {
-                // If it's a spirit mob, check if any player in spirit realm is nearby (16
-                // blocks)
+                // Only keep spirit mobs alive if a spirit-realm player is nearby to see them.
                 boolean playerInSpiritNearby = false;
                 int checkDist = 16;
                 net.minecraft.core.BlockPos pos = entity.blockPosition();

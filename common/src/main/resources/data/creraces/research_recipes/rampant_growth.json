@@ -1,0 +1,13 @@
+{
+  "ability": "creraces:rampant_growth",
+  "level": 1,
+  "pattern": [
+    { "q":  0, "r":  0, "essence": "earth" },
+    { "q":  1, "r":  0, "essence": "earth" },
+    { "q":  2, "r":  0, "essence": "life" },
+    { "q":  0, "r": -1, "essence": "earth" },
+    { "q":  0, "r": -2, "essence": "life" },
+    { "q": -1, "r":  1, "essence": "earth" },
+    { "q": -2, "r":  2, "essence": "life" }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "ability": "creraces:fruitful_sacrifice",
+  "level": 1,
+  "pattern": [
+    { "q":  0, "r":  0, "essence": "soul" },
+    { "q":  1, "r": -1, "essence": "death" },
+    { "q": -1, "r":  0, "essence": "death" },
+    { "q":  0, "r":  1, "essence": "death" },
+    { "q":  0, "r": -1, "essence": "dark" },
+    { "q":  1, "r":  0, "essence": "dark" },
+    { "q": -1, "r":  1, "essence": "dark" }
+  ]
+}

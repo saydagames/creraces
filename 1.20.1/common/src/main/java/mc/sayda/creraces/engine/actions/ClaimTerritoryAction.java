@@ -21,30 +21,40 @@ public class ClaimTerritoryAction implements ActionRegistry.RaceAction {
     public static final ResourceLocation ID = new ResourceLocation("creraces", "claim_territory");
 
     private final List<String> validBiomes;
+    private final boolean leaderOnly;
+    private final int anchorYOffset;
+    private final ResourceLocation nodeXState;
+    private final ResourceLocation nodeYState;
+    private final ResourceLocation nodeZState;
     private final List<ActionRegistry.RaceAction> onSuccess;
-    private final List<ActionRegistry.RaceAction> onPartial;
+    private final List<ActionRegistry.RaceAction> onNotLeader;
     private final List<ActionRegistry.RaceAction> onInvalidBiome;
     private final List<ActionRegistry.RaceAction> onEnemyTerritory;
     private final List<ActionRegistry.RaceAction> onInsideOwn;
 
     public ClaimTerritoryAction(List<String> validBiomes,
+            boolean leaderOnly,
+            int anchorYOffset,
+            ResourceLocation nodeXState,
+            ResourceLocation nodeYState,
+            ResourceLocation nodeZState,
             List<ActionRegistry.RaceAction> onSuccess,
-            List<ActionRegistry.RaceAction> onPartial,
+            List<ActionRegistry.RaceAction> onNotLeader,
             List<ActionRegistry.RaceAction> onInvalidBiome,
             List<ActionRegistry.RaceAction> onEnemyTerritory,
             List<ActionRegistry.RaceAction> onInsideOwn) {
         this.validBiomes = validBiomes;
+        this.leaderOnly = leaderOnly;
+        this.anchorYOffset = anchorYOffset;
+        this.nodeXState = nodeXState;
+        this.nodeYState = nodeYState;
+        this.nodeZState = nodeZState;
         this.onSuccess = onSuccess;
-        this.onPartial = onPartial;
+        this.onNotLeader = onNotLeader;
         this.onInvalidBiome = onInvalidBiome;
         this.onEnemyTerritory = onEnemyTerritory;
         this.onInsideOwn = onInsideOwn;
     }
-
-    private static final ResourceLocation SPIRIT_REALM = new ResourceLocation("creraces", "spirit_realm");
-    private static final ResourceLocation NODE_X = new ResourceLocation("creraces", "node_x");
-    private static final ResourceLocation NODE_Y = new ResourceLocation("creraces", "node_y");
-    private static final ResourceLocation NODE_Z = new ResourceLocation("creraces", "node_z");
 
     @Override
     public boolean execute(Player player,
@@ -68,19 +78,18 @@ public class ClaimTerritoryAction implements ActionRegistry.RaceAction {
         // so the sapling placement check and the map preview always agree.
         List<String> effectiveBiomes = validBiomes.isEmpty() ? race.claimValidBiomes() : validBiomes;
 
-        // Gate: the target block position (or player position) must be in a valid biome
-        if (!effectiveBiomes.isEmpty() && !isCenterBiomeValid(serverPlayer, interact_pos, effectiveBiomes)) {
+        float threshold = race.claimBiomeThreshold();
+
+        // Gate: the chunk containing the interact position must meet the biome threshold
+        if (!effectiveBiomes.isEmpty() && !isChunkBiomeValid(serverPlayer, interact_pos, effectiveBiomes, threshold)) {
             return runBranch(onInvalidBiome, player, target, slot, interact_pos);
         }
 
-        // Leader gate: all territory races require the player to be leader
-        if (race.enableTerritory()) {
-            mc.sayda.creraces.territory.FactionLeaderManager.electIfAbsent(serverPlayer);
-            if (!mc.sayda.creraces.territory.FactionLeaderManager.isLeader(player)) {
-                player.displayClientMessage(
-                        net.minecraft.network.chat.Component.translatable("msg.creraces.faction.not_leader"), false);
-                return false;
-            }
+        // Elect a faction leader if none exists yet, so the leader map is always populated.
+        mc.sayda.creraces.territory.FactionLeaderManager.electIfAbsent(serverPlayer);
+        if (leaderOnly && !mc.sayda.creraces.territory.FactionLeaderManager.isLeader(player)) {
+            runBranch(onNotLeader, player, target, slot, interact_pos);
+            return false;
         }
 
         TerritoryManager tm = TerritoryManager.get();
@@ -90,89 +99,60 @@ public class ClaimTerritoryAction implements ActionRegistry.RaceAction {
                 ? new ChunkPos(interact_pos)
                 : new ChunkPos(player.blockPosition());
 
-        // Per-chunk biome filter: only claim chunks that are in the valid biome
+        // Per-chunk biome filter: only claim chunks whose biome grid meets the threshold
         final int sampleY = interact_pos != null ? interact_pos.getY() : player.blockPosition().getY();
         final List<String> biomesForFilter = effectiveBiomes;
+        final float chunkThreshold = threshold;
         java.util.function.Predicate<ChunkPos> biomeFilter = biomesForFilter.isEmpty()
                 ? cp -> true
-                : cp -> {
-                    @SuppressWarnings("null")
-                    net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> h =
-                            serverPlayer.level().getBiome(new BlockPos(cp.x * 16 + 8, sampleY, cp.z * 16 + 8));
-                    return matchesBiome(h, biomesForFilter);
-                };
+                : cp -> mc.sayda.creraces.engine.BiomeChecker.matchesChunk(
+                        serverPlayer.level(), cp, sampleY, biomesForFilter, chunkThreshold);
 
         TerritoryManager.ClaimResult result = tm.claimIsland(raceId, centerChunk, player.getUUID(), biomeFilter);
         if ((result.type == TerritoryManager.ClaimResultType.SUCCESS
                 || result.type == TerritoryManager.ClaimResultType.INSIDE_OWN_TERRITORY)
-                && !result.newClaims.isEmpty()) {
-            // Anchor only the chunks this placement actually created — pre-existing claims from
-            // allies or earlier placements are not tracked here and survive tree removal untouched.
-            net.minecraft.core.BlockPos anchorPos = interact_pos != null ? interact_pos.below() : player.blockPosition();
-            tm.placeRootBlock(anchorPos, result.newClaims);
+                && (!result.newClaims.isEmpty() || !result.preExistingClaims.isEmpty())) {
+            net.minecraft.core.BlockPos anchorPos = interact_pos != null ? interact_pos.offset(0, anchorYOffset, 0) : player.blockPosition();
+            tm.placeRootBlock(anchorPos, result.newClaims, result.preExistingClaims);
         }
         return switch (result.type) {
             case SUCCESS              -> runBranch(onSuccess, player, target, slot, interact_pos);
-            case PARTIAL              -> runBranch(onPartial, player, target, slot, interact_pos);
             case ENEMY_TERRITORY      -> runBranch(onEnemyTerritory, player, target, slot, interact_pos);
             case INSIDE_OWN_TERRITORY -> runBranch(onInsideOwn, player, target, slot, interact_pos);
             case INVALID_BIOME        -> runBranch(onInvalidBiome, player, target, slot, interact_pos);
-            case INSUFFICIENT_COINS, ANCHOR_CHUNK, UNCLAIM_SUCCESS, OUT_OF_RANGE, NOT_LEADER -> false;
+            case INSUFFICIENT_COINS, ANCHOR_CHUNK, UNCLAIM_SUCCESS, OUT_OF_RANGE, NOT_LEADER, MAX_NODES_REACHED -> false;
         };
     }
 
     /**
-     * Gate check: is the target position in a valid biome?
-     * Uses interactPos when provided (block-place context), otherwise the player's own position.
-     * Spirit-realm players always check their stored overworld node position.
+     * Gate check: does the chunk containing the target position meet the biome threshold?
+     * If the player is currently in spirit form (Phaseshift, a state flag - not a dimension
+     * change), checks the chunk of their stored overworld node position instead, since their
+     * physical position while phased isn't a meaningful claim location.
      */
-    private boolean isCenterBiomeValid(ServerPlayer player, @javax.annotation.Nullable BlockPos interactPos,
-            List<String> biomes) {
-        net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> holder;
-        if (player.level().dimension().location().equals(SPIRIT_REALM)) {
-            var vars = DataUtils.getVariables(player).orElse(null);
-            if (vars == null) return true;
-            double nx = vars.getPersistentState(NODE_X);
-            double ny = vars.getPersistentState(NODE_Y);
-            double nz = vars.getPersistentState(NODE_Z);
+    private boolean isChunkBiomeValid(ServerPlayer player, @javax.annotation.Nullable BlockPos interactPos,
+            List<String> biomes, float threshold) {
+        net.minecraft.world.level.LevelReader level;
+        ChunkPos cp;
+        var vars = DataUtils.getVariables(player).orElse(null);
+        if (vars != null && vars.isInSpiritRealm()) {
+            double nx = vars.getPersistentState(nodeXState);
+            double ny = vars.getPersistentState(nodeYState);
+            double nz = vars.getPersistentState(nodeZState);
             if (nx == 0 && ny == 0 && nz == 0) return true;
             net.minecraft.server.level.ServerLevel overworld =
                     player.getServer().getLevel(net.minecraft.world.level.Level.OVERWORLD);
             if (overworld == null) return true;
-            holder = overworld.getBiome(new BlockPos((int) nx, (int) ny, (int) nz));
-        } else if (interactPos != null) {
-            @SuppressWarnings("null")
-            net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> h =
-                    player.level().getBiome(interactPos);
-            holder = h;
+            level = overworld;
+            cp = new ChunkPos(new BlockPos((int) nx, (int) ny, (int) nz));
         } else {
-            @SuppressWarnings("null")
-            net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> h =
-                    player.level().getBiome(player.blockPosition());
-            holder = h;
+            BlockPos pos = interactPos != null ? interactPos : player.blockPosition();
+            level = player.level();
+            cp = new ChunkPos(pos);
         }
-        return matchesBiome(holder, biomes);
-    }
-
-    private boolean matchesBiome(net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> holder,
-            List<String> biomes) {
-        for (String entry : biomes) {
-            if (entry.startsWith("#")) {
-                try {
-                    @SuppressWarnings("null")
-                    net.minecraft.tags.TagKey<net.minecraft.world.level.biome.Biome> tagKey =
-                            net.minecraft.tags.TagKey.create(
-                                    net.minecraft.core.registries.Registries.BIOME,
-                                    new ResourceLocation(entry.substring(1)));
-                    if (holder.is(tagKey)) return true;
-                } catch (Exception ignored) {}
-            } else {
-                if (holder.unwrapKey().map(k -> k.location().toString().equals(entry)).orElse(false)) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return mc.sayda.creraces.engine.BiomeChecker.matchesChunk(level, cp,
+                interactPos != null ? interactPos.getY() : player.blockPosition().getY(),
+                biomes, threshold);
     }
 
     private static boolean runBranch(List<ActionRegistry.RaceAction> branch, Player player,
@@ -194,10 +174,28 @@ public class ClaimTerritoryAction implements ActionRegistry.RaceAction {
                 }
             }
 
+            boolean leaderOnly = json.has("leader_only") && json.get("leader_only").getAsBoolean();
+            int anchorYOffset = json.has("anchor_y_offset") ? json.get("anchor_y_offset").getAsInt() : -1;
+
+            ResourceLocation nodeX = json.has("node_x_state")
+                    ? new ResourceLocation(json.get("node_x_state").getAsString())
+                    : new ResourceLocation("creraces", "node_x");
+            ResourceLocation nodeY = json.has("node_y_state")
+                    ? new ResourceLocation(json.get("node_y_state").getAsString())
+                    : new ResourceLocation("creraces", "node_y");
+            ResourceLocation nodeZ = json.has("node_z_state")
+                    ? new ResourceLocation(json.get("node_z_state").getAsString())
+                    : new ResourceLocation("creraces", "node_z");
+
             return new ClaimTerritoryAction(
                     validBiomes,
+                    leaderOnly,
+                    anchorYOffset,
+                    nodeX,
+                    nodeY,
+                    nodeZ,
                     parseList(json, "on_success"),
-                    parseList(json, "on_partial"),
+                    parseList(json, "on_not_leader"),
                     parseList(json, "on_invalid_biome"),
                     parseList(json, "on_enemy_territory"),
                     parseList(json, "on_inside_own"));

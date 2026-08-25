@@ -3,10 +3,17 @@ package mc.sayda.creraces.registry;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.entity.DryadBoatEntity;
+import mc.sayda.creraces.entity.DryadChestBoatEntity;
 import mc.sayda.creraces.entity.FeatherProjectile;
 import mc.sayda.creraces.entity.PoisonEmitterEntity;
 import mc.sayda.creraces.entity.PoisonEmitterMobileEntity;
 import mc.sayda.creraces.entity.TrollPillarEntity;
+import mc.sayda.creraces.entity.VeilWillowBoatEntity;
+import mc.sayda.creraces.entity.FloatingMoteEntity;
+import mc.sayda.creraces.entity.VeilWillowChestBoatEntity;
+import net.minecraft.world.entity.vehicle.Boat;
+import net.minecraft.world.entity.vehicle.ChestBoat;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -83,6 +90,46 @@ public class ModEntities {
                                                         .updateInterval(3)
                                                         .build("remains_undead"));
 
+        public static final RegistrySupplier<EntityType<DryadBoatEntity>> DRYAD_BOAT = ENTITIES.register(
+                        "dryad_boat",
+                        () -> EntityType.Builder.<DryadBoatEntity>of(DryadBoatEntity::new, MobCategory.MISC)
+                                        .sized(1.375F, 0.5625F)
+                                        .clientTrackingRange(10)
+                                        .build("dryad_boat"));
+
+        public static final RegistrySupplier<EntityType<DryadChestBoatEntity>> DRYAD_CHEST_BOAT = ENTITIES.register(
+                        "dryad_chest_boat",
+                        () -> EntityType.Builder.<DryadChestBoatEntity>of(DryadChestBoatEntity::new, MobCategory.MISC)
+                                        .sized(1.375F, 0.5625F)
+                                        .clientTrackingRange(10)
+                                        .build("dryad_chest_boat"));
+
+        public static final RegistrySupplier<EntityType<VeilWillowBoatEntity>> VEIL_WILLOW_BOAT = ENTITIES.register(
+                        "veil_willow_boat",
+                        () -> EntityType.Builder.<VeilWillowBoatEntity>of(VeilWillowBoatEntity::new, MobCategory.MISC)
+                                        .sized(1.375F, 0.5625F)
+                                        .clientTrackingRange(10)
+                                        .build("veil_willow_boat"));
+
+        public static final RegistrySupplier<EntityType<FloatingMoteEntity>> FLOATING_MOTE = ENTITIES.register(
+                        "floating_mote",
+                        () -> EntityType.Builder.<FloatingMoteEntity>of(FloatingMoteEntity::new, MobCategory.AMBIENT)
+                                        .sized(0.3F, 0.3F)
+                                        .fireImmune()
+                                        .clientTrackingRange(8)
+                                        .updateInterval(3)
+                                        .build("floating_mote"));
+
+        public static final RegistrySupplier<EntityType<VeilWillowChestBoatEntity>> VEIL_WILLOW_CHEST_BOAT = ENTITIES
+                        .register(
+                                        "veil_willow_chest_boat",
+                                        () -> EntityType.Builder
+                                                        .<VeilWillowChestBoatEntity>of(VeilWillowChestBoatEntity::new,
+                                                                        MobCategory.MISC)
+                                                        .sized(1.375F, 0.5625F)
+                                                        .clientTrackingRange(10)
+                                                        .build("veil_willow_chest_boat"));
+
         public static void registerAttributes() {
                 dev.architectury.registry.level.entity.EntityAttributeRegistry.register(TROLL_PILLAR,
                                 TrollPillarEntity::createAttributes);
@@ -96,6 +143,8 @@ public class ModEntities {
                                 mc.sayda.creraces.entity.RemainsEntity::createAttributes);
                 dev.architectury.registry.level.entity.EntityAttributeRegistry.register(REMAINS_UNDEAD,
                                 mc.sayda.creraces.entity.RemainsEntity::createAttributes);
+                dev.architectury.registry.level.entity.EntityAttributeRegistry.register(FLOATING_MOTE,
+                                FloatingMoteEntity::createAttributes);
         }
 
         public static void register() {

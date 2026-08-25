@@ -13,11 +13,12 @@ import org.joml.Matrix4f;
  
 public class SpiritRealmRenderer {
 
+    public static volatile boolean CLIENT_SPIRIT_FLAME_VISIBLE = true;
+
     @SuppressWarnings("null")
     public static final ResourceLocation SPIRIT_MOON_ATLAS = new ResourceLocation("creraces",
             "textures/environment/moon_phases.png");
     private static final ResourceLocation MOON_LOCATION = new ResourceLocation("textures/environment/moon_phases.png");
-    private static final ResourceLocation VANILLA_MOON = new ResourceLocation("textures/environment/moon_phases.png");
     private static final float MOON_ALPHA = 0.5f;
     private static final float MOON_SIZE = 20.0f;
  
@@ -38,6 +39,24 @@ public class SpiritRealmRenderer {
         });
     }
  
+    public static void spawnSpiritFlameParticles(net.minecraft.client.Minecraft minecraft) {
+        if (minecraft.player == null || minecraft.level == null) return;
+        net.minecraft.server.MinecraftServer localServer = minecraft.getSingleplayerServer();
+        boolean flameVisible = localServer != null
+                ? localServer.overworld().getGameRules().getRule(mc.sayda.creraces.registry.ModGameRules.SPIRIT_FLAME_VISIBLE).get()
+                : CLIENT_SPIRIT_FLAME_VISIBLE;
+        if (!flameVisible) return;
+        if (mc.sayda.creraces.engine.SpiritMobilityHandler.isSpirit(minecraft.player)) return;
+
+        for (net.minecraft.world.entity.player.Player p : minecraft.level.players()) {
+            if (p == minecraft.player) continue;
+            if (!mc.sayda.creraces.engine.SpiritMobilityHandler.isSpirit(p)) continue;
+            minecraft.level.addParticle(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
+                    p.getX(), p.getY() + p.getBbHeight() * 0.5, p.getZ(),
+                    0.0, 0.005, 0.0);
+        }
+    }
+
     /**
      * Called from LevelRendererMixin to render the spirit moons.
      */

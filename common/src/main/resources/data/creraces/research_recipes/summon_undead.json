@@ -1,0 +1,14 @@
+{
+  "ability": "creraces:summon_undead",
+  "level": 1,
+  "pattern": [
+    { "q":  0, "r":  0, "essence": "soul" },
+    { "q":  1, "r":  0, "essence": "dark" },
+    { "q":  0, "r": -1, "essence": "dark" },
+    { "q":  1, "r": -1, "essence": "dark" },
+    { "q": -1, "r":  0, "essence": "life" },
+    { "q":  0, "r":  1, "essence": "dark" },
+    { "q": -1, "r":  1, "essence": "life" },
+    { "q":  2, "r": -1, "essence": "dark" }
+  ]
+}

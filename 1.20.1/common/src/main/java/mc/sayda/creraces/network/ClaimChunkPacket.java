@@ -68,31 +68,35 @@ public class ClaimChunkPacket {
 
             switch (claimAction) {
                 case CLAIM -> {
-                    mc.sayda.creraces.race.Race raceForLeaderCheck = mc.sayda.creraces.race.RaceRegistry.get(raceId);
-                    if (raceForLeaderCheck != null && raceForLeaderCheck.enableTerritory()
+                    mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(raceId);
+                    if (race != null && race.enableTerritory()
                             && !mc.sayda.creraces.territory.FactionLeaderManager.isLeader(player)) {
                         BoundaryHandler.sendClaimResponse(player,
                                 new ClaimResponsePacket(TerritoryManager.ClaimResultType.NOT_LEADER));
                         return;
                     }
                     int costPerChunk = mc.sayda.creraces.config.CreRacesConfig.TERRITORY_CLAIM_COST_PER_CHUNK.get();
-                    mc.sayda.creraces.capability.IPlayerVariables vars$ =
+                    IPlayerVariables vars =
                             DataUtils.getVariables(player).orElse(null);
-                    if (costPerChunk > 0 && (vars$ == null || vars$.getCoins() < costPerChunk)) {
+                    if (costPerChunk > 0 && (vars == null || vars.getCoins() < costPerChunk)) {
                         BoundaryHandler.sendClaimResponse(player,
                                 new ClaimResponsePacket(TerritoryManager.ClaimResultType.INSUFFICIENT_COINS));
                         return;
                     }
-                    mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(raceId);
                     if (race != null && !race.claimValidBiomes().isEmpty()) {
-                        net.minecraft.core.BlockPos checkPos = chunk.getMiddleBlockPosition(64);
-                        if (!isBiomeValid(player.serverLevel(), checkPos, race.claimValidBiomes())) {
+                        int sampleBX = chunk.x * 16 + 8;
+                        int sampleBZ = chunk.z * 16 + 8;
+                        int sampleY = player.serverLevel().getHeight(
+                                net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                                sampleBX, sampleBZ);
+                        if (!mc.sayda.creraces.engine.BiomeChecker.matchesChunk(
+                                player.serverLevel(), chunk, sampleY, race.claimValidBiomes(), race.claimBiomeThreshold())) {
                             BoundaryHandler.sendClaimResponse(player,
                                     new ClaimResponsePacket(TerritoryManager.ClaimResultType.INVALID_BIOME));
                             return;
                         }
                     }
-                    var cr = tm.claimChunk(raceId, chunk, player.getUUID());
+                    var cr = tm.claimChunk(raceId, chunk, player.getUUID(), costPerChunk);
                     result = cr.type;
                     if (result == TerritoryManager.ClaimResultType.SUCCESS && costPerChunk > 0) {
                         final int cost = costPerChunk;
@@ -116,17 +120,15 @@ public class ClaimChunkPacket {
                     } else if (existing.isPersistent()) {
                         result = TerritoryManager.ClaimResultType.ANCHOR_CHUNK;
                     } else {
+                        final int refund = existing.getPricePaid();
                         boolean unclaimed = tm.unclaimChunk(raceId, chunk);
                         result = unclaimed ? TerritoryManager.ClaimResultType.UNCLAIM_SUCCESS
                                            : TerritoryManager.ClaimResultType.ENEMY_TERRITORY;
-                        if (unclaimed) {
-                            int costPerChunk = mc.sayda.creraces.config.CreRacesConfig.TERRITORY_CLAIM_COST_PER_CHUNK.get();
-                            if (costPerChunk > 0) {
-                                DataUtils.getVariables(player).ifPresent(v -> {
-                                    v.setCoins(v.getCoins() + costPerChunk);
-                                    v.sync(player);
-                                });
-                            }
+                        if (unclaimed && refund > 0) {
+                            DataUtils.getVariables(player).ifPresent(v -> {
+                                v.setCoins(v.getCoins() + refund);
+                                v.sync(player);
+                            });
                         }
                     }
                 }
@@ -136,23 +138,4 @@ public class ClaimChunkPacket {
         });
     }
 
-    private static boolean isBiomeValid(net.minecraft.server.level.ServerLevel level,
-            net.minecraft.core.BlockPos pos, java.util.List<String> validBiomes) {
-        net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> biome = level.getBiome(pos);
-        for (String entry : validBiomes) {
-            if (entry.startsWith("#")) {
-                try {
-                    net.minecraft.tags.TagKey<net.minecraft.world.level.biome.Biome> tag =
-                            net.minecraft.tags.TagKey.create(
-                                    net.minecraft.core.registries.Registries.BIOME,
-                                    new ResourceLocation(entry.substring(1)));
-                    if (biome.is(tag)) return true;
-                } catch (Exception ignored) {}
-            } else {
-                if (biome.unwrapKey().map(k -> k.location().toString().equals(entry)).orElse(false))
-                    return true;
-            }
-        }
-        return false;
-    }
 }

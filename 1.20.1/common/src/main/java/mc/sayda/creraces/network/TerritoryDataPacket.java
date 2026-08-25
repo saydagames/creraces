@@ -78,8 +78,10 @@ public class TerritoryDataPacket {
             buf.writeInt(c.chunkZ);
             buf.writeEnum(c.relation);
             buf.writeBoolean(c.dormant);
-            buf.writeUtf(c.factionName != null ? c.factionName : "");
-            buf.writeUtf(c.ownerName);
+            String fn = c.factionName != null ? c.factionName : "";
+            buf.writeUtf(fn.length() > 64 ? fn.substring(0, 64) : fn);
+            String on = c.ownerName != null ? c.ownerName : "";
+            buf.writeUtf(on.length() > 48 ? on.substring(0, 48) : on);
         }
         buf.writeVarInt(biomeClaimableChunks.size());
         for (long key : biomeClaimableChunks) buf.writeLong(key);

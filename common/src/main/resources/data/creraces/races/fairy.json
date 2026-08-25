@@ -22,16 +22,16 @@
             "multiplier": 2.0,
             "condition": {
                 "type": "creraces:not",
-                "condition": { "type": "dimension", "value": "creraces:fairy_realm" }
+                "condition": { "type": "creraces:dimension", "value": "creraces:fairy_realm" }
             }
         },
         {
             "type": "creraces:flight",
             "resource": "MANA",
-            "creraces:soggy_wings": true,
+            "soggy_wings": true,
             "soggy_condition": {
                 "type": "creraces:not",
-                "condition": { "type": "dimension", "value": "creraces:fairy_realm" }
+                "condition": { "type": "creraces:dimension", "value": "creraces:fairy_realm" }
             }
         },
         {

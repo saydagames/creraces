@@ -18,7 +18,7 @@ public class TrueInvisibilityEffect extends MobEffect {
         if (entity.level().isClientSide() || !(entity instanceof net.minecraft.world.entity.player.Player player)) return;
 
         mc.sayda.creraces.capability.DataUtils.getVariables(player).ifPresent(vars -> {
-            // Resource Drain (Standard for invisibility effects)
+            // Drains mana so this isn't a free permanent buff.
             double drain = 2.0;
             double current = vars.getMana();
             

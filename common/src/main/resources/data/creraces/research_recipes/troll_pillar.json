@@ -1,0 +1,13 @@
+{
+  "ability": "creraces:troll_pillar",
+  "level": 1,
+  "pattern": [
+    { "q":  0, "r": -2, "essence": "arcane" },
+    { "q":  1, "r": -2, "essence": "earth" },
+    { "q":  0, "r": -1, "essence": "earth" },
+    { "q":  0, "r":  0, "essence": "earth" },
+    { "q":  0, "r":  1, "essence": "earth" },
+    { "q": -1, "r":  2, "essence": "earth" },
+    { "q":  0, "r":  2, "essence": "earth" }
+  ]
+}

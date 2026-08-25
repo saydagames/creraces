@@ -1,0 +1,7 @@
+{
+  "parent": "block/cube_column",
+  "textures": {
+    "end": "creraces:block/stripped_dryad_log",
+    "side": "creraces:block/stripped_dryad_log"
+  }
+}

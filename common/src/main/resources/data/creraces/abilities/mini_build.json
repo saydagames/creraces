@@ -16,21 +16,21 @@
             "type": "creraces:conditional",
             "condition": {
                 "type": "creraces:entity_data",
-                "key": "minibuild",
+                "key": "is_minibuild",
                 "value": 1,
                 "operator": "=="
             },
             "if_true": [
                 {
                     "type": "creraces:message",
-                    "text": "§aMini Build Enabled",
+                    "text": "&aMini Build Enabled",
                     "actionbar": true
                 }
             ],
             "if_false": [
                 {
                     "type": "creraces:message",
-                    "text": "§cMini Build Disabled",
+                    "text": "&cMini Build Disabled",
                     "actionbar": true
                 }
             ]

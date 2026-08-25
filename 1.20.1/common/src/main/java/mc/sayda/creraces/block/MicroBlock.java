@@ -47,7 +47,7 @@ public class MicroBlock extends BaseEntityBlock {
         registerDefaultState(stateDefinition.any().setValue(LIGHT, 0));
     }
 
-    // ─── BlockEntity ─────────────────────────────────────────────────────────────
+    // BlockEntity
 
     @Nullable
     @Override
@@ -65,7 +65,7 @@ public class MicroBlock extends BaseEntityBlock {
         return null;
     }
 
-    // ─── Rendering ───────────────────────────────────────────────────────────────
+    // Rendering
 
     @Override
     public RenderShape getRenderShape(BlockState state) {
@@ -106,7 +106,7 @@ public class MicroBlock extends BaseEntityBlock {
         return super.getDestroyProgress(state, player, level, pos);
     }
 
-    // ─── Solidity & Occlusion ───────────────────────────────────────────────────
+    // Solidity & Occlusion
 
     @Override
     public boolean isCollisionShapeFullBlock(@javax.annotation.Nonnull BlockState state,
@@ -146,7 +146,7 @@ public class MicroBlock extends BaseEntityBlock {
             return net.minecraft.world.InteractionResult.SUCCESS;
         }
 
-        // --- PERMISSION CHECK ---
+        // Permission check
         if (!mc.sayda.creraces.capability.DataUtils.canInteractWithMiniBuild(player)) {
             // Consume bucket interactions so vanilla doesn't place liquid adjacent to the block
             net.minecraft.world.item.Item heldItem = player.getItemInHand(hand).getItem();
@@ -219,7 +219,7 @@ public class MicroBlock extends BaseEntityBlock {
         return net.minecraft.world.InteractionResult.PASS;
     }
 
-    // ─── Block Breaking ────────────────────────────────────────────────
+    // Block Breaking
 
     /**
      * When the host block is broken in normal mode: drop all contained

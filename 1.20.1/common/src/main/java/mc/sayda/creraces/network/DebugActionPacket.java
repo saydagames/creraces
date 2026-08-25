@@ -74,7 +74,7 @@ public class DebugActionPacket {
                         }
                         case "race" -> {
                             ResourceLocation id = new ResourceLocation(java.util.Objects.requireNonNull(value));
-                            mc.sayda.creraces.race.RaceIncidents.transformPlayer(player, id);
+                            RaceIncidents.transformPlayer(player, id);
                             CreRaces.LOGGER.debug("Applied debug race transformation: {}", value);
                         }
                         case "attribute" -> {
@@ -83,11 +83,6 @@ public class DebugActionPacket {
                         }
                         case "flag" -> {
                             applyFlag(vars, key, value);
-                            // Refresh to apply scale/attribute changes immediately
-                            if (player instanceof net.minecraft.server.level.ServerPlayer) {
-                                net.minecraft.server.level.ServerPlayer sp = (net.minecraft.server.level.ServerPlayer) player;
-                                mc.sayda.creraces.race.RaceIncidents.refreshPlayer(sp);
-                            }
                         }
                     }
                     // Sync changes back to client
@@ -103,7 +98,7 @@ public class DebugActionPacket {
 
     private void applyVariable(ServerPlayer player, IPlayerVariables vars, String key, String value) {
         if (key.equalsIgnoreCase("race")) {
-            mc.sayda.creraces.race.RaceIncidents.transformPlayer(player,
+            RaceIncidents.transformPlayer(player,
                     new ResourceLocation(java.util.Objects.requireNonNull(value)));
             return;
         }

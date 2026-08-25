@@ -10,17 +10,13 @@ import net.minecraft.network.chat.MutableComponent;
 import java.util.UUID;
 
 /**
- * Modern GUI for managing Race Teams.
- * Features: Member list, Invite list, Invite by name, Friendly Fire toggle.
- */
-/**
- * Modern GUI for managing Race Teams.
+ * GUI for managing Race Teams.
  * Features: Member list, Invite list, Invite by name, Friendly Fire toggle.
  */
 @SuppressWarnings("null")
 public class RaceTeamScreen extends Screen {
 
-    private static java.util.List<mc.sayda.creraces.network.TeamUpdatePacket.MemberInfo> members = new java.util.ArrayList<>();
+    private static volatile java.util.List<mc.sayda.creraces.network.TeamUpdatePacket.MemberInfo> members = new java.util.ArrayList<>();
     private static boolean friendlyFire;
     private static String pendingInviteTeamName = "";
     private static mc.sayda.creraces.network.TeamUpdatePacket.MemberInfo selectedMember = null;
@@ -95,10 +91,13 @@ public class RaceTeamScreen extends Screen {
         // Role Management (Leader only)
         UUID localId = Minecraft.getInstance().player != null ? Minecraft.getInstance().player.getUUID() : null;
         this.localRole = mc.sayda.creraces.team.RaceTeamManager.Role.MEMBER;
-        for (var m : members) {
-            if (m.uuid().equals(localId)) {
-                this.localRole = m.role();
-                break;
+        var localMembers = members;
+        synchronized (localMembers) {
+            for (var m : localMembers) {
+                if (m.uuid().equals(localId)) {
+                    this.localRole = m.role();
+                    break;
+                }
             }
         }
 

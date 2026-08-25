@@ -4,6 +4,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import mc.sayda.creraces.team.RaceTeamManager;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 
@@ -20,6 +23,9 @@ import java.util.Set;
  *
  * Supported filters:
  * "all", "self", "allies", "enemies", "players", "mobs"
+ * "is_spirit" - entities currently in the spirit realm
+ * "has_effect:id" - entities with the given mob effect active
+ * "race:id" - player entities whose active race matches the ID
  * Prefix any of these with "!" to explicitly block that category.
  */
 public class TargetFilter {
@@ -63,7 +69,6 @@ public class TargetFilter {
                 }
             }
         } else {
-            // If the key is missing, return a filter with the default allows
             return new TargetFilter(defaultAllow, Set.of());
         }
         return new TargetFilter(allow, deny, defaultAllow);
@@ -89,22 +94,93 @@ public class TargetFilter {
         if (deny.contains("enemies") && !isAlly)
             return false;
 
+        // Parameterized deny rules
+        if (matchesParameterized(deny, victim, caster))
+            return false;
+
         // 2. Process ALLOW rules
+        boolean basicAllow = false;
         if (isAlly) {
-            if (allow.contains("all")) return true;
-            if (victim.equals(caster) && allow.contains("self"))
-                return true;
-            return allow.contains("allies");
-        }
-
-        // Not an ally - check category allows
-        if (allow.contains("all") || allow.contains("enemies"))
-            return true;
-
-        if (victim instanceof Player) {
-            return allow.contains("players");
+            if (allow.contains("all")) basicAllow = true;
+            else if (victim.equals(caster) && allow.contains("self")) basicAllow = true;
+            else if (allow.contains("allies")) basicAllow = true;
         } else {
-            return allow.contains("mobs");
+            if (allow.contains("all") || allow.contains("enemies")) basicAllow = true;
+            else if (victim instanceof Player && allow.contains("players")) basicAllow = true;
+            else if (!(victim instanceof Player) && allow.contains("mobs")) basicAllow = true;
         }
+
+        if (basicAllow) return true;
+
+        // Parameterized allow rules
+        return matchesParameterized(allow, victim, caster);
+    }
+
+    /**
+     * Smart-targeting resolution shared by several actions and conditions: prefer the
+     * target if present, otherwise fall back to the caster unless useTarget requires
+     * an explicit target (in which case null is returned).
+     */
+    public static @javax.annotation.Nullable LivingEntity resolveSmartTarget(Player player,
+            @javax.annotation.Nullable LivingEntity target, boolean useTarget) {
+        return (target != null) ? target : (useTarget ? null : player);
+    }
+
+    /**
+     * Resolves the single-target subject for an action: prefer the target if present,
+     * otherwise fall back to the caster. Invokes the callback only if the resolved
+     * subject passes this filter.
+     */
+    public void applyToSingleTarget(Player player, @javax.annotation.Nullable LivingEntity target,
+            java.util.function.BiConsumer<Player, LivingEntity> action) {
+        if (target != null) {
+            if (isValid(target, player)) {
+                action.accept(player, target);
+            }
+        } else {
+            if (isValid(player, player)) {
+                action.accept(player, player);
+            }
+        }
+    }
+
+    private static boolean matchesParameterized(Set<String> rules, LivingEntity victim, Player caster) {
+        for (String rule : rules) {
+            if (rule.equals("is_spirit")) {
+                if (isSpiritRealm(victim)) return true;
+            } else if (rule.startsWith("has_effect:")) {
+                String effectId = rule.substring("has_effect:".length());
+                MobEffect eff = resolveEffect(effectId);
+                if (eff != null && victim.hasEffect(eff)) return true;
+            } else if (rule.startsWith("race:")) {
+                String raceId = rule.substring("race:".length());
+                if (victim instanceof Player p && matchesRace(p, raceId)) return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isSpiritRealm(LivingEntity entity) {
+        if (!(entity instanceof Player player)) return false;
+        return mc.sayda.creraces.capability.DataUtils.getVariables(player)
+                .map(v -> v.isInSpiritRealm())
+                .orElse(false);
+    }
+
+    private static MobEffect resolveEffect(String id) {
+        if (!id.contains(":")) id = "minecraft:" + id;
+        ResourceLocation loc = ResourceLocation.tryParse(id);
+        return loc != null ? BuiltInRegistries.MOB_EFFECT.get(loc) : null;
+    }
+
+    private static boolean matchesRace(Player player, String raceId) {
+        return mc.sayda.creraces.capability.DataUtils.getVariables(player)
+                .map(v -> {
+                    ResourceLocation race = v.getRace();
+                    if (race == null) return false;
+                    if (!raceId.contains(":")) return race.getPath().equalsIgnoreCase(raceId);
+                    return race.toString().equalsIgnoreCase(raceId);
+                })
+                .orElse(false);
     }
 }

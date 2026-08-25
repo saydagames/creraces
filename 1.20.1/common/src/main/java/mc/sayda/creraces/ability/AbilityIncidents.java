@@ -17,7 +17,6 @@ import java.util.Objects;
 public class AbilityIncidents {
 
     public static void tryCast(ServerPlayer player, AbilitySlot slot) {
-        // Ensure player and slot are not null at the start of the method
         Objects.requireNonNull(player, "Player cannot be null for ability casting.");
         Objects.requireNonNull(slot, "AbilitySlot cannot be null for ability casting.");
 
@@ -55,9 +54,11 @@ public class AbilityIncidents {
             AbilityExecutor executor = AbilityExecutionRegistry.get(abilityId);
 
             // 4. Evaluate Condition
-            // TODO: Add support for custom failure messages in ability requirements
             if (ability.condition() != null && !ability.condition().evaluate(player, null, slot, null)) {
-                player.displayClientMessage(java.util.Objects.requireNonNull(Component.translatable("msg.creraces.condition_failed")), true);
+                String failKey = ability.conditionFailMessage() != null
+                        ? ability.conditionFailMessage()
+                        : "msg.creraces.condition_failed";
+                player.displayClientMessage(Component.translatable(failKey), true);
                 return;
             }
 
@@ -88,7 +89,7 @@ public class AbilityIncidents {
                     }
                 }
             } catch (Exception e) {
-                mc.sayda.creraces.CreRaces.LOGGER.error("Failed to execute ability: " + abilityId, e);
+                mc.sayda.creraces.CreRaces.LOGGER.error("Failed to execute ability: {}", abilityId, e);
             }
         });
     }

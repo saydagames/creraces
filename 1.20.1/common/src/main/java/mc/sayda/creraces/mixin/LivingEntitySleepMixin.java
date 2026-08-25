@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import mc.sayda.creraces.util.ISleepSlotTracker;
 import net.minecraft.core.Direction;
-import net.minecraft.world.level.block.state.properties.BedPart;
+import net.minecraft.world.phys.Vec3;
 import java.util.Optional;
 
 @Mixin(LivingEntity.class)
@@ -47,11 +47,9 @@ public abstract class LivingEntitySleepMixin extends Entity {
 
                 // Fallback for respawn or older saves where slot isn't set
                 if (this.level().getBlockEntity(pos) instanceof MicroBlockEntity micro) {
-                    for (int i = 0; i < MicroBlockEntity.TOTAL; i++) {
-                        if (micro.getSlot(i % 4, (i / 4) % 4, i / 16).getBlock() instanceof BedBlock) {
-                            cir.setReturnValue(true);
-                            return;
-                        }
+                    if (MicroBlockEntity.findBedSlot(micro) >= 0) {
+                        cir.setReturnValue(true);
+                        return;
                     }
                 }
             }
@@ -75,12 +73,7 @@ public abstract class LivingEntitySleepMixin extends Entity {
 
                 // If no slot tracked, try to find the first bed
                 if (slotIdx < 0) {
-                    for (int i = 0; i < MicroBlockEntity.TOTAL; i++) {
-                        if (micro.getSlot(i % 4, (i / 4) % 4, i / 16).getBlock() instanceof BedBlock) {
-                            slotIdx = i;
-                            break;
-                        }
-                    }
+                    slotIdx = MicroBlockEntity.findBedSlot(micro);
                 }
 
                 if (slotIdx >= 0) {
@@ -90,30 +83,8 @@ public abstract class LivingEntitySleepMixin extends Entity {
                     BlockState bedState = micro.getSlot(x, y, z);
 
                     if (bedState.getBlock() instanceof BedBlock) {
-                        double scale = 1.0 / MicroBlockEntity.SIZE;
-                        Direction facing = bedState.getValue(BedBlock.FACING);
-                        BedPart part = bedState.getValue(BedBlock.PART);
-
-                        double subBlockX = (x * scale) + (scale / 2.0);
-                        double subBlockY = (y * scale);
-                        double subBlockZ = (z * scale) + (scale / 2.0);
-                        double bedPillowHeight = 0.6875 * scale;
-
-                        // Final centering refinement: Halfway between 1.0 and 1.35
-                        // 1.175 slots away from HEAD center
-                        if (part == BedPart.HEAD) {
-                            subBlockX += facing.getOpposite().getStepX() * (scale * 1.175);
-                            subBlockZ += facing.getOpposite().getStepZ() * (scale * 1.175);
-                        } else {
-                            subBlockX += facing.getOpposite().getStepX() * (scale * 0.175);
-                            subBlockZ += facing.getOpposite().getStepZ() * (scale * 0.175);
-                        }
-
-                        this.setPos(
-                                pos.getX() + subBlockX,
-                                pos.getY() + subBlockY + bedPillowHeight,
-                                pos.getZ() + subBlockZ);
-
+                        Vec3 standPos = MicroBlockEntity.computeBedStandPosition(pos, bedState, x, y, z);
+                        this.setPos(standPos.x, standPos.y, standPos.z);
                         ci.cancel();
                     }
                 }
@@ -137,13 +108,7 @@ public abstract class LivingEntitySleepMixin extends Entity {
                     }
 
                     if (slotIdx < 0) {
-                        for (int i = 0; i < MicroBlockEntity.TOTAL; i++) {
-                            BlockState s = micro.getSlot(i % 4, (i / 4) % 4, i / 16);
-                            if (s.getBlock() instanceof BedBlock) {
-                                slotIdx = i;
-                                break;
-                            }
-                        }
+                        slotIdx = MicroBlockEntity.findBedSlot(micro);
                     }
 
                     if (slotIdx >= 0) {

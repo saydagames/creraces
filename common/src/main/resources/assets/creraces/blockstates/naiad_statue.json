@@ -1,0 +1,6 @@
+{
+  "variants": {
+    "waterlogged=false": { "model": "creraces:block/naiad_statue" },
+    "waterlogged=true":  { "model": "creraces:block/naiad_statue" }
+  }
+}

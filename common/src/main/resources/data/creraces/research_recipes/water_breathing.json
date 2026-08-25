@@ -1,0 +1,12 @@
+{
+  "ability": "creraces:water_breathing",
+  "level": 1,
+  "pattern": [
+    { "q":  0, "r": -2, "essence": "water" },
+    { "q":  0, "r": -1, "essence": "water" },
+    { "q": -1, "r":  0, "essence": "water" },
+    { "q": -1, "r":  1, "essence": "life" },
+    { "q":  0, "r":  1, "essence": "water" },
+    { "q":  0, "r":  2, "essence": "arcane" }
+  ]
+}

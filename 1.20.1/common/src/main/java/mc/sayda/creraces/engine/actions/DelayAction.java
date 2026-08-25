@@ -48,7 +48,7 @@ public class DelayAction implements ActionRegistry.RaceAction {
         final net.minecraft.core.BlockPos immutablePos = interact_pos != null ? interact_pos.immutable() : null;
 
         mc.sayda.creraces.util.Scheduler.delay(t, () -> {
-            ServerPlayer delayedPlayer = server.getPlayerList().getPlayer(Objects.requireNonNull(playerUUID));
+            ServerPlayer delayedPlayer = server.getPlayerList().getPlayer(playerUUID);
             if (delayedPlayer == null)
                 return; // Player left - skip silently
 
@@ -63,7 +63,8 @@ public class DelayAction implements ActionRegistry.RaceAction {
 
             final LivingEntity resolvedTarget = delayedTarget;
             for (ActionRegistry.RaceAction action : actions) {
-                action.execute(delayedPlayer, resolvedTarget, slot, immutablePos);
+                if (!action.execute(delayedPlayer, resolvedTarget, slot, immutablePos))
+                    break;
             }
         });
         return true;

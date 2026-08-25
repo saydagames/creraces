@@ -48,6 +48,12 @@ public class ModKeyMappings {
                         GLFW.GLFW_KEY_I,
                         "category.creraces.general");
 
+        public static final KeyMapping ESSENCE_BELT = new KeyMapping(
+                        "key.creraces.essence_belt",
+                        InputConstants.Type.KEYSYM,
+                        InputConstants.UNKNOWN.getValue(),
+                        "category.creraces.general");
+
         public static void register() {
                 KeyMappingRegistry.register(SKILL_WHEEL);
                 KeyMappingRegistry.register(ABILITY_A1);
@@ -56,5 +62,6 @@ public class ModKeyMappings {
                 KeyMappingRegistry.register(ABILITY_A4);
                 KeyMappingRegistry.register(ABILITY_A5);
                 KeyMappingRegistry.register(MENU_GUI);
+                KeyMappingRegistry.register(ESSENCE_BELT);
         }
 }

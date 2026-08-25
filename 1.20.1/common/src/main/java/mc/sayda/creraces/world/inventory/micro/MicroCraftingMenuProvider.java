@@ -14,7 +14,7 @@ import javax.annotation.Nullable;
 
 /**
  * Opens a vanilla crafting table GUI.
- * Stateless – the 3x3 grid is per-player, nothing stored in the micro-block.
+ * Stateless: the 3x3 grid is per-player, nothing is stored in the micro-block.
  */
 public class MicroCraftingMenuProvider implements MenuProvider {
 

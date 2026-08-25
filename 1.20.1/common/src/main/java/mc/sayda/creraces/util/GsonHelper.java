@@ -86,10 +86,7 @@ public class GsonHelper {
                         String namespace = namespaceDir.getName();
                         java.io.File categoryDir = new java.io.File(namespaceDir, folder);
                         if (categoryDir.exists() && categoryDir.isDirectory()) {
-                            // IF we are overriding a namespace with dev-path, clear existing entries for
-                            // that namespace
-                            // to ensure deletions in the source directory are reflected (ignoring stale
-                            // build folder files).
+                            // Clear this namespace's entries first so dev-path deletions aren't masked by stale packaged files.
                             map.keySet().removeIf(id -> id.getNamespace().equals(namespace));
 
                             scanDevDirectory(categoryDir, namespace, "", map);
@@ -128,9 +125,8 @@ public class GsonHelper {
     }
 }
 
-            
-            
 
-        
-                            
-                            
+
+
+
+

@@ -89,11 +89,21 @@ public class ForgeConfig {
                 public final ForgeConfigSpec.ConfigValue<Integer> territory_default_claim_radius;
                 public final ForgeConfigSpec.ConfigValue<Integer> territory_max_nodes_per_player;
                 public final ForgeConfigSpec.ConfigValue<Boolean> territory_inter_race_blocking;
+                public final ForgeConfigSpec.ConfigValue<Integer> territory_map_claim_max_distance;
                 public final ForgeConfigSpec.ConfigValue<Integer> territory_claim_cost_per_chunk;
+                public final ForgeConfigSpec.ConfigValue<Boolean> territory_entry_messages;
 
                 public final ForgeConfigSpec.ConfigValue<Boolean> team_require_same_race;
 
+                public final ForgeConfigSpec.ConfigValue<Double> default_max_mana;
+                public final ForgeConfigSpec.ConfigValue<Double> default_max_energy;
+                public final ForgeConfigSpec.ConfigValue<Double> default_max_rage;
+                public final ForgeConfigSpec.ConfigValue<Double> default_max_grit;
+
                 public final ForgeConfigSpec.ConfigValue<Integer> fairy_realm_border_size;
+                public final ForgeConfigSpec.ConfigValue<Boolean> veilwood_forest_enabled;
+                public final ForgeConfigSpec.ConfigValue<Boolean> essence_vortex_worldgen_enabled;
+                public final ForgeConfigSpec.ConfigValue<Boolean> essence_vortex_conversion_enabled;
 
                 public final ForgeConfigSpec.ConfigValue<String> action_default_pocket_dim;
                 public final ForgeConfigSpec.ConfigValue<String> action_default_pocket_structure;
@@ -241,7 +251,7 @@ public class ForgeConfig {
                         network_team_name_max_len = builder.comment("Max length for team names. Default: 16")
                                         .defineInRange("network_team_name_max_len",
                                                         CreRacesConfig.NETWORK_TEAM_NAME_MAX_LEN.get(), 1, 256);
-                        team_max_size = builder.comment("Max number of players allowed in a team. Default: 10")
+                        team_max_size = builder.comment("Max number of players allowed in a team. Default: 16")
                                         .defineInRange("team_max_size",
                                                         CreRacesConfig.TEAM_MAX_SIZE.get(), 1, 1000);
                         double_jump_cooldown_ticks = builder.comment(
@@ -285,7 +295,7 @@ public class ForgeConfig {
                         mini_build_requires_learned = builder
                                         .comment("Players must learn/unlock minibuilding. Default: true")
                                         .define("mini_build_requires_learned",
-                                                        CreRacesConfig.MINIBUILD_REQUIRES_LEARNED.get());
+                                                        CreRacesConfig.MINI_BUILD_REQUIRES_LEARNED.get());
                         mini_crafting_distance_sqr = builder
                                         .comment("Distance squared at which minibuilding works. Default: 64.0")
                                         .defineInRange("mini_crafting_distance_sqr",
@@ -325,9 +335,18 @@ public class ForgeConfig {
                                         .comment("Cross-race claims block each other. Default: true")
                                         .define("territory_inter_race_blocking",
                                                         CreRacesConfig.TERRITORY_INTER_RACE_BLOCKING.get());
+                        territory_map_claim_max_distance = builder
+                                        .comment("Max chunk-distance for territory map claims. -1 = unlimited. Default: 256")
+                                        .defineInRange("territory_map_claim_max_distance",
+                                                        CreRacesConfig.TERRITORY_MAP_CLAIM_MAX_DISTANCE.get(), -1, 10000);
                         territory_claim_cost_per_chunk = builder
                                         .comment("Coins deducted per chunk when claiming territory. 0 = free. Default: 200")
-                                        .defineInRange("territory_claim_cost_per_chunk", 200, 0, 100000);
+                                        .defineInRange("territory_claim_cost_per_chunk",
+                                                        CreRacesConfig.TERRITORY_CLAIM_COST_PER_CHUNK.get(), 0, 100000);
+                        territory_entry_messages = builder
+                                        .comment("Show actionbar messages when entering or leaving claimed territory. Default: true")
+                                        .define("territory_entry_messages",
+                                                        CreRacesConfig.TERRITORY_ENTRY_MESSAGES.get());
                         builder.pop();
 
                         builder.push("Team");
@@ -342,6 +361,18 @@ public class ForgeConfig {
                                         .comment("World border diameter for the fairy_realm dimension. Default: 1000")
                                         .defineInRange("fairy_realm_border_size",
                                                         CreRacesConfig.FAIRY_REALM_BORDER_SIZE.get(), 100, 60000000);
+                        veilwood_forest_enabled = builder
+                                        .comment("Enable Veilwood Forest overworld biome generation. Requires TerraBlender. Default: true")
+                                        .define("veilwood_forest_enabled", CreRacesConfig.VEILWOOD_FOREST_ENABLED.get());
+                        builder.pop();
+
+                        builder.push("Essence");
+                        essence_vortex_worldgen_enabled = builder
+                                        .comment("Allow essence vortex structures to generate in the world. Default: true")
+                                        .define("essence_vortex_worldgen_enabled", CreRacesConfig.ESSENCE_VORTEX_WORLDGEN_ENABLED.get());
+                        essence_vortex_conversion_enabled = builder
+                                        .comment("Allow right-clicking an essence vortex with a shard to convert it to that shard's essence type. Default: true")
+                                        .define("essence_vortex_conversion_enabled", CreRacesConfig.ESSENCE_VORTEX_CONVERSION_ENABLED.get());
                         builder.pop();
 
                         builder.push("Pockets");
@@ -439,6 +470,25 @@ public class ForgeConfig {
                                         .defineInRange("social_defense_range",
                                                         CreRacesConfig.RACE_SOCIAL_DEFENSE_RANGE.get(), 0.0,
                                                         128.0);
+                        builder.pop();
+
+                        builder.push("Resources");
+                        default_max_mana = builder
+                                        .comment("Default maximum mana attribute value. Requires restart. Default: 500.0")
+                                        .defineInRange("default_max_mana",
+                                                        CreRacesConfig.DEFAULT_MAX_MANA.get(), 0.0, 100000.0);
+                        default_max_energy = builder
+                                        .comment("Default maximum energy attribute value. Requires restart. Default: 200.0")
+                                        .defineInRange("default_max_energy",
+                                                        CreRacesConfig.DEFAULT_MAX_ENERGY.get(), 0.0, 100000.0);
+                        default_max_rage = builder
+                                        .comment("Default maximum rage attribute value. Requires restart. Default: 100.0")
+                                        .defineInRange("default_max_rage",
+                                                        CreRacesConfig.DEFAULT_MAX_RAGE.get(), 0.0, 100000.0);
+                        default_max_grit = builder
+                                        .comment("Default maximum grit attribute value. Requires restart. Default: 100.0")
+                                        .defineInRange("default_max_grit",
+                                                        CreRacesConfig.DEFAULT_MAX_GRIT.get(), 0.0, 100000.0);
                         builder.pop();
                 }
         }
@@ -540,7 +590,7 @@ public class ForgeConfig {
                 public final ForgeConfigSpec.DoubleValue tornado_health;
                 public final ForgeConfigSpec.DoubleValue tornado_follow_range;
 
-                public final ForgeConfigSpec.DoubleValue remains_decay_time;
+                public final ForgeConfigSpec.IntValue remains_decay_time;
                 public final ForgeConfigSpec.DoubleValue remains_health;
 
                 public final ForgeConfigSpec.IntValue troll_pillar_pulse_interval;
@@ -704,8 +754,8 @@ public class ForgeConfig {
                         builder.push("Specialized");
                         remains_decay_time = builder.comment("Time in ticks before remains decay. Default: 1200")
                                         .defineInRange("remains_decay_time",
-                                                        (double) CreRacesConfig.REMAINS_DECAY_TIME.get(), 0.0,
-                                                        100000.0);
+                                                        CreRacesConfig.REMAINS_DECAY_TIME.get(), 0,
+                                                        100000);
                         remains_health = builder.comment("Max health for remains entities. Default: 10.0")
                                         .defineInRange("remains_health",
                                                         CreRacesConfig.REMAINS_HEALTH.get(), 1.0, 1000.0);
@@ -782,7 +832,7 @@ public class ForgeConfig {
                 CreRacesConfig.RACE_SOCIAL_DEFENSE_RANGE = () -> COMMON.social_defense_range.get();
                 CreRacesConfig.MICRO_BLOCK_LIGHT_PER_TORCH = () -> COMMON.micro_block_light_per_torch.get();
                 CreRacesConfig.MICRO_BLOCK_MAX_LIGHT = () -> COMMON.micro_block_max_light.get();
-                CreRacesConfig.MINIBUILD_REQUIRES_LEARNED = () -> COMMON.mini_build_requires_learned.get();
+                CreRacesConfig.MINI_BUILD_REQUIRES_LEARNED = () -> COMMON.mini_build_requires_learned.get();
                 CreRacesConfig.MINI_CRAFTING_DISTANCE_SQR = () -> COMMON.mini_crafting_distance_sqr.get();
                 CreRacesConfig.MINI_PLACEMENT_SPAM_THRESHOLD_MS = () -> COMMON.mini_placement_spam_threshold_ms.get();
                 CreRacesConfig.MINI_BLOCK_REACH_MARGIN = () -> COMMON.mini_block_reach_margin.get();
@@ -790,19 +840,24 @@ public class ForgeConfig {
                 CreRacesConfig.MINI_BUILD_DIMENSION_BLACKLIST = () -> (java.util.List<String>) (java.util.List<?>) COMMON.mini_build_dimension_blacklist
                                 .get();
 
-                CreRacesConfig.TERRITORY_DEFAULT_CLAIM_RADIUS = () -> COMMON.territory_default_claim_radius.get();
-                CreRacesConfig.TERRITORY_MAX_NODES_PER_PLAYER = () -> COMMON.territory_max_nodes_per_player.get();
-                CreRacesConfig.TERRITORY_INTER_RACE_BLOCKING  = () -> COMMON.territory_inter_race_blocking.get();
-                CreRacesConfig.TERRITORY_CLAIM_COST_PER_CHUNK = () -> COMMON.territory_claim_cost_per_chunk.get();
+                CreRacesConfig.TERRITORY_DEFAULT_CLAIM_RADIUS   = () -> COMMON.territory_default_claim_radius.get();
+                CreRacesConfig.TERRITORY_MAX_NODES_PER_PLAYER   = () -> COMMON.territory_max_nodes_per_player.get();
+                CreRacesConfig.TERRITORY_INTER_RACE_BLOCKING    = () -> COMMON.territory_inter_race_blocking.get();
+                CreRacesConfig.TERRITORY_MAP_CLAIM_MAX_DISTANCE = () -> COMMON.territory_map_claim_max_distance.get();
+                CreRacesConfig.TERRITORY_CLAIM_COST_PER_CHUNK   = () -> COMMON.territory_claim_cost_per_chunk.get();
+                CreRacesConfig.TERRITORY_ENTRY_MESSAGES         = () -> COMMON.territory_entry_messages.get();
 
                 CreRacesConfig.TEAM_REQUIRE_SAME_RACE = () -> COMMON.team_require_same_race.get();
 
+                CreRacesConfig.ESSENCE_VORTEX_WORLDGEN_ENABLED = () -> COMMON.essence_vortex_worldgen_enabled.get();
+                CreRacesConfig.ESSENCE_VORTEX_CONVERSION_ENABLED = () -> COMMON.essence_vortex_conversion_enabled.get();
                 CreRacesConfig.COIN_DROP_ENABLED = () -> COMMON.coin_drop_enabled.get();
                 CreRacesConfig.SAG_WINGS = () -> COMMON.sag_wings.get();
                 CreRacesConfig.GSTATE_ENABLED = () -> COMMON.gstate_enabled.get();
                 CreRacesConfig.RITUAL_MODE = () -> COMMON.ritual_mode.get();
 
                 CreRacesConfig.FAIRY_REALM_BORDER_SIZE = () -> COMMON.fairy_realm_border_size.get();
+                CreRacesConfig.VEILWOOD_FOREST_ENABLED = () -> COMMON.veilwood_forest_enabled.get();
 
                 CreRacesConfig.POCKET_DIM_SPACING = () -> COMMON.pocket_dim_spacing.get();
                 CreRacesConfig.POCKET_DIM_Y = () -> COMMON.pocket_dim_y.get();
@@ -834,6 +889,11 @@ public class ForgeConfig {
                 CreRacesConfig.RAT_VENOM_SCALING = () -> COMMON.rat_venom_scaling.get();
                 CreRacesConfig.BOILING_SCALING = () -> COMMON.boiling_scaling.get();
                 CreRacesConfig.BLEEDING_SCALING = () -> COMMON.bleeding_scaling.get();
+
+                CreRacesConfig.DEFAULT_MAX_MANA   = () -> COMMON.default_max_mana.get();
+                CreRacesConfig.DEFAULT_MAX_ENERGY = () -> COMMON.default_max_energy.get();
+                CreRacesConfig.DEFAULT_MAX_RAGE   = () -> COMMON.default_max_rage.get();
+                CreRacesConfig.DEFAULT_MAX_GRIT   = () -> COMMON.default_max_grit.get();
                 } // end COMMON
 
                 if (spec == null || spec == CLIENT_SPEC) {
@@ -902,7 +962,7 @@ public class ForgeConfig {
 
                 CreRacesConfig.ENTITY_FEATHER_GRAVITY = () -> ENTITIES.feather_gravity.get();
 
-                CreRacesConfig.REMAINS_DECAY_TIME = () -> ENTITIES.remains_decay_time.get().intValue();
+                CreRacesConfig.REMAINS_DECAY_TIME = () -> ENTITIES.remains_decay_time.get();
                 } // end ENTITIES
         }
 }

@@ -1,0 +1,13 @@
+{
+  "ability": "creraces:feathercaller",
+  "level": 1,
+  "pattern": [
+    { "q":  0, "r": -1, "essence": "arcane" },
+    { "q": -1, "r":  0, "essence": "air" },
+    { "q": -2, "r":  1, "essence": "air" },
+    { "q": -2, "r":  2, "essence": "life" },
+    { "q":  1, "r": -1, "essence": "air" },
+    { "q":  1, "r":  0, "essence": "air" },
+    { "q":  2, "r":  0, "essence": "life" }
+  ]
+}

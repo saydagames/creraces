@@ -29,36 +29,10 @@ public abstract class PlayerRespawnMixin {
                     for (int y = 0; y < 4; y++) {
                         for (int z = 0; z < 4; z++) {
                             if (micro.getSlot(x, y, z).getBlock() instanceof BedBlock bed) {
-                                // Subblocks are 1/4th scale.
-                                double scale = 1.0 / mc.sayda.creraces.block.entity.MicroBlockEntity.SIZE;
-                                double subBlockX = (x * scale) + (scale / 2.0);
-                                double subBlockY = (y * scale);
-                                double subBlockZ = (z * scale) + (scale / 2.0);
-
                                 BlockState bedState = micro.getSlot(x, y, z);
-                                net.minecraft.core.Direction facing = bedState.getValue(BedBlock.FACING);
-                                net.minecraft.world.level.block.state.properties.BedPart part = bedState
-                                        .getValue(BedBlock.PART);
-
-                                // Final centering refinement: Halfway between 1.0 and 1.35
-                                // 1.175 slots away from HEAD center
-                                if (part == net.minecraft.world.level.block.state.properties.BedPart.HEAD) {
-                                    subBlockX += facing.getOpposite().getStepX() * (scale * 1.175);
-                                    subBlockZ += facing.getOpposite().getStepZ() * (scale * 1.175);
-                                } else {
-                                    subBlockX += facing.getOpposite().getStepX() * (scale * 0.175);
-                                    subBlockZ += facing.getOpposite().getStepZ() * (scale * 0.175);
-                                }
-
-                                // Find a safe place to stand up, similar to standard BedBlock respawn.
-                                // But since a miniature bed doesn't have native standup, simply return the
-                                // microbed pos adjusted.
-                                // Return the exact internal bed coordinates (centered on X/Z, base of Y)
-                                Optional<Vec3> optional = Optional.of(new Vec3(
-                                        blockPos.getX() + subBlockX,
-                                        blockPos.getY() + subBlockY + (0.6875 * scale),
-                                        // blockPos.getY() + subBlockY + 0.1, // slightly above the sub-block base
-                                        blockPos.getZ() + subBlockZ));
+                                // Mini beds have no native stand-up logic, so just return the adjusted bed position directly.
+                                Optional<Vec3> optional = Optional
+                                        .of(MicroBlockEntity.computeBedStandPosition(blockPos, bedState, x, y, z));
                                 cir.setReturnValue(optional);
                                 return;
                             }

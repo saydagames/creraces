@@ -58,7 +58,7 @@
             "if_false": [
                 {
                     "type": "creraces:message",
-                    "text": "message.creraces.dryad.no_tree",
+                    "text": "msg.creraces.dryad.no_tree",
                     "actionbar": true
                 },
                 {

@@ -1,6 +1,7 @@
 package mc.sayda.creraces.network;
 
 import dev.architectury.networking.NetworkManager;
+import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.capability.DataUtils;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
@@ -10,7 +11,7 @@ import java.util.function.Supplier;
 
 public class UpdateGStatePacket {
     public static final net.minecraft.resources.ResourceLocation ID = new net.minecraft.resources.ResourceLocation(
-            "creraces", "update_gstate");
+            CreRaces.MODID, "update_gstate");
 
     private final int gState;
 

@@ -17,12 +17,8 @@ public class LazyRecordItem extends RecordItem {
 
     public LazyRecordItem(int analogOutput, Supplier<SoundEvent> soundSupplier, Item.Properties properties,
             int lengthInTicks) {
-        super(analogOutput, net.minecraft.sounds.SoundEvents.MUSIC_DISC_11, properties, lengthInTicks); // Pass valid
-                                                                                                        // vanilla sound
-                                                                                                        // to prevent
-                                                                                                        // Forge
-                                                                                                        // registration
-                                                                                                        // crash
+        // Pass a valid vanilla sound to prevent a Forge registration crash.
+        super(analogOutput, net.minecraft.sounds.SoundEvents.MUSIC_DISC_11, properties, lengthInTicks);
         this.soundSupplier = soundSupplier;
     }
 

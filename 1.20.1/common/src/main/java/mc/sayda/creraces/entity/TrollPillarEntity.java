@@ -37,8 +37,8 @@ import java.util.List;
  * <li>Immune to most damage types (fire, arrows, potions, fall, explosion,
  * etc.).</li>
  * <li>Immobile (movement speed = 0).</li>
- * <li>Pulses Troll's Curse every tick to entities within 5 blocks.</li>
- * <li>Discards itself after 1200 ticks (~60 seconds).</li>
+ * <li>Pulses Troll's Curse to entities within 5 blocks at a configurable interval.</li>
+ * <li>Discards itself after a configurable lifetime (default ~30 seconds).</li>
  * </ul>
  */
 public class TrollPillarEntity extends TamableAnimal {
@@ -185,7 +185,7 @@ public class TrollPillarEntity extends TamableAnimal {
         return null;
     }
 
-    // Only the owner (the troll who cast it) can interact
+    // No interaction handling yet; always passes through.
     @Override
     public net.minecraft.world.InteractionResult mobInteract(Player player, net.minecraft.world.InteractionHand hand) {
         return net.minecraft.world.InteractionResult.PASS;

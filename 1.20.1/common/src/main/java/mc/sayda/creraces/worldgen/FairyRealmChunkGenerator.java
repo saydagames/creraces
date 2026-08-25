@@ -44,7 +44,7 @@ import java.util.concurrent.Executor;
  * Sandy banks use a two-frequency noise-driven boundary.
  *
  * Caves: two independent 3D value noises; always air (no vanilla aquifer fill).
- * Start >= 7 blocks below surface to prevent shallow craters.
+ * Start >= 12 blocks below surface to prevent shallow craters.
  *
  * Island: forced flat plateau at y=69, smooth slope over the outer 12-block ring.
  *
@@ -95,18 +95,21 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
     private static double lerp(double a, double b, double t) { return a + t * (b - a); }
     private static double smooth(double t) { return t * t * (3.0 - 2.0 * t); }
 
-    /** Long-mixed hash; no directional artifacts. Returns [-1, 1]. */
-    private static double h2(int x, int z) {
-        long h = (long) x * 374761393L + (long) z * 668265263L;
+    // Bit-mixing finalizer shared by every hash below (MurmurHash3-style avalanche)
+    private static long mix(long h) {
         h = (h ^ (h >>> 16)) * 2246822519L;
         h ^= h >>> 13;
+        return h;
+    }
+
+    /** Long-mixed hash; no directional artifacts. Returns [-1, 1]. */
+    private static double h2(int x, int z) {
+        long h = mix((long) x * 374761393L + (long) z * 668265263L);
         return (h & 0x7FFFFFFFL) / (double) 0x7FFFFFFFL * 2.0 - 1.0;
     }
 
     private static double h3(int x, int y, int z) {
-        long h = (long) x * 374761393L ^ (long) y * 2246822519L ^ (long) z * 668265263L;
-        h = (h ^ (h >>> 16)) * 2246822519L;
-        h ^= h >>> 13;
+        long h = mix((long) x * 374761393L ^ (long) y * 2246822519L ^ (long) z * 668265263L);
         return (h & 0x7FFFFFFFL) / (double) 0x7FFFFFFFL * 2.0 - 1.0;
     }
 
@@ -196,8 +199,7 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
 
     private static BlockState stoneAt(int y, int x, int z) {
         if (y < 0) return Blocks.DEEPSLATE.defaultBlockState();
-        long h = (long) x * 374761393L ^ (long) z * 668265263L ^ (long) y * 2246822519L;
-        h = (h ^ (h >>> 16)) * 2246822519L; h ^= h >>> 13;
+        long h = mix((long) x * 374761393L ^ (long) z * 668265263L ^ (long) y * 2246822519L);
         int v = (int)(h & 0xFF);
         if (v < 14) return Blocks.ANDESITE.defaultBlockState();
         if (v < 24) return Blocks.DIORITE.defaultBlockState();
@@ -303,8 +305,8 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
     /**
      * Dense, organically-shaped oak undergrowth across the island surface.
      *
-     * All centres kept at [2..13] so the widest footprint (|dx|+|dz|≤2 diamond,
-     * max offset ±2) never crosses chunk boundaries.
+     * All centres kept at [2..13] so the widest footprint (|dx|+|dz|≤3 diamond,
+     * max offset ±3) never crosses chunk boundaries.
      *
      * Shapes avoid rectangular patterns by using diamond masks and per-column
      * hash-driven corner dropping so no two bushes look identical.
@@ -325,8 +327,7 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
                 int wz = startZ + lz;
                 if (!isIsland(wx, wz)) continue;
 
-                long h = ((long) wx * 374761393L) ^ ((long) wz * 668265263L) ^ 0x50F4B5C3L;
-                h = (h ^ (h >>> 16)) * 2246822519L; h ^= h >>> 13;
+                long h = mix(((long) wx * 374761393L) ^ ((long) wz * 668265263L) ^ 0x50F4B5C3L);
                 if ((h & 0xFF) >= 20) continue;
 
                 int surfY = chunk.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, wx, wz);
@@ -342,7 +343,7 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
                     region.setBlock(mpos.set(wx, surfY + 1, wz), leaf, 3);
                     for (int i = 0; i < 8; i++)
                         region.setBlock(new BlockPos(wx + dxN[i], surfY + 1, wz + dzN[i]), leaf, 3);
-                    // Outer radius-2 cross arms: hash-gated (~60% each)
+                    // Outer radius-2 cross arms: hash-gated for a scattered, non-uniform look.
                     int bits2 = (int)((h >>> 12) & 0xFF);
                     int[] dxO = {-2, 2, 0, 0, -2, 2, -2, 2};
                     int[] dzO = { 0, 0, 2,-2, -2,-2,  2,  2};
@@ -357,22 +358,22 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
                 } else if (variant == 1) {
                     // Wide low mound: 5-diamond base + 3×3 hash-dropped cap, no log
                     for (int dx = -2; dx <= 2; dx++) {
-                        for (int dz2 = -2; dz2 <= 2; dz2++) {
-                            if (Math.abs(dx) + Math.abs(dz2) > 2) continue;
-                            if (Math.abs(dx) == 2 || Math.abs(dz2) == 2) {
-                                // Outer ring: hash-drop ~40%
-                                if ((long) h2(wx * 3 + dx, wz * 3 + dz2) < 0) continue;
+                        for (int dz = -2; dz <= 2; dz++) {
+                            if (Math.abs(dx) + Math.abs(dz) > 2) continue;
+                            if (Math.abs(dx) == 2 || Math.abs(dz) == 2) {
+                                // Outer ring: hash-dropped for a scattered, non-uniform look.
+                                if ((long) h2(wx * 3 + dx, wz * 3 + dz) < 0) continue;
                             }
-                            region.setBlock(new BlockPos(wx + dx, surfY + 1, wz + dz2), leaf, 3);
+                            region.setBlock(new BlockPos(wx + dx, surfY + 1, wz + dz), leaf, 3);
                         }
                     }
                     // Cap: 3×3 with hash-dropped corners
                     for (int dx = -1; dx <= 1; dx++) {
-                        for (int dz2 = -1; dz2 <= 1; dz2++) {
-                            if (dx != 0 && dz2 != 0) {
-                                if ((long) h2(wx * 7 + dx, wz * 7 + dz2) < 0) continue;
+                        for (int dz = -1; dz <= 1; dz++) {
+                            if (dx != 0 && dz != 0) {
+                                if ((long) h2(wx * 7 + dx, wz * 7 + dz) < 0) continue;
                             }
-                            region.setBlock(new BlockPos(wx + dx, surfY + 2, wz + dz2), leaf, 3);
+                            region.setBlock(new BlockPos(wx + dx, surfY + 2, wz + dz), leaf, 3);
                         }
                     }
 
@@ -380,24 +381,24 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
                     // Broad bush: 1 log + radius-3 diamond base + 5-diamond crown
                     region.setBlock(mpos.set(wx, surfY + 1, wz), log, 3);
                     for (int dx = -3; dx <= 3; dx++) {
-                        for (int dz2 = -3; dz2 <= 3; dz2++) {
-                            if (Math.abs(dx) + Math.abs(dz2) > 3) continue;
-                            if (dx == 0 && dz2 == 0) continue;
-                            // Outermost ring: hash-drop ~40%
-                            if (Math.abs(dx) + Math.abs(dz2) == 3) {
-                                if ((long) h2(wx * 5 + dx, wz * 5 + dz2) < 0) continue;
+                        for (int dz = -3; dz <= 3; dz++) {
+                            if (Math.abs(dx) + Math.abs(dz) > 3) continue;
+                            if (dx == 0 && dz == 0) continue;
+                            // Outermost ring: hash-dropped for a scattered, non-uniform look.
+                            if (Math.abs(dx) + Math.abs(dz) == 3) {
+                                if ((long) h2(wx * 5 + dx, wz * 5 + dz) < 0) continue;
                             }
-                            region.setBlock(new BlockPos(wx + dx, surfY + 1, wz + dz2), leaf, 3);
+                            region.setBlock(new BlockPos(wx + dx, surfY + 1, wz + dz), leaf, 3);
                         }
                     }
                     // Crown: 5-diamond with hash-dropped outer
                     for (int dx = -2; dx <= 2; dx++) {
-                        for (int dz2 = -2; dz2 <= 2; dz2++) {
-                            if (Math.abs(dx) + Math.abs(dz2) > 2) continue;
-                            if (Math.abs(dx) + Math.abs(dz2) == 2) {
-                                if ((long) h2(wx * 9 + dx, wz * 9 + dz2) < 0) continue;
+                        for (int dz = -2; dz <= 2; dz++) {
+                            if (Math.abs(dx) + Math.abs(dz) > 2) continue;
+                            if (Math.abs(dx) + Math.abs(dz) == 2) {
+                                if ((long) h2(wx * 9 + dx, wz * 9 + dz) < 0) continue;
                             }
-                            region.setBlock(new BlockPos(wx + dx, surfY + 2, wz + dz2), leaf, 3);
+                            region.setBlock(new BlockPos(wx + dx, surfY + 2, wz + dz), leaf, 3);
                         }
                     }
 
@@ -405,19 +406,19 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
                     // Fuller bush: 1 log + wide 5-diamond base + 3×3 crown
                     region.setBlock(mpos.set(wx, surfY + 1, wz), log, 3);
                     for (int dx = -2; dx <= 2; dx++) {
-                        for (int dz2 = -2; dz2 <= 2; dz2++) {
-                            if (Math.abs(dx) + Math.abs(dz2) > 2) continue;
-                            if (dx == 0 && dz2 == 0) continue;
-                            region.setBlock(new BlockPos(wx + dx, surfY + 1, wz + dz2), leaf, 3);
+                        for (int dz = -2; dz <= 2; dz++) {
+                            if (Math.abs(dx) + Math.abs(dz) > 2) continue;
+                            if (dx == 0 && dz == 0) continue;
+                            region.setBlock(new BlockPos(wx + dx, surfY + 1, wz + dz), leaf, 3);
                         }
                     }
                     // Crown: full 3×3 with hash-dropped corners
                     for (int dx = -1; dx <= 1; dx++) {
-                        for (int dz2 = -1; dz2 <= 1; dz2++) {
-                            if (dx != 0 && dz2 != 0) {
-                                if ((long) h2(wx * 11 + dx, wz * 11 + dz2) < 0) continue;
+                        for (int dz = -1; dz <= 1; dz++) {
+                            if (dx != 0 && dz != 0) {
+                                if ((long) h2(wx * 11 + dx, wz * 11 + dz) < 0) continue;
                             }
-                            region.setBlock(new BlockPos(wx + dx, surfY + 2, wz + dz2), leaf, 3);
+                            region.setBlock(new BlockPos(wx + dx, surfY + 2, wz + dz), leaf, 3);
                         }
                     }
                     if (((h >>> 22) & 0x3) != 0)
@@ -438,8 +439,7 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
                 int wz = startZ + lz;
                 if (!isIsland(wx, wz)) continue;
 
-                long h = ((long) wx * 1299709L) ^ ((long) wz * 2147483647L) ^ 0xA3C5E7F1L;
-                h = (h ^ (h >>> 16)) * 2246822519L; h ^= h >>> 13;
+                long h = mix(((long) wx * 1299709L) ^ ((long) wz * 2147483647L) ^ 0xA3C5E7F1L);
                 if ((h & 0xFF) >= 90) continue; // ~35% decoration coverage
 
                 int surfY = chunk.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, wx, wz);
@@ -591,9 +591,8 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
 
     /**
      * Carve a water column. distToWater is negative (how far inside the water zone).
-     * The same sandWidth noise used by blendTowardRiver is evaluated here so the sandy
-     * bank material flows continuously from the bank into the shallow river floor with
-     * no hard material boundary at the water's edge.
+     * Sandy bank material extends roughly 2-7 blocks into the water (see sandWidth
+     * below), so there's no hard material boundary at the water's edge.
      */
     private static void carveToWater(ChunkAccess chunk, BlockPos.MutableBlockPos pos,
             int wx, int wz, double distToWater) {
@@ -609,8 +608,8 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
             }
         }
 
-        // Same noise pattern as blendTowardRiver; sand only within 1-4 blocks of
-        // the bank edge; gravel/clay takes over for the majority of the river floor.
+        // sandWidth ranges roughly 2-7 blocks; sand covers that range from the bank
+        // edge, gravel/clay takes over for the rest of the river floor.
         double sandWidth = 4.5
                 + 1.5 * n2(wx * 0.055, wz * 0.058)
                 + 1.0 * n2(wx * 0.150, wz * 0.155);
@@ -644,8 +643,7 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
         }
 
         // Plant life: deterministic hash per column, no grid patterns
-        long h = ((long) wx * 374761393L) ^ ((long) wz * 668265263L) ^ 0xABCDEF12L;
-        h = (h ^ (h >>> 16)) * 2246822519L; h ^= h >>> 13;
+        long h = mix(((long) wx * 374761393L) ^ ((long) wz * 668265263L) ^ 0xABCDEF12L);
         int r = (int)(h & 0xFF);
 
         int seagrassY = floorY + 1;
@@ -717,8 +715,7 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
             // Seagrass on the submerged slope extends coverage toward the banks
             int seagrassY = terrainTop + 1;
             if (seagrassY <= RIVER_LEVEL) {
-                long h = ((long) wx * 668265263L) ^ ((long) wz * 374761393L) ^ 0xFEDCBA98L;
-                h = (h ^ (h >>> 16)) * 2246822519L; h ^= h >>> 13;
+                long h = mix(((long) wx * 668265263L) ^ ((long) wz * 374761393L) ^ 0xFEDCBA98L);
                 int rv = (int)(h & 0xFF);
                 if (rv < 40) {
                     chunk.setBlockState(pos.set(wx, seagrassY, wz),

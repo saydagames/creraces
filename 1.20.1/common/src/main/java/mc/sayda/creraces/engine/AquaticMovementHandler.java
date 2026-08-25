@@ -15,9 +15,6 @@ import net.minecraft.world.level.material.Fluid;
  */
 public class AquaticMovementHandler {
 
-    /**
-     * Periodic tick for aquatic movement features.
-     */
     public static void buoyancyTick(LivingEntity entity) {
         if (entity instanceof Player player) {
             if (player.isPassenger()) return;

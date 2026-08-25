@@ -7,7 +7,11 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.block.AbstractFurnaceBlock;
 import net.minecraft.world.level.block.Block;
@@ -15,11 +19,15 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraft.world.item.crafting.AbstractCookingRecipe;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.Container;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
@@ -43,7 +51,7 @@ public class MicroBlockEntity extends BlockEntity {
     public static final int SIZE = 4;
     public static final int TOTAL = SIZE * SIZE * SIZE; // 64
 
-    // ─── Interactive block inventories ───────────────────────────────────────────
+    // Interactive block inventories
     private final NonNullList<BlockState> slots = NonNullList.withSize(TOTAL, Blocks.AIR.defaultBlockState());
     private final Map<Integer, NonNullList<ItemStack>> inventories = new HashMap<>();
     private final Map<Integer, int[]> furnaceStates = new HashMap<>();
@@ -60,7 +68,7 @@ public class MicroBlockEntity extends BlockEntity {
     private final java.util.List<Integer> brewingIndices = new java.util.ArrayList<>();
     private final Map<Integer, int[]> brewingStates = new HashMap<>(); // {brewTime, fuel}
 
-    // ─── Shape Caching ──────────────────────────────────────────────────────────
+    // Shape caching
     private VoxelShape cachedOutlineShape = null;
     private VoxelShape cachedCollisionShape = null;
     private long renderVersion = 0;
@@ -82,7 +90,7 @@ public class MicroBlockEntity extends BlockEntity {
         return supplier != null ? supplier.get() : null;
     }
 
-    // ─── Index helpers ───────────────────────────────────────────────────────────
+    // Index helpers
 
     public static int toIndex(int x, int y, int z) {
         return x + SIZE * y + SIZE * SIZE * z;
@@ -97,7 +105,58 @@ public class MicroBlockEntity extends BlockEntity {
         return Math.min((int) (f * 4), 3);
     }
 
-    // ─── Slot accessors ──────────────────────────────────────────────────────────
+    // Bed slot helpers (shared by sleep/respawn mixins)
+
+    /**
+     * Finds the index of the first micro-slot containing a bed block, scanning
+     * in x + 4*y + 16*z order. Returns -1 if no bed slot exists.
+     */
+    public static int findBedSlot(MicroBlockEntity micro) {
+        for (int i = 0; i < TOTAL; i++) {
+            if (micro.getSlot(i % 4, (i / 4) % 4, i / 16)
+                    .getBlock() instanceof net.minecraft.world.level.block.BedBlock) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Computes the world position where an entity should stand when getting up
+     * from (or respawning at) a bed occupying the given micro-slot within the
+     * host block at {@code hostPos}. Mirrors the centering refinement previously
+     * duplicated across the sleep and respawn mixins - preserve this math
+     * verbatim if touched again.
+     */
+    public static net.minecraft.world.phys.Vec3 computeBedStandPosition(BlockPos hostPos, BlockState bedState,
+            int x, int y, int z) {
+        double scale = 1.0 / SIZE;
+        net.minecraft.core.Direction facing = bedState.getValue(net.minecraft.world.level.block.BedBlock.FACING);
+        net.minecraft.world.level.block.state.properties.BedPart part = bedState
+                .getValue(net.minecraft.world.level.block.BedBlock.PART);
+
+        double subBlockX = (x * scale) + (scale / 2.0);
+        double subBlockY = (y * scale);
+        double subBlockZ = (z * scale) + (scale / 2.0);
+        double bedPillowHeight = 0.6875 * scale;
+
+        // Final centering refinement: Halfway between 1.0 and 1.35
+        // 1.175 slots away from HEAD center
+        if (part == net.minecraft.world.level.block.state.properties.BedPart.HEAD) {
+            subBlockX += facing.getOpposite().getStepX() * (scale * 1.175);
+            subBlockZ += facing.getOpposite().getStepZ() * (scale * 1.175);
+        } else {
+            subBlockX += facing.getOpposite().getStepX() * (scale * 0.175);
+            subBlockZ += facing.getOpposite().getStepZ() * (scale * 0.175);
+        }
+
+        return new net.minecraft.world.phys.Vec3(
+                hostPos.getX() + subBlockX,
+                hostPos.getY() + subBlockY + bedPillowHeight,
+                hostPos.getZ() + subBlockZ);
+    }
+
+    // Slot accessors
 
     public BlockState getSlot(int x, int y, int z) {
         int idx = toIndex(x, y, z);
@@ -156,37 +215,11 @@ public class MicroBlockEntity extends BlockEntity {
 
         slots.set(idx, newAir || state == null ? Blocks.AIR.defaultBlockState() : state);
 
-        // Recalculate hasFurnaces and furnaceIndices
-        hasFurnaces = false;
-        furnaceIndices.clear();
+        // Recalculate hasFurnaces/hasCampfires/hasBrewingStands and their slot indices
+        hasFurnaces = scanForBlockType(AbstractFurnaceBlock.class, furnaceIndices);
         recipeCache.clear();
-        for (int i = 0; i < TOTAL; i++) {
-            BlockState s = slots.get(i);
-            if (s != null && !s.isAir() && s.getBlock() instanceof AbstractFurnaceBlock) {
-                hasFurnaces = true;
-                furnaceIndices.add(i);
-            }
-        }
-
-        hasCampfires = false;
-        campfireIndices.clear();
-        for (int i = 0; i < TOTAL; i++) {
-            BlockState s = slots.get(i);
-            if (s != null && !s.isAir() && s.getBlock() instanceof net.minecraft.world.level.block.CampfireBlock) {
-                hasCampfires = true;
-                campfireIndices.add(i);
-            }
-        }
-
-        hasBrewingStands = false;
-        brewingIndices.clear();
-        for (int i = 0; i < TOTAL; i++) {
-            BlockState s = slots.get(i);
-            if (s != null && !s.isAir() && s.getBlock() instanceof net.minecraft.world.level.block.BrewingStandBlock) {
-                hasBrewingStands = true;
-                brewingIndices.add(i);
-            }
-        }
+        hasCampfires = scanForBlockType(net.minecraft.world.level.block.CampfireBlock.class, campfireIndices);
+        hasBrewingStands = scanForBlockType(net.minecraft.world.level.block.BrewingStandBlock.class, brewingIndices);
 
         setChanged();
         invalidateShapes();
@@ -204,12 +237,25 @@ public class MicroBlockEntity extends BlockEntity {
                             3);
                 }
 
-                // AUTO-CLEANUP: If the host is now empty, remove it from the world
+                // If the host is now empty, remove it from the world.
                 if (newAir && isEmpty()) {
                     level.removeBlock(worldPosition, false);
                 }
             }
         }
+    }
+
+    private boolean scanForBlockType(Class<? extends Block> blockClass, java.util.List<Integer> indices) {
+        indices.clear();
+        boolean found = false;
+        for (int i = 0; i < TOTAL; i++) {
+            BlockState s = slots.get(i);
+            if (s != null && !s.isAir() && blockClass.isInstance(s.getBlock())) {
+                found = true;
+                indices.add(i);
+            }
+        }
+        return found;
     }
 
     public int getTotalLightLevel() {
@@ -226,9 +272,9 @@ public class MicroBlockEntity extends BlockEntity {
                 // Redstone torches only count when lit
                 if (block instanceof net.minecraft.world.level.block.RedstoneTorchBlock ||
                         block instanceof net.minecraft.world.level.block.RedstoneWallTorchBlock) {
-                    if (state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT) &&
+                    if (state.hasProperty(BlockStateProperties.LIT) &&
                             !state.getValue(
-                                    net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT)) {
+                                    BlockStateProperties.LIT)) {
                         continue;
                     }
                 }
@@ -397,26 +443,6 @@ public class MicroBlockEntity extends BlockEntity {
 
         BlockState newState = state;
 
-        // Survival check for wall-mounted/support-dependent blocks
-        if (!canMicroSurvive(state, x, y, z)) {
-            setSlot(x, y, z, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
-            // Trigger neighbor updates to allow neighbors to pop too if they depended on
-            // this
-            updateConnections(x, y, z);
-
-            // Spawn item drop
-            net.minecraft.world.item.ItemStack drop = new net.minecraft.world.item.ItemStack(state.getBlock().asItem());
-            BlockPos currentPos = worldPosition;
-            if (!drop.isEmpty() && level != null && !level.isClientSide() && currentPos != null) {
-                net.minecraft.world.entity.item.ItemEntity itemEntity = new net.minecraft.world.entity.item.ItemEntity(
-                        level, currentPos.getX() + 0.5, currentPos.getY() + 0.5, currentPos.getZ() + 0.5,
-                        drop);
-                itemEntity.setDefaultPickUpDelay();
-                level.addFreshEntity(itemEntity);
-            }
-            return;
-        }
-
         for (net.minecraft.core.Direction dir : net.minecraft.core.Direction.values()) {
             BlockState neighbor = getMicroNeighbor(x, y, z, dir);
             if (level != null) {
@@ -439,10 +465,6 @@ public class MicroBlockEntity extends BlockEntity {
             this.cachedOutlineShape = null;
             this.renderVersion++;
         }
-    }
-
-    private boolean canMicroSurvive(BlockState state, int x, int y, int z) {
-        return true; // Ignore all placement/survival rules
     }
 
     private boolean isInternalNeighbor(int x, int y, int z, net.minecraft.core.Direction dir) {
@@ -481,8 +503,7 @@ public class MicroBlockEntity extends BlockEntity {
         return occupiedCount;
     }
 
-    // ─── Interactive block inventory accessors
-    // ────────────────────────────────────
+    // Interactive block inventory accessors
 
     /**
      * Gets or creates the item inventory for the given slot index with the
@@ -501,8 +522,7 @@ public class MicroBlockEntity extends BlockEntity {
         return furnaceStates.computeIfAbsent(slotIdx, k -> new int[] { 0, 0, 0, 200 });
     }
 
-    // ─── Furnace tick
-    // ─────────────────────────────────────────────────────────────
+    // Furnace tick
 
     /** Called each server tick. Only does work if hasFurnaces flag is set. */
     public static void serverTick(net.minecraft.world.level.Level level, BlockPos pos,
@@ -532,7 +552,7 @@ public class MicroBlockEntity extends BlockEntity {
 
             boolean burning = state[0] > 0; // burnTime > 0
 
-            // PERFORMANCE: Early exit if nothing to do
+            // Early exit if nothing to do.
             if (!burning && inputStack.isEmpty()) {
                 if (state[2] > 0) { // cookTime > 0
                     state[2] = 0;
@@ -613,8 +633,8 @@ public class MicroBlockEntity extends BlockEntity {
             }
 
             // Update lit state visually if it changed (moved to end of tick for accuracy)
-            if (slotState.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT)) {
-                net.minecraft.world.level.block.state.properties.BooleanProperty litProp = net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT;
+            if (slotState.hasProperty(BlockStateProperties.LIT)) {
+                net.minecraft.world.level.block.state.properties.BooleanProperty litProp = BlockStateProperties.LIT;
                 boolean shouldBeLit = burning || state[0] > 0; // Lit if actively burning OR has remaining burnTime
                 if (slotState.getValue(litProp) != shouldBeLit) {
                     entity.slots.set(i, slotState.setValue(litProp, shouldBeLit));
@@ -634,7 +654,7 @@ public class MicroBlockEntity extends BlockEntity {
                 if (slotState == null || slotState.isAir()
                         || !(slotState.getBlock() instanceof net.minecraft.world.level.block.CampfireBlock))
                     continue;
-                if (!slotState.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT))
+                if (!slotState.getValue(BlockStateProperties.LIT))
                     continue;
 
                 NonNullList<ItemStack> items = entity.getOrCreateInventory(i, 4);
@@ -691,7 +711,7 @@ public class MicroBlockEntity extends BlockEntity {
                 boolean changed = false;
                 // Refuel from blaze powder in slot 4
                 ItemStack fuelStack = items.get(4);
-                if (bs[1] <= 0 && !fuelStack.isEmpty() && fuelStack.is(net.minecraft.world.item.Items.BLAZE_POWDER)) {
+                if (bs[1] <= 0 && !fuelStack.isEmpty() && fuelStack.is(Items.BLAZE_POWDER)) {
                     bs[1] = 20;
                     fuelStack.shrink(1);
                     if (fuelStack.isEmpty()) items.set(4, ItemStack.EMPTY);
@@ -737,23 +757,23 @@ public class MicroBlockEntity extends BlockEntity {
      * (OPEN, LIT).
      */
     @SuppressWarnings("null")
-    public net.minecraft.world.InteractionResult handleSlotUse(net.minecraft.world.entity.player.Player player,
-            net.minecraft.world.InteractionHand hand, int sx, int sy, int sz) {
+    public InteractionResult handleSlotUse(Player player,
+            InteractionHand hand, int sx, int sy, int sz) {
         if (level == null)
-            return net.minecraft.world.InteractionResult.PASS;
+            return InteractionResult.PASS;
 
         if (level.isClientSide()) {
             BlockState slotState = getSlot(sx, sy, sz);
             if (slotState.getBlock() instanceof net.minecraft.world.level.block.JukeboxBlock) {
                 if (slotState.hasProperty(
-                        net.minecraft.world.level.block.state.properties.BlockStateProperties.HAS_RECORD) &&
+                        BlockStateProperties.HAS_RECORD) &&
                         slotState.getValue(
-                                net.minecraft.world.level.block.state.properties.BlockStateProperties.HAS_RECORD)) {
+                                BlockStateProperties.HAS_RECORD)) {
                     level.levelEvent(null, 1010, worldPosition, 0);
-                    return net.minecraft.world.InteractionResult.SUCCESS;
+                    return InteractionResult.SUCCESS;
                 }
             }
-            return net.minecraft.world.InteractionResult.SUCCESS;
+            return InteractionResult.SUCCESS;
         }
 
         BlockState slotState = getSlot(sx, sy, sz);
@@ -762,45 +782,45 @@ public class MicroBlockEntity extends BlockEntity {
         {
             ItemStack held = player.getItemInHand(hand);
             if (slotState.isAir()) {
-                if (held.is(net.minecraft.world.item.Items.WATER_BUCKET)) {
-                    setSlot(sx, sy, sz, net.minecraft.world.level.block.Blocks.WATER.defaultBlockState());
+                if (held.is(Items.WATER_BUCKET)) {
+                    setSlot(sx, sy, sz, Blocks.WATER.defaultBlockState());
                     if (!player.getAbilities().instabuild)
-                        player.setItemInHand(hand, new ItemStack(net.minecraft.world.item.Items.BUCKET));
+                        player.setItemInHand(hand, new ItemStack(Items.BUCKET));
                     setChanged();
-                    return net.minecraft.world.InteractionResult.sidedSuccess(false);
-                } else if (held.is(net.minecraft.world.item.Items.LAVA_BUCKET)) {
-                    setSlot(sx, sy, sz, net.minecraft.world.level.block.Blocks.LAVA.defaultBlockState());
+                    return InteractionResult.sidedSuccess(false);
+                } else if (held.is(Items.LAVA_BUCKET)) {
+                    setSlot(sx, sy, sz, Blocks.LAVA.defaultBlockState());
                     if (!player.getAbilities().instabuild)
-                        player.setItemInHand(hand, new ItemStack(net.minecraft.world.item.Items.BUCKET));
+                        player.setItemInHand(hand, new ItemStack(Items.BUCKET));
                     setChanged();
-                    return net.minecraft.world.InteractionResult.sidedSuccess(false);
+                    return InteractionResult.sidedSuccess(false);
                 }
-            } else if (held.is(net.minecraft.world.item.Items.BUCKET)
-                    && (slotState.getBlock() == net.minecraft.world.level.block.Blocks.WATER
-                            || slotState.getBlock() == net.minecraft.world.level.block.Blocks.LAVA)) {
-                net.minecraft.world.item.Item filled = slotState.getBlock() == net.minecraft.world.level.block.Blocks.WATER
-                        ? net.minecraft.world.item.Items.WATER_BUCKET
-                        : net.minecraft.world.item.Items.LAVA_BUCKET;
-                setSlot(sx, sy, sz, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+            } else if (held.is(Items.BUCKET)
+                    && (slotState.getBlock() == Blocks.WATER
+                            || slotState.getBlock() == Blocks.LAVA)) {
+                net.minecraft.world.item.Item filled = slotState.getBlock() == Blocks.WATER
+                        ? Items.WATER_BUCKET
+                        : Items.LAVA_BUCKET;
+                setSlot(sx, sy, sz, Blocks.AIR.defaultBlockState());
                 if (!player.getAbilities().instabuild) {
                     held.shrink(1);
                     ItemStack filledStack = new ItemStack(filled);
                     if (!player.getInventory().add(filledStack)) player.drop(filledStack, false);
                 }
                 setChanged();
-                return net.minecraft.world.InteractionResult.sidedSuccess(false);
+                return InteractionResult.sidedSuccess(false);
             }
         }
 
         if (slotState.isAir())
-            return net.minecraft.world.InteractionResult.PASS;
+            return InteractionResult.PASS;
 
         // 1. Custom Interactive Types (Crafting Table, Barrel, Furnace, Jukebox)
         if (slotState.getBlock() instanceof net.minecraft.world.level.block.FletchingTableBlock) {
-            return net.minecraft.world.InteractionResult.PASS; // no GUI in vanilla
+            return InteractionResult.PASS; // no GUI in vanilla
 
         } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.SmithingTableBlock) {
-            if (!level.isClientSide() && player instanceof net.minecraft.server.level.ServerPlayer sp) {
+            if (!level.isClientSide() && player instanceof ServerPlayer sp) {
                 net.minecraft.world.inventory.ContainerLevelAccess access =
                         net.minecraft.world.inventory.ContainerLevelAccess.create(level, worldPosition);
                 dev.architectury.registry.menu.MenuRegistry.openMenu(sp,
@@ -809,64 +829,64 @@ public class MicroBlockEntity extends BlockEntity {
                                         syncId, inv, access),
                                 net.minecraft.network.chat.Component.translatable("container.upgrade")));
             }
-            return net.minecraft.world.InteractionResult.CONSUME;
+            return InteractionResult.CONSUME;
 
         } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.CraftingTableBlock) {
-            if (!level.isClientSide() && player instanceof net.minecraft.server.level.ServerPlayer sp) {
+            if (!level.isClientSide() && player instanceof ServerPlayer sp) {
                 dev.architectury.registry.menu.MenuRegistry.openMenu(sp,
                         new mc.sayda.creraces.world.inventory.micro.MicroCraftingMenuProvider(level, worldPosition));
             }
-            return net.minecraft.world.InteractionResult.CONSUME;
+            return InteractionResult.CONSUME;
 
         } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.BarrelBlock ||
                 slotState.getBlock() instanceof net.minecraft.world.level.block.ChestBlock) {
             int slotIdx = toIndex(sx, sy, sz);
-            if (!level.isClientSide() && player instanceof net.minecraft.server.level.ServerPlayer sp) {
+            if (!level.isClientSide() && player instanceof ServerPlayer sp) {
                 dev.architectury.registry.menu.MenuRegistry.openMenu(sp, new net.minecraft.world.SimpleMenuProvider(
                         (containerId, playerInventory, p) -> net.minecraft.world.inventory.ChestMenu.threeRows(
                                 containerId,
                                 playerInventory, new MicroInventory(this, slotIdx, 27)),
                         slotState.getBlock().getName()));
             }
-            return net.minecraft.world.InteractionResult.CONSUME;
+            return InteractionResult.CONSUME;
 
         } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.EnderChestBlock) {
-            if (!level.isClientSide() && player instanceof net.minecraft.server.level.ServerPlayer sp) {
+            if (!level.isClientSide() && player instanceof ServerPlayer sp) {
                 dev.architectury.registry.menu.MenuRegistry.openMenu(sp, new net.minecraft.world.SimpleMenuProvider(
                         (containerId, playerInventory, p) -> net.minecraft.world.inventory.ChestMenu.threeRows(
                                 containerId,
                                 playerInventory, player.getEnderChestInventory()),
                         net.minecraft.network.chat.Component.translatable("container.enderchest")));
             }
-            return net.minecraft.world.InteractionResult.CONSUME;
+            return InteractionResult.CONSUME;
 
         } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.BedBlock) {
             if (level.isClientSide())
-                return net.minecraft.world.InteractionResult.SUCCESS;
+                return InteractionResult.SUCCESS;
             if (player instanceof mc.sayda.creraces.util.ISleepSlotTracker tracker) {
                 tracker.creraces$setSleepSlot(toIndex(sx, sy, sz));
             }
             player.startSleepInBed(worldPosition);
-            return net.minecraft.world.InteractionResult.SUCCESS;
+            return InteractionResult.SUCCESS;
 
-        } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.AbstractFurnaceBlock) {
+        } else if (slotState.getBlock() instanceof AbstractFurnaceBlock) {
             int slotIdx = toIndex(sx, sy, sz);
-            if (!level.isClientSide() && player instanceof net.minecraft.server.level.ServerPlayer sp) {
+            if (!level.isClientSide() && player instanceof ServerPlayer sp) {
                 dev.architectury.registry.menu.MenuRegistry.openMenu(sp,
                         new mc.sayda.creraces.world.inventory.micro.MicroFurnaceMenuProvider(this, slotIdx, slotState));
             }
-            return net.minecraft.world.InteractionResult.CONSUME;
+            return InteractionResult.CONSUME;
 
         } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.JukeboxBlock) {
             // Client-side prediction for music stop
             if (level.isClientSide()) {
                 if (slotState.hasProperty(
-                        net.minecraft.world.level.block.state.properties.BlockStateProperties.HAS_RECORD) &&
+                        BlockStateProperties.HAS_RECORD) &&
                         slotState.getValue(
-                                net.minecraft.world.level.block.state.properties.BlockStateProperties.HAS_RECORD)) {
+                                BlockStateProperties.HAS_RECORD)) {
                     level.levelEvent(null, 1010, getBlockPos(), 0);
                 }
-                return net.minecraft.world.InteractionResult.SUCCESS;
+                return InteractionResult.SUCCESS;
             }
             int slotIdx = toIndex(sx, sy, sz);
             NonNullList<ItemStack> inv = getOrCreateInventory(slotIdx, 1);
@@ -882,12 +902,12 @@ public class MicroBlockEntity extends BlockEntity {
 
                 if (slotState
                         .hasProperty(
-                                net.minecraft.world.level.block.state.properties.BlockStateProperties.HAS_RECORD)) {
+                                BlockStateProperties.HAS_RECORD)) {
                     setSlot(sx, sy, sz, slotState.setValue(
-                            net.minecraft.world.level.block.state.properties.BlockStateProperties.HAS_RECORD, true));
+                            BlockStateProperties.HAS_RECORD, true));
                 }
                 setChanged();
-                return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide());
+                return InteractionResult.sidedSuccess(level.isClientSide());
 
             } else if (!inv.get(0).isEmpty()) {
                 // Eject record
@@ -897,9 +917,9 @@ public class MicroBlockEntity extends BlockEntity {
 
                 if (slotState
                         .hasProperty(
-                                net.minecraft.world.level.block.state.properties.BlockStateProperties.HAS_RECORD)) {
+                                BlockStateProperties.HAS_RECORD)) {
                     setSlot(sx, sy, sz, slotState.setValue(
-                            net.minecraft.world.level.block.state.properties.BlockStateProperties.HAS_RECORD, false));
+                            BlockStateProperties.HAS_RECORD, false));
                 }
 
                 // Try to add to inventory first, then drop
@@ -912,12 +932,12 @@ public class MicroBlockEntity extends BlockEntity {
                 }
 
                 setChanged();
-                return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide());
+                return InteractionResult.sidedSuccess(level.isClientSide());
             }
-            return net.minecraft.world.InteractionResult.PASS;
+            return InteractionResult.PASS;
 
         } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.AnvilBlock) {
-            if (!level.isClientSide() && player instanceof net.minecraft.server.level.ServerPlayer sp) {
+            if (!level.isClientSide() && player instanceof ServerPlayer sp) {
                 net.minecraft.world.inventory.ContainerLevelAccess access =
                         net.minecraft.world.inventory.ContainerLevelAccess.create(level, worldPosition);
                 dev.architectury.registry.menu.MenuRegistry.openMenu(sp,
@@ -925,10 +945,10 @@ public class MicroBlockEntity extends BlockEntity {
                                 (syncId, inv, p) -> new mc.sayda.creraces.world.inventory.micro.MicroAnvilMenu(syncId, inv, access),
                                 net.minecraft.network.chat.Component.translatable("container.repair")));
             }
-            return net.minecraft.world.InteractionResult.CONSUME;
+            return InteractionResult.CONSUME;
 
         } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.StonecutterBlock) {
-            if (!level.isClientSide() && player instanceof net.minecraft.server.level.ServerPlayer sp) {
+            if (!level.isClientSide() && player instanceof ServerPlayer sp) {
                 net.minecraft.world.inventory.ContainerLevelAccess access =
                         net.minecraft.world.inventory.ContainerLevelAccess.create(level, worldPosition);
                 dev.architectury.registry.menu.MenuRegistry.openMenu(sp,
@@ -936,10 +956,10 @@ public class MicroBlockEntity extends BlockEntity {
                                 (syncId, inv, p) -> new mc.sayda.creraces.world.inventory.micro.MicroStonecutterMenu(syncId, inv, access),
                                 net.minecraft.network.chat.Component.translatable("container.stonecutter")));
             }
-            return net.minecraft.world.InteractionResult.CONSUME;
+            return InteractionResult.CONSUME;
 
         } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.GrindstoneBlock) {
-            if (!level.isClientSide() && player instanceof net.minecraft.server.level.ServerPlayer sp) {
+            if (!level.isClientSide() && player instanceof ServerPlayer sp) {
                 net.minecraft.world.inventory.ContainerLevelAccess access =
                         net.minecraft.world.inventory.ContainerLevelAccess.create(level, worldPosition);
                 dev.architectury.registry.menu.MenuRegistry.openMenu(sp,
@@ -947,10 +967,10 @@ public class MicroBlockEntity extends BlockEntity {
                                 (syncId, inv, p) -> new mc.sayda.creraces.world.inventory.micro.MicroGrindstoneMenu(syncId, inv, access),
                                 net.minecraft.network.chat.Component.translatable("container.grindstone_title")));
             }
-            return net.minecraft.world.InteractionResult.CONSUME;
+            return InteractionResult.CONSUME;
 
         } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.EnchantmentTableBlock) {
-            if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
+            if (player instanceof ServerPlayer sp) {
                 net.minecraft.world.inventory.ContainerLevelAccess access =
                         net.minecraft.world.inventory.ContainerLevelAccess.create(level, worldPosition);
                 dev.architectury.registry.menu.MenuRegistry.openMenu(sp,
@@ -958,10 +978,10 @@ public class MicroBlockEntity extends BlockEntity {
                                 (syncId, inv, p) -> new mc.sayda.creraces.world.inventory.micro.MicroEnchantingMenu(syncId, inv, access),
                                 net.minecraft.network.chat.Component.translatable("container.enchant")));
             }
-            return net.minecraft.world.InteractionResult.CONSUME;
+            return InteractionResult.CONSUME;
 
         } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.LoomBlock) {
-            if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
+            if (player instanceof ServerPlayer sp) {
                 net.minecraft.world.inventory.ContainerLevelAccess access =
                         net.minecraft.world.inventory.ContainerLevelAccess.create(level, worldPosition);
                 dev.architectury.registry.menu.MenuRegistry.openMenu(sp,
@@ -969,10 +989,10 @@ public class MicroBlockEntity extends BlockEntity {
                                 (syncId, inv, p) -> new mc.sayda.creraces.world.inventory.micro.MicroLoomMenu(syncId, inv, access),
                                 net.minecraft.network.chat.Component.translatable("container.loom")));
             }
-            return net.minecraft.world.InteractionResult.CONSUME;
+            return InteractionResult.CONSUME;
 
         } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.CartographyTableBlock) {
-            if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
+            if (player instanceof ServerPlayer sp) {
                 net.minecraft.world.inventory.ContainerLevelAccess access =
                         net.minecraft.world.inventory.ContainerLevelAccess.create(level, worldPosition);
                 dev.architectury.registry.menu.MenuRegistry.openMenu(sp,
@@ -980,11 +1000,11 @@ public class MicroBlockEntity extends BlockEntity {
                                 (syncId, inv, p) -> new mc.sayda.creraces.world.inventory.micro.MicroCartographyMenu(syncId, inv, access),
                                 net.minecraft.network.chat.Component.translatable("container.cartography_table")));
             }
-            return net.minecraft.world.InteractionResult.CONSUME;
+            return InteractionResult.CONSUME;
 
         } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.BrewingStandBlock) {
             int slotIdx = toIndex(sx, sy, sz);
-            if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
+            if (player instanceof ServerPlayer sp) {
                 net.minecraft.world.inventory.ContainerLevelAccess access =
                         net.minecraft.world.inventory.ContainerLevelAccess.create(level, worldPosition);
                 final int[] bsState = brewingStates.computeIfAbsent(slotIdx, k -> new int[]{0, 0});
@@ -999,24 +1019,24 @@ public class MicroBlockEntity extends BlockEntity {
                                         syncId, inv, (MicroInventory) getInventory(slotIdx, 5), brewData, access),
                                 net.minecraft.network.chat.Component.translatable("container.brewing")));
             }
-            return net.minecraft.world.InteractionResult.CONSUME;
+            return InteractionResult.CONSUME;
 
-        } else if (slotState.getBlock() == net.minecraft.world.level.block.Blocks.LODESTONE) {
+        } else if (slotState.getBlock() == Blocks.LODESTONE) {
             if (!level.isClientSide()) {
                 ItemStack held = player.getItemInHand(hand);
-                if (held.is(net.minecraft.world.item.Items.COMPASS)) {
+                if (held.is(Items.COMPASS)) {
                     net.minecraft.nbt.CompoundTag tag = held.getOrCreateTag();
                     tag.put("LodestonePos", net.minecraft.nbt.NbtUtils.writeBlockPos(worldPosition));
                     tag.putString("LodestoneDimension", level.dimension().location().toString());
                     tag.putBoolean("LodestoneTracked", true);
-                    level.playSound(null, worldPosition, net.minecraft.sounds.SoundEvents.LODESTONE_COMPASS_LOCK,
-                            net.minecraft.sounds.SoundSource.BLOCKS, 1.0f, 1.0f);
-                    return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide());
+                    level.playSound(null, worldPosition, SoundEvents.LODESTONE_COMPASS_LOCK,
+                            SoundSource.BLOCKS, 1.0f, 1.0f);
+                    return InteractionResult.sidedSuccess(level.isClientSide());
                 }
-            } else if (player.getItemInHand(hand).is(net.minecraft.world.item.Items.COMPASS)) {
-                return net.minecraft.world.InteractionResult.SUCCESS;
+            } else if (player.getItemInHand(hand).is(Items.COMPASS)) {
+                return InteractionResult.SUCCESS;
             }
-            return net.minecraft.world.InteractionResult.PASS;
+            return InteractionResult.PASS;
 
         } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.FlowerPotBlock potBlock) {
             if (potBlock.getContent() == Blocks.AIR) {
@@ -1036,10 +1056,10 @@ public class MicroBlockEntity extends BlockEntity {
                         setSlot(sx, sy, sz, pottedVariant.get().defaultBlockState());
                         if (!player.getAbilities().instabuild) held.shrink(1);
                         setChanged();
-                        return net.minecraft.world.InteractionResult.SUCCESS;
+                        return InteractionResult.SUCCESS;
                     }
                 }
-                return net.minecraft.world.InteractionResult.PASS;
+                return InteractionResult.PASS;
             } else {
                 // Non-empty pot: eject the plant
                 ItemStack plant = new ItemStack(potBlock.getContent().asItem());
@@ -1052,15 +1072,15 @@ public class MicroBlockEntity extends BlockEntity {
                 }
                 setSlot(sx, sy, sz, Blocks.FLOWER_POT.defaultBlockState());
                 setChanged();
-                return net.minecraft.world.InteractionResult.SUCCESS;
+                return InteractionResult.SUCCESS;
             }
 
         } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.ComposterBlock) {
             int composterLevel = slotState.getValue(
-                    net.minecraft.world.level.block.state.properties.BlockStateProperties.LEVEL_COMPOSTER);
+                    BlockStateProperties.LEVEL_COMPOSTER);
             if (composterLevel == 8) {
                 // Full: eject bone meal and reset
-                ItemStack boneMeal = new ItemStack(net.minecraft.world.item.Items.BONE_MEAL);
+                ItemStack boneMeal = new ItemStack(Items.BONE_MEAL);
                 if (!player.getInventory().add(boneMeal)) {
                     net.minecraft.world.entity.item.ItemEntity ie = new net.minecraft.world.entity.item.ItemEntity(
                             level, worldPosition.getX() + 0.5, worldPosition.getY() + 0.5,
@@ -1069,9 +1089,9 @@ public class MicroBlockEntity extends BlockEntity {
                     level.addFreshEntity(ie);
                 }
                 setSlot(sx, sy, sz, slotState.setValue(
-                        net.minecraft.world.level.block.state.properties.BlockStateProperties.LEVEL_COMPOSTER, 0));
+                        BlockStateProperties.LEVEL_COMPOSTER, 0));
                 setChanged();
-                return net.minecraft.world.InteractionResult.SUCCESS;
+                return InteractionResult.SUCCESS;
             } else {
                 ItemStack held = player.getItemInHand(hand);
                 if (!held.isEmpty()) {
@@ -1079,21 +1099,21 @@ public class MicroBlockEntity extends BlockEntity {
                     if (chance > 0.0f) {
                         if (level.getRandom().nextFloat() < chance) {
                             setSlot(sx, sy, sz, slotState.setValue(
-                                    net.minecraft.world.level.block.state.properties.BlockStateProperties.LEVEL_COMPOSTER,
+                                    BlockStateProperties.LEVEL_COMPOSTER,
                                     composterLevel + 1));
                             setChanged();
                         }
                         if (!player.getAbilities().instabuild) held.shrink(1);
-                        return net.minecraft.world.InteractionResult.SUCCESS;
+                        return InteractionResult.SUCCESS;
                     }
                 }
-                return net.minecraft.world.InteractionResult.PASS;
+                return InteractionResult.PASS;
             }
 
         } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.CampfireBlock) {
             ItemStack held = player.getItemInHand(hand);
             boolean lit = slotState.getValue(
-                    net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT);
+                    BlockStateProperties.LIT);
 
             if (lit && !held.isEmpty()) {
                 java.util.Optional<net.minecraft.world.item.crafting.CampfireCookingRecipe> recipeOpt =
@@ -1113,15 +1133,15 @@ public class MicroBlockEntity extends BlockEntity {
                         items.set(emptySlot, toPlace);
                         if (!player.getAbilities().instabuild) held.shrink(1);
                         setChanged();
-                        return net.minecraft.world.InteractionResult.SUCCESS;
+                        return InteractionResult.SUCCESS;
                     }
-                    return net.minecraft.world.InteractionResult.PASS;
+                    return InteractionResult.PASS;
                 }
             }
             // Not a campfire recipe or unlit: toggle LIT
             setSlot(sx, sy, sz, slotState.setValue(
-                    net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT, !lit));
-            return net.minecraft.world.InteractionResult.SUCCESS;
+                    BlockStateProperties.LIT, !lit));
+            return InteractionResult.SUCCESS;
 
         } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.NoteBlock) {
             int note = slotState.getValue(net.minecraft.world.level.block.NoteBlock.NOTE);
@@ -1131,54 +1151,54 @@ public class MicroBlockEntity extends BlockEntity {
             setSlot(sx, sy, sz, slotState.setValue(net.minecraft.world.level.block.NoteBlock.NOTE, newNote));
             float pitch = (float) Math.pow(2.0, (newNote - 12) / 12.0);
             level.playSound(null, worldPosition, instrument.getSoundEvent().value(),
-                    net.minecraft.sounds.SoundSource.RECORDS, 3.0f, pitch);
+                    SoundSource.RECORDS, 3.0f, pitch);
             setChanged();
-            return net.minecraft.world.InteractionResult.SUCCESS;
+            return InteractionResult.SUCCESS;
 
         } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.BellBlock) {
-            level.playSound(null, worldPosition, net.minecraft.sounds.SoundEvents.BELL_BLOCK,
-                    net.minecraft.sounds.SoundSource.BLOCKS, 2.0f, 1.0f);
-            return net.minecraft.world.InteractionResult.SUCCESS;
+            level.playSound(null, worldPosition, SoundEvents.BELL_BLOCK,
+                    SoundSource.BLOCKS, 2.0f, 1.0f);
+            return InteractionResult.SUCCESS;
 
         } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.RespawnAnchorBlock) {
             ItemStack held = player.getItemInHand(hand);
             int charge = slotState.getValue(net.minecraft.world.level.block.RespawnAnchorBlock.CHARGE);
-            if (held.is(net.minecraft.world.item.Items.GLOWSTONE) && charge < 4) {
+            if (held.is(Items.GLOWSTONE) && charge < 4) {
                 setSlot(sx, sy, sz, slotState.setValue(
                         net.minecraft.world.level.block.RespawnAnchorBlock.CHARGE, charge + 1));
                 if (!player.getAbilities().instabuild) held.shrink(1);
-                level.playSound(null, worldPosition, net.minecraft.sounds.SoundEvents.RESPAWN_ANCHOR_CHARGE,
-                        net.minecraft.sounds.SoundSource.BLOCKS, 1.0f, 1.0f);
+                level.playSound(null, worldPosition, SoundEvents.RESPAWN_ANCHOR_CHARGE,
+                        SoundSource.BLOCKS, 1.0f, 1.0f);
                 setChanged();
-                return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide());
+                return InteractionResult.sidedSuccess(level.isClientSide());
             }
-            return net.minecraft.world.InteractionResult.PASS;
+            return InteractionResult.PASS;
 
         } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.LecternBlock) {
             int slotIdx = toIndex(sx, sy, sz);
             NonNullList<ItemStack> books = getOrCreateInventory(slotIdx, 1);
             boolean hasBook = slotState.getValue(
-                    net.minecraft.world.level.block.state.properties.BlockStateProperties.HAS_BOOK);
+                    BlockStateProperties.HAS_BOOK);
             ItemStack held = player.getItemInHand(hand);
             if (!hasBook && !held.isEmpty() && held.is(net.minecraft.tags.ItemTags.LECTERN_BOOKS)) {
                 books.set(0, held.copy().split(1));
                 if (!player.getAbilities().instabuild) held.shrink(1);
                 setSlot(sx, sy, sz, slotState.setValue(
-                        net.minecraft.world.level.block.state.properties.BlockStateProperties.HAS_BOOK, true));
-                level.playSound(null, worldPosition, net.minecraft.sounds.SoundEvents.BOOK_PUT,
-                        net.minecraft.sounds.SoundSource.BLOCKS, 1.0f, 1.0f);
+                        BlockStateProperties.HAS_BOOK, true));
+                level.playSound(null, worldPosition, SoundEvents.BOOK_PUT,
+                        SoundSource.BLOCKS, 1.0f, 1.0f);
                 setChanged();
-                return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide());
+                return InteractionResult.sidedSuccess(level.isClientSide());
             } else if (hasBook && !books.get(0).isEmpty()
-                    && player instanceof net.minecraft.server.level.ServerPlayer sp) {
+                    && player instanceof ServerPlayer sp) {
                 net.minecraft.world.level.block.entity.LecternBlockEntity dummy =
                         new net.minecraft.world.level.block.entity.LecternBlockEntity(worldPosition, slotState);
                 dummy.setLevel(level);
                 dummy.setBook(books.get(0));
                 sp.openMenu(dummy);
-                return net.minecraft.world.InteractionResult.CONSUME;
+                return InteractionResult.CONSUME;
             }
-            return net.minecraft.world.InteractionResult.PASS;
+            return InteractionResult.PASS;
 
         } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.ChiseledBookShelfBlock) {
             int slotIdx = toIndex(sx, sy, sz);
@@ -1192,13 +1212,13 @@ public class MicroBlockEntity extends BlockEntity {
                         if (!player.getAbilities().instabuild) held.shrink(1);
                         setSlot(sx, sy, sz, slotState.setValue(shelfSlots.get(i), true));
                         level.playSound(null, worldPosition,
-                                net.minecraft.sounds.SoundEvents.CHISELED_BOOKSHELF_INSERT,
-                                net.minecraft.sounds.SoundSource.BLOCKS, 1.0f, 1.0f);
+                                SoundEvents.CHISELED_BOOKSHELF_INSERT,
+                                SoundSource.BLOCKS, 1.0f, 1.0f);
                         setChanged();
-                        return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide());
+                        return InteractionResult.sidedSuccess(level.isClientSide());
                     }
                 }
-                return net.minecraft.world.InteractionResult.PASS;
+                return InteractionResult.PASS;
             } else if (held.isEmpty()) {
                 for (int i = 5; i >= 0; i--) {
                     if (!books.get(i).isEmpty()) {
@@ -1207,92 +1227,92 @@ public class MicroBlockEntity extends BlockEntity {
                         if (!player.getInventory().add(book)) player.drop(book, false);
                         setSlot(sx, sy, sz, slotState.setValue(shelfSlots.get(i), false));
                         level.playSound(null, worldPosition,
-                                net.minecraft.sounds.SoundEvents.CHISELED_BOOKSHELF_PICKUP,
-                                net.minecraft.sounds.SoundSource.BLOCKS, 1.0f, 1.0f);
+                                SoundEvents.CHISELED_BOOKSHELF_PICKUP,
+                                SoundSource.BLOCKS, 1.0f, 1.0f);
                         setChanged();
-                        return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide());
+                        return InteractionResult.sidedSuccess(level.isClientSide());
                     }
                 }
             }
-            return net.minecraft.world.InteractionResult.PASS;
+            return InteractionResult.PASS;
 
         } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.AbstractCauldronBlock) {
             ItemStack held = player.getItemInHand(hand);
-            if (slotState.getBlock() == net.minecraft.world.level.block.Blocks.CAULDRON) {
-                if (held.is(net.minecraft.world.item.Items.WATER_BUCKET)) {
-                    setSlot(sx, sy, sz, net.minecraft.world.level.block.Blocks.WATER_CAULDRON.defaultBlockState()
+            if (slotState.getBlock() == Blocks.CAULDRON) {
+                if (held.is(Items.WATER_BUCKET)) {
+                    setSlot(sx, sy, sz, Blocks.WATER_CAULDRON.defaultBlockState()
                             .setValue(net.minecraft.world.level.block.LayeredCauldronBlock.LEVEL, 3));
                     if (!player.getAbilities().instabuild)
-                        player.setItemInHand(hand, new ItemStack(net.minecraft.world.item.Items.BUCKET));
-                    level.playSound(null, worldPosition, net.minecraft.sounds.SoundEvents.BUCKET_EMPTY,
-                            net.minecraft.sounds.SoundSource.BLOCKS, 1.0f, 1.0f);
+                        player.setItemInHand(hand, new ItemStack(Items.BUCKET));
+                    level.playSound(null, worldPosition, SoundEvents.BUCKET_EMPTY,
+                            SoundSource.BLOCKS, 1.0f, 1.0f);
                     setChanged();
-                    return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide());
-                } else if (held.is(net.minecraft.world.item.Items.LAVA_BUCKET)) {
-                    setSlot(sx, sy, sz, net.minecraft.world.level.block.Blocks.LAVA_CAULDRON.defaultBlockState());
+                    return InteractionResult.sidedSuccess(level.isClientSide());
+                } else if (held.is(Items.LAVA_BUCKET)) {
+                    setSlot(sx, sy, sz, Blocks.LAVA_CAULDRON.defaultBlockState());
                     if (!player.getAbilities().instabuild)
-                        player.setItemInHand(hand, new ItemStack(net.minecraft.world.item.Items.BUCKET));
-                    level.playSound(null, worldPosition, net.minecraft.sounds.SoundEvents.BUCKET_EMPTY_LAVA,
-                            net.minecraft.sounds.SoundSource.BLOCKS, 1.0f, 1.0f);
+                        player.setItemInHand(hand, new ItemStack(Items.BUCKET));
+                    level.playSound(null, worldPosition, SoundEvents.BUCKET_EMPTY_LAVA,
+                            SoundSource.BLOCKS, 1.0f, 1.0f);
                     setChanged();
-                    return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide());
+                    return InteractionResult.sidedSuccess(level.isClientSide());
                 }
             } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.LayeredCauldronBlock) {
-                if (held.is(net.minecraft.world.item.Items.BUCKET)) {
+                if (held.is(Items.BUCKET)) {
                     int lvl = slotState.getValue(net.minecraft.world.level.block.LayeredCauldronBlock.LEVEL);
                     BlockState next = lvl <= 1
-                            ? net.minecraft.world.level.block.Blocks.CAULDRON.defaultBlockState()
+                            ? Blocks.CAULDRON.defaultBlockState()
                             : slotState.setValue(net.minecraft.world.level.block.LayeredCauldronBlock.LEVEL, lvl - 1);
                     setSlot(sx, sy, sz, next);
                     if (!player.getAbilities().instabuild) {
                         held.shrink(1);
-                        ItemStack wb = new ItemStack(net.minecraft.world.item.Items.WATER_BUCKET);
+                        ItemStack wb = new ItemStack(Items.WATER_BUCKET);
                         if (!player.getInventory().add(wb)) player.drop(wb, false);
                     }
-                    level.playSound(null, worldPosition, net.minecraft.sounds.SoundEvents.BUCKET_FILL,
-                            net.minecraft.sounds.SoundSource.BLOCKS, 1.0f, 1.0f);
+                    level.playSound(null, worldPosition, SoundEvents.BUCKET_FILL,
+                            SoundSource.BLOCKS, 1.0f, 1.0f);
                     setChanged();
-                    return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide());
+                    return InteractionResult.sidedSuccess(level.isClientSide());
                 }
             } else if (slotState.getBlock() instanceof net.minecraft.world.level.block.LavaCauldronBlock) {
-                if (held.is(net.minecraft.world.item.Items.BUCKET)) {
-                    setSlot(sx, sy, sz, net.minecraft.world.level.block.Blocks.CAULDRON.defaultBlockState());
+                if (held.is(Items.BUCKET)) {
+                    setSlot(sx, sy, sz, Blocks.CAULDRON.defaultBlockState());
                     if (!player.getAbilities().instabuild) {
                         held.shrink(1);
-                        ItemStack lb = new ItemStack(net.minecraft.world.item.Items.LAVA_BUCKET);
+                        ItemStack lb = new ItemStack(Items.LAVA_BUCKET);
                         if (!player.getInventory().add(lb)) player.drop(lb, false);
                     }
-                    level.playSound(null, worldPosition, net.minecraft.sounds.SoundEvents.BUCKET_FILL_LAVA,
-                            net.minecraft.sounds.SoundSource.BLOCKS, 1.0f, 1.0f);
+                    level.playSound(null, worldPosition, SoundEvents.BUCKET_FILL_LAVA,
+                            SoundSource.BLOCKS, 1.0f, 1.0f);
                     setChanged();
-                    return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide());
+                    return InteractionResult.sidedSuccess(level.isClientSide());
                 }
             }
-            return net.minecraft.world.InteractionResult.PASS;
+            return InteractionResult.PASS;
         }
 
         // 2. Generic Interaction (Toggle OPEN, LIT, POWERED)
         BlockState newState = slotState;
         boolean changed = false;
 
-        if (newState.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.OPEN)) {
-            newState = newState.cycle(net.minecraft.world.level.block.state.properties.BlockStateProperties.OPEN);
+        if (newState.hasProperty(BlockStateProperties.OPEN)) {
+            newState = newState.cycle(BlockStateProperties.OPEN);
             changed = true;
-        } else if (newState.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT)) {
-            newState = newState.cycle(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT);
+        } else if (newState.hasProperty(BlockStateProperties.LIT)) {
+            newState = newState.cycle(BlockStateProperties.LIT);
             changed = true;
         } else if (newState
-                .hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.POWERED)) {
-            newState = newState.cycle(net.minecraft.world.level.block.state.properties.BlockStateProperties.POWERED);
+                .hasProperty(BlockStateProperties.POWERED)) {
+            newState = newState.cycle(BlockStateProperties.POWERED);
             changed = true;
         }
 
         if (changed) {
             if (newState.hasProperty(
-                    net.minecraft.world.level.block.state.properties.BlockStateProperties.DOUBLE_BLOCK_HALF)) {
+                    BlockStateProperties.DOUBLE_BLOCK_HALF)) {
                 // Multi-part (Door/Bed) sync
                 var half = newState.getValue(
-                        net.minecraft.world.level.block.state.properties.BlockStateProperties.DOUBLE_BLOCK_HALF);
+                        BlockStateProperties.DOUBLE_BLOCK_HALF);
                 int otherY = (half == net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER) ? sy + 1
                         : sy - 1;
                 setSlot(sx, sy, sz, newState, false);
@@ -1301,18 +1321,18 @@ public class MicroBlockEntity extends BlockEntity {
                     if (otherState.getBlock() == newState.getBlock()) {
                         BlockState updatedOther = otherState;
                         if (newState.hasProperty(
-                                net.minecraft.world.level.block.state.properties.BlockStateProperties.OPEN)) {
+                                BlockStateProperties.OPEN)) {
                             updatedOther = updatedOther.setValue(
-                                    net.minecraft.world.level.block.state.properties.BlockStateProperties.OPEN,
+                                    BlockStateProperties.OPEN,
                                     newState.getValue(
-                                            net.minecraft.world.level.block.state.properties.BlockStateProperties.OPEN));
+                                            BlockStateProperties.OPEN));
                         }
                         if (newState.hasProperty(
-                                net.minecraft.world.level.block.state.properties.BlockStateProperties.POWERED)) {
+                                BlockStateProperties.POWERED)) {
                             updatedOther = updatedOther.setValue(
-                                    net.minecraft.world.level.block.state.properties.BlockStateProperties.POWERED,
+                                    BlockStateProperties.POWERED,
                                     newState.getValue(
-                                            net.minecraft.world.level.block.state.properties.BlockStateProperties.POWERED));
+                                            BlockStateProperties.POWERED));
                         }
                         setSlot(sx, otherY, sz, updatedOther, false);
                     }
@@ -1326,19 +1346,19 @@ public class MicroBlockEntity extends BlockEntity {
             }
 
             // Play sound/effect indicators
-            if (newState.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.OPEN)) {
+            if (newState.hasProperty(BlockStateProperties.OPEN)) {
                 level.playSound(null, worldPosition,
-                        newState.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.OPEN)
-                                ? net.minecraft.sounds.SoundEvents.WOODEN_DOOR_OPEN
-                                : net.minecraft.sounds.SoundEvents.WOODEN_DOOR_CLOSE,
-                        net.minecraft.sounds.SoundSource.BLOCKS, 1.0f, 1.0f);
+                        newState.getValue(BlockStateProperties.OPEN)
+                                ? SoundEvents.WOODEN_DOOR_OPEN
+                                : SoundEvents.WOODEN_DOOR_CLOSE,
+                        SoundSource.BLOCKS, 1.0f, 1.0f);
             }
 
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
-            return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide());
+            return InteractionResult.sidedSuccess(level.isClientSide());
         }
 
-        return net.minecraft.world.InteractionResult.PASS;
+        return InteractionResult.PASS;
     }
 
     /**
@@ -1393,7 +1413,7 @@ public class MicroBlockEntity extends BlockEntity {
         void accept(int x, int y, int z, BlockState state);
     }
 
-    // ─── NBT ─────────────────────────────────────────────────────────────────────
+    // NBT
 
     @Override
     public void saveAdditional(net.minecraft.nbt.CompoundTag tag) {
@@ -1408,7 +1428,6 @@ public class MicroBlockEntity extends BlockEntity {
         tag.put("slots", slotsTag);
         tag.putInt("count", occupiedCount);
 
-        // Save inventories
         CompoundTag invTag = new CompoundTag();
         for (var entry : inventories.entrySet()) {
             ListTag listTag = new ListTag();
@@ -1426,21 +1445,18 @@ public class MicroBlockEntity extends BlockEntity {
         }
         tag.put("inventories", invTag);
 
-        // Save furnace states
         CompoundTag fsTag = new CompoundTag();
         for (var entry : furnaceStates.entrySet()) {
             fsTag.putIntArray("f" + entry.getKey(), entry.getValue());
         }
         tag.put("furnaceStates", fsTag);
 
-        // Save campfire progress
         CompoundTag cpTag = new CompoundTag();
         for (var entry : campfireProgress.entrySet()) {
             cpTag.putIntArray("c" + entry.getKey(), entry.getValue());
         }
         tag.put("campfireProgress", cpTag);
 
-        // Save brewing states
         CompoundTag bsTag = new CompoundTag();
         for (var entry : brewingStates.entrySet()) {
             bsTag.putIntArray("b" + entry.getKey(), entry.getValue());
@@ -1504,7 +1520,6 @@ public class MicroBlockEntity extends BlockEntity {
             occupiedCount = tag.getInt("count");
         }
 
-        // Load inventories
         inventories.clear();
         inventoryHolders.clear();
         if (tag.contains("inventories")) {
@@ -1519,7 +1534,7 @@ public class MicroBlockEntity extends BlockEntity {
                 if (s != null) {
                     if (s.getBlock() instanceof net.minecraft.world.level.block.BarrelBlock)
                         size = 27;
-                    else if (s.getBlock() instanceof net.minecraft.world.level.block.AbstractFurnaceBlock)
+                    else if (s.getBlock() instanceof AbstractFurnaceBlock)
                         size = 3;
                     else if (s.getBlock() instanceof net.minecraft.world.level.block.CampfireBlock)
                         size = 4;
@@ -1542,7 +1557,6 @@ public class MicroBlockEntity extends BlockEntity {
             }
         }
 
-        // Load furnace states
         furnaceStates.clear();
         if (tag.contains("furnaceStates")) {
             CompoundTag fsTag = tag.getCompound("furnaceStates");
@@ -1552,7 +1566,6 @@ public class MicroBlockEntity extends BlockEntity {
             }
         }
 
-        // Load campfire progress
         campfireProgress.clear();
         if (tag.contains("campfireProgress")) {
             CompoundTag cpTag = tag.getCompound("campfireProgress");
@@ -1562,7 +1575,6 @@ public class MicroBlockEntity extends BlockEntity {
             }
         }
 
-        // Load brewing states
         brewingStates.clear();
         if (tag.contains("brewingStates")) {
             CompoundTag bsTag = tag.getCompound("brewingStates");
@@ -1586,8 +1598,7 @@ public class MicroBlockEntity extends BlockEntity {
         return tag;
     }
 
-    // ─── Inventory Wrapper
-    // ────────────────────────────────────────────────────────
+    // Inventory wrapper
 
     public static class MicroInventory implements net.minecraft.world.Container {
         private final MicroBlockEntity micro;
@@ -1646,7 +1657,7 @@ public class MicroBlockEntity extends BlockEntity {
         }
 
         @Override
-        public boolean stillValid(net.minecraft.world.entity.player.Player player) {
+        public boolean stillValid(Player player) {
             return true;
         }
 

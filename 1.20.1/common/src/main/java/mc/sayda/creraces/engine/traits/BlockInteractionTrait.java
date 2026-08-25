@@ -6,7 +6,6 @@ import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.engine.TraitRegistry;
 import mc.sayda.creraces.engine.condition.Condition;
 import mc.sayda.creraces.util.GsonHelper;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.state.BlockState;
@@ -48,7 +47,7 @@ public class BlockInteractionTrait implements TraitRegistry.RaceTrait {
 
     @Override
     public boolean onBlockInteraction(Player player, BlockPos pos, BlockState state) {
-        if (matches(state, blockDefinition)) {
+        if (BlockDefinitionMatcher.matches(state, blockDefinition)) {
             if (condition != null && !condition.evaluate(player, null, null, pos)) {
                 return false;
             }
@@ -61,14 +60,5 @@ public class BlockInteractionTrait implements TraitRegistry.RaceTrait {
             return true;
         }
         return false;
-    }
-
-    private boolean matches(BlockState state, String definition) {
-        if (definition.startsWith("#")) {
-            ResourceLocation tagLoc = new ResourceLocation(definition.substring(1));
-            return state.is(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.BLOCK, tagLoc));
-        } else {
-            return BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString().equals(definition);
-        }
     }
 }

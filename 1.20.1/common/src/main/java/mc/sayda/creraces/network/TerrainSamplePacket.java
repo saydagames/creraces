@@ -15,7 +15,7 @@ import java.util.function.Supplier;
  * S2C: per-chunk terrain color snapshot centered on the player.
  *
  * Resolution: SUB×SUB sub-samples per chunk, each stored as a packed MapColor
- * byte (same encoding as MapItemSavedData). 0 = no data (chunk unloaded).
+ * byte (same encoding as MapItemSavedData). 0 = no data (chunk unloaded, or no surface material found nearby).
  *
  * Client renders each sub-sample as a (CELL/SUB)×(CELL/SUB) pixel block, giving
  * proper terrain detail inside each chunk cell.
@@ -28,7 +28,7 @@ public class TerrainSamplePacket {
     public static final int SUB  = 5;
     public static final int SUB2 = SUB * SUB; // 25 bytes per chunk
 
-    private static final int RADIUS = 64; // chunks; gives 129×129×25 ≈ 406KB (one-shot)
+    public static final int RADIUS = 64; // chunks; gives 129×129×25 ≈ 406KB (one-shot)
 
     public final int originCX, originCZ;
     public final int width, height;
@@ -52,6 +52,8 @@ public class TerrainSamplePacket {
         this.width    = buf.readVarInt();
         this.height   = buf.readVarInt();
         int len = buf.readVarInt();
+        int maxLen = (RADIUS * 2 + 1) * (RADIUS * 2 + 1) * SUB2;
+        if (len < 0 || len > maxLen) throw new IllegalStateException("Oversized terrain sample packet: " + len);
         this.colors = new byte[len];
         buf.readBytes(this.colors);
     }
