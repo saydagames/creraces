@@ -1,0 +1,11 @@
+{
+  "tier": 1,
+  "name": "quest.creraces.mine_copper.name",
+  "description": "quest.creraces.mine_copper.description",
+  "duration_days": 2,
+  "objective": {
+    "type": "mine_block",
+    "target": "minecraft:copper_ore",
+    "count": 20
+  }
+}

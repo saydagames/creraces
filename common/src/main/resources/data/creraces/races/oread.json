@@ -152,8 +152,7 @@
                     {
                         "type": "creraces:state",
                         "state": "magmamancy",
-                        "value": 1.0,
-                        "show_bar": true
+                        "value": 1.0
                     }
                 ]
             },
@@ -268,12 +267,12 @@
     ],
     "creraces:territory_valid_biomes": ["temp>=1.0"],
     "creraces:starting_items": [
-        "creraces:oread_idol"
+        "creraces:volcanic_idol"
     ],
     "sapling_mechanics": [
         {
             "type": "creraces:block_place",
-            "block": "creraces:oread_idol",
+            "block": "creraces:volcanic_idol",
             "actions": [
                 {
                     "type": "creraces:conditional",
@@ -323,7 +322,7 @@
         },
         {
             "type": "creraces:block_interaction",
-            "block": "creraces:oread_idol",
+            "block": "creraces:volcanic_idol",
             "actions": [
                 {
                     "type": "creraces:conditional",
@@ -335,7 +334,7 @@
                         ]
                     },
                     "if_true": [
-                        { "type": "creraces:give_item", "item": "creraces:oread_idol", "amount": 1 },
+                        { "type": "creraces:give_item", "item": "creraces:volcanic_idol", "amount": 1 },
                         { "type": "creraces:place_block", "block": "minecraft:air", "use_target_block": true, "overwrite": true },
                         { "type": "creraces:modify_value", "resource": "state:node_x", "value": 0.0, "persistent": true },
                         { "type": "creraces:modify_value", "resource": "state:node_y", "value": 0.0, "persistent": true },

@@ -22,14 +22,12 @@ public class CreRacesClient {
 
                 // Menu Registration - Fabric can register immediately; Forge needs CLIENT_SETUP to avoid a registry race condition (see the Forge branch below).
                 if (Platform.isFabric()) {
-                        MenuRegistry.registerScreenFactory(mc.sayda.creraces.registry.ModMenuTypes.MENU_GUI.get(),
-                                        mc.sayda.creraces.client.screen.MenuGUIScreen::new);
-                        MenuRegistry.registerScreenFactory(mc.sayda.creraces.registry.ModMenuTypes.MIRROR_GUI.get(),
-                                        mc.sayda.creraces.client.screen.DynamicMirrorScreen::new);
                         MenuRegistry.registerScreenFactory(mc.sayda.creraces.registry.ModMenuTypes.RESEARCH_TABLE.get(),
                                         mc.sayda.creraces.client.screen.ResearchTableScreen::new);
                         MenuRegistry.registerScreenFactory(mc.sayda.creraces.registry.ModMenuTypes.ESSENCE_BELT.get(),
                                         mc.sayda.creraces.client.screen.EssenceBeltScreen::new);
+                        MenuRegistry.registerScreenFactory(mc.sayda.creraces.registry.ModMenuTypes.QUEST_BOARD.get(),
+                                        mc.sayda.creraces.client.screen.QuestBoardScreen::new);
                 }
 
                 registerEntityRenderers();
@@ -203,17 +201,14 @@ public class CreRacesClient {
                         // Menu Registration (Forge needs this late to avoid registry race conditions)
                         if (Platform.isForge()) {
                                 MenuRegistry.registerScreenFactory(
-                                                mc.sayda.creraces.registry.ModMenuTypes.MENU_GUI.get(),
-                                                mc.sayda.creraces.client.screen.MenuGUIScreen::new);
-                                MenuRegistry.registerScreenFactory(
-                                                mc.sayda.creraces.registry.ModMenuTypes.MIRROR_GUI.get(),
-                                                mc.sayda.creraces.client.screen.DynamicMirrorScreen::new);
-                                MenuRegistry.registerScreenFactory(
                                                 mc.sayda.creraces.registry.ModMenuTypes.RESEARCH_TABLE.get(),
                                                 mc.sayda.creraces.client.screen.ResearchTableScreen::new);
                                 MenuRegistry.registerScreenFactory(
                                                 mc.sayda.creraces.registry.ModMenuTypes.ESSENCE_BELT.get(),
                                                 mc.sayda.creraces.client.screen.EssenceBeltScreen::new);
+                                MenuRegistry.registerScreenFactory(
+                                                mc.sayda.creraces.registry.ModMenuTypes.QUEST_BOARD.get(),
+                                                mc.sayda.creraces.client.screen.QuestBoardScreen::new);
                         }
 
                         // Register microblock renderer
@@ -245,11 +240,11 @@ public class CreRacesClient {
 
                         // Block color tinting
                         dev.architectury.registry.client.rendering.ColorHandlerRegistry.registerBlockColors(
-                                        (state, world, pos, tintIndex) -> 0x00FFFF,
+                                        (state, world, pos, tintIndex) -> 0xFF00FFFF,
                                         mc.sayda.creraces.registry.ModBlocks.VEIL_WILLOW_LEAVES.get(),
                                         mc.sayda.creraces.registry.ModBlocks.VEIL_WILLOW_DRAPE.get());
                         dev.architectury.registry.client.rendering.ColorHandlerRegistry.registerItemColors(
-                                        (stack, tintIndex) -> 0x00FFFF,
+                                        (stack, tintIndex) -> 0xFF00FFFF,
                                         mc.sayda.creraces.registry.ModBlocks.VEIL_WILLOW_LEAVES.get(),
                                         mc.sayda.creraces.registry.ModBlocks.VEIL_WILLOW_DRAPE.get());
 
@@ -262,10 +257,10 @@ public class CreRacesClient {
                                             if (state.getValue(mc.sayda.creraces.block.EssenceCauldronBlock.HAS_ESSENCE)) {
                                                 if (world.getBlockEntity(pos) instanceof mc.sayda.creraces.block.entity.EssenceCauldronBlockEntity be
                                                         && be.getEssenceType() != null) {
-                                                    return be.getEssenceType().getColor();
+                                                    return 0xFF000000 | be.getEssenceType().getColor();
                                                 }
                                             }
-                                            return 0x3F76E4; // vanilla water blue
+                                            return 0xFF3F76E4; // vanilla water blue
                                         },
                                         mc.sayda.creraces.registry.ModBlocks.ESSENCE_CAULDRON.get());
                         dev.architectury.registry.client.rendering.ColorHandlerRegistry.registerItemColors(
@@ -277,13 +272,15 @@ public class CreRacesClient {
                                             if (tintIndex != 1) return -1;
                                             mc.sayda.creraces.ability.EssenceType type =
                                                     mc.sayda.creraces.item.EssenceBucketItem.getEssenceType(stack);
-                                            return type != null ? type.getColor() : -1;
+                                            return type != null ? (0xFF000000 | type.getColor()) : -1;
                                         },
                                         mc.sayda.creraces.registry.ModItems.ESSENCE_BUCKET.get());
 
                         // Essence type tinting: all shards, bottles, clusters, vortexes share one texture per shape
                         for (mc.sayda.creraces.ability.EssenceType type : mc.sayda.creraces.ability.EssenceType.values()) {
-                                int color = type.getColor();
+                                // 1.21 honours the alpha byte of tint colours and EssenceType stores plain RGB. 1.20.1
+                                // ignores alpha, but keep both versions identical so this cannot drift.
+                                int color = 0xFF000000 | type.getColor();
                                 dev.architectury.registry.client.rendering.ColorHandlerRegistry.registerItemColors(
                                         (stack, tintIndex) -> tintIndex == 0 ? color : -1,
                                         mc.sayda.creraces.ability.EssenceRegistry.SHARDS.get(type).get(),
@@ -362,12 +359,13 @@ public class CreRacesClient {
                                                                 || minecraft.screen instanceof mc.sayda.creraces.client.screen.MenuGUIScreen
                                                                 || minecraft.screen instanceof mc.sayda.creraces.client.screen.DebugScreen
                                                                 || minecraft.screen instanceof mc.sayda.creraces.client.screen.DynamicMirrorScreen
+                                                                || minecraft.screen instanceof mc.sayda.creraces.client.screen.BadAppleScreen
                                                                 || minecraft.screen instanceof net.minecraft.client.gui.screens.PauseScreen
                                                                 || minecraft.screen instanceof net.minecraft.client.gui.screens.ConfirmLinkScreen;
 
                                                 if (!isCreScreen) {
                                                         // Direct open selection screen instead of menu for reliability
-                                                        mc.sayda.creraces.network.BoundaryHandler.sendOpenMenu();
+                                                        net.minecraft.client.Minecraft.getInstance().setScreen(new mc.sayda.creraces.client.screen.MenuGUIScreen());
                                                 }
                                         } else {
                                                 mc.sayda.creraces.client.ClientAccess.isWaitingForRaceSelection = false;
@@ -411,7 +409,7 @@ public class CreRacesClient {
                                 }
 
                                 while (ModKeyMappings.MENU_GUI.consumeClick()) {
-                                        mc.sayda.creraces.network.BoundaryHandler.sendOpenMenu();
+                                        net.minecraft.client.Minecraft.getInstance().setScreen(new mc.sayda.creraces.client.screen.MenuGUIScreen());
                                 }
 
                                 while (ModKeyMappings.ESSENCE_BELT.consumeClick()) {

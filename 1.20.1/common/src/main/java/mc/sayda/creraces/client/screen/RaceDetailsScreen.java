@@ -82,7 +82,7 @@ public class RaceDetailsScreen extends Screen {
                 // Big Arrow Left (Back)
                 this.addRenderableWidget(new ImageButton(
                                 this.leftPos + -24, this.topPos + 184, 86, 48,
-                                0, 0, 48, ARROW_LEFT, 86, 96,
+                                0, 0, 48, ARROW_LEFT, 86, 144,
                                 btn -> {
                                         if (this.minecraft != null) {
                                                 this.minecraft.setScreen(parent);
@@ -114,7 +114,7 @@ public class RaceDetailsScreen extends Screen {
 
                 this.addRenderableWidget(new ImageButton(
                                 infoX - 40, infoY, 40, 20,
-                                0, 0, 20, ARROW_LEFT, 40, 40,
+                                0, 0, 20, ARROW_LEFT, 40, 60,
                                 btn -> {
                                         if (infoPage > 0) {
                                                 infoPage--;
@@ -124,7 +124,7 @@ public class RaceDetailsScreen extends Screen {
 
                 this.addRenderableWidget(new ImageButton(
                                 infoX + 40, infoY, 40, 20,
-                                0, 0, 20, ARROW_RIGHT, 40, 40,
+                                0, 0, 20, ARROW_RIGHT, 40, 60,
                                 btn -> {
                                         if (infoPage < maxInfoPages - 1) {
                                                 infoPage++;

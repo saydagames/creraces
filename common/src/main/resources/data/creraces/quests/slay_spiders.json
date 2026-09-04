@@ -1,0 +1,11 @@
+{
+  "tier": 2,
+  "name": "quest.creraces.slay_spiders.name",
+  "description": "quest.creraces.slay_spiders.description",
+  "duration_days": 3,
+  "objective": {
+    "type": "kill_entity",
+    "target": "minecraft:spider",
+    "count": 15
+  }
+}

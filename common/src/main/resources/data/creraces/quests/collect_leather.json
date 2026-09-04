@@ -1,0 +1,11 @@
+{
+  "tier": 2,
+  "name": "quest.creraces.collect_leather.name",
+  "description": "quest.creraces.collect_leather.description",
+  "duration_days": 3,
+  "objective": {
+    "type": "collect_item",
+    "target": "minecraft:leather",
+    "count": 16
+  }
+}

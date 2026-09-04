@@ -1,0 +1,11 @@
+{
+  "tier": 4,
+  "name": "quest.creraces.collect_ender_pearl.name",
+  "description": "quest.creraces.collect_ender_pearl.description",
+  "duration_days": 5,
+  "objective": {
+    "type": "collect_item",
+    "target": "minecraft:ender_pearl",
+    "count": 12
+  }
+}

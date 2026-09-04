@@ -1,0 +1,11 @@
+{
+  "tier": 1,
+  "name": "quest.creraces.slay_zombies.name",
+  "description": "quest.creraces.slay_zombies.description",
+  "duration_days": 2,
+  "objective": {
+    "type": "kill_entity",
+    "target": "minecraft:zombie",
+    "count": 8
+  }
+}

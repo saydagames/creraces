@@ -1,0 +1,11 @@
+{
+  "tier": 5,
+  "name": "quest.creraces.collect_netherite_scrap.name",
+  "description": "quest.creraces.collect_netherite_scrap.description",
+  "duration_days": 7,
+  "objective": {
+    "type": "collect_item",
+    "target": "minecraft:netherite_scrap",
+    "count": 4
+  }
+}

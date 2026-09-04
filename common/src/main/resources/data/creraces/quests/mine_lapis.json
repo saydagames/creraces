@@ -1,0 +1,11 @@
+{
+  "tier": 3,
+  "name": "quest.creraces.mine_lapis.name",
+  "description": "quest.creraces.mine_lapis.description",
+  "duration_days": 4,
+  "objective": {
+    "type": "mine_block",
+    "target": "minecraft:lapis_ore",
+    "count": 16
+  }
+}

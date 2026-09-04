@@ -8,6 +8,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
@@ -23,6 +24,8 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
@@ -30,6 +33,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 import javax.annotation.Nullable;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 
 public class ResearchTableBlock extends BaseEntityBlock {
@@ -47,53 +51,53 @@ public class ResearchTableBlock extends BaseEntityBlock {
             Block.box(1, 0, 1, 3, 14, 3),
             Block.box(1, 0, 13, 3, 14, 15),
             Block.box(0, 14, 0, 16, 16, 16),
-            Block.box(1.1, 8, 1.1, 16, 9, 14.9)
+            Block.box(1.1, 7, 1.1, 16, 8, 14.9)
         ));
         // LEFT EAST (y=90): rotate NORTH 90° CW: (minX,minZ,maxX,maxZ) → (16-maxZ, minX, 16-minZ, maxX)
         LEFT_SHAPES.put(Direction.EAST, Shapes.or(
             Block.box(13, 0, 1, 15, 14, 3),
             Block.box(1, 0, 1, 3, 14, 3),
             Block.box(0, 14, 0, 16, 16, 16),
-            Block.box(1.1, 8, 1.1, 14.9, 9, 16)
+            Block.box(1.1, 7, 1.1, 14.9, 8, 16)
         ));
         // LEFT SOUTH (y=180): rotate NORTH 180°
         LEFT_SHAPES.put(Direction.SOUTH, Shapes.or(
             Block.box(13, 0, 13, 15, 14, 15),
             Block.box(13, 0, 1, 15, 14, 3),
             Block.box(0, 14, 0, 16, 16, 16),
-            Block.box(0, 8, 1.1, 14.9, 9, 14.9)
+            Block.box(0, 7, 1.1, 14.9, 8, 14.9)
         ));
         // LEFT WEST (y=270): rotate NORTH 270° CW
         LEFT_SHAPES.put(Direction.WEST, Shapes.or(
             Block.box(1, 0, 13, 3, 14, 15),
             Block.box(13, 0, 13, 15, 14, 15),
             Block.box(0, 14, 0, 16, 16, 16),
-            Block.box(1.1, 8, 0, 14.9, 9, 14.9)
+            Block.box(1.1, 7, 0, 14.9, 8, 14.9)
         ));
         // RIGHT NORTH: legs at x=13-15, shelf extends west (x=0-14.9)
         RIGHT_SHAPES.put(Direction.NORTH, Shapes.or(
             Block.box(13, 0, 1, 15, 14, 3),
             Block.box(13, 0, 13, 15, 14, 15),
             Block.box(0, 14, 0, 16, 16, 16),
-            Block.box(0, 8, 1.1, 14.9, 9, 14.9)
+            Block.box(0, 7, 1.1, 14.9, 8, 14.9)
         ));
         RIGHT_SHAPES.put(Direction.EAST, Shapes.or(
             Block.box(13, 0, 13, 15, 14, 15),
             Block.box(1, 0, 13, 3, 14, 15),
             Block.box(0, 14, 0, 16, 16, 16),
-            Block.box(1.1, 8, 0, 14.9, 9, 14.9)
+            Block.box(1.1, 7, 0, 14.9, 8, 14.9)
         ));
         RIGHT_SHAPES.put(Direction.SOUTH, Shapes.or(
             Block.box(1, 0, 13, 3, 14, 15),
             Block.box(1, 0, 1, 3, 14, 3),
             Block.box(0, 14, 0, 16, 16, 16),
-            Block.box(1.1, 8, 1.1, 16, 9, 14.9)
+            Block.box(1.1, 7, 1.1, 16, 8, 14.9)
         ));
         RIGHT_SHAPES.put(Direction.WEST, Shapes.or(
             Block.box(1, 0, 1, 3, 14, 3),
             Block.box(13, 0, 1, 15, 14, 3),
             Block.box(0, 14, 0, 16, 16, 16),
-            Block.box(1.1, 8, 1.1, 14.9, 9, 16)
+            Block.box(1.1, 7, 1.1, 14.9, 8, 16)
         ));
     }
 
@@ -164,6 +168,22 @@ public class ResearchTableBlock extends BaseEntityBlock {
         super.playerWillDestroy(level, pos, state, player);
     }
 
+    /**
+     * Belt-and-suspenders guard against creative-mode drops: the loot table should only ever
+     * be consulted by vanilla's own destroy flow in survival, but this intercepts at the single
+     * choke point every drop path (dropResources/playerDestroy/etc) funnels through, so a
+     * creative/instabuild breaker never gets a physical item regardless of how the break was
+     * triggered.
+     */
+    @Override
+    public List<ItemStack> getDrops(BlockState state, LootParams.Builder params) {
+        Entity entity = params.getOptionalParameter(LootContextParams.THIS_ENTITY);
+        if (entity instanceof Player player && player.getAbilities().instabuild) {
+            return List.of();
+        }
+        return super.getDrops(state, params);
+    }
+
     @Override
     public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState,
             LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
@@ -198,14 +218,6 @@ public class ResearchTableBlock extends BaseEntityBlock {
             mc.sayda.creraces.network.BoundaryHandler.syncHexGrid(sp, tableEntity);
         }
         return InteractionResult.CONSUME;
-    }
-
-    @Override
-    public void playerDestroy(Level level, Player player, BlockPos pos, BlockState state,
-            @Nullable BlockEntity blockEntity, ItemStack tool) {
-        if (!player.getAbilities().instabuild) {
-            super.playerDestroy(level, player, pos, state, blockEntity, tool);
-        }
     }
 
     @Nullable

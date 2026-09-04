@@ -1,0 +1,11 @@
+{
+  "tier": 1,
+  "name": "quest.creraces.collect_string.name",
+  "description": "quest.creraces.collect_string.description",
+  "duration_days": 2,
+  "objective": {
+    "type": "collect_item",
+    "target": "minecraft:string",
+    "count": 16
+  }
+}

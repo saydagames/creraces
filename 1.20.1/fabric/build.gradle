@@ -15,6 +15,15 @@ loom {
         defaultRefmapName = "creraces-fabric.refmap.json"
     }
     accessWidenerPath = project(":1.20.1:common").file("src/main/resources/creraces.accesswidener")
+    runs {
+        // Fabric's dev client otherwise picks a fresh random offline username (and
+        // therefore a new player UUID) on every launch, orphaning anything keyed to
+        // the player's UUID (e.g. commanded servants) between runs. Pin it like Forge's
+        // dev runs already do, so the same offline player persists across restarts.
+        client {
+            programArgs "--username", "Dev"
+        }
+    }
 }
 
 

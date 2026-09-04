@@ -65,6 +65,9 @@ public class FairySourceRecipe implements Recipe<Container> {
 
     @Override public boolean canCraftInDimensions(int w, int h) { return true; }
 
+    /** Resolved by direct fluid-interaction code, not a crafting grid; keep it out of the recipe book. */
+    @Override public boolean isSpecial() { return true; }
+
     @Override
     @Nonnull
     public ItemStack getResultItem(@Nonnull RegistryAccess r) { return result.copy(); }

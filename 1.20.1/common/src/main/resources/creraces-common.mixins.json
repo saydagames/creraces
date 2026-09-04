@@ -18,8 +18,15 @@
         "PlayerRespawnMixin",
         "BlockEntityAccessor",
         "LivingEntityAccessor",
+        "PoiTypesAccessor",
+        "StructureTemplatePoolAccessor",
         "PackRepositoryMixin",
-        "PlayerFoodMixin"
+        "PlayerFoodMixin",
+        "BlockEntityTypeAccessor",
+        "AxeItemAccessor",
+        "WoodTypeAccessor",
+        "SpawnPlacementsAccessor",
+        "LakeFeatureMixin"
     ],
     "client": [
         "LivingEntityRendererMixin",
@@ -28,7 +35,8 @@
         "HumanoidModelMixin",
         "FogRendererMixin",
         "LiquidOverlayMixin",
-        "GuiGraphicsMixin"
+        "GuiGraphicsMixin",
+        "BoatRendererAccessor"
     ],
     "injectors": {
         "defaultRequire": 1

@@ -10,6 +10,7 @@
     "contact": {},
     "license": "All Rights Reserved",
     "icon": "logo.png",
+    "accessWidener": "creraces.accesswidener",
     "environment": "*",
     "entrypoints": {
         "main": [
@@ -17,6 +18,9 @@
         ],
         "client": [
             "mc.sayda.creraces.fabric.CreRacesFabricClient"
+        ],
+        "server": [
+            "mc.sayda.creraces.fabric.CreRacesFabricServer"
         ]
     },
     "mixins": [

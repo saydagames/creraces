@@ -48,7 +48,7 @@ public class CommandingStaffItem extends Item {
             return InteractionResult.FAIL;
         }
 
-        if (interactionTarget instanceof Mob mob) {
+        if (interactionTarget instanceof Mob mob && !(mob instanceof mc.sayda.creraces.entity.RemainsEntity)) {
             if (SocialPassivesHelper.isRespectedBy(player, mob)) {
                 CompoundTag nbt = ((IPersistentDataAccessor) mob).creraces$getPersistentData();
                 if (!nbt.contains("creraces:servant_of")) {
@@ -186,7 +186,22 @@ public class CommandingStaffItem extends Item {
         return net.minecraft.world.entity.projectile.ProjectileUtil.getEntityHitResult(
                 player.level(), player, eyePos, endPos,
                 player.getBoundingBox().expandTowards(player.getViewVector(1.0f).scale(range)).inflate(1.0),
-                (entity) -> entity instanceof LivingEntity && entity != player);
+                (entity) -> entity instanceof LivingEntity && entity != player
+                        && !(entity instanceof mc.sayda.creraces.entity.RemainsEntity)
+                        && !isOwnServant(entity, player));
+    }
+
+    /**
+     * Only excludes servants commanded by this same player - an enemy's summoned
+     * servants are still valid attack targets, only your own army is off-limits.
+     */
+    private boolean isOwnServant(net.minecraft.world.entity.Entity entity, Player player) {
+        if (!(entity instanceof IPersistentDataAccessor accessor))
+            return false;
+        CompoundTag nbt = accessor.creraces$getPersistentData();
+        if (!nbt.contains("creraces:servant_of"))
+            return false;
+        return player.getUUID().equals(DataUtils.loadUUID(nbt, "creraces:servant_of"));
     }
 
     private boolean canCommandSocials(Player player) {

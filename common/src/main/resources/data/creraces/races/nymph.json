@@ -117,14 +117,7 @@
                 "type": "creraces:or",
                 "conditions": [
                     { "type": "creraces:in_claimed_territory", "scope": "own" },
-                    { "type": "creraces:dimension", "value": "creraces:pocket" },
-                    {
-                        "type": "creraces:and",
-                        "conditions": [
-                            { "type": "creraces:in_habitable_biome" },
-                            { "type": "creraces:not", "condition": { "type": "creraces:in_claimed_territory", "scope": "other" } }
-                        ]
-                    }
+                    { "type": "creraces:dimension", "value": "creraces:pocket" }
                 ]
             },
             "actions": [

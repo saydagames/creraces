@@ -155,6 +155,22 @@ public class RaceOverlay {
         graphics.pose().popPose();
     }
 
+    /** Draws one placeholder bar at a HUD-space position, so the HUD editor's bars zone isn't empty when no real bar has a nonzero value. */
+    public static void renderExampleBar(@Nonnull GuiGraphics graphics, int x, int y) {
+        var font = Minecraft.getInstance().font;
+
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        graphics.blit(UI_FG_BG, x - 1, y - 11, 0, 0, 35, 7, 35, 7);
+        renderSteppedBar(graphics, UI_G, x + 2, y - 9, 70, 100, 3);
+        graphics.blit(UI_FG_FRAME, x - 1, y - 11, 0, 0, 35, 7, 35, 7);
+
+        if (font != null) {
+            graphics.drawString(font, "Example: 70", x + 37, y - 11, 0xAAAAAA, true);
+        }
+    }
+
     private static void renderOverlayBars(@Nonnull GuiGraphics graphics,
             @Nonnull mc.sayda.creraces.capability.IPlayerVariables vars,
             @Nonnull Race race, int x, int startY) {

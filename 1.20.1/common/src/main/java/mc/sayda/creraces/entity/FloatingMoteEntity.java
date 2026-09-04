@@ -57,6 +57,23 @@ public class FloatingMoteEntity extends PathfinderMob {
     @Override
     public boolean shouldDiscardFriction() { return true; }
 
+    /**
+     * The constructor's setNoGravity(true) does not survive /summon: Entity.load() assigns
+     * NoGravity straight from the tag, and a summon without that tag reads false. Motes always
+     * float, so answer that here rather than depending on a saved flag.
+     */
+    @Override
+    public boolean isNoGravity() {
+        return true;
+    }
+
+    /** Motes drift instead of pathfinding, so water is avoided by steering, not by a goal. */
+    private boolean waterUnderfoot() {
+        net.minecraft.core.BlockPos pos = blockPosition();
+        return level().getFluidState(pos).is(net.minecraft.tags.FluidTags.WATER)
+                || level().getFluidState(pos.below()).is(net.minecraft.tags.FluidTags.WATER);
+    }
+
     @Override
     public void tick() {
         super.tick();
@@ -66,6 +83,13 @@ public class FloatingMoteEntity extends PathfinderMob {
             driftVX = (random.nextDouble() - 0.5) * 0.16;
             driftVY = (random.nextDouble() - 0.5) * 0.08;
             driftVZ = (random.nextDouble() - 0.5) * 0.16;
+        }
+
+        if (waterUnderfoot()) {
+            // Climb and reverse course rather than drifting out over the water.
+            driftVY = 0.06;
+            driftVX = -driftVX;
+            driftVZ = -driftVZ;
         }
 
         Vec3 motion = getDeltaMovement();

@@ -1,1 +1,5 @@
-{ "parent": "minecraft:block/wall_hanging_sign", "textures": { "planks": "creraces:block/veil_willow_planks", "particle": "creraces:block/veil_willow_planks" } }
+{
+    "textures": {
+        "particle": "creraces:block/veil_willow_planks"
+    }
+}

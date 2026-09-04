@@ -170,15 +170,16 @@ public class ModBlocks {
                                         .mapColor(MapColor.COLOR_RED)));
 
         // Nymph Nodes
-        public static final RegistrySupplier<Block> AURAI_SCULPTURE = BLOCKS.register("aurai_sculpture",
+        // Registry names match CreRaces Classic's original block IDs for legacy-world compatibility.
+        public static final RegistrySupplier<Block> AURAI_SCULPTURE = BLOCKS.register("angelic_sculpture",
                         () -> new mc.sayda.creraces.block.NymphNodeBlock(BlockBehaviour.Properties.of()
                                         .mapColor(MapColor.QUARTZ).strength(-1.0f, 3600000.0f)
                                         .sound(SoundType.STONE).noOcclusion()));
-        public static final RegistrySupplier<Block> NAIAD_STATUE = BLOCKS.register("naiad_statue",
+        public static final RegistrySupplier<Block> NAIAD_STATUE = BLOCKS.register("oceanic_statue",
                         () -> new mc.sayda.creraces.block.NaiadStatueBlock(BlockBehaviour.Properties.of()
                                         .mapColor(MapColor.COLOR_CYAN).strength(-1.0f, 3600000.0f)
                                         .sound(SoundType.STONE).noOcclusion()));
-        public static final RegistrySupplier<Block> OREAD_IDOL = BLOCKS.register("oread_idol",
+        public static final RegistrySupplier<Block> OREAD_IDOL = BLOCKS.register("volcanic_idol",
                         () -> new mc.sayda.creraces.block.NymphNodeBlock(BlockBehaviour.Properties.of()
                                         .mapColor(MapColor.COLOR_RED).strength(-1.0f, 3600000.0f)
                                         .sound(SoundType.STONE).noOcclusion()));
@@ -283,6 +284,11 @@ public class ModBlocks {
                                                         .sound(SoundType.GRASS).lightLevel(state -> 0)
                                                         .offsetType(BlockBehaviour.OffsetType.XZ)));
 
+        public static final RegistrySupplier<Block> VEIL_GRIT = BLOCKS.register("veil_grit",
+                        () -> new SandBlock(14406560, BlockBehaviour.Properties.of().mapColor(MapColor.SAND)
+                                        .instrument(net.minecraft.world.level.block.state.properties.NoteBlockInstrument.SNARE)
+                                        .strength(0.5f).sound(SoundType.SAND)));
+
         public static final RegistrySupplier<Block> VEIL_BLOOM = BLOCKS.register("veil_bloom",
                         () -> new mc.sayda.creraces.block.ElysianVeilBloomBlock(
                                         BlockBehaviour.Properties.copy(Blocks.DANDELION).randomTicks().noLootTable()
@@ -319,6 +325,28 @@ public class ModBlocks {
                                                         .noCollission().strength(100.0F).noLootTable()
                                                         .liquid().replaceable()));
 
+        // Eterveil, ported from CreRaces Classic's "Holy Water"; registry name intentionally
+        // diverges from Classic's "blessed_water", see LegacyBlockRemaps for the migration remap.
+        public static final RegistrySupplier<Block> ETERVEIL_BLOCK = BLOCKS.register("eterveil",
+                        () -> new mc.sayda.creraces.block.EterveilBlock(
+                                        mc.sayda.creraces.registry.ModFluids.ETERVEIL.get(),
+                                        BlockBehaviour.Properties.of()
+                                                        .mapColor(MapColor.WATER).noCollission().strength(100.0F)
+                                                        .noLootTable().liquid().replaceable()
+                                                        .lightLevel(state -> 1)));
+
+        // Summoned Dirt, ported from CreRaces Classic
+        public static final RegistrySupplier<Block> SUMMONED_DIRT = BLOCKS.register("summoned_dirt",
+                        mc.sayda.creraces.block.SummonedDirtBlock::new);
+
+        // Forest Totem, ported from CreRaces Classic; registry name intentionally diverges from
+        // Classic's "dryad_totem", see LegacyBlockRemaps for the migration remap.
+        public static final RegistrySupplier<Block> DRYAD_TOTEM = BLOCKS.register("forest_totem",
+                        () -> new mc.sayda.creraces.block.DryadTotemBlock(
+                                        BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_GREEN)
+                                                        .strength(5.0f, 6.0f).sound(SoundType.WOOD)
+                                                        .noOcclusion()));
+
         // Mini Build System
         // Always registered so MICRO_BLOCK is never null.
         // The runtime Mixin behavior is gated by CreRacesConfig.MINI_BUILD_ENABLED at
@@ -334,6 +362,12 @@ public class ModBlocks {
                         () -> new mc.sayda.creraces.block.EssenceCauldronBlock(
                                         BlockBehaviour.Properties.copy(Blocks.CAULDRON)));
 
+        // Quest Board - placeholder texture (oak_planks) until real art is provided
+        public static final RegistrySupplier<Block> QUEST_BOARD = BLOCKS.register("quest_board",
+                        () -> new mc.sayda.creraces.block.QuestBoardBlock(
+                                        BlockBehaviour.Properties.of().mapColor(MapColor.WOOD).strength(2.5f)
+                                                        .sound(SoundType.WOOD).noOcclusion()));
+
         public static RegistrySupplier<Block> MICRO_BLOCK;
 
         public static final DeferredRegister<net.minecraft.world.level.block.entity.BlockEntityType<?>> BLOCK_ENTITIES = DeferredRegister
@@ -348,6 +382,7 @@ public class ModBlocks {
         public static dev.architectury.registry.registries.RegistrySupplier<net.minecraft.world.level.block.entity.BlockEntityType<mc.sayda.creraces.block.entity.ElysianVeilBloomBlockEntity>> VEIL_BLOOM_BE;
         public static dev.architectury.registry.registries.RegistrySupplier<net.minecraft.world.level.block.entity.BlockEntityType<mc.sayda.creraces.block.entity.EssenceCauldronBlockEntity>> ESSENCE_CAULDRON_ENTITY;
         public static dev.architectury.registry.registries.RegistrySupplier<net.minecraft.world.level.block.entity.BlockEntityType<mc.sayda.creraces.block.entity.EssenceVortexBlockEntity>> ESSENCE_VORTEX_ENTITY;
+        public static dev.architectury.registry.registries.RegistrySupplier<net.minecraft.world.level.block.entity.BlockEntityType<mc.sayda.creraces.block.entity.QuestBoardBlockEntity>> QUEST_BOARD_ENTITY;
 
         public static void register() {
                 mc.sayda.creraces.ability.EssenceRegistry.registerBlocks();
@@ -397,6 +432,12 @@ public class ModBlocks {
                                 () -> BlockEntityType.Builder
                                                 .of(mc.sayda.creraces.block.entity.EssenceCauldronBlockEntity::new,
                                                                 ESSENCE_CAULDRON.get())
+                                                .build(null));
+
+                QUEST_BOARD_ENTITY = BLOCK_ENTITIES.register("quest_board",
+                                () -> BlockEntityType.Builder
+                                                .of(mc.sayda.creraces.block.entity.QuestBoardBlockEntity::new,
+                                                                QUEST_BOARD.get())
                                                 .build(null));
 
                 ESSENCE_VORTEX_ENTITY = BLOCK_ENTITIES.register("essence_vortex", () -> {

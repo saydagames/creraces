@@ -1,0 +1,5 @@
+{
+  "type": "creraces:fairy_source",
+  "ingredient": { "item": "minecraft:sugar" },
+  "result": { "id": "creraces:fairy_dust", "count": 1 }
+}

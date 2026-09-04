@@ -1,0 +1,21 @@
+{
+  "replace": false,
+  "values": [
+    "creraces:volcanic_rock",
+    "creraces:volcanic_rock_hardened",
+    "creraces:torii_bell",
+    "creraces:weathered_torii_bell",
+    "creraces:essence_cauldron",
+    "creraces:fire_essence_cluster",
+    "creraces:water_essence_cluster",
+    "creraces:earth_essence_cluster",
+    "creraces:air_essence_cluster",
+    "creraces:light_essence_cluster",
+    "creraces:dark_essence_cluster",
+    "creraces:life_essence_cluster",
+    "creraces:death_essence_cluster",
+    "creraces:void_essence_cluster",
+    "creraces:arcane_essence_cluster",
+    "creraces:soul_essence_cluster"
+  ]
+}

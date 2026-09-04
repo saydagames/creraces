@@ -1,0 +1,10 @@
+{
+    "values": [
+        {
+            "id": "#c:animals",
+            "required": false
+        },
+        "minecraft:villager",
+        "minecraft:wandering_trader"
+    ]
+}

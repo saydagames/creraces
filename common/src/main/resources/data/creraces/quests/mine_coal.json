@@ -1,0 +1,11 @@
+{
+  "tier": 1,
+  "name": "quest.creraces.mine_coal.name",
+  "description": "quest.creraces.mine_coal.description",
+  "duration_days": 2,
+  "objective": {
+    "type": "mine_block",
+    "target": "minecraft:coal_ore",
+    "count": 16
+  }
+}

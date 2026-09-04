@@ -17,6 +17,8 @@ public class CreRacesFabric implements ModInitializer {
                 mc.sayda.creraces.util.PlatformServices.beltFinder = mc.sayda.creraces.fabric.compat.TrinketsBeltCompat::findBelt;
         }
         CreRaces.init();
+        CreRacesFabricVillagerTrades.init();
+        CreRacesFabricVillageStructures.init();
         // VeilwoodBiomeInjector.init() is NOT called here: TerraBlender is also a "main" entrypoint
         // mod, and Fabric doesn't guarantee entrypoint order within the same category, so calling
         // Regions.register() here can race TerraBlender's own config loading and NPE. It's called

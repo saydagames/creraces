@@ -83,6 +83,10 @@ public class SetCustomizationPacket {
                     mc.sayda.creraces.race.CosmeticIncidents.applyCustomizations(player, vars.getCustomizations(),
                             race);
 
+                    player.level().playSound(null, player.blockPosition(),
+                            net.minecraft.sounds.SoundEvents.GLASS_BREAK, net.minecraft.sounds.SoundSource.PLAYERS,
+                            0.8f, 1.0f);
+
                     // Explicitly sync to Twilight Lib trackers
                     var addons = mc.sayda.twilight_lib.capabilities.DataUtils.getAddonsData(player);
                     if (addons != null) {

@@ -11,8 +11,26 @@ public class CreRacesForge {
 
     /** Populated during mod construction; read by FairyFluidTypeMixin via getFluidType(). */
     public static net.minecraftforge.registries.RegistryObject<net.minecraftforge.fluids.FluidType> FAIRY_FLUID_TYPE;
+    public static net.minecraftforge.registries.RegistryObject<net.minecraftforge.fluids.FluidType> ETERVEIL_FLUID_TYPE;
+
+    /**
+     * FluidTypes that should get full vanilla-water semantics (isInWater(), swim splash, fall-reset,
+     * fire-clear, see WaterEquivalentFluidMixin), beyond just the #minecraft:water fluid tag. Forge's
+     * fluid rewrite hardcodes that behavior to literal identity with ForgeMod.WATER_TYPE, so a modded
+     * FluidType has to opt in here explicitly. Fairy Source is deliberately NOT in this list, fairy
+     * wings are meant to go soggy in real water, and their own fluid shouldn't trigger that.
+     */
+    public static final java.util.List<net.minecraftforge.registries.RegistryObject<net.minecraftforge.fluids.FluidType>> WATER_EQUIVALENT_FLUID_TYPES = new java.util.ArrayList<>();
 
     public CreRacesForge() {
+        // Must run before CreRaces.init() below: it registers a PLAYER_JOIN handler that has to
+        // resolve a migrated race before IncidentResolver's own PLAYER_JOIN handler syncs state
+        // to the client, so registration order here matters.
+        mc.sayda.creraces.forge.migration.LegacyMigrationHooks.init();
+        mc.sayda.creraces.forge.migration.LegacyBlockRemaps.init();
+        CreRacesForgeVillagerTrades.init();
+        CreRacesForgeVillageStructures.init();
+
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
         net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
                 net.minecraftforge.fml.config.ModConfig.Type.COMMON,
@@ -59,18 +77,35 @@ public class CreRacesForge {
                 });
             }
         });
+        net.minecraftforge.fluids.FluidType.Properties eterveilProps = net.minecraftforge.fluids.FluidType.Properties
+                .create().density(1000).viscosity(1000).lightLevel(1);
+        ETERVEIL_FLUID_TYPE = fluidTypes.register("eterveil", () -> new net.minecraftforge.fluids.FluidType(eterveilProps) {
+            @Override
+            public void initializeClient(java.util.function.Consumer<net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions> consumer) {
+                consumer.accept(new net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions() {
+                    private static final net.minecraft.resources.ResourceLocation STILL =
+                            new net.minecraft.resources.ResourceLocation("creraces", "block/eterveil_still");
+                    private static final net.minecraft.resources.ResourceLocation FLOW =
+                            new net.minecraft.resources.ResourceLocation("creraces", "block/eterveil_flow");
+                    @Override public net.minecraft.resources.ResourceLocation getStillTexture() { return STILL; }
+                    @Override public net.minecraft.resources.ResourceLocation getFlowingTexture() { return FLOW; }
+                });
+            }
+        });
+        WATER_EQUIVALENT_FLUID_TYPES.add(ETERVEIL_FLUID_TYPE);
         fluidTypes.register(modBus);
 
         // Forge's FillBucketEvent fires before BucketPickup.pickupBlock and uses the fluid
         // capability to fill the bucket, bypassing our pickupBlock override. Cancel it at
-        // HIGHEST priority so Forge's default handler never runs for fairy_source.
+        // HIGHEST priority so Forge's default handler never runs for fairy_source/eterveil.
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(
                 net.minecraftforge.eventbus.api.EventPriority.HIGHEST,
                 (net.minecraftforge.event.entity.player.FillBucketEvent event) -> {
                     if (event.getTarget() instanceof net.minecraft.world.phys.BlockHitResult blockHit) {
                         net.minecraft.world.level.block.state.BlockState state =
                                 event.getLevel().getBlockState(blockHit.getBlockPos());
-                        if (state.getBlock() instanceof mc.sayda.creraces.block.FairySourceBlock) {
+                        if (state.getBlock() instanceof mc.sayda.creraces.block.FairySourceBlock
+                                || state.getBlock() instanceof mc.sayda.creraces.block.EterveilBlock) {
                             event.setCanceled(true);
                         }
                     }
@@ -84,6 +119,12 @@ public class CreRacesForge {
                         net.minecraft.client.renderer.RenderType.translucent());
                 net.minecraft.client.renderer.ItemBlockRenderTypes.setRenderLayer(
                         mc.sayda.creraces.registry.ModFluids.FAIRY_SOURCE_FLOWING.get(),
+                        net.minecraft.client.renderer.RenderType.translucent());
+                net.minecraft.client.renderer.ItemBlockRenderTypes.setRenderLayer(
+                        mc.sayda.creraces.registry.ModFluids.ETERVEIL.get(),
+                        net.minecraft.client.renderer.RenderType.translucent());
+                net.minecraft.client.renderer.ItemBlockRenderTypes.setRenderLayer(
+                        mc.sayda.creraces.registry.ModFluids.ETERVEIL_FLOWING.get(),
                         net.minecraft.client.renderer.RenderType.translucent());
                 // Saplings have transparent pixels and must use cutout so they don't render black.
                 net.minecraft.client.renderer.ItemBlockRenderTypes.setRenderLayer(

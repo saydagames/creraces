@@ -28,7 +28,7 @@
             "multiplier": 0.0,
             "condition": {
                 "type": "creraces:entity",
-                "tag": "#minecraft:is_peaceful"
+                "tag": "#c:is_peaceful"
             }
         }
     ],

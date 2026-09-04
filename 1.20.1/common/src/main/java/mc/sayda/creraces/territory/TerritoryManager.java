@@ -1,23 +1,21 @@
 package mc.sayda.creraces.territory;
 
-import com.google.gson.*;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.config.CreRacesConfig;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.LongArrayTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.storage.LevelResource;
+import net.minecraft.world.level.saveddata.SavedData;
 
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.*;
 
-public class TerritoryManager {
+public class TerritoryManager extends SavedData {
 
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final String SAVE_FILE = "creraces_territory.json";
+    private static final String DATA_ID = "creraces_territory";
 
     private static volatile TerritoryManager INSTANCE;
 
@@ -153,6 +151,7 @@ public class TerritoryManager {
         }
 
         if (newKeys.isEmpty()) return ClaimResult.insideOwn(preExistingKeys);
+        setDirty();
         return ClaimResult.success(newKeys.size(), newKeys, preExistingKeys);
     }
 
@@ -170,6 +169,7 @@ public class TerritoryManager {
             return ClaimResult.enemyTerritory();
         }
         claims.put(key, new ClaimData(key, raceId, false, claimerUUID, pricePaid));
+        setDirty();
         return ClaimResult.success(1, Set.of(key), Collections.emptySet());
     }
 
@@ -185,6 +185,7 @@ public class TerritoryManager {
         if (cd == null || !cd.getRaceId().equals(raceId)) return false;
         if (cd.isPersistent()) return false;
         claims.remove(key);
+        setDirty();
         return true;
     }
 
@@ -195,12 +196,15 @@ public class TerritoryManager {
         if (cd == null) return false;
         if (!callerUUID.equals(cd.getOwnerUUID())) return false;
         claims.remove(key);
+        setDirty();
         return true;
     }
 
     /** Admin: force-remove a single chunk regardless of persistence. */
     public boolean forceUnclaimChunk(ChunkPos chunk) {
-        return claims.remove(chunk.toLong()) != null;
+        boolean removed = claims.remove(chunk.toLong()) != null;
+        if (removed) setDirty();
+        return removed;
     }
 
     /** Sets or clears the persistent (anchor) flag on an already-claimed chunk. No-op if the chunk is unclaimed. */
@@ -209,6 +213,7 @@ public class TerritoryManager {
         ClaimData cd = claims.get(key);
         if (cd == null) return;
         claims.put(key, new ClaimData(key, cd.getRaceId(), persistent, cd.getOwnerUUID(), cd.getPricePaid()));
+        setDirty();
     }
 
     /**
@@ -234,6 +239,7 @@ public class TerritoryManager {
         }
         if (!anchoredNew.isEmpty() || !anchoredPre.isEmpty()) {
             rootAnchors.put(rootPos.asLong(), new RootAnchorData(anchoredNew, anchoredPre));
+            setDirty();
         }
     }
 
@@ -249,11 +255,13 @@ public class TerritoryManager {
             ClaimData cd = claims.get(key);
             if (cd != null) claims.put(key, new ClaimData(key, cd.getRaceId(), false, cd.getOwnerUUID(), cd.getPricePaid()));
         }
+        setDirty();
     }
 
     /** Admin: remove all claims for a race. */
     public void unclaimAllForRace(ResourceLocation raceId) {
-        claims.entrySet().removeIf(e -> e.getValue().getRaceId().equals(raceId));
+        boolean changed = claims.entrySet().removeIf(e -> e.getValue().getRaceId().equals(raceId));
+        if (changed) setDirty();
     }
 
     /** Called on race reset: removes all claims owned by this player and cleans up their root anchors. */
@@ -273,12 +281,18 @@ public class TerritoryManager {
             d.preExisting.removeAll(removed);
             return d.newClaims.isEmpty() && d.preExisting.isEmpty();
         });
+        setDirty();
     }
 
     // Diplomacy
 
     public ClanData getOrCreateClan(ResourceLocation raceId) {
-        return diplomacy.computeIfAbsent(raceId, ClanData::new);
+        ClanData existing = diplomacy.get(raceId);
+        if (existing != null) return existing;
+        ClanData created = new ClanData(raceId);
+        diplomacy.put(raceId, created);
+        setDirty();
+        return created;
     }
 
     public ClanData getClanOrEmpty(ResourceLocation raceId) {
@@ -296,6 +310,7 @@ public class TerritoryManager {
         ClanData clan = getOrCreateClan(raceA);
         clan.setRelation(raceB, status);
         if (clan.getRelations().isEmpty()) diplomacy.remove(raceA);
+        setDirty();
     }
 
     // Tick / Notifications
@@ -354,150 +369,131 @@ public class TerritoryManager {
         return race != null ? race.name().getString() : raceId.getPath();
     }
 
-    // Persistence
-
-    public static void save(MinecraftServer server) {
-        Path path = server.getWorldPath(Objects.requireNonNull(LevelResource.ROOT)).resolve(SAVE_FILE);
-        TerritoryManager tm = get();
-        JsonObject root = new JsonObject();
-
-        JsonObject claimsJson = new JsonObject();
-        for (Map.Entry<Long, ClaimData> e : tm.claims.entrySet()) {
-            claimsJson.add(String.valueOf(e.getKey()), serializeClaim(e.getValue()));
-        }
-        root.add("claims", claimsJson);
-
-        JsonObject diplomacyJson = new JsonObject();
-        for (Map.Entry<ResourceLocation, ClanData> e : tm.diplomacy.entrySet()) {
-            diplomacyJson.add(e.getKey().toString(), serializeClan(e.getValue()));
-        }
-        root.add("diplomacy", diplomacyJson);
-
-        JsonObject anchorsJson = new JsonObject();
-        for (Map.Entry<Long, RootAnchorData> e : tm.rootAnchors.entrySet()) {
-            RootAnchorData rad = e.getValue();
-            JsonObject radObj = new JsonObject();
-            JsonArray newArr = new JsonArray();
-            for (long k : rad.newClaims) newArr.add(k);
-            radObj.add("new", newArr);
-            JsonArray preArr = new JsonArray();
-            for (long k : rad.preExisting) preArr.add(k);
-            radObj.add("pre", preArr);
-            anchorsJson.add(String.valueOf(e.getKey()), radObj);
-        }
-        root.add("rootAnchors", anchorsJson);
-
-        try (Writer w = Files.newBufferedWriter(path)) {
-            GSON.toJson(root, w);
-        } catch (IOException ex) {
-            CreRaces.LOGGER.error("Failed to save territory data: {}", ex.getMessage());
-        }
-    }
+    // ─── Persistence (vanilla SavedData, <world>/data/creraces_territory.dat) ──────────────
 
     public static void load(MinecraftServer server) {
-        TerritoryManager fresh = new TerritoryManager();
-        Path path = server.getWorldPath(Objects.requireNonNull(LevelResource.ROOT)).resolve(SAVE_FILE);
-        if (!Files.exists(path)) { INSTANCE = fresh; return; }
+        ServerLevel overworld = server.overworld();
+        INSTANCE = overworld.getDataStorage().computeIfAbsent(
+                TerritoryManager::fromTag,
+                TerritoryManager::new,
+                DATA_ID);
+        CreRaces.LOGGER.info("Loaded territory data: {} claims, {} diplomacy records, {} root anchors",
+                INSTANCE.claims.size(), INSTANCE.diplomacy.size(), INSTANCE.rootAnchors.size());
+    }
 
-        try (Reader r = Files.newBufferedReader(path)) {
-            JsonObject root = GSON.fromJson(r, JsonObject.class);
-            if (root == null) { INSTANCE = fresh; return; }
-
-            if (root.has("claims")) {
-                for (Map.Entry<String, JsonElement> e : root.getAsJsonObject("claims").entrySet()) {
-                    try {
-                        long key = Long.parseLong(e.getKey());
-                        fresh.claims.put(key, deserializeClaim(key, e.getValue().getAsJsonObject()));
-                    } catch (Exception ex) {
-                        CreRaces.LOGGER.warn("Skipping malformed claim '{}': {}", e.getKey(), ex.getMessage());
-                    }
-                }
-            }
-
-            if (root.has("diplomacy")) {
-                for (Map.Entry<String, JsonElement> e : root.getAsJsonObject("diplomacy").entrySet()) {
-                    try {
-                        ResourceLocation raceId = new ResourceLocation(e.getKey());
-                        fresh.diplomacy.put(raceId, deserializeClan(raceId, e.getValue().getAsJsonObject()));
-                    } catch (Exception ex) {
-                        CreRaces.LOGGER.warn("Skipping malformed diplomacy '{}': {}", e.getKey(), ex.getMessage());
-                    }
-                }
-            }
-
-            if (root.has("rootAnchors")) {
-                for (Map.Entry<String, JsonElement> e : root.getAsJsonObject("rootAnchors").entrySet()) {
-                    try {
-                        long rootKey = Long.parseLong(e.getKey());
-                        Set<Long> newChunks = new HashSet<>();
-                        Set<Long> preChunks = new HashSet<>();
-                        JsonElement val = e.getValue();
-                        if (val.isJsonObject()) {
-                            // Current format: {"new": [...], "pre": [...]}
-                            JsonObject radObj = val.getAsJsonObject();
-                            if (radObj.has("new")) for (JsonElement c : radObj.getAsJsonArray("new")) newChunks.add(c.getAsLong());
-                            if (radObj.has("pre")) for (JsonElement c : radObj.getAsJsonArray("pre")) preChunks.add(c.getAsLong());
-                        } else {
-                            // Legacy flat array - treat all as new claims
-                            for (JsonElement c : val.getAsJsonArray()) newChunks.add(c.getAsLong());
-                        }
-                        fresh.rootAnchors.put(rootKey, new RootAnchorData(newChunks, preChunks));
-                    } catch (Exception ex) {
-                        CreRaces.LOGGER.warn("Skipping malformed rootAnchor entry '{}': {}", e.getKey(), ex.getMessage());
-                    }
-                }
-            }
-
-            INSTANCE = fresh;
-            CreRaces.LOGGER.info("Loaded territory data: {} claims, {} diplomacy records, {} root anchors",
-                    fresh.claims.size(), fresh.diplomacy.size(), fresh.rootAnchors.size());
-        } catch (Exception ex) {
-            CreRaces.LOGGER.error("Failed to load territory data: {}", ex.getMessage());
-            INSTANCE = fresh;
+    /** Forces an immediate flush (in addition to vanilla's own periodic autosave, since setDirty() is called on every mutation). */
+    public static void save(MinecraftServer server) {
+        if (INSTANCE != null) {
+            INSTANCE.setDirty();
+            server.overworld().getDataStorage().save();
         }
     }
 
-    // Serialization helpers
+    @Override
+    public CompoundTag save(CompoundTag tag) {
+        CompoundTag claimsTag = new CompoundTag();
+        for (Map.Entry<Long, ClaimData> e : claims.entrySet()) {
+            claimsTag.put(String.valueOf(e.getKey()), serializeClaim(e.getValue()));
+        }
+        tag.put("claims", claimsTag);
 
-    private static JsonObject serializeClaim(ClaimData c) {
-        JsonObject o = new JsonObject();
-        o.addProperty("race", c.getRaceId().toString());
-        o.addProperty("persistent", c.isPersistent());
-        if (c.getOwnerUUID() != null) o.addProperty("owner", c.getOwnerUUID().toString());
-        if (c.getPricePaid() > 0) o.addProperty("price", c.getPricePaid());
-        return o;
+        CompoundTag diplomacyTag = new CompoundTag();
+        for (Map.Entry<ResourceLocation, ClanData> e : diplomacy.entrySet()) {
+            diplomacyTag.put(e.getKey().toString(), serializeClan(e.getValue()));
+        }
+        tag.put("diplomacy", diplomacyTag);
+
+        CompoundTag anchorsTag = new CompoundTag();
+        for (Map.Entry<Long, RootAnchorData> e : rootAnchors.entrySet()) {
+            RootAnchorData rad = e.getValue();
+            CompoundTag radTag = new CompoundTag();
+            radTag.put("new", new LongArrayTag(rad.newClaims.stream().mapToLong(Long::longValue).toArray()));
+            radTag.put("pre", new LongArrayTag(rad.preExisting.stream().mapToLong(Long::longValue).toArray()));
+            anchorsTag.put(String.valueOf(e.getKey()), radTag);
+        }
+        tag.put("rootAnchors", anchorsTag);
+        return tag;
     }
 
-    private static ClaimData deserializeClaim(long key, JsonObject o) {
-        ResourceLocation race = new ResourceLocation(o.get("race").getAsString());
-        boolean persistent = o.has("persistent") && o.get("persistent").getAsBoolean();
-        UUID owner = o.has("owner") ? UUID.fromString(o.get("owner").getAsString()) : null;
-        int price = o.has("price") ? o.get("price").getAsInt() : 0;
+    private static TerritoryManager fromTag(CompoundTag tag) {
+        TerritoryManager tm = new TerritoryManager();
+
+        CompoundTag claimsTag = tag.getCompound("claims");
+        for (String key : claimsTag.getAllKeys()) {
+            try {
+                long chunkKey = Long.parseLong(key);
+                tm.claims.put(chunkKey, deserializeClaim(chunkKey, claimsTag.getCompound(key)));
+            } catch (Exception ex) {
+                CreRaces.LOGGER.warn("Skipping malformed claim '{}': {}", key, ex.getMessage());
+            }
+        }
+
+        CompoundTag diplomacyTag = tag.getCompound("diplomacy");
+        for (String key : diplomacyTag.getAllKeys()) {
+            try {
+                ResourceLocation raceId = new ResourceLocation(key);
+                tm.diplomacy.put(raceId, deserializeClan(raceId, diplomacyTag.getCompound(key)));
+            } catch (Exception ex) {
+                CreRaces.LOGGER.warn("Skipping malformed diplomacy '{}': {}", key, ex.getMessage());
+            }
+        }
+
+        CompoundTag anchorsTag = tag.getCompound("rootAnchors");
+        for (String key : anchorsTag.getAllKeys()) {
+            try {
+                long rootKey = Long.parseLong(key);
+                CompoundTag radTag = anchorsTag.getCompound(key);
+                Set<Long> newChunks = new HashSet<>();
+                for (long k : radTag.getLongArray("new")) newChunks.add(k);
+                Set<Long> preChunks = new HashSet<>();
+                for (long k : radTag.getLongArray("pre")) preChunks.add(k);
+                tm.rootAnchors.put(rootKey, new RootAnchorData(newChunks, preChunks));
+            } catch (Exception ex) {
+                CreRaces.LOGGER.warn("Skipping malformed rootAnchor entry '{}': {}", key, ex.getMessage());
+            }
+        }
+
+        return tm;
+    }
+
+    private static CompoundTag serializeClaim(ClaimData c) {
+        CompoundTag tag = new CompoundTag();
+        tag.putString("race", c.getRaceId().toString());
+        tag.putBoolean("persistent", c.isPersistent());
+        if (c.getOwnerUUID() != null) tag.putString("owner", c.getOwnerUUID().toString());
+        if (c.getPricePaid() > 0) tag.putInt("price", c.getPricePaid());
+        return tag;
+    }
+
+    private static ClaimData deserializeClaim(long key, CompoundTag tag) {
+        ResourceLocation race = new ResourceLocation(tag.getString("race"));
+        boolean persistent = tag.getBoolean("persistent");
+        UUID owner = tag.contains("owner") ? UUID.fromString(tag.getString("owner")) : null;
+        int price = tag.contains("price") ? tag.getInt("price") : 0;
         return new ClaimData(key, race, persistent, owner, price);
     }
 
-    private static JsonObject serializeClan(ClanData c) {
-        JsonObject o = new JsonObject();
-        JsonObject relations = new JsonObject();
+    private static CompoundTag serializeClan(ClanData c) {
+        CompoundTag tag = new CompoundTag();
+        CompoundTag relations = new CompoundTag();
         for (Map.Entry<ResourceLocation, DiplomacyStatus> e : c.getRelations().entrySet()) {
-            relations.addProperty(e.getKey().toString(), e.getValue().name());
+            relations.putString(e.getKey().toString(), e.getValue().name());
         }
-        o.add("relations", relations);
-        return o;
+        tag.put("relations", relations);
+        return tag;
     }
 
-    private static ClanData deserializeClan(ResourceLocation raceId, JsonObject o) {
+    private static ClanData deserializeClan(ResourceLocation raceId, CompoundTag tag) {
         ClanData c = new ClanData(raceId);
-        if (o.has("relations")) {
-            for (Map.Entry<String, JsonElement> e : o.getAsJsonObject("relations").entrySet()) {
-                try {
-                    c.setRelation(new ResourceLocation(e.getKey()),
-                            DiplomacyStatus.valueOf(e.getValue().getAsString()));
-                } catch (Exception ex) {
-                    CreRaces.LOGGER.warn("Skipping malformed diplomacy entry '{}'", e.getKey());
-                }
+        CompoundTag relations = tag.getCompound("relations");
+        for (String key : relations.getAllKeys()) {
+            try {
+                c.setRelation(new ResourceLocation(key), DiplomacyStatus.valueOf(relations.getString(key)));
+            } catch (Exception ex) {
+                CreRaces.LOGGER.warn("Skipping malformed diplomacy entry '{}'", key);
             }
         }
         return c;
     }
+
 }

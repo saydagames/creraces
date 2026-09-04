@@ -12,6 +12,7 @@ sourceSets {
 
 loom {
     mixin.defaultRefmapName = "creraces-common.refmap.json"
+    accessWidenerPath = file('src/main/resources/creraces.accesswidener')
 }
 
 dependencies {
@@ -21,4 +22,36 @@ dependencies {
     api "com.google.code.findbugs:jsr305:3.0.2"
     modImplementation files("${rootProject.projectDir.parentFile}/twilight-lib/1.21.1/common/build/libs/twilight_lib-1.21.1-common-${rootProject.twilight_lib_version}.jar")
     modApi "curse.maven:pehkui-319596:5419266"
+    modCompileOnly "com.github.glitchfiend:TerraBlender-neoforge:${rootProject.property('1_21_1_terrablender_version')}"
+    modCompileOnly("curse.maven:curios-309927:6529130") { transitive = false }
+}
+
+// 1.21 renamed a number of datapack directories to singular. The shared pool under common/ is
+// also consumed by the 1.20.1 module, which still needs the old names, so remap on the way in
+// here instead of forking the pool.
+def datapackDirRenames = [
+        'loot_tables' : 'loot_table',
+        'recipes'     : 'recipe',
+        'structures'  : 'structure',
+        'advancements': 'advancement',
+]
+def tagDirRenames = [
+        'blocks'      : 'block',
+        'items'       : 'item',
+        'entity_types': 'entity_type',
+        'fluids'      : 'fluid',
+        'game_events' : 'game_event',
+]
+
+processResources {
+    filesMatching('data/**') {
+        List<String> segments = it.path.split('/') as List
+        if (segments.size() > 3 && segments[2] == 'tags' && tagDirRenames.containsKey(segments[3])) {
+            segments[3] = tagDirRenames[segments[3]]
+            it.path = segments.join('/')
+        } else if (segments.size() > 2 && datapackDirRenames.containsKey(segments[2])) {
+            segments[2] = datapackDirRenames[segments[2]]
+            it.path = segments.join('/')
+        }
+    }
 }

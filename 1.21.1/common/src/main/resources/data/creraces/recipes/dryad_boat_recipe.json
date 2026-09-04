@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": ["# #", "###"],
+  "key": { "#": { "item": "creraces:dryad_planks" } },
+  "result": { "id": "creraces:dryad_boat", "count": 1 }
+}

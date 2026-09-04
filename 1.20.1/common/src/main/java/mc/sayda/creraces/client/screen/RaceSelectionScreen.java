@@ -99,20 +99,20 @@ public class RaceSelectionScreen extends Screen {
                 // Arrows (Page Navigation)
                 this.addRenderableWidget(new ImageButton(
                                 this.leftPos + -24, this.topPos + 184, 86, 48,
-                                0, 0, 48, ARROW_LEFT, 86, 96,
+                                0, 0, 48, ARROW_LEFT, 86, 144,
                                 btn -> {
                                         if (page > 0) {
                                                 page--;
                                                 rebuildButtons();
                                         } else {
                                                 // Page 0 -> Return to Welcome Screen
-                                                BoundaryHandler.sendOpenMenu();
+                                                net.minecraft.client.Minecraft.getInstance().setScreen(new MenuGUIScreen());
                                         }
                                 }));
 
                 this.addRenderableWidget(new ImageButton(
                                 this.leftPos + 113, this.topPos + 184, 86, 48,
-                                0, 0, 48, ARROW_RIGHT, 86, 96,
+                                0, 0, 48, ARROW_RIGHT, 86, 144,
                                 btn -> {
                                         if ((page + 1) * 9 < raceEntries.size()) {
                                                 page++;

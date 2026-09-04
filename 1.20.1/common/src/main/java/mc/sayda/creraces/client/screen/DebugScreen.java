@@ -324,7 +324,7 @@ public class DebugScreen extends Screen {
                                         .append(Component
                                                         .literal(java.util.Objects.requireNonNull(
                                                                         String.format("%.0f", vars.getCoins())))
-                                                        .withStyle(ChatFormatting.GREEN)));
+                                                        .withStyle(ChatFormatting.GOLD)));
                         lineMetadata.add(new LineMetadata(debugLines.size() - 1, "variable", "coins",
                                         String.valueOf(vars.getCoins())));
 

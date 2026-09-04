@@ -15,7 +15,7 @@ public class GenericRaceButton extends ImageButton {
     private final Component label;
 
     public GenericRaceButton(int x, int y, int width, int height, Component label, OnPress onPress) {
-        super(x, y, width, height, 0, 0, height, BUTTON_TEX, width, height * 2, onPress);
+        super(x, y, width, height, 0, 0, height, BUTTON_TEX, width, height * 3, onPress);
         this.label = label;
     }
 

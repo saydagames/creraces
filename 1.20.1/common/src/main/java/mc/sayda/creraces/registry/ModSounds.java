@@ -13,6 +13,7 @@ public class ModSounds {
 
     public static final RegistrySupplier<SoundEvent> ACTIVATE_1 = register("activate1");
     public static final RegistrySupplier<SoundEvent> ANDROID_CHARGE = register("android_charge");
+    public static final RegistrySupplier<SoundEvent> BADAPPLE = register("badapple");
     public static final RegistrySupplier<SoundEvent> BLESSING = register("blessing");
     public static final RegistrySupplier<SoundEvent> BOOST = register("boost");
     public static final RegistrySupplier<SoundEvent> COIN_PICKUP_1 = register("coin_pickup_1");

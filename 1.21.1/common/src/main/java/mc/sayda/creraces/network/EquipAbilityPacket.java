@@ -1,0 +1,92 @@
+package mc.sayda.creraces.network;
+
+import dev.architectury.networking.NetworkManager;
+import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.ability.AbilitySlot;
+import mc.sayda.creraces.capability.DataUtils;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+
+import java.util.function.Supplier;
+
+public class EquipAbilityPacket {
+    public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "equip_ability");
+
+    private final AbilitySlot slot;
+    private final ResourceLocation abilityId;
+
+    public EquipAbilityPacket(AbilitySlot slot, ResourceLocation abilityId) {
+        this.slot = slot;
+        this.abilityId = abilityId;
+    }
+
+    public EquipAbilityPacket(FriendlyByteBuf buf) {
+        this.slot = buf.readEnum(AbilitySlot.class);
+        if (buf.readBoolean()) {
+            this.abilityId = buf.readResourceLocation();
+        } else {
+            this.abilityId = null;
+        }
+    }
+
+    public void encode(FriendlyByteBuf buf) {
+        buf.writeEnum(slot);
+        if (abilityId != null) {
+            buf.writeBoolean(true);
+            buf.writeResourceLocation(abilityId);
+        } else {
+            buf.writeBoolean(false);
+        }
+    }
+
+    public void handle(Supplier<NetworkManager.PacketContext> contextSupplier) {
+        NetworkManager.PacketContext context = contextSupplier.get();
+        context.queue(() -> {
+            DataUtils.getVariables(context.getPlayer()).ifPresent(vars -> {
+                // Ownership check: null = unequip (always allowed); non-null must be unlocked
+                if (abilityId != null) {
+                    if (!vars.isAbilityUnlocked(abilityId)) {
+                        CreRaces.LOGGER.warn("Player {} tried to equip unowned ability: {}",
+                                context.getPlayer().getName().getString(), abilityId);
+                        return;
+                    }
+                    if (mc.sayda.creraces.ability.AbilityRegistry.get(abilityId) == null) {
+                        CreRaces.LOGGER.warn("Player {} tried to equip invalid/unregistered ability: {}",
+                                context.getPlayer().getName().getString(), abilityId);
+                        return;
+                    }
+                }
+
+                // Execute onDeactivate actions for the currently equipped ability before
+                // removing it
+                ResourceLocation currentAbilityId = vars.getAbilityInSlot(slot);
+                ResourceLocation abilityToEquip = abilityId;
+
+                // Toggle logic: if already equipped in this slot, unequip
+                if (java.util.Objects.equals(currentAbilityId, abilityId)) {
+                    abilityToEquip = null;
+                }
+
+                if (currentAbilityId != null) {
+                    mc.sayda.creraces.ability.Ability currentAbility = mc.sayda.creraces.ability.AbilityRegistry
+                            .get(currentAbilityId);
+                    if (currentAbility != null && currentAbility.onDeactivate() != null) {
+                        for (mc.sayda.creraces.engine.ActionRegistry.RaceAction action : currentAbility
+                                .onDeactivate()) {
+                            action.execute(context.getPlayer(), null, slot, null);
+                        }
+                    }
+                }
+
+                vars.equipAbility(slot, abilityToEquip);
+                // Force an immediate attribute refresh to handle passive modifier changes
+                if (context.getPlayer() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                    mc.sayda.creraces.race.AttributeIncidents.eikiJudgment(sp);
+                }
+
+                // Sync back to the acting player.
+                BoundaryHandler.resyncVariables(context.getPlayer(), context.getPlayer());
+            });
+        });
+    }
+}

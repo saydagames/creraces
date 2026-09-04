@@ -75,9 +75,11 @@ public class SkillWheelScreen extends Screen {
                     List<Component> tooltip = new ArrayList<>();
                     tooltip.add(ability.name());
                     tooltip.add(description);
-                    tooltip.add(Component.literal(""));
-                    tooltip.add(Component.translatable("screen.creraces.click_for_wiki")
-                            .withStyle(net.minecraft.ChatFormatting.BLUE, net.minecraft.ChatFormatting.ITALIC));
+                    if (config != null) {
+                        tooltip.add(Component.literal(""));
+                        tooltip.add(Component.translatable("screen.creraces.click_for_wiki")
+                                .withStyle(net.minecraft.ChatFormatting.BLUE, net.minecraft.ChatFormatting.ITALIC));
+                    }
 
                     graphics.renderComponentTooltip(this.font, tooltip, mouseX, mouseY);
                 }
@@ -140,7 +142,8 @@ public class SkillWheelScreen extends Screen {
     @Override
     @SuppressWarnings("null")
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0 && this.hoveredAbility != null) {
+        if (button == 0 && this.hoveredAbility != null
+                && AbilityRegistry.getRemoteDoc(this.hoveredAbility) != null) {
             Ability ability = AbilityRegistry.get(this.hoveredAbility);
             if (ability != null) {
                 String url = mc.sayda.creraces.util.WikiUtils.getAbilityUrl(ability.name());

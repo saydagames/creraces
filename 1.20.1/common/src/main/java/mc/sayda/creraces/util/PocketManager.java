@@ -1,31 +1,35 @@
 package mc.sayda.creraces.util;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
 import mc.sayda.creraces.CreRaces;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.level.storage.LevelResource;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.saveddata.SavedData;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.io.Writer;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Manages the global registry of pockets.
  */
 public class PocketManager {
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final String SAVE_FILE_NAME = "creraces_pockets.json";
+    private static final String DATA_ID = "creraces_pockets";
+
     private static final AtomicInteger NEXT_POCKET_INDEX = new AtomicInteger(1);
     private static volatile MinecraftServer currentServer = null;
+    /** Holds no state of its own, NEXT_POCKET_INDEX above is the source of truth; this is just the SavedData handle to mark dirty. */
+    private static Data currentData;
+
+    private static class Data extends SavedData {
+        @Override
+        public CompoundTag save(CompoundTag tag) {
+            tag.putInt("next_pocket_index", NEXT_POCKET_INDEX.get());
+            return tag;
+        }
+    }
 
     public static int getNextIndex() {
         int index = NEXT_POCKET_INDEX.getAndIncrement();
+        if (currentData != null) currentData.setDirty();
         MinecraftServer srv = currentServer;
         if (srv != null) {
             save(srv);
@@ -37,35 +41,24 @@ public class PocketManager {
         currentServer = null;
     }
 
+    /** Forces an immediate flush (in addition to vanilla's own periodic autosave, since getNextIndex() marks this dirty). */
     public static void save(MinecraftServer server) {
-        Path savePath = server.getWorldPath(Objects.requireNonNull(LevelResource.ROOT)).resolve(SAVE_FILE_NAME);
-        JsonObject obj = new JsonObject();
-        obj.addProperty("next_pocket_index", NEXT_POCKET_INDEX.get());
-
-        try (Writer w = Files.newBufferedWriter(savePath)) {
-            GSON.toJson(obj, w);
-            CreRaces.LOGGER.info("Saved pocket registry to {}", savePath);
-        } catch (IOException e) {
-            CreRaces.LOGGER.error("Failed to save pocket registry: {}", e.getMessage());
+        if (currentData != null) {
+            currentData.setDirty();
+            server.overworld().getDataStorage().save();
         }
     }
 
     public static void load(MinecraftServer server) {
         currentServer = server;
-        Path savePath = server.getWorldPath(Objects.requireNonNull(LevelResource.ROOT)).resolve(SAVE_FILE_NAME);
-        if (!Files.exists(savePath)) {
-            NEXT_POCKET_INDEX.set(1);
-            return;
-        }
-
-        try (Reader r = Files.newBufferedReader(savePath)) {
-            JsonObject obj = GSON.fromJson(r, JsonObject.class);
-            if (obj != null && obj.has("next_pocket_index")) {
-                NEXT_POCKET_INDEX.set(obj.get("next_pocket_index").getAsInt());
-            }
-            CreRaces.LOGGER.info("Loaded pocket registry from {}", savePath);
-        } catch (Exception e) {
-            CreRaces.LOGGER.error("Failed to load pocket registry: {}", e.getMessage());
-        }
+        ServerLevel overworld = server.overworld();
+        currentData = overworld.getDataStorage().computeIfAbsent(
+                tag -> {
+                    NEXT_POCKET_INDEX.set(tag.getInt("next_pocket_index"));
+                    return new Data();
+                },
+                Data::new,
+                DATA_ID);
+        CreRaces.LOGGER.info("Loaded pocket registry (next index: {}).", NEXT_POCKET_INDEX.get());
     }
 }

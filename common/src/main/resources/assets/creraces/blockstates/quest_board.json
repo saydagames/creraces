@@ -1,0 +1,31 @@
+{
+  "variants": {
+    "facing=north,col=0,row=0": { "model": "creraces:block/quest_board_post", "y": 180 },
+    "facing=north,col=1,row=0": { "model": "creraces:block/quest_board_empty" },
+    "facing=north,col=2,row=0": { "model": "creraces:block/quest_board_post", "y": 0 },
+    "facing=north,col=0,row=1": { "model": "creraces:block/quest_board_empty" },
+    "facing=north,col=1,row=1": { "model": "creraces:block/quest_board", "y": 180 },
+    "facing=north,col=2,row=1": { "model": "creraces:block/quest_board_empty" },
+
+    "facing=east,col=0,row=0": { "model": "creraces:block/quest_board_post", "y": 270 },
+    "facing=east,col=1,row=0": { "model": "creraces:block/quest_board_empty" },
+    "facing=east,col=2,row=0": { "model": "creraces:block/quest_board_post", "y": 90 },
+    "facing=east,col=0,row=1": { "model": "creraces:block/quest_board_empty" },
+    "facing=east,col=1,row=1": { "model": "creraces:block/quest_board", "y": 270 },
+    "facing=east,col=2,row=1": { "model": "creraces:block/quest_board_empty" },
+
+    "facing=south,col=0,row=0": { "model": "creraces:block/quest_board_post", "y": 0 },
+    "facing=south,col=1,row=0": { "model": "creraces:block/quest_board_empty" },
+    "facing=south,col=2,row=0": { "model": "creraces:block/quest_board_post", "y": 180 },
+    "facing=south,col=0,row=1": { "model": "creraces:block/quest_board_empty" },
+    "facing=south,col=1,row=1": { "model": "creraces:block/quest_board", "y": 0 },
+    "facing=south,col=2,row=1": { "model": "creraces:block/quest_board_empty" },
+
+    "facing=west,col=0,row=0": { "model": "creraces:block/quest_board_post", "y": 90 },
+    "facing=west,col=1,row=0": { "model": "creraces:block/quest_board_empty" },
+    "facing=west,col=2,row=0": { "model": "creraces:block/quest_board_post", "y": 270 },
+    "facing=west,col=0,row=1": { "model": "creraces:block/quest_board_empty" },
+    "facing=west,col=1,row=1": { "model": "creraces:block/quest_board", "y": 90 },
+    "facing=west,col=2,row=1": { "model": "creraces:block/quest_board_empty" }
+  }
+}

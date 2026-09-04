@@ -1,0 +1,11 @@
+{
+  "tier": 3,
+  "name": "quest.creraces.mine_redstone.name",
+  "description": "quest.creraces.mine_redstone.description",
+  "duration_days": 4,
+  "objective": {
+    "type": "mine_block",
+    "target": "minecraft:redstone_ore",
+    "count": 24
+  }
+}

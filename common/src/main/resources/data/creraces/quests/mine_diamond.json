@@ -1,0 +1,11 @@
+{
+  "tier": 4,
+  "name": "quest.creraces.mine_diamond.name",
+  "description": "quest.creraces.mine_diamond.description",
+  "duration_days": 5,
+  "objective": {
+    "type": "mine_block",
+    "target": "minecraft:diamond_ore",
+    "count": 8
+  }
+}

@@ -1,6 +1,7 @@
 package mc.sayda.creraces.item;
 
 import com.mojang.datafixers.util.Pair;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.nbt.CompoundTag;
@@ -13,8 +14,12 @@ import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
+
+import javax.annotation.Nullable;
+import java.util.List;
 
 public class SpiritCompassItem extends Item {
 
@@ -59,5 +64,15 @@ public class SpiritCompassItem extends Item {
     public boolean isFoil(ItemStack stack) {
         CompoundTag tag = stack.getTag();
         return tag != null && tag.getBoolean("HasTarget");
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+        CompoundTag tag = stack.getTag();
+        if (tag != null && tag.getBoolean("HasTarget")) {
+            tooltip.add(Component.translatable("item.creraces.spirit_compass.tracking",
+                    tag.getInt("TargetX"), tag.getInt("TargetZ"))
+                    .withStyle(ChatFormatting.GRAY));
+        }
     }
 }

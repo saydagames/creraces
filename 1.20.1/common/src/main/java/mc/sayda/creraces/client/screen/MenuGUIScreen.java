@@ -1,13 +1,11 @@
 package mc.sayda.creraces.client.screen;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import mc.sayda.creraces.world.inventory.MenuGUIMenu;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.Util;
@@ -19,7 +17,7 @@ import net.minecraft.network.FriendlyByteBuf;
 
 import mc.sayda.creraces.client.ModKeyMappings;
 
-public class MenuGUIScreen extends AbstractContainerScreen<MenuGUIMenu> {
+public class MenuGUIScreen extends Screen {
     private static final ResourceLocation SELECTION_BG = new ResourceLocation("creraces",
             "textures/screens/selection_bg.png");
     private static final ResourceLocation SELECTION_BORDER = new ResourceLocation("creraces",
@@ -40,15 +38,42 @@ public class MenuGUIScreen extends AbstractContainerScreen<MenuGUIMenu> {
     private static final ResourceLocation MF_BUTTON = new ResourceLocation("creraces",
             "textures/screens/atlas/button_mf.png");
 
-    public MenuGUIScreen(MenuGUIMenu container, Inventory inventory, Component text) {
-        super(container, inventory, text);
-        this.imageWidth = 176;
-        this.imageHeight = 166;
+    // Panel metrics that AbstractContainerScreen used to provide. This is a menu, not a
+    // container, so it is a plain Screen opened client side and tracks its own origin.
+    private static final int IMAGE_WIDTH = 176;
+    private static final int IMAGE_HEIGHT = 166;
+    private int leftPos;
+    private int topPos;
+
+    // Easter egg: typing this anywhere on the screen opens BadAppleScreen.
+    private static final String BADAPPLE_TRIGGER = "badapple";
+    private final StringBuilder typedBuffer = new StringBuilder();
+
+    public MenuGUIScreen() {
+        super(Component.translatable("gui.creraces.menu_gui"));
+    }
+
+    @Override
+    public boolean charTyped(char codePoint, int modifiers) {
+        typedBuffer.append(Character.toLowerCase(codePoint));
+        if (typedBuffer.length() > BADAPPLE_TRIGGER.length()) {
+            typedBuffer.delete(0, typedBuffer.length() - BADAPPLE_TRIGGER.length());
+        }
+        if (typedBuffer.toString().equals(BADAPPLE_TRIGGER)) {
+            typedBuffer.setLength(0);
+            if (this.minecraft != null) {
+                this.minecraft.setScreen(new BadAppleScreen(this));
+            }
+            return true;
+        }
+        return super.charTyped(codePoint, modifiers);
     }
 
     @Override
     protected void init() {
         super.init();
+        this.leftPos = (this.width - IMAGE_WIDTH) / 2;
+        this.topPos = (this.height - IMAGE_HEIGHT) / 2;
 
         // Start Your Adventure
         Component startAdventure = java.util.Objects.requireNonNull(Component.translatable("gui.creraces.menu_gui.button_start_your_adventure1"));
@@ -71,8 +96,7 @@ public class MenuGUIScreen extends AbstractContainerScreen<MenuGUIMenu> {
         this.addRenderableWidget(
                 java.util.Objects.requireNonNull(Button.builder(java.util.Objects.requireNonNull(Component.translatable("gui.creraces.menu_gui.button_extras")), b -> {
                     if (this.minecraft != null) {
-                        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
-                        dev.architectury.networking.NetworkManager.sendToServer(mc.sayda.creraces.network.RequestMirrorPacket.ID, buf);
+                        this.minecraft.setScreen(new DynamicMirrorScreen());
                     }
                 }).bounds(this.leftPos + 93, this.topPos + 124, 61, 20).build())
         );
@@ -124,20 +148,26 @@ public class MenuGUIScreen extends AbstractContainerScreen<MenuGUIMenu> {
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         this.renderBackground(graphics);
+        renderPanel(graphics, partialTick, mouseX, mouseY);
         super.render(graphics, mouseX, mouseY, partialTick);
-        this.renderTooltip(graphics, mouseX, mouseY);
+
+        // AbstractContainerScreen used to translate the pose before renderLabels, so the hint
+        // coordinates in there are all relative to the panel origin. Keep that frame of reference.
+        graphics.pose().pushPose();
+        graphics.pose().translate(this.leftPos, this.topPos, 0.0F);
+        renderLabels(graphics, mouseX, mouseY);
+        graphics.pose().popPose();
 
         // Centered Welcome Text
         graphics.drawCenteredString(this.font, Component.translatable("gui.creraces.menu_gui.label_welcome1"),
-                this.leftPos + (this.imageWidth / 2), this.topPos + 60, 0xFFFFFF);
+                this.leftPos + (IMAGE_WIDTH / 2), this.topPos + 60, 0xFFFFFF);
         graphics.drawCenteredString(this.font, Component.translatable("gui.creraces.menu_gui.label_welcome2"),
-                this.leftPos + (this.imageWidth / 2), this.topPos + 70, 0xFFFFFF);
+                this.leftPos + (IMAGE_WIDTH / 2), this.topPos + 70, 0xFFFFFF);
         graphics.drawCenteredString(this.font, Component.translatable("gui.creraces.menu_gui.label_welcome3"),
-                this.leftPos + (this.imageWidth / 2), this.topPos + 80, 0xFFFFFF);
+                this.leftPos + (IMAGE_WIDTH / 2), this.topPos + 80, 0xFFFFFF);
     }
 
-    @Override
-    protected void renderBg(@Nonnull GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
+    private void renderPanel(@Nonnull GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
         RenderSystem.setShaderColor(1, 1, 1, 1);
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
@@ -182,8 +212,7 @@ public class MenuGUIScreen extends AbstractContainerScreen<MenuGUIMenu> {
         RenderSystem.disableBlend();
     }
 
-    @Override
-    protected void renderLabels(@Nonnull GuiGraphics graphics, int mouseX, int mouseY) {
+    private void renderLabels(@Nonnull GuiGraphics graphics, int mouseX, int mouseY) {
         // We moved the welcome labels to render() for centering and coloring
 
         if (this.font != null) {

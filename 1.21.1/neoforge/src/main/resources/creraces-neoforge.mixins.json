@@ -1,11 +1,18 @@
 {
     "required": true,
     "refMap": "creraces-neoforge.refmap.json",
-    "package": "mc.sayda.creraces.mixin",
+    "package": "mc.sayda.creraces.neoforge.mixin",
     "compatibilityLevel": "JAVA_21",
     "minVersion": "0.8",
-    "mixins": [],
-    "client": [],
+    "mixins": [
+        "DedicatedServerConsoleAccessor",
+        "FairyFluidTypeMixin",
+        "FairySourceSplashMixin",
+        "WaterEquivalentFluidMixin"
+    ],
+    "client": [
+        "WorldOpenFlowsMixin"
+    ],
     "injectors": {
         "defaultRequire": 1
     }

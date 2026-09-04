@@ -198,6 +198,17 @@ public class HUDEditorScreen extends Screen {
 
         RaceOverlay.render(graphics, partialTick);
 
+        // Bars zone is empty until a real bar has a nonzero value, so an example bar is drawn
+        // here to preview placement. Reuses RaceOverlay's own anchor-scale transform.
+        graphics.pose().pushPose();
+        if (hudScale != 1.0) {
+            graphics.pose().translate(anchorX, anchorY, 0);
+            graphics.pose().scale((float) hudScale, (float) hudScale, 1.0f);
+            graphics.pose().translate(-anchorX, -anchorY, 0);
+        }
+        RaceOverlay.renderExampleBar(graphics, anchorX + barsX, anchorY + barsY);
+        graphics.pose().popPose();
+
         // Convert HUD-space positions to screen-space using the current scale
         int pXs = sx(anchorX + portraitX),  pYs = sy(anchorY + portraitY);
         int aXs = sx(anchorX + abilitiesX), aYs = sy(anchorY + abilitiesY);

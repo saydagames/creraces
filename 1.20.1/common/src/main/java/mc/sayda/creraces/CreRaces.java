@@ -18,6 +18,7 @@ public class CreRaces {
 
         ReloadListenerRegistry.register(PackType.SERVER_DATA, new AbilityManager());
         ReloadListenerRegistry.register(PackType.SERVER_DATA, new mc.sayda.creraces.race.RaceManager());
+        ReloadListenerRegistry.register(PackType.SERVER_DATA, new mc.sayda.creraces.quest.QuestManager());
         ReloadListenerRegistry.register(PackType.SERVER_DATA, new mc.sayda.creraces.ability.HexRecipeManager());
 
         BoundaryHandler.init();
@@ -77,14 +78,18 @@ public class CreRaces {
         mc.sayda.creraces.registry.ModTabs.register();
         mc.sayda.creraces.registry.ModMenuTypes.register();
         mc.sayda.creraces.registry.ModFeatures.register();
+        mc.sayda.creraces.registry.ModPoiTypes.register();
+        mc.sayda.creraces.registry.ModVillagerProfessions.register();
 
         dev.architectury.event.events.common.LifecycleEvent.SETUP.register(() -> {
             // Register axe stripping for custom logs.
-            // Direct field access works because the AW (Fabric) and AT (Forge) both widen
-            // AxeItem.STRIPPABLES. Reflection with a string literal fails in production because
-            // Loom remaps field references but not string literals.
+            // Goes through AxeItemAccessor (a mixin), not the access widener: a widened bytecode
+            // access flag alone isn't enough on real (non-dev) NeoForge, which enforces true JPMS
+            // module boundaries, so cross-module field access still throws IllegalAccessError even
+            // once the flag says public. A mixin accessor patches the field's own class instead, so
+            // no cross-module access ever happens. Kept the same way here for consistency with 1.21.1.
             java.util.Map<net.minecraft.world.level.block.Block, net.minecraft.world.level.block.Block> newStrippables =
-                    new java.util.HashMap<>(net.minecraft.world.item.AxeItem.STRIPPABLES);
+                    new java.util.HashMap<>(mc.sayda.creraces.mixin.AxeItemAccessor.creraces$getStrippables());
             newStrippables.put(mc.sayda.creraces.registry.ModBlocks.DRYAD_LOG.get(),
                     mc.sayda.creraces.registry.ModBlocks.STRIPPED_DRYAD_LOG.get());
             newStrippables.put(mc.sayda.creraces.registry.ModBlocks.DRYAD_WOOD.get(),
@@ -93,30 +98,46 @@ public class CreRaces {
                     mc.sayda.creraces.registry.ModBlocks.STRIPPED_VEIL_WILLOW_LOG.get());
             newStrippables.put(mc.sayda.creraces.registry.ModBlocks.VEIL_WILLOW_WOOD.get(),
                     mc.sayda.creraces.registry.ModBlocks.STRIPPED_VEIL_WILLOW_WOOD.get());
-            net.minecraft.world.item.AxeItem.STRIPPABLES =
-                    java.util.Collections.unmodifiableMap(newStrippables);
+            mc.sayda.creraces.mixin.AxeItemAccessor.creraces$setStrippables(
+                    java.util.Collections.unmodifiableMap(newStrippables));
 
             // Extend BlockEntityType.SIGN/HANGING_SIGN to include our custom sign blocks.
             // BlockEntityRenderDispatcher.render() skips any block entity whose type.isValid()
             // returns false, making them invisible even though they exist and have a renderer.
-            // The access widener makes validBlocks public+mutable so we can write it directly.
+            // BlockEntityTypeAccessor is a mixin accessor, see the AxeItemAccessor comment above.
+            var signAccessor = (mc.sayda.creraces.mixin.BlockEntityTypeAccessor) net.minecraft.world.level.block.entity.BlockEntityType.SIGN;
             java.util.Set<net.minecraft.world.level.block.Block> newSignBlocks =
-                    new java.util.HashSet<>(net.minecraft.world.level.block.entity.BlockEntityType.SIGN.validBlocks);
+                    new java.util.HashSet<>(signAccessor.creraces$getValidBlocks());
             newSignBlocks.add(mc.sayda.creraces.registry.ModBlocks.DRYAD_SIGN.get());
             newSignBlocks.add(mc.sayda.creraces.registry.ModBlocks.DRYAD_WALL_SIGN.get());
             newSignBlocks.add(mc.sayda.creraces.registry.ModBlocks.VEIL_WILLOW_SIGN.get());
             newSignBlocks.add(mc.sayda.creraces.registry.ModBlocks.VEIL_WILLOW_WALL_SIGN.get());
-            net.minecraft.world.level.block.entity.BlockEntityType.SIGN.validBlocks =
-                    java.util.Collections.unmodifiableSet(newSignBlocks);
+            signAccessor.creraces$setValidBlocks(java.util.Collections.unmodifiableSet(newSignBlocks));
 
+            var hangingSignAccessor = (mc.sayda.creraces.mixin.BlockEntityTypeAccessor) net.minecraft.world.level.block.entity.BlockEntityType.HANGING_SIGN;
             java.util.Set<net.minecraft.world.level.block.Block> newHangingSignBlocks =
-                    new java.util.HashSet<>(net.minecraft.world.level.block.entity.BlockEntityType.HANGING_SIGN.validBlocks);
+                    new java.util.HashSet<>(hangingSignAccessor.creraces$getValidBlocks());
             newHangingSignBlocks.add(mc.sayda.creraces.registry.ModBlocks.DRYAD_HANGING_SIGN.get());
             newHangingSignBlocks.add(mc.sayda.creraces.registry.ModBlocks.DRYAD_WALL_HANGING_SIGN.get());
             newHangingSignBlocks.add(mc.sayda.creraces.registry.ModBlocks.VEIL_WILLOW_HANGING_SIGN.get());
             newHangingSignBlocks.add(mc.sayda.creraces.registry.ModBlocks.VEIL_WILLOW_WALL_HANGING_SIGN.get());
-            net.minecraft.world.level.block.entity.BlockEntityType.HANGING_SIGN.validBlocks =
-                    java.util.Collections.unmodifiableSet(newHangingSignBlocks);
+            hangingSignAccessor.creraces$setValidBlocks(java.util.Collections.unmodifiableSet(newHangingSignBlocks));
+
+            // Must run here, not from ModEntities.register(): FLOATING_MOTE.get() throws "Registry
+            // Object not present" if resolved synchronously during mod construction.
+            mc.sayda.creraces.registry.ModEntities.registerSpawnPlacements();
+
+            // PoiTypes.TYPE_BY_STATE only maps vanilla's own bootstrap states, so modded PoiTypes
+            // need their states added manually once registration finishes.
+            {
+                var holder = net.minecraft.core.registries.BuiltInRegistries.POINT_OF_INTEREST_TYPE
+                        .wrapAsHolder(mc.sayda.creraces.registry.ModPoiTypes.GUILD_RECEPTIONIST.get());
+                var typeByState = mc.sayda.creraces.mixin.PoiTypesAccessor.creraces$getTypeByState();
+                mc.sayda.creraces.registry.ModBlocks.QUEST_BOARD.get().getStateDefinition().getPossibleStates()
+                        .stream()
+                        .filter(mc.sayda.creraces.block.QuestBoardBlock::isMaster)
+                        .forEach(state -> typeByState.putIfAbsent(state, holder));
+            }
 
             net.minecraft.world.level.block.ComposterBlock.COMPOSTABLES.put(
                     mc.sayda.creraces.registry.ModItems.DRYAD_SAPLING_ITEM.get(), 0.3f);

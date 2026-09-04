@@ -3,7 +3,6 @@ package mc.sayda.creraces.registry;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
 import mc.sayda.creraces.CreRaces;
-import mc.sayda.creraces.world.inventory.MenuGUIMenu;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.inventory.MenuType;
 import dev.architectury.registry.menu.MenuRegistry;
@@ -11,14 +10,11 @@ import dev.architectury.registry.menu.MenuRegistry;
 public class ModMenuTypes {
     public static final DeferredRegister<MenuType<?>> MENUS = DeferredRegister.create(CreRaces.MODID, Registries.MENU);
 
-    public static final RegistrySupplier<MenuType<MenuGUIMenu>> MENU_GUI = MENUS.register("menu_gui",
-            () -> MenuRegistry.ofExtended((syncId, inventory, buf) -> new MenuGUIMenu(syncId, inventory, buf)));
-
-    public static final RegistrySupplier<MenuType<mc.sayda.creraces.world.inventory.MirrorMenu>> MIRROR_GUI = MENUS.register("mirror_gui",
-            () -> MenuRegistry.ofExtended((syncId, inventory, buf) -> new mc.sayda.creraces.world.inventory.MirrorMenu(syncId, inventory, buf)));
-
     public static final RegistrySupplier<MenuType<mc.sayda.creraces.world.inventory.ResearchTableMenu>> RESEARCH_TABLE = MENUS.register("research_table",
             () -> MenuRegistry.ofExtended((syncId, inventory, buf) -> new mc.sayda.creraces.world.inventory.ResearchTableMenu(syncId, inventory, buf)));
+
+    public static final RegistrySupplier<MenuType<mc.sayda.creraces.world.inventory.QuestBoardMenu>> QUEST_BOARD = MENUS.register("quest_board",
+            () -> MenuRegistry.ofExtended((syncId, inventory, buf) -> new mc.sayda.creraces.world.inventory.QuestBoardMenu(syncId, inventory, buf)));
 
     public static final RegistrySupplier<MenuType<mc.sayda.creraces.world.inventory.EssenceBeltMenu>> ESSENCE_BELT = MENUS.register("essence_belt",
             () -> MenuRegistry.ofExtended((syncId, inventory, buf) -> new mc.sayda.creraces.world.inventory.EssenceBeltMenu(

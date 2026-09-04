@@ -1,0 +1,6 @@
+{
+  "variants": {
+    "waterlogged=false": { "model": "creraces:block/oceanic_statue" },
+    "waterlogged=true":  { "model": "creraces:block/oceanic_statue" }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "tier": 3,
+  "name": "quest.creraces.slay_skeletons.name",
+  "description": "quest.creraces.slay_skeletons.description",
+  "duration_days": 4,
+  "objective": {
+    "type": "kill_entity",
+    "target": "minecraft:skeleton",
+    "count": 15
+  }
+}

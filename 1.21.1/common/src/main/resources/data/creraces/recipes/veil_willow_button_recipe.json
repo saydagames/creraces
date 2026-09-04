@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "a"
+  ],
+  "key": {
+    "a": {
+      "item": "creraces:veil_willow_planks"
+    }
+  },
+  "result": {
+    "id": "creraces:veil_willow_button",
+    "count": 1
+  }
+}

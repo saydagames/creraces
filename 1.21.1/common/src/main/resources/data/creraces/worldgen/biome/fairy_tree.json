@@ -1,0 +1,25 @@
+{
+    "has_precipitation": true,
+    "temperature": 0.25,
+    "downfall": 0.8,
+    "effects": {
+        "sky_color": 8233983,
+        "fog_color": 12638463,
+        "water_color": 4159204,
+        "water_fog_color": 329011,
+        "grass_color": 8829055,
+        "foliage_color": 6858074
+    },
+    "spawners": {
+        "monster": [],
+        "creature": [],
+        "ambient": [],
+        "underground_water_creature": [],
+        "water_creature": [],
+        "water_ambient": [],
+        "misc": []
+    },
+    "spawn_costs": {},
+    "carvers": {},
+    "features": [[], [], [], [], [], [], [], [], [], ["minecraft:jungle_bush"], []]
+}

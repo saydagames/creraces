@@ -16,6 +16,9 @@ public class ModItems {
         public static final RegistrySupplier<Item> ABILITY_SCROLL = ITEMS.register("ability_scroll",
                         () -> new ScrollItem(new Item.Properties().stacksTo(1)));
 
+        public static final RegistrySupplier<Item> QUEST_SCROLL = ITEMS.register("quest_scroll",
+                        () -> new mc.sayda.creraces.item.QuestScrollItem(new Item.Properties().stacksTo(1)));
+
         public static final RegistrySupplier<Item> MIRROR = ITEMS.register("mirror",
                         () -> new mc.sayda.creraces.item.MirrorItem(new Item.Properties().stacksTo(1)));
 
@@ -80,6 +83,8 @@ public class ModItems {
                         ModBlocks.DRYAD_LEAVES_FRUIT);
         public static final RegistrySupplier<Item> DRYAD_SAPLING_ITEM = registerBlockItem(ModBlocks.DRYAD_SAPLING);
         public static final RegistrySupplier<Item> DRYAD_ROOT_ITEM = registerBlockItem(ModBlocks.DRYAD_ROOT);
+        public static final RegistrySupplier<Item> DRYAD_TOTEM_ITEM = registerBlockItem(ModBlocks.DRYAD_TOTEM);
+        public static final RegistrySupplier<Item> SUMMONED_DIRT_ITEM = registerBlockItem(ModBlocks.SUMMONED_DIRT);
         public static final RegistrySupplier<Item> AURAI_SCULPTURE_ITEM = registerBlockItem(ModBlocks.AURAI_SCULPTURE);
         public static final RegistrySupplier<Item> NAIAD_STATUE_ITEM = registerBlockItem(ModBlocks.NAIAD_STATUE);
         public static final RegistrySupplier<Item> OREAD_IDOL_ITEM = registerBlockItem(ModBlocks.OREAD_IDOL);
@@ -125,6 +130,7 @@ public class ModItems {
         public static final RegistrySupplier<Item> SPRUCE_TREE_GATEWAY_ITEM = registerBlockItem(
                         ModBlocks.SPRUCE_TREE_GATEWAY);
         public static final RegistrySupplier<Item> VEIL_MUSHROOM_ITEM = registerBlockItem(ModBlocks.VEIL_MUSHROOM);
+        public static final RegistrySupplier<Item> VEIL_GRIT_ITEM = registerBlockItem(ModBlocks.VEIL_GRIT);
         public static final RegistrySupplier<Item> VEIL_BLOOM_ITEM = registerBlockItem(
                         ModBlocks.VEIL_BLOOM);
         public static final RegistrySupplier<Item> VEIL_WILLOW_LOG_ITEM = registerBlockItem(ModBlocks.VEIL_WILLOW_LOG);
@@ -243,6 +249,14 @@ public class ModItems {
                                                         .craftRemainder(net.minecraft.world.item.Items.BUCKET)
                                                         .stacksTo(1)));
 
+        // Registry name intentionally diverges from Classic's "blessed_water_bucket", see LegacyBlockRemaps.
+        public static final RegistrySupplier<Item> ETERVEIL_BUCKET = ITEMS.register("eterveil_bucket",
+                        () -> new net.minecraft.world.item.BucketItem(
+                                        ModFluids.ETERVEIL.get(),
+                                        new Item.Properties()
+                                                        .craftRemainder(net.minecraft.world.item.Items.BUCKET)
+                                                        .stacksTo(1)));
+
         public static final RegistrySupplier<Item> FAIRY_BOTTLE = ITEMS.register("fairy_bottle",
                         () -> new mc.sayda.creraces.item.FairyBottleItem(
                                         new Item.Properties().stacksTo(16)));
@@ -261,6 +275,7 @@ public class ModItems {
                         () -> new mc.sayda.creraces.item.EssenceBeltItem(new Item.Properties().stacksTo(1)));
 
         public static final RegistrySupplier<Item> ESSENCE_CAULDRON_ITEM = registerBlockItem(ModBlocks.ESSENCE_CAULDRON);
+        public static final RegistrySupplier<Item> QUEST_BOARD_ITEM = registerBlockItem(ModBlocks.QUEST_BOARD);
 
         private static RegistrySupplier<Item> registerBlockItem(
                         RegistrySupplier<? extends net.minecraft.world.level.block.Block> blockSupplier) {

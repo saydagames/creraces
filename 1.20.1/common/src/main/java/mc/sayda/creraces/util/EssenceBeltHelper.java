@@ -20,7 +20,7 @@ import java.util.Set;
 
 public class EssenceBeltHelper {
 
-    /** Belt-only count — used by screens that don't have level access. */
+    /** Belt-only count, used by screens that don't have level access. */
     public static int getEssenceCount(Player player, EssenceType type) {
         return findBelt(player)
                 .map(belt -> belt.getItem() instanceof EssenceBeltItem item

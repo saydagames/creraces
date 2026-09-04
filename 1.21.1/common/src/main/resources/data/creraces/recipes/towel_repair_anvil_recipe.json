@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:smithing_transform",
+  "template": [],
+  "base": {
+    "item": "creraces:towel"
+  },
+  "addition": {
+    "tag": "minecraft:wool"
+  },
+  "result": {
+    "id": "creraces:towel"
+  }
+}
+
+

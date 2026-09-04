@@ -7,7 +7,7 @@
     { "item": "minecraft:ink_sac" }
   ],
   "result": {
-    "item": "creraces:ink_and_quill",
+    "id": "creraces:ink_and_quill",
     "count": 1
   }
 }

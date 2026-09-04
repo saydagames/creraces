@@ -7,10 +7,16 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.biome.Climate;
+import terrablender.api.ParameterUtils.Continentalness;
+import terrablender.api.ParameterUtils.Depth;
+import terrablender.api.ParameterUtils.Erosion;
+import terrablender.api.ParameterUtils.Humidity;
+import terrablender.api.ParameterUtils.ParameterPointListBuilder;
+import terrablender.api.ParameterUtils.Temperature;
 import terrablender.api.Region;
 import terrablender.api.RegionType;
+import terrablender.api.VanillaParameterOverlayBuilder;
 
 import java.util.function.Consumer;
 
@@ -25,11 +31,17 @@ public class VeilwoodRegion extends Region {
         ResourceKey<Biome> veilwoodForest = ResourceKey.create(
                 Registries.BIOME, new ResourceLocation(CreRaces.MODID, "veilwood_forest"));
 
-        // TerraBlender's climate parameter space is fully covered by vanilla. There are no
-        // gaps for new points to win nearest-neighbour. Replacing a vanilla climate slot is
-        // unavoidable. Mangrove swamp sits in the same warm-humid coastal zone as regular
-        // swamp and is rare enough that replacing it has minimal impact on vanilla variety.
-        addModifiedVanillaOverworldBiomes(mapper, builder ->
-                builder.replaceBiome(Biomes.MANGROVE_SWAMP, veilwoodForest));
+        // Overlays Veilwood Forest onto mangrove swamp's own climate range (warm, humid,
+        // near-to-far inland, low erosion) without touching mangrove's points - unclaimed space
+        // defers to vanilla, so the two never tie over the same point.
+        VanillaParameterOverlayBuilder overlay = new VanillaParameterOverlayBuilder();
+        new ParameterPointListBuilder()
+                .temperature(Temperature.span(Temperature.WARM, Temperature.HOT))
+                .humidity(Humidity.FULL_RANGE)
+                .continentalness(Continentalness.span(Continentalness.NEAR_INLAND, Continentalness.FAR_INLAND))
+                .erosion(Erosion.EROSION_6)
+                .depth(Depth.SURFACE)
+                .build().forEach(point -> overlay.add(point, veilwoodForest));
+        overlay.build().forEach(mapper);
     }
 }

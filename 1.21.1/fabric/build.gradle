@@ -11,6 +11,7 @@ loom {
     mixin {
         defaultRefmapName = "creraces-fabric.refmap.json"
     }
+    accessWidenerPath = project(":1.21.1:common").file("src/main/resources/creraces.accesswidener")
 }
 
 configurations {
@@ -33,10 +34,23 @@ dependencies {
     // Twilight Lib - Direct File Dependency
     modImplementation files("${rootProject.projectDir.parentFile}/twilight-lib/1.21.1/fabric/build/libs/twilight_lib-1.21.1-fabric-${rootProject.twilight_lib_version}.jar")
     modImplementation "curse.maven:pehkui-319596:5419266"
+    // Pehkui depends on KanosConfig at runtime (>=0.4.1); dropped when this module was set up,
+    // which breaks Fabric Loader's dependency resolution entirely. Same version 1.20.1 uses.
+    modImplementation "com.github.Virtuoel:KanosConfig:0.4.1"
+    modImplementation "com.github.glitchfiend:TerraBlender-fabric:${rootProject.property('1_21_1_terrablender_fabric_version')}"
+    // Trinkets needs Cardinal Components on the compile classpath; it bundles 6.1.0 as nested jars.
+    modImplementation "org.ladysnake.cardinal-components-api:cardinal-components-base:6.1.0"
+    modImplementation "org.ladysnake.cardinal-components-api:cardinal-components-entity:6.1.0"
+    modImplementation "curse.maven:trinkets-341284:5534317"
 }
 
 processResources {
     inputs.property "version", project.version
+
+    // Fabric Loader reads the accessWidener file from this mod's own resource root at
+    // runtime (unlike Forge/NeoForge, which bake AW into bytecode at build time), so the
+    // shared file from :1.21.1:common has to be physically copied in here too.
+    from(project(":1.21.1:common").file("src/main/resources/creraces.accesswidener"))
 
     filesMatching("fabric.mod.json") {
         expand "version": project.version

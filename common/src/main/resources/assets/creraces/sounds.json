@@ -15,6 +15,15 @@
             }
         ]
     },
+    "badapple": {
+        "category": "music",
+        "sounds": [
+            {
+                "name": "creraces:badapple",
+                "stream": true
+            }
+        ]
+    },
     "blessing": {
         "subtitle": "subtitles.creraces.blessing",
         "sounds": [

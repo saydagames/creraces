@@ -1,0 +1,11 @@
+{
+  "tier": 5,
+  "name": "quest.creraces.slay_wither_skeletons.name",
+  "description": "quest.creraces.slay_wither_skeletons.description",
+  "duration_days": 7,
+  "objective": {
+    "type": "kill_entity",
+    "target": "minecraft:wither_skeleton",
+    "count": 8
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "tier": 2,
+  "name": "quest.creraces.collect_wheat.name",
+  "description": "quest.creraces.collect_wheat.description",
+  "duration_days": 3,
+  "objective": {
+    "type": "collect_item",
+    "target": "minecraft:wheat",
+    "count": 32
+  }
+}

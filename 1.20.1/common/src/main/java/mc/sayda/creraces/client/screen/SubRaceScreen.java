@@ -59,7 +59,7 @@ public class SubRaceScreen extends Screen {
         // Back button (left arrow)
         this.addRenderableWidget(new ImageButton(
                 this.leftPos + -24, this.topPos + 184, 86, 48,
-                0, 0, 48, ARROW_LEFT, 86, 96,
+                0, 0, 48, ARROW_LEFT, 86, 144,
                 btn -> {
                     if (this.minecraft != null) {
                         this.minecraft.setScreen(parent);

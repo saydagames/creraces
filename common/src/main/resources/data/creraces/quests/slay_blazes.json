@@ -1,0 +1,11 @@
+{
+  "tier": 4,
+  "name": "quest.creraces.slay_blazes.name",
+  "description": "quest.creraces.slay_blazes.description",
+  "duration_days": 5,
+  "objective": {
+    "type": "kill_entity",
+    "target": "minecraft:blaze",
+    "count": 15
+  }
+}

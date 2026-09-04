@@ -1,1 +1,5 @@
-{ "parent": "minecraft:block/hanging_sign", "textures": { "log": "creraces:block/dryad_log", "planks": "creraces:block/dryad_planks", "particle": "creraces:block/dryad_planks" } }
+{
+    "textures": {
+        "particle": "creraces:block/dryad_planks"
+    }
+}

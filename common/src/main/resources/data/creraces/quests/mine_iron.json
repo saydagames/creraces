@@ -1,0 +1,11 @@
+{
+  "tier": 2,
+  "name": "quest.creraces.mine_iron.name",
+  "description": "quest.creraces.mine_iron.description",
+  "duration_days": 3,
+  "objective": {
+    "type": "mine_block",
+    "target": "minecraft:iron_ore",
+    "count": 20
+  }
+}

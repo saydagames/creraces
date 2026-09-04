@@ -1,0 +1,11 @@
+{
+  "tier": 5,
+  "name": "quest.creraces.slay_piglin_brutes.name",
+  "description": "quest.creraces.slay_piglin_brutes.description",
+  "duration_days": 7,
+  "objective": {
+    "type": "kill_entity",
+    "target": "minecraft:piglin_brute",
+    "count": 10
+  }
+}

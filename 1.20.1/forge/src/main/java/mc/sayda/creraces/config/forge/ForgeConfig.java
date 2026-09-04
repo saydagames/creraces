@@ -104,6 +104,7 @@ public class ForgeConfig {
                 public final ForgeConfigSpec.ConfigValue<Boolean> veilwood_forest_enabled;
                 public final ForgeConfigSpec.ConfigValue<Boolean> essence_vortex_worldgen_enabled;
                 public final ForgeConfigSpec.ConfigValue<Boolean> essence_vortex_conversion_enabled;
+                public final ForgeConfigSpec.ConfigValue<Boolean> keep_quest_items;
 
                 public final ForgeConfigSpec.ConfigValue<String> action_default_pocket_dim;
                 public final ForgeConfigSpec.ConfigValue<String> action_default_pocket_structure;
@@ -373,6 +374,12 @@ public class ForgeConfig {
                         essence_vortex_conversion_enabled = builder
                                         .comment("Allow right-clicking an essence vortex with a shard to convert it to that shard's essence type. Default: true")
                                         .define("essence_vortex_conversion_enabled", CreRacesConfig.ESSENCE_VORTEX_CONVERSION_ENABLED.get());
+                        builder.pop();
+
+                        builder.push("Quest");
+                        keep_quest_items = builder
+                                        .comment("If false, items credited toward a collect-item quest are removed from the player's inventory as they're tracked. Default: false")
+                                        .define("keep_quest_items", CreRacesConfig.KEEP_QUEST_ITEMS.get());
                         builder.pop();
 
                         builder.push("Pockets");
@@ -851,6 +858,7 @@ public class ForgeConfig {
 
                 CreRacesConfig.ESSENCE_VORTEX_WORLDGEN_ENABLED = () -> COMMON.essence_vortex_worldgen_enabled.get();
                 CreRacesConfig.ESSENCE_VORTEX_CONVERSION_ENABLED = () -> COMMON.essence_vortex_conversion_enabled.get();
+                CreRacesConfig.KEEP_QUEST_ITEMS = () -> COMMON.keep_quest_items.get();
                 CreRacesConfig.COIN_DROP_ENABLED = () -> COMMON.coin_drop_enabled.get();
                 CreRacesConfig.SAG_WINGS = () -> COMMON.sag_wings.get();
                 CreRacesConfig.GSTATE_ENABLED = () -> COMMON.gstate_enabled.get();

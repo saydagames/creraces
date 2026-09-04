@@ -1,0 +1,11 @@
+{
+  "tier": 5,
+  "name": "quest.creraces.mine_ancient_debris.name",
+  "description": "quest.creraces.mine_ancient_debris.description",
+  "duration_days": 7,
+  "objective": {
+    "type": "mine_block",
+    "target": "minecraft:ancient_debris",
+    "count": 6
+  }
+}

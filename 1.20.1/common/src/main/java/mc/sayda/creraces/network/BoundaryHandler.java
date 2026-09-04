@@ -16,7 +16,6 @@ import dev.architectury.registry.menu.ExtendedMenuProvider;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.entity.player.Inventory;
-import mc.sayda.creraces.world.inventory.MirrorMenu;
 
 /**
  * Manages the boundaries between server and client.
@@ -51,11 +50,6 @@ public class BoundaryHandler {
 
         NetworkManager.registerReceiver(NetworkManager.Side.C2S, SetCustomizationPacket.ID, (buf, context) -> {
             var pkt = new SetCustomizationPacket(buf);
-            pkt.handle(() -> context);
-        });
-
-        NetworkManager.registerReceiver(NetworkManager.Side.C2S, OpenMenuPacket.ID, (buf, context) -> {
-            var pkt = new OpenMenuPacket(buf);
             pkt.handle(() -> context);
         });
 
@@ -112,11 +106,6 @@ public class BoundaryHandler {
             pkt.handle(() -> context);
         });
 
-        NetworkManager.registerReceiver(NetworkManager.Side.C2S, RequestMirrorPacket.ID, (buf, context) -> {
-            var pkt = new RequestMirrorPacket(buf);
-            pkt.handle(() -> context);
-        });
-
         NetworkManager.registerReceiver(NetworkManager.Side.C2S, ClaimChunkPacket.ID, (buf, context) -> {
             var pkt = new ClaimChunkPacket(buf);
             pkt.handle(() -> context);
@@ -146,6 +135,16 @@ public class BoundaryHandler {
             var pkt = new CraftScrollPacket(buf);
             pkt.handle(() -> context);
         });
+
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, TakeQuestPacket.ID, (buf, context) -> {
+            var pkt = new TakeQuestPacket(buf);
+            pkt.handle(() -> context);
+        });
+
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, AbandonQuestPacket.ID, (buf, context) -> {
+            var pkt = new AbandonQuestPacket(buf);
+            pkt.handle(() -> context);
+        });
     }
 
     public static void registerS2C() {
@@ -171,6 +170,11 @@ public class BoundaryHandler {
 
         NetworkManager.registerReceiver(NetworkManager.Side.S2C, OpenDebugScreenPacket.ID, (buf, context) -> {
             var pkt = new OpenDebugScreenPacket(buf);
+            pkt.handle(() -> context);
+        });
+
+        NetworkManager.registerReceiver(NetworkManager.Side.S2C, OpenMirrorScreenPacket.ID, (buf, context) -> {
+            var pkt = new OpenMirrorScreenPacket(buf);
             pkt.handle(() -> context);
         });
 
@@ -269,6 +273,16 @@ public class BoundaryHandler {
             pkt.handle(() -> context);
         });
 
+        NetworkManager.registerReceiver(NetworkManager.Side.S2C, SyncQuestsPacket.ID, (buf, context) -> {
+            var pkt = new SyncQuestsPacket(buf);
+            pkt.handle(() -> context);
+        });
+
+        NetworkManager.registerReceiver(NetworkManager.Side.S2C, QuestBoardStateSyncPacket.ID, (buf, context) -> {
+            var pkt = new QuestBoardStateSyncPacket(buf);
+            pkt.handle(() -> context);
+        });
+
         LOGGER.info("Client network boundaries registered.");
     }
 
@@ -283,26 +297,13 @@ public class BoundaryHandler {
         });
     }
 
-    public static void sendOpenMirror(ServerPlayer player) {
-        MenuRegistry.openExtendedMenu(player, new ExtendedMenuProvider() {
-            @Override
-            public void saveExtraData(FriendlyByteBuf buf) {
-            }
-
-            @Override
-            public Component getDisplayName() {
-                return Component.translatable("screen.creraces.mirror");
-            }
-
-            @Override
-            public AbstractContainerMenu createMenu(int id, Inventory inventory, Player p) {
-                return new MirrorMenu(id, inventory, null);
-            }
+    public static void sendOpenDebug(ServerPlayer player) {
+        send(player, OpenDebugScreenPacket.ID, buf -> {
         });
     }
 
-    public static void sendOpenDebug(ServerPlayer player) {
-        send(player, OpenDebugScreenPacket.ID, buf -> {
+    public static void sendOpenMirror(ServerPlayer player) {
+        send(player, OpenMirrorScreenPacket.ID, buf -> {
         });
     }
 
@@ -414,12 +415,6 @@ public class BoundaryHandler {
         FriendlyByteBuf buf = newBuf();
         pkt.encode(buf);
         NetworkManager.sendToServer(SetCustomizationPacket.ID, buf);
-    }
-
-    public static void sendOpenMenu() {
-        FriendlyByteBuf buf = newBuf();
-        new OpenMenuPacket().encode(buf);
-        NetworkManager.sendToServer(OpenMenuPacket.ID, buf);
     }
 
     public static void sendOpenEssenceBelt() {
@@ -592,6 +587,26 @@ public class BoundaryHandler {
         FriendlyByteBuf buf = newBuf();
         pkt.encode(buf);
         NetworkManager.sendToServer(CraftScrollPacket.ID, buf);
+    }
+
+    public static void syncQuestsToPlayer(ServerPlayer player, SyncQuestsPacket pkt) {
+        send(player, SyncQuestsPacket.ID, pkt::encode);
+    }
+
+    public static void sendTakeQuest(TakeQuestPacket pkt) {
+        FriendlyByteBuf buf = newBuf();
+        pkt.encode(buf);
+        NetworkManager.sendToServer(TakeQuestPacket.ID, buf);
+    }
+
+    public static void sendAbandonQuest(AbandonQuestPacket pkt) {
+        FriendlyByteBuf buf = newBuf();
+        pkt.encode(buf);
+        NetworkManager.sendToServer(AbandonQuestPacket.ID, buf);
+    }
+
+    public static void sendQuestBoardSync(ServerPlayer player, QuestBoardStateSyncPacket pkt) {
+        send(player, QuestBoardStateSyncPacket.ID, pkt::encode);
     }
 
     public static void broadcastSpiritFlameGamerule(boolean value) {

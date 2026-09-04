@@ -1,6 +1,6 @@
 {
     "parent": "minecraft:item/generated",
     "textures": {
-        "layer0": "creraces:item/scroll"
+        "layer0": "creraces:item/ability_scroll"
     }
 }

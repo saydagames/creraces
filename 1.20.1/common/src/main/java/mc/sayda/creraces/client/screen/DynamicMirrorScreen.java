@@ -21,15 +21,13 @@ import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.Map;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import mc.sayda.creraces.world.inventory.MirrorMenu;
-import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.Minecraft;
 
 /**
  * A dynamic screen for customizing racial cosmetics.
  */
-public class DynamicMirrorScreen extends AbstractContainerScreen<MirrorMenu> {
+public class DynamicMirrorScreen extends Screen {
     private static final ResourceLocation MIRROR_TEXTURE = new ResourceLocation("creraces",
             "textures/screens/mirror.png");
     private final Map<String, String> originalCustomizations = new HashMap<>();
@@ -40,11 +38,11 @@ public class DynamicMirrorScreen extends AbstractContainerScreen<MirrorMenu> {
     private boolean saved = false;
     private boolean initializedRaceWidgets = false;
 
-    public DynamicMirrorScreen(MirrorMenu menu, Inventory inventory, Component title) {
-        super(menu, inventory, title);
-        this.player = inventory.player;
-        this.imageWidth = 256;
-        this.imageHeight = 256;
+    // Opened client side like the other menu screens; the backing MirrorMenu had no slots and
+    // only existed to route the open through the container system.
+    public DynamicMirrorScreen() {
+        super(Component.translatable("screen.creraces.mirror"));
+        this.player = net.minecraft.client.Minecraft.getInstance().player;
     }
 
     @Override
@@ -173,16 +171,6 @@ public class DynamicMirrorScreen extends AbstractContainerScreen<MirrorMenu> {
     }
 
     @Override
-    protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-        // No default background needed, we draw ours in render()
-    }
-
-    @Override
-    protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
-        // No labels needed
-    }
-
-    @Override
     @SuppressWarnings("null")
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         if (!this.initializedRaceWidgets) {
@@ -259,6 +247,6 @@ public class DynamicMirrorScreen extends AbstractContainerScreen<MirrorMenu> {
 
     @Override
     public boolean isPauseScreen() {
-        return false;
+        return true;
     }
 }

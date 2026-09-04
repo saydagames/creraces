@@ -45,6 +45,7 @@ public static void init() {
         // Disconnect: clear transient engine states and reassign faction leadership
         PlayerEvent.PLAYER_QUIT.register(player -> {
             mc.sayda.creraces.engine.ActionRegistry.cleanup(player);
+            mc.sayda.creraces.quest.QuestSessionRegistry.clearPlayer(player.getUUID());
             mc.sayda.creraces.territory.TerritoryManager.get().clearPlayerTracking(player.getUUID());
             var server = ((ServerPlayer) player).getServer();
             if (server != null) {
@@ -121,6 +122,24 @@ public static void init() {
         dev.architectury.event.events.common.EntityEvent.LIVING_HURT.register((entity, source, amount) -> {
             if (source.getEntity() instanceof ServerPlayer player) {
                 onIncidentAttack(player, entity);
+            }
+            return dev.architectury.event.EventResult.pass();
+        });
+
+        dev.architectury.event.events.common.BlockEvent.BREAK.register((level, pos, state, player, xp) -> {
+            if (!level.isClientSide() && player != null) {
+                mc.sayda.creraces.quest.QuestTracker.onBlockBroken(player, state);
+            }
+            return dev.architectury.event.EventResult.pass();
+        });
+
+        // Guild Receptionist trade offers are injected here rather than in Villager's own
+        // trade list registration, since vanilla only ever activates 2 trades per level -
+        // syncing on interaction guarantees all 5 tiers are present the moment a player opens
+        // the trade GUI, regardless of the villager's current level.
+        dev.architectury.event.events.common.InteractionEvent.INTERACT_ENTITY.register((player, entity, hand) -> {
+            if (player instanceof ServerPlayer && entity instanceof net.minecraft.world.entity.npc.Villager villager) {
+                mc.sayda.creraces.villager.GuildReceptionistOfferSync.sync(villager);
             }
             return dev.architectury.event.EventResult.pass();
         });
@@ -229,6 +248,8 @@ public static void init() {
     }
 
     private static void onIncidentVictory(ServerPlayer killer, net.minecraft.world.entity.LivingEntity victim) {
+        mc.sayda.creraces.quest.QuestTracker.onPlayerKill(killer, victim);
+
         DataUtils.getVariables(killer).ifPresent(vars -> {
             // Trigger data-driven on_kill traits
             mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
@@ -260,6 +281,8 @@ public static void init() {
     }
 
     private static void onIncidentPickup(ServerPlayer player, net.minecraft.world.item.ItemStack stack) {
+        mc.sayda.creraces.quest.QuestTracker.onItemPickup(player, stack);
+
         DataUtils.getVariables(player).ifPresent(vars -> {
             mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
             if (race != null && race.traits() != null) {
@@ -325,9 +348,10 @@ public static void init() {
         // Initial sync when a player joins and is ready
         BoundaryHandler.resyncVariables(player, player);
 
-        // Sync race and ability definitions
+        // Sync race, ability, and quest definitions
         BoundaryHandler.syncRacesToPlayer(player, mc.sayda.creraces.race.RaceManager.createSyncPacket());
         BoundaryHandler.syncAbilitiesToPlayer(player, mc.sayda.creraces.ability.AbilityManager.createSyncPacket());
+        BoundaryHandler.syncQuestsToPlayer(player, mc.sayda.creraces.quest.QuestManager.createSyncPacket());
         
         // Handle team logic (offline kicks, etc.)
         mc.sayda.creraces.team.RaceTeamManager.handlePlayerJoin(player);
@@ -414,6 +438,12 @@ public static void init() {
         // Ticking down resources/cooldowns
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             mc.sayda.creraces.race.ResourceTicker.tick(player);
+            if (player.tickCount % 300 == 0) {
+                mc.sayda.creraces.quest.QuestTracker.tickQuests(player);
+            }
+            if (player.tickCount % 20 == 0) {
+                mc.sayda.creraces.quest.QuestTracker.recheckCollectProgress(player);
+            }
         }
 
         mc.sayda.creraces.util.Scheduler.tick();

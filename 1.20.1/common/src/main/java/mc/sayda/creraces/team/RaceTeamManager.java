@@ -2,18 +2,16 @@ package mc.sayda.creraces.team;
 
 import java.util.Objects;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.capability.IPlayerVariables;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import java.io.*;
-import java.nio.file.*;
+import net.minecraft.world.level.saveddata.SavedData;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -470,94 +468,99 @@ public class RaceTeamManager {
         }
     }
 
-    // ─── Persistence ─────────────────────────────────────────────────────────
+    // ─── Persistence (vanilla SavedData, <world>/data/creraces_teams.dat) ──────────────
 
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final String SAVE_FILE_NAME = "creraces_teams.json";
+    private static final String DATA_ID = "creraces_teams";
 
+    /** Holds no state of its own, TEAMS above is the source of truth; this is just the SavedData handle to mark dirty. */
+    private static Data CURRENT_DATA;
+
+    private static class Data extends SavedData {
+        @Override
+        public CompoundTag save(CompoundTag tag) {
+            ListTag teamsList = new ListTag();
+            TEAMS.values().forEach(team -> teamsList.add(serializeTeam(team)));
+            tag.put("teams", teamsList);
+            return tag;
+        }
+    }
+
+    /** Forces an immediate flush (in addition to vanilla's own periodic autosave, since every mutator marks this dirty). */
     public static void save(MinecraftServer server) {
-        Path savePath = server
-                .getWorldPath(Objects.requireNonNull(net.minecraft.world.level.storage.LevelResource.ROOT))
-                .resolve(SAVE_FILE_NAME);
-        JsonArray teamsArray = new JsonArray();
-        TEAMS.values().forEach(team -> {
-            JsonObject obj = new JsonObject();
-            obj.addProperty("id", team.getId().toString());
-            obj.addProperty("name", team.getName());
-            obj.addProperty("leader", team.getLeader().toString());
-            obj.addProperty("friendlyFire", team.isFriendlyFire());
-            JsonArray members = new JsonArray();
-            team.getMembers().forEach(m -> {
-                JsonObject mObj = new JsonObject();
-                mObj.addProperty("uuid", m.toString());
-                mObj.addProperty("role", team.getRole(m).name());
-                members.add(mObj);
-            });
-            obj.add("members", members);
-            teamsArray.add(obj);
-        });
-        try (Writer w = Files.newBufferedWriter(savePath)) {
-            GSON.toJson(teamsArray, w);
-            CreRaces.LOGGER.info("Saved {} team(s) to {}", TEAMS.size(), savePath);
-        } catch (IOException e) {
-            CreRaces.LOGGER.error("Failed to save teams: {}", e.getMessage());
+        if (CURRENT_DATA != null) {
+            CURRENT_DATA.setDirty();
+            server.overworld().getDataStorage().save();
         }
     }
 
     public static void load(MinecraftServer server) {
-        Path savePath = server
-                .getWorldPath(Objects.requireNonNull(net.minecraft.world.level.storage.LevelResource.ROOT))
-                .resolve(SAVE_FILE_NAME);
-        if (!Files.exists(savePath))
-            return;
-        try (Reader r = Files.newBufferedReader(savePath)) {
-            JsonArray teamsArray = GSON.fromJson(r, JsonArray.class);
-            if (teamsArray == null)
-                return;
-            TEAMS.clear();
-            teamsArray.forEach(elem -> {
-                try {
-                    JsonObject obj = elem.getAsJsonObject();
-                    if (!obj.has("id") || !obj.has("name") || !obj.has("leader")) {
-                        mc.sayda.creraces.CreRaces.LOGGER.warn("RaceTeamManager: skipping malformed team entry (missing id/name/leader)");
-                        return;
-                    }
-                    UUID id = UUID.fromString(obj.get("id").getAsString());
-                    String name = obj.get("name").getAsString();
-                    UUID leader = UUID.fromString(obj.get("leader").getAsString());
-                    boolean ff = obj.has("friendlyFire") && obj.get("friendlyFire").getAsBoolean();
-                    RaceTeam team = new RaceTeam(id, name, leader);
-                    team.setFriendlyFire(ff);
-                    team.getMembers().clear();
-                    team.getMemberRoles().clear();
-                    if (obj.has("members") && obj.get("members").isJsonArray()) {
-                        obj.getAsJsonArray("members").forEach(mElem -> {
-                            try {
-                                JsonObject mObj = mElem.getAsJsonObject();
-                                UUID mUuid = UUID.fromString(mObj.get("uuid").getAsString());
-                                Role role = Role.valueOf(mObj.get("role").getAsString());
-                                team.getMembers().add(mUuid);
-                                team.getMemberRoles().put(mUuid, role);
-                            } catch (Exception e) {
-                                mc.sayda.creraces.CreRaces.LOGGER.warn("RaceTeamManager: skipping malformed team member: {}", e.getMessage());
-                            }
-                        });
-                    }
-                    TEAMS.put(id, team);
+        ServerLevel overworld = server.overworld();
+        CURRENT_DATA = overworld.getDataStorage().computeIfAbsent(
+                tag -> { populateTeamsFromTag(server, tag); return new Data(); },
+                Data::new,
+                DATA_ID);
+        CreRaces.LOGGER.info("Loaded {} team(s).", TEAMS.size());
+    }
 
-                    // Re-wire teamId/teamName into any already-online players (e.g. after /reload)
-                    team.getMembers().forEach(memberId -> {
-                        ServerPlayer online = server.getPlayerList().getPlayer(Objects.requireNonNull(memberId));
-                        if (online != null)
-                            applyTeamToPlayer(online, team);
-                    });
-                } catch (Exception e) {
-                    mc.sayda.creraces.CreRaces.LOGGER.warn("RaceTeamManager: failed to load team entry: {}", e.getMessage());
-                }
-            });
-            CreRaces.LOGGER.info("Loaded {} team(s) from {}", TEAMS.size(), savePath);
-        } catch (Exception e) {
-            CreRaces.LOGGER.error("Failed to load teams: {}", e.getMessage());
+    private static CompoundTag serializeTeam(RaceTeam team) {
+        CompoundTag tag = new CompoundTag();
+        tag.putString("id", team.getId().toString());
+        tag.putString("name", team.getName());
+        tag.putString("leader", team.getLeader().toString());
+        tag.putBoolean("friendlyFire", team.isFriendlyFire());
+        ListTag members = new ListTag();
+        team.getMembers().forEach(m -> {
+            CompoundTag mTag = new CompoundTag();
+            mTag.putString("uuid", m.toString());
+            mTag.putString("role", team.getRole(m).name());
+            members.add(mTag);
+        });
+        tag.put("members", members);
+        return tag;
+    }
+
+    private static void populateTeamsFromTag(MinecraftServer server, CompoundTag tag) {
+        TEAMS.clear();
+        for (net.minecraft.nbt.Tag t : tag.getList("teams", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+            try {
+                loadTeamEntry(server, (CompoundTag) t);
+            } catch (Exception e) {
+                CreRaces.LOGGER.warn("RaceTeamManager: failed to load team entry: {}", e.getMessage());
+            }
         }
     }
+
+    private static void loadTeamEntry(MinecraftServer server, CompoundTag obj) {
+        if (!obj.contains("id") || !obj.contains("name") || !obj.contains("leader")) {
+            CreRaces.LOGGER.warn("RaceTeamManager: skipping malformed team entry (missing id/name/leader)");
+            return;
+        }
+        UUID id = UUID.fromString(obj.getString("id"));
+        String name = obj.getString("name");
+        UUID leader = UUID.fromString(obj.getString("leader"));
+        boolean ff = obj.getBoolean("friendlyFire");
+        RaceTeam team = new RaceTeam(id, name, leader);
+        team.setFriendlyFire(ff);
+        team.getMembers().clear();
+        team.getMemberRoles().clear();
+        for (net.minecraft.nbt.Tag t : obj.getList("members", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+            try {
+                CompoundTag mObj = (CompoundTag) t;
+                UUID mUuid = UUID.fromString(mObj.getString("uuid"));
+                Role role = Role.valueOf(mObj.getString("role"));
+                team.getMembers().add(mUuid);
+                team.getMemberRoles().put(mUuid, role);
+            } catch (Exception e) {
+                CreRaces.LOGGER.warn("RaceTeamManager: skipping malformed team member: {}", e.getMessage());
+            }
+        }
+        TEAMS.put(id, team);
+
+        // Re-wire teamId/teamName into any already-online players (e.g. after /reload)
+        team.getMembers().forEach(memberId -> {
+            ServerPlayer online = server.getPlayerList().getPlayer(Objects.requireNonNull(memberId));
+            if (online != null) applyTeamToPlayer(online, team);
+        });
+    }
+
 }

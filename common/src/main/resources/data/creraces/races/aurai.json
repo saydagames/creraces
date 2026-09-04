@@ -22,7 +22,43 @@
     ],
     "passive": [
         {
-            "type": "creraces:flight"
+            "type": "creraces:flight",
+            "condition": {
+                "type": "creraces:not",
+                "condition": {
+                    "type": "creraces:or",
+                    "conditions": [
+                        {
+                            "type": "creraces:and",
+                            "conditions": [
+                                { "type": "creraces:wearing_armor", "slot": "head" },
+                                { "type": "creraces:not", "condition": { "type": "creraces:wearing_armor", "tag": "#c:light_armors", "slot": "head" } }
+                            ]
+                        },
+                        {
+                            "type": "creraces:and",
+                            "conditions": [
+                                { "type": "creraces:wearing_armor", "slot": "chest" },
+                                { "type": "creraces:not", "condition": { "type": "creraces:wearing_armor", "tag": "#c:light_armors", "slot": "chest" } }
+                            ]
+                        },
+                        {
+                            "type": "creraces:and",
+                            "conditions": [
+                                { "type": "creraces:wearing_armor", "slot": "legs" },
+                                { "type": "creraces:not", "condition": { "type": "creraces:wearing_armor", "tag": "#c:light_armors", "slot": "legs" } }
+                            ]
+                        },
+                        {
+                            "type": "creraces:and",
+                            "conditions": [
+                                { "type": "creraces:wearing_armor", "slot": "feet" },
+                                { "type": "creraces:not", "condition": { "type": "creraces:wearing_armor", "tag": "#c:light_armors", "slot": "feet" } }
+                            ]
+                        }
+                    ]
+                }
+            }
         },
         {
             "type": "creraces:on_tick",
@@ -44,12 +80,12 @@
     ],
     "creraces:territory_valid_biomes": ["#c:is_plains"],
     "creraces:starting_items": [
-        "creraces:aurai_sculpture"
+        "creraces:angelic_sculpture"
     ],
     "sapling_mechanics": [
         {
             "type": "creraces:block_place",
-            "block": "creraces:aurai_sculpture",
+            "block": "creraces:angelic_sculpture",
             "actions": [
                 {
                     "type": "creraces:conditional",
@@ -99,7 +135,7 @@
         },
         {
             "type": "creraces:block_interaction",
-            "block": "creraces:aurai_sculpture",
+            "block": "creraces:angelic_sculpture",
             "actions": [
                 {
                     "type": "creraces:conditional",
@@ -111,7 +147,7 @@
                         ]
                     },
                     "if_true": [
-                        { "type": "creraces:give_item", "item": "creraces:aurai_sculpture", "amount": 1 },
+                        { "type": "creraces:give_item", "item": "creraces:angelic_sculpture", "amount": 1 },
                         { "type": "creraces:place_block", "block": "minecraft:air", "use_target_block": true, "overwrite": true },
                         { "type": "creraces:modify_value", "resource": "state:node_x", "value": 0.0, "persistent": true },
                         { "type": "creraces:modify_value", "resource": "state:node_y", "value": 0.0, "persistent": true },

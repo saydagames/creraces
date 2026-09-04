@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    { "item": "creraces:veil_willow_boat" },
+    { "item": "minecraft:chest" }
+  ],
+  "result": { "id": "creraces:veil_willow_chest_boat", "count": 1 }
+}

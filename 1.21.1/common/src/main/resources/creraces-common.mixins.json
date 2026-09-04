@@ -4,8 +4,41 @@
     "package": "mc.sayda.creraces.mixin",
     "compatibilityLevel": "JAVA_21",
     "minVersion": "0.8",
-    "mixins": [],
-    "client": [],
+    "plugin": "mc.sayda.creraces.mixin.MixinConfigPlugin",
+    "mixins": [
+        "PlayerMixin",
+        "ServerPlayerMixin",
+        "EntityMixin",
+        "MobMixin",
+        "MobGoalMixin",
+        "FoodDataMixin",
+        "LivingEntityMixin",
+        "BlockStateSolidityMixin",
+        "LivingEntitySleepMixin",
+        "PlayerRespawnMixin",
+        "BlockEntityAccessor",
+        "LivingEntityAccessor",
+        "PoiTypesAccessor",
+        "StructureTemplatePoolAccessor",
+        "PackRepositoryMixin",
+        "PlayerFoodMixin",
+        "BlockEntityTypeAccessor",
+        "AxeItemAccessor",
+        "WoodTypeAccessor",
+        "TreeDecoratorTypeAccessor",
+        "SpawnPlacementsAccessor",
+        "LakeFeatureMixin"
+    ],
+    "client": [
+        "LivingEntityRendererMixin",
+        "LevelRendererMixin",
+        "MiniBlockPlaceMixin",
+        "HumanoidModelMixin",
+        "FogRendererMixin",
+        "LiquidOverlayMixin",
+        "GuiGraphicsMixin",
+        "BoatRendererAccessor"
+    ],
     "injectors": {
         "defaultRequire": 1
     }

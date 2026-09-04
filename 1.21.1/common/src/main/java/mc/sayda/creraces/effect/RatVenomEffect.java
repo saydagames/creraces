@@ -1,0 +1,63 @@
+package mc.sayda.creraces.effect;
+
+import mc.sayda.creraces.util.IPersistentDataAccessor;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectCategory;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.core.registries.Registries;
+import java.util.UUID;
+
+@SuppressWarnings("null")
+public class RatVenomEffect extends MobEffect {
+    public RatVenomEffect() {
+        super(MobEffectCategory.HARMFUL, 0x55FF55); // Light Green color
+    }
+
+    @Override
+    public boolean applyEffectTick(@javax.annotation.Nonnull LivingEntity entity, int amplifier) {
+        if (entity.level().isClientSide())
+            return true;
+
+        Entity source = null;
+        if (entity instanceof IPersistentDataAccessor accessor) {
+            var data = accessor.creraces$getPersistentData();
+            if (data.contains("creraces:source")) {
+                String uuidStr = data.getString("creraces:source");
+                try {
+                    UUID uuid = UUID.fromString(uuidStr);
+                    if (entity.level() instanceof ServerLevel serverLevel) {
+                        source = serverLevel.getEntity(uuid);
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        }
+
+        var registry = entity.level().registryAccess().registryOrThrow(Registries.DAMAGE_TYPE);
+        var holderOpt = registry.getHolder(
+                ResourceKey.create(Registries.DAMAGE_TYPE, ResourceLocation.fromNamespaceAndPath("creraces", "ratvenom")));
+        if (holderOpt.isEmpty()) return true;
+        var holder = holderOpt.get();
+
+        DamageSource ds = new DamageSource(holder, source, source);
+        float scaling = mc.sayda.creraces.config.CreRacesConfig.RAT_VENOM_SCALING.get().floatValue();
+        mc.sayda.creraces.util.DamageGuard.setProcessing(true);
+        try {
+            entity.hurt(ds, 0.2f + (amplifier * scaling));
+        } finally {
+            mc.sayda.creraces.util.DamageGuard.setProcessing(false);
+        }
+        return true;
+    }
+
+    @Override
+    public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) {
+        return duration % 10 == 0;
+    }
+
+}

@@ -51,12 +51,12 @@
     ],
     "creraces:territory_valid_biomes": ["#minecraft:is_river"],
     "creraces:starting_items": [
-        "creraces:naiad_statue"
+        "creraces:oceanic_statue"
     ],
     "sapling_mechanics": [
         {
             "type": "creraces:block_place",
-            "block": "creraces:naiad_statue",
+            "block": "creraces:oceanic_statue",
             "actions": [
                 {
                     "type": "creraces:conditional",
@@ -106,7 +106,7 @@
         },
         {
             "type": "creraces:block_interaction",
-            "block": "creraces:naiad_statue",
+            "block": "creraces:oceanic_statue",
             "actions": [
                 {
                     "type": "creraces:conditional",
@@ -118,7 +118,7 @@
                         ]
                     },
                     "if_true": [
-                        { "type": "creraces:give_item", "item": "creraces:naiad_statue", "amount": 1 },
+                        { "type": "creraces:give_item", "item": "creraces:oceanic_statue", "amount": 1 },
                         { "type": "creraces:place_block", "block": "minecraft:air", "use_target_block": true, "overwrite": true },
                         { "type": "creraces:modify_value", "resource": "state:node_x", "value": 0.0, "persistent": true },
                         { "type": "creraces:modify_value", "resource": "state:node_y", "value": 0.0, "persistent": true },

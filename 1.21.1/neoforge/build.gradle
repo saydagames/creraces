@@ -11,6 +11,7 @@ loom {
     mixin {
         defaultRefmapName = "creraces-neoforge.refmap.json"
     }
+    accessWidenerPath = project(":1.21.1:common").file("src/main/resources/creraces.accesswidener")
 }
 
 configurations {
@@ -31,6 +32,8 @@ dependencies {
     // Twilight Lib - Direct File Dependency
     modImplementation files("${rootProject.projectDir.parentFile}/twilight-lib/1.21.1/neoforge/build/libs/twilight_lib-1.21.1-neoforge-${rootProject.twilight_lib_version}.jar")
     modImplementation "curse.maven:pehkui-319596:5446174"
+    modImplementation "com.github.glitchfiend:TerraBlender-neoforge:${rootProject.property('1_21_1_terrablender_version')}"
+    modImplementation "curse.maven:curios-309927:6529130"
 }
 
 processResources {

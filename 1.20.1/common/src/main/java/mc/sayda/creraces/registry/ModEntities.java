@@ -147,6 +147,20 @@ public class ModEntities {
                                 FloatingMoteEntity::createAttributes);
         }
 
+        /**
+         * FLOATING_MOTE has a natural spawn entry (veilwood_forest.json's ambient spawner list) but
+         * nothing ever registered its placement restrictions with vanilla. Goes through
+         * SpawnPlacementsAccessor (a mixin), not an access widener, kept the same way as the 1.21.1
+         * module for consistency, see AxeItemAccessor's use in CreRaces.java for why. Also silences
+         * a NeoForge startup validation error for the same unregistered entry on that module.
+         */
+        public static void registerSpawnPlacements() {
+                mc.sayda.creraces.mixin.SpawnPlacementsAccessor.creraces$callRegister(FLOATING_MOTE.get(),
+                                net.minecraft.world.entity.SpawnPlacements.Type.NO_RESTRICTIONS,
+                                net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                                (type, level, reason, pos, random) -> true);
+        }
+
         public static void register() {
                 ENTITIES.register();
                 registerAttributes();

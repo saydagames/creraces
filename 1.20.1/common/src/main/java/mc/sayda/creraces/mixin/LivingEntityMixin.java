@@ -279,6 +279,7 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
         if (source.getEntity() instanceof LivingEntity) {
             LivingEntity attacker = (LivingEntity) source.getEntity();
             if (!mc.sayda.creraces.team.RaceTeamManager.canHurt((LivingEntity) (Object) this, attacker)) {
+                creraces$healBlockedServantFire((LivingEntity) (Object) this, attacker, amount);
                 cir.setReturnValue(false);
                 return;
             }
@@ -578,6 +579,33 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
     @Unique
     private boolean creraces$isServant(LivingEntity entity) {
         return ((IPersistentDataAccessor) entity).creraces$getPersistentData().contains("creraces:servant_of");
+    }
+
+    /**
+     * When friendly fire is blocked (e.g. one servant's arrow hits another of the
+     * same commander), convert the would-be damage into healing for the victim
+     * instead of just no-op'ing the hit, and drop either side's target if it was
+     * pointed at the other - otherwise they keep swinging/shooting at a target
+     * they can never actually hurt.
+     */
+    @Unique
+    private void creraces$healBlockedServantFire(LivingEntity victim, LivingEntity attacker, float amount) {
+        if (attacker instanceof net.minecraft.world.entity.Mob attackerMob && attackerMob.getTarget() == victim) {
+            attackerMob.setTarget(null);
+        }
+        if (victim instanceof net.minecraft.world.entity.Mob victimMob && victimMob.getTarget() == attacker) {
+            victimMob.setTarget(null);
+        }
+
+        if (amount <= 0 || !(victim instanceof net.minecraft.world.entity.Mob) || !creraces$isServant(victim))
+            return;
+
+        Player victimOwner = mc.sayda.creraces.util.CombatUtils.getRootOwner(victim);
+        Player attackerOwner = mc.sayda.creraces.util.CombatUtils.getRootOwner(attacker);
+        if (victimOwner == null || attackerOwner == null || !victimOwner.getUUID().equals(attackerOwner.getUUID()))
+            return;
+
+        victim.heal(amount);
     }
 
     @Unique
