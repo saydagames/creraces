@@ -1,5 +1,6 @@
 package mc.sayda.creraces.ability;
 
+import com.mojang.serialization.Codec;
 import net.minecraft.util.StringRepresentable;
 
 public enum EssenceType implements StringRepresentable {
@@ -15,7 +16,7 @@ public enum EssenceType implements StringRepresentable {
     ARCANE ("arcane", 0x8822CC),
     SOUL   ("soul",   0x00D4C8);
 
-    public static final com.mojang.serialization.Codec<EssenceType> CODEC = StringRepresentable.fromEnum(EssenceType::values);
+    public static final Codec<EssenceType> CODEC = StringRepresentable.fromEnum(EssenceType::values);
 
     private final String id;
     private final int color;

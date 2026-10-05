@@ -15,6 +15,7 @@
             "actions": [
                 {
                     "type": "creraces:apply_velocity",
+                    "use_target": true,
                     "mode": "pull",
                     "strength": 1.2
                 },

@@ -1,5 +1,6 @@
 package mc.sayda.creraces.block;
 
+import com.mojang.serialization.MapCodec;
 import mc.sayda.creraces.block.entity.VeilMushroomBlockEntity;
 import mc.sayda.creraces.registry.ModParticles;
 import net.minecraft.core.BlockPos;
@@ -21,7 +22,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 public class VeilMushroomBlock extends BaseEntityBlock {
 
-    public static final com.mojang.serialization.MapCodec<VeilMushroomBlock> CODEC = simpleCodec(VeilMushroomBlock::new);
+    public static final MapCodec<VeilMushroomBlock> CODEC = simpleCodec(VeilMushroomBlock::new);
     private static final VoxelShape SHAPE = box(5.0, 0.0, 5.0, 11.0, 6.0, 11.0);
 
     public VeilMushroomBlock(Properties properties) {
@@ -29,20 +30,18 @@ public class VeilMushroomBlock extends BaseEntityBlock {
     }
 
     @Override
-    protected com.mojang.serialization.MapCodec<? extends VeilMushroomBlock> codec() {
+    protected MapCodec<? extends VeilMushroomBlock> codec() {
         return CODEC;
     }
-
-    // Shape
 
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return SHAPE;
     }
 
-    // Survival (replicates BushBlock behaviour)
+    // Placed like a BushBlock, but breaks with drops a tick later instead of vanishing outright
 
-    protected boolean mayPlaceOn(BlockState groundState, BlockGetter world, BlockPos pos) {
+    protected boolean mayPlaceOn(BlockState groundState, BlockGetter level, BlockPos pos) {
         return groundState.is(BlockTags.DIRT) || groundState.is(Blocks.FARMLAND);
     }
 
@@ -70,8 +69,6 @@ public class VeilMushroomBlock extends BaseEntityBlock {
         }
     }
 
-    // Particles
-
     @Override
     public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
         if (level.isDay()) return;
@@ -83,8 +80,6 @@ public class VeilMushroomBlock extends BaseEntityBlock {
             level.addParticle(ModParticles.VEIL_MIST.get(), x, y, z, 0, 0, 0);
         }
     }
-
-    // Block entity
 
     @Override
     public RenderShape getRenderShape(BlockState state) {

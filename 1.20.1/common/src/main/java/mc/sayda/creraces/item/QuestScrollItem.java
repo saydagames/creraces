@@ -4,6 +4,7 @@ import mc.sayda.creraces.engine.WorldState;
 import mc.sayda.creraces.quest.Quest;
 import mc.sayda.creraces.quest.QuestRegistry;
 import mc.sayda.creraces.quest.QuestSessionRegistry;
+import mc.sayda.creraces.registry.ModItems;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -28,6 +29,17 @@ public class QuestScrollItem extends Item {
         ACTIVE, COMPLETED
     }
 
+    private static final String TAG_QUEST_ID = "QuestId";
+    private static final String TAG_TIER = "Tier";
+    private static final String TAG_OWNER_UUID = "OwnerUUID";
+    private static final String TAG_OWNER_NAME = "OwnerName";
+    private static final String TAG_PROGRESS = "Progress";
+    private static final String TAG_DAY_OBTAINED = "DayObtained";
+    private static final String TAG_TARGET_DAY = "TargetDay";
+    private static final String TAG_DURATION_DAYS = "DurationDays";
+    private static final String TAG_STATE = "State";
+    private static final String TAG_COLLECT_PEAK = "CollectPeak";
+
     public QuestScrollItem(Properties properties) {
         super(properties);
     }
@@ -37,32 +49,30 @@ public class QuestScrollItem extends Item {
         return getState(stack) == State.COMPLETED;
     }
 
-    // ── Creation ──────────────────────────────────────────────────────────────
-
     public static ItemStack create(Quest quest, ServerPlayer owner) {
         // A re-taken quest must not be immediately self-removed by a stale abandoned flag
         // left over from a previous instance of the same quest.
         QuestSessionRegistry.clearAbandoned(owner.getUUID(), quest.id());
 
-        ItemStack stack = new ItemStack(mc.sayda.creraces.registry.ModItems.QUEST_SCROLL.get());
+        ItemStack stack = new ItemStack(ModItems.QUEST_SCROLL.get());
         CompoundTag tag = new CompoundTag();
         long dayObtained = WorldState.currentDay(owner.level());
-        tag.putString("QuestId", quest.id().toString());
-        tag.putInt("Tier", quest.tier());
-        tag.putUUID("OwnerUUID", owner.getUUID());
-        tag.putString("OwnerName", owner.getName().getString());
-        tag.putInt("Progress", 0);
-        tag.putLong("DayObtained", dayObtained);
-        tag.putLong("TargetDay", dayObtained + quest.durationDays());
-        tag.putInt("DurationDays", quest.durationDays());
-        tag.putString("State", State.ACTIVE.name());
+        tag.putString(TAG_QUEST_ID, quest.id().toString());
+        tag.putInt(TAG_TIER, quest.tier());
+        tag.putUUID(TAG_OWNER_UUID, owner.getUUID());
+        tag.putString(TAG_OWNER_NAME, owner.getName().getString());
+        tag.putInt(TAG_PROGRESS, 0);
+        tag.putLong(TAG_DAY_OBTAINED, dayObtained);
+        tag.putLong(TAG_TARGET_DAY, dayObtained + quest.durationDays());
+        tag.putInt(TAG_DURATION_DAYS, quest.durationDays());
+        tag.putString(TAG_STATE, State.ACTIVE.name());
         // Collect-item quests track progress by the player's highest-ever held count of the
         // target since accepting the quest, not by raw pickup events - otherwise dropping an
         // already-owned item and picking it back up would farm free progress. Seeding this to
         // whatever they already own means only genuinely new items above that count, and above
         // any later peak, ever grant progress. See QuestTracker.onItemPickup.
         if (quest.objective() instanceof Quest.CollectItemObjective objective) {
-            tag.putInt("CollectPeak", countMatching(owner, objective));
+            tag.putInt(TAG_COLLECT_PEAK, countMatching(owner, objective));
         }
         stack.setTag(tag);
         return stack;
@@ -90,43 +100,41 @@ public class QuestScrollItem extends Item {
 
     /** A minimal stack carrying only Tier/State tags, used as a villager trade cost template. */
     public static ItemStack createTemplate(int tier, State state) {
-        ItemStack stack = new ItemStack(mc.sayda.creraces.registry.ModItems.QUEST_SCROLL.get());
+        ItemStack stack = new ItemStack(ModItems.QUEST_SCROLL.get());
         CompoundTag tag = new CompoundTag();
-        tag.putInt("Tier", tier);
-        tag.putString("State", state.name());
+        tag.putInt(TAG_TIER, tier);
+        tag.putString(TAG_STATE, state.name());
         stack.setTag(tag);
         return stack;
     }
 
-    // ── Readers ───────────────────────────────────────────────────────────────
-
     public static Optional<Quest> getQuest(ItemStack stack) {
         CompoundTag tag = stack.getTag();
-        if (tag == null || !tag.contains("QuestId")) return Optional.empty();
-        ResourceLocation id = ResourceLocation.tryParse(tag.getString("QuestId"));
+        if (tag == null || !tag.contains(TAG_QUEST_ID)) return Optional.empty();
+        ResourceLocation id = ResourceLocation.tryParse(tag.getString(TAG_QUEST_ID));
         return id == null ? Optional.empty() : Optional.ofNullable(QuestRegistry.get(id));
     }
 
     public static int getProgress(ItemStack stack) {
         CompoundTag tag = stack.getTag();
-        return tag != null ? tag.getInt("Progress") : 0;
+        return tag != null ? tag.getInt(TAG_PROGRESS) : 0;
     }
 
     /** The highest total count of the target item this scroll's owner has held since accepting it. */
     public static int getCollectPeak(ItemStack stack) {
         CompoundTag tag = stack.getTag();
-        return tag != null ? tag.getInt("CollectPeak") : 0;
+        return tag != null ? tag.getInt(TAG_COLLECT_PEAK) : 0;
     }
 
     public static void setCollectPeak(ItemStack stack, int value) {
-        stack.getOrCreateTag().putInt("CollectPeak", value);
+        stack.getOrCreateTag().putInt(TAG_COLLECT_PEAK, value);
     }
 
     public static State getState(ItemStack stack) {
         CompoundTag tag = stack.getTag();
-        if (tag == null || !tag.contains("State")) return State.ACTIVE;
+        if (tag == null || !tag.contains(TAG_STATE)) return State.ACTIVE;
         try {
-            return State.valueOf(tag.getString("State"));
+            return State.valueOf(tag.getString(TAG_STATE));
         } catch (IllegalArgumentException e) {
             return State.ACTIVE;
         }
@@ -135,11 +143,9 @@ public class QuestScrollItem extends Item {
     /** Tier from the cached NBT tag if present (trade templates), otherwise from the quest definition. */
     public static int getTier(ItemStack stack) {
         CompoundTag tag = stack.getTag();
-        if (tag != null && tag.contains("Tier")) return tag.getInt("Tier");
+        if (tag != null && tag.contains(TAG_TIER)) return tag.getInt(TAG_TIER);
         return getQuest(stack).map(Quest::tier).orElse(0);
     }
-
-    // ── Inventory-wide helpers ────────────────────────────────────────────────
 
     public static boolean hasActiveScroll(Player player, ResourceLocation questId) {
         for (ItemStack stack : player.getInventory().items) {
@@ -158,35 +164,30 @@ public class QuestScrollItem extends Item {
         if (!(stack.getItem() instanceof QuestScrollItem)) return false;
         if (getState(stack) != State.ACTIVE) return false;
         CompoundTag tag = stack.getTag();
-        if (tag == null || !tag.contains("QuestId")) return false;
-        return questId.toString().equals(tag.getString("QuestId"));
+        if (tag == null || !tag.contains(TAG_QUEST_ID)) return false;
+        return questId.toString().equals(tag.getString(TAG_QUEST_ID));
     }
-
-    // ── Progress / completion / abandon ──────────────────────────────────────
 
     /** Mutates the stack's tag in place. Returns true if this increment completed the quest. */
     public static boolean incrementProgress(ItemStack stack, int amount) {
         Optional<Quest> questOpt = getQuest(stack);
         if (questOpt.isEmpty()) return false;
         CompoundTag tag = stack.getOrCreateTag();
-        int newProgress = tag.getInt("Progress") + amount;
-        tag.putInt("Progress", newProgress);
+        int newProgress = tag.getInt(TAG_PROGRESS) + amount;
+        tag.putInt(TAG_PROGRESS, newProgress);
         if (newProgress >= questOpt.get().objective().count()) {
-            tag.putString("State", State.COMPLETED.name());
+            tag.putString(TAG_STATE, State.COMPLETED.name());
             return true;
         }
         return false;
     }
 
     /**
-     * The single shared abandon path for the board's Abandon button and the expiration tick.
-     * Rather than hunting down and destroying one specific ItemStack, this marks the
-     * (player, quest) pair as abandoned in the session registry and sweeps every matching
-     * ACTIVE scroll out of the player's inventory immediately; the periodic tick sweep
-     * (see sweepAbandoned) then catches any copy that wasn't in the inventory at this exact
-     * moment (e.g. one pulled out of storage afterward). Also starts a cooldown on that
-     * (player, quest) pair equal in length to the quest's own duration, so giving up on (or
-     * running out of time for) a quest doesn't let it be immediately re-taken.
+     * The single abandon path for both the board's Abandon button and expiry. Marks the
+     * (player, quest) pair abandoned in the session registry and sweeps every matching ACTIVE
+     * scroll out of the inventory now; the periodic sweep (see sweepAbandoned) catches copies
+     * that were elsewhere at the time, e.g. in a chest. Also starts a re-take cooldown as long
+     * as the quest's own duration.
      */
     public static void abandonQuest(ServerPlayer player, ResourceLocation questId) {
         Quest quest = QuestRegistry.get(questId);
@@ -202,7 +203,10 @@ public class QuestScrollItem extends Item {
         sweepAbandoned(player);
     }
 
-    /** Removes every ACTIVE scroll in the player's inventory whose quest is flagged abandoned. Silent - the message is sent once, at the point abandonQuest() decides, not per copy removed. */
+    /**
+     * Removes every ACTIVE scroll in the player's inventory whose quest is flagged abandoned.
+     * Silent: abandonQuest sends the message once, not once per removed copy.
+     */
     public static void sweepAbandoned(ServerPlayer player) {
         var items = player.getInventory().items;
         for (int i = 0; i < items.size(); i++) {
@@ -219,25 +223,23 @@ public class QuestScrollItem extends Item {
     public static void tick(ServerPlayer player, ItemStack stack) {
         if (getState(stack) != State.ACTIVE) return;
         CompoundTag tag = stack.getTag();
-        if (tag == null || !tag.contains("TargetDay") || !tag.contains("QuestId")) return;
+        if (tag == null || !tag.contains(TAG_TARGET_DAY) || !tag.contains(TAG_QUEST_ID)) return;
 
         long currentDay = WorldState.currentDay(player.level());
-        long targetDay = tag.getLong("TargetDay");
-        int durationDays = tag.getInt("DurationDays");
+        long targetDay = tag.getLong(TAG_TARGET_DAY);
+        int durationDays = tag.getInt(TAG_DURATION_DAYS);
 
         // Tamper check: an admin rewinding time (e.g. /time set 0) must not grant free time.
         if (targetDay - currentDay > durationDays) {
             targetDay = currentDay + durationDays;
-            tag.putLong("TargetDay", targetDay);
+            tag.putLong(TAG_TARGET_DAY, targetDay);
         }
 
         if (currentDay >= targetDay) {
-            ResourceLocation questId = ResourceLocation.tryParse(tag.getString("QuestId"));
+            ResourceLocation questId = ResourceLocation.tryParse(tag.getString(TAG_QUEST_ID));
             if (questId != null) abandonQuest(player, questId);
         }
     }
-
-    // ── Tooltip ───────────────────────────────────────────────────────────────
 
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
@@ -254,8 +256,8 @@ public class QuestScrollItem extends Item {
                     .withStyle(ChatFormatting.GRAY));
 
             CompoundTag tag = stack.getTag();
-            if (tag != null && tag.contains("OwnerName")) {
-                tooltip.add(Component.translatable("tooltip.creraces.quest_owner", tag.getString("OwnerName"))
+            if (tag != null && tag.contains(TAG_OWNER_NAME)) {
+                tooltip.add(Component.translatable("tooltip.creraces.quest_owner", tag.getString(TAG_OWNER_NAME))
                         .withStyle(ChatFormatting.DARK_GRAY));
             }
 
@@ -264,12 +266,12 @@ public class QuestScrollItem extends Item {
                         .withStyle(ChatFormatting.GREEN));
             } else if (tag != null && level != null) {
                 long currentDay = WorldState.currentDay(level);
-                long targetDay = tag.getLong("TargetDay");
+                long targetDay = tag.getLong(TAG_TARGET_DAY);
                 long daysLeft = Math.max(0, targetDay - currentDay);
                 ChatFormatting color = daysLeft <= 1 ? ChatFormatting.RED : ChatFormatting.YELLOW;
                 tooltip.add(Component.translatable("tooltip.creraces.quest_days_left", daysLeft).withStyle(color));
             }
         }
-        if (level != null) super.appendHoverText(stack, level, tooltip, flag);
+        super.appendHoverText(stack, level, tooltip, flag);
     }
 }

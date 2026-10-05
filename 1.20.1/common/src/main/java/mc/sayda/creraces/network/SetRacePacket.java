@@ -1,7 +1,9 @@
 package mc.sayda.creraces.network;
 
+import dev.architectury.networking.NetworkManager;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.capability.IPlayerVariables;
 import mc.sayda.creraces.race.Race;
 import mc.sayda.creraces.race.RaceIncidents;
 import mc.sayda.creraces.race.RaceRegistry;
@@ -11,15 +13,14 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.Level;
 
+import java.util.Objects;
 import java.util.function.Supplier;
 
-/**
- * Packet sent from client to server to finalize race selection.
- */
+/** C2S: finalizes the player's race selection. */
 public class SetRacePacket {
     public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "set_race");
+
     private final ResourceLocation raceId;
 
     public SetRacePacket(ResourceLocation raceId) {
@@ -31,52 +32,45 @@ public class SetRacePacket {
     }
 
     public void encode(FriendlyByteBuf buf) {
-        buf.writeResourceLocation(java.util.Objects.requireNonNull(this.raceId));
+        buf.writeResourceLocation(Objects.requireNonNull(this.raceId));
     }
 
-    public void handle(Supplier<dev.architectury.networking.NetworkManager.PacketContext> contextSupplier) {
-        dev.architectury.networking.NetworkManager.PacketContext context = contextSupplier.get();
+    public void handle(Supplier<NetworkManager.PacketContext> contextSupplier) {
+        NetworkManager.PacketContext context = contextSupplier.get();
         context.queue(() -> {
-            net.minecraft.world.entity.player.Player player = context.getPlayer();
-            if (player instanceof ServerPlayer sp) {
-                DataUtils.getVariables(sp).ifPresent(vars -> {
-                    // Logic check: only allow if player hasn't chosen yet or has permission
-                    if (!vars.hasChosenRace() || sp.hasPermissions(2)) {
-                        if (!RaceRegistry.exists(raceId)) {
-                            CreRaces.LOGGER.warn("Player {} attempted to set unregistered race: {}",
-                                    sp.getName().getString(), raceId);
-                            return;
-                        }
+            if (!(context.getPlayer() instanceof ServerPlayer sp)) return;
+            DataUtils.getVariables(sp).ifPresent(vars -> {
+                // The first pick is free; changing an existing race needs op
+                if (vars.hasChosenRace() && !sp.hasPermissions(2)) return;
 
-                        Race race = RaceRegistry.get(raceId);
-                        if (race != null) {
-                            RaceIncidents.transformPlayer(sp, raceId);
-                            CreRaces.LOGGER.info("Player {} chose race: {}", sp.getName().getString(), raceId);
+                Race race = RaceRegistry.get(raceId);
+                if (race == null) {
+                    CreRaces.LOGGER.warn("Player {} attempted to set unregistered race: {}",
+                            sp.getName().getString(), raceId);
+                    return;
+                }
 
-                            // Selection teleport: warp to the race's defined destination if set.
-                            double[] selPos = race.selectionPos();
-                            if (selPos != null) {
-                                ServerLevel targetLevel = sp.serverLevel();
-                                if (race.selectionDimension() != null) {
-                                    ResourceKey<Level> dimKey = ResourceKey.create(
-                                            Registries.DIMENSION, race.selectionDimension());
-                                    ServerLevel dimLevel = sp.server.getLevel(dimKey);
-                                    if (dimLevel != null) targetLevel = dimLevel;
-                                }
-                                vars.setReturnDim(sp.level().dimension().location().toString());
-                                vars.setReturnX(sp.getX());
-                                vars.setReturnY(sp.getY());
-                                vars.setReturnZ(sp.getZ());
-                                sp.teleportTo(targetLevel, selPos[0], selPos[1], selPos[2],
-                                        sp.getYRot(), sp.getXRot());
-                            }
-                        } else {
-                            CreRaces.LOGGER.error("Player {} attempted to set invalid race (get null): {}",
-                                    sp.getName().getString(), raceId);
-                        }
-                    }
-                });
-            }
+                RaceIncidents.transformPlayer(sp, raceId);
+                CreRaces.LOGGER.info("Player {} chose race: {}", sp.getName().getString(), raceId);
+                teleportToSelectionPoint(sp, vars, race);
+            });
         });
+    }
+
+    /** Races may define a spot to warp to on selection; the player's old position becomes their return point. */
+    private static void teleportToSelectionPoint(ServerPlayer sp, IPlayerVariables vars, Race race) {
+        double[] selPos = race.selectionPos();
+        if (selPos == null) return;
+
+        ServerLevel targetLevel = sp.serverLevel();
+        if (race.selectionDimension() != null) {
+            ServerLevel dimLevel = sp.server.getLevel(ResourceKey.create(Registries.DIMENSION, race.selectionDimension()));
+            if (dimLevel != null) targetLevel = dimLevel;
+        }
+        vars.setReturnDim(sp.level().dimension().location().toString());
+        vars.setReturnX(sp.getX());
+        vars.setReturnY(sp.getY());
+        vars.setReturnZ(sp.getZ());
+        sp.teleportTo(targetLevel, selPos[0], selPos[1], selPos[2], sp.getYRot(), sp.getXRot());
     }
 }

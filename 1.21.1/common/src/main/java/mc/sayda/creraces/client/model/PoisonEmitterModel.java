@@ -93,8 +93,8 @@ public class PoisonEmitterModel<T extends Entity> extends EntityModel<T> {
     @Override
     public void setupAnim(T entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw,
             float headPitch) {
-        this.base.xRot = (Mth.sin(ageInTicks * 0.3F + 2) * 0.05F) + ((headPitch * 0.017453292F) / 2);
+        this.base.xRot = (Mth.sin(ageInTicks * 0.3F + 2) * 0.05F) + ((headPitch * Mth.DEG_TO_RAD) / 2);
         this.base.zRot = (Mth.sin(ageInTicks * 0.6F + 2) * 0.05F);
-        this.base.yRot = ((netHeadYaw * 0.017453292F) / 2);
+        this.base.yRot = ((netHeadYaw * Mth.DEG_TO_RAD) / 2);
     }
 }

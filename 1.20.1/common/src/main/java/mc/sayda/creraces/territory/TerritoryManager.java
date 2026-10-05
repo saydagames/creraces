@@ -1,9 +1,16 @@
 package mc.sayda.creraces.territory;
 
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.capability.IPlayerVariables;
 import mc.sayda.creraces.config.CreRacesConfig;
+import mc.sayda.creraces.race.Race;
+import mc.sayda.creraces.race.RaceRegistry;
+import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.LongArrayTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -11,8 +18,14 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.saveddata.SavedData;
 
+import javax.annotation.Nullable;
 import java.util.*;
+import java.util.function.Predicate;
 
+/**
+ * Chunk claims, root block anchors and race diplomacy for the whole server, stored as SavedData
+ * on the overworld.
+ */
 public class TerritoryManager extends SavedData {
 
     private static final String DATA_ID = "creraces_territory";
@@ -24,11 +37,10 @@ public class TerritoryManager extends SavedData {
         return INSTANCE;
     }
 
-    // Data
     private final Map<Long, ClaimData>             claims    = new HashMap<>();
     private final Map<ResourceLocation, ClanData>  diplomacy = new HashMap<>();
 
-    // Maps BlockPos.asLong() of a root block → chunks it anchored, split by whether they were new claims
+    // Root block position (BlockPos.asLong) to the chunks it anchored, split by whether it claimed them itself.
     private final Map<Long, RootAnchorData> rootAnchors = new HashMap<>();
 
     private static final class RootAnchorData {
@@ -40,10 +52,9 @@ public class TerritoryManager extends SavedData {
         }
     }
 
-    // transient, not saved
+    // Last chunk each player stood in, for entry messages. Not saved.
     private final Map<UUID, Long> lastChunkKeys = new HashMap<>();
 
-    // ClaimResult
     public enum ClaimResultType {
         SUCCESS, UNCLAIM_SUCCESS, INVALID_BIOME, ENEMY_TERRITORY, INSIDE_OWN_TERRITORY, INSUFFICIENT_COINS, ANCHOR_CHUNK, OUT_OF_RANGE, NOT_LEADER, MAX_NODES_REACHED
     }
@@ -74,13 +85,10 @@ public class TerritoryManager extends SavedData {
         public static ClaimResult maxNodesReached()                { return new ClaimResult(ClaimResultType.MAX_NODES_REACHED, 0, 0, Collections.emptySet(), Collections.emptySet()); }
     }
 
-    // Accessors
     public Map<Long, ClaimData>            getClaims()    { return Collections.unmodifiableMap(claims); }
     public Map<ResourceLocation, ClanData> getDiplomacy() { return Collections.unmodifiableMap(diplomacy); }
     public ClaimData getClaimAt(long chunkKey)            { return claims.get(chunkKey); }
     public ClaimData getClaimAt(ChunkPos pos)             { return claims.get(pos.toLong()); }
-
-    // Claim Operations
 
     /**
      * Claims a (2*radius+1)² island centered on the given chunk for raceId.
@@ -92,7 +100,7 @@ public class TerritoryManager extends SavedData {
      * Both the enemy-chunk check and the overwrite-instead behavior depend on TERRITORY_INTER_RACE_BLOCKING.
      */
     public ClaimResult claimIsland(ResourceLocation raceId, ChunkPos center, UUID claimerUUID,
-            java.util.function.Predicate<ChunkPos> include) {
+            Predicate<ChunkPos> include) {
         // Enforce node (root block) limit per player
         int maxNodes = CreRacesConfig.TERRITORY_MAX_NODES_PER_PLAYER.get();
         if (maxNodes > 0) {
@@ -140,12 +148,12 @@ public class TerritoryManager extends SavedData {
                         preExistingKeys.add(key);
                     } else if (!interRaceBlocking) {
                         // Overwrite enemy chunk when inter-race blocking is disabled
-                        claims.put(key, new ClaimData(key, raceId, false, claimerUUID));
+                        claims.put(key, new ClaimData(raceId, false, claimerUUID));
                         newKeys.add(key);
                     }
                     continue;
                 }
-                claims.put(key, new ClaimData(key, raceId, false, claimerUUID));
+                claims.put(key, new ClaimData(raceId, false, claimerUUID));
                 newKeys.add(key);
             }
         }
@@ -153,11 +161,6 @@ public class TerritoryManager extends SavedData {
         if (newKeys.isEmpty()) return ClaimResult.insideOwn(preExistingKeys);
         setDirty();
         return ClaimResult.success(newKeys.size(), newKeys, preExistingKeys);
-    }
-
-    /** Convenience overload: claims all chunks in the island with no biome filter. */
-    public ClaimResult claimIsland(ResourceLocation raceId, ChunkPos center, UUID claimerUUID) {
-        return claimIsland(raceId, center, claimerUUID, cp -> true);
     }
 
     /** Claims exactly one chunk for raceId; used by the territory map (no island expansion). */
@@ -168,15 +171,9 @@ public class TerritoryManager extends SavedData {
             if (existing.getRaceId().equals(raceId)) return ClaimResult.insideOwn(Set.of(key));
             return ClaimResult.enemyTerritory();
         }
-        claims.put(key, new ClaimData(key, raceId, false, claimerUUID, pricePaid));
+        claims.put(key, new ClaimData(raceId, false, claimerUUID, pricePaid));
         setDirty();
         return ClaimResult.success(1, Set.of(key), Collections.emptySet());
-    }
-
-    /** @deprecated Use {@link #claimChunk(ResourceLocation, ChunkPos, UUID, int)} with explicit price. */
-    @Deprecated
-    public ClaimResult claimChunk(ResourceLocation raceId, ChunkPos chunk, UUID claimerUUID) {
-        return claimChunk(raceId, chunk, claimerUUID, 0);
     }
 
     public boolean unclaimChunk(ResourceLocation raceId, ChunkPos chunk) {
@@ -190,7 +187,7 @@ public class TerritoryManager extends SavedData {
     }
 
     /** Removes a chunk only if the given player is its owner, regardless of persistence. */
-    public boolean unclaimOwnChunk(java.util.UUID callerUUID, ChunkPos chunk) {
+    public boolean unclaimOwnChunk(UUID callerUUID, ChunkPos chunk) {
         long key = chunk.toLong();
         ClaimData cd = claims.get(key);
         if (cd == null) return false;
@@ -207,25 +204,16 @@ public class TerritoryManager extends SavedData {
         return removed;
     }
 
-    /** Sets or clears the persistent (anchor) flag on an already-claimed chunk. No-op if the chunk is unclaimed. */
-    public void setChunkPersistent(ChunkPos pos, boolean persistent) {
-        long key = pos.toLong();
-        ClaimData cd = claims.get(key);
-        if (cd == null) return;
-        claims.put(key, new ClaimData(key, cd.getRaceId(), persistent, cd.getOwnerUUID(), cd.getPricePaid()));
-        setDirty();
-    }
-
     /**
      * Called when a root block is placed. Marks all provided chunk keys as persistent and records
      * new vs. pre-existing chunks so removal can handle them differently.
      */
-    public void placeRootBlock(net.minecraft.core.BlockPos rootPos, Set<Long> newClaims, Set<Long> preExisting) {
+    public void placeRootBlock(BlockPos rootPos, Set<Long> newClaims, Set<Long> preExisting) {
         Set<Long> anchoredNew = new HashSet<>();
         for (long key : newClaims) {
             ClaimData cd = claims.get(key);
             if (cd != null) {
-                claims.put(key, new ClaimData(key, cd.getRaceId(), true, cd.getOwnerUUID(), cd.getPricePaid()));
+                claims.put(key, new ClaimData(cd.getRaceId(), true, cd.getOwnerUUID(), cd.getPricePaid()));
                 anchoredNew.add(key);
             }
         }
@@ -233,7 +221,7 @@ public class TerritoryManager extends SavedData {
         for (long key : preExisting) {
             ClaimData cd = claims.get(key);
             if (cd != null) {
-                claims.put(key, new ClaimData(key, cd.getRaceId(), true, cd.getOwnerUUID(), cd.getPricePaid()));
+                claims.put(key, new ClaimData(cd.getRaceId(), true, cd.getOwnerUUID(), cd.getPricePaid()));
                 anchoredPre.add(key);
             }
         }
@@ -244,16 +232,18 @@ public class TerritoryManager extends SavedData {
     }
 
     /**
-     * Called when a root block is removed. Fully unclaims chunks it created; only un-persists
-     * pre-existing chunks so they remain claimed but can again be voluntarily unclaimed.
+     * Called when a root block is removed. Chunks it claimed are unclaimed and chunks it pinned lose
+     * their persistence, except where another root still covers them.
      */
-    public void removeRootBlock(net.minecraft.core.BlockPos rootPos) {
+    public void removeRootBlock(BlockPos rootPos) {
         RootAnchorData data = rootAnchors.remove(rootPos.asLong());
         if (data == null) return;
-        data.newClaims.forEach(claims::remove);
+        Set<Long> stillPinned = pinnedChunks();
+        for (long key : data.newClaims) {
+            if (!stillPinned.contains(key)) claims.remove(key);
+        }
         for (long key : data.preExisting) {
-            ClaimData cd = claims.get(key);
-            if (cd != null) claims.put(key, new ClaimData(key, cd.getRaceId(), false, cd.getOwnerUUID(), cd.getPricePaid()));
+            if (!stillPinned.contains(key)) unpin(key);
         }
         setDirty();
     }
@@ -264,27 +254,51 @@ public class TerritoryManager extends SavedData {
         if (changed) setDirty();
     }
 
-    /** Called on race reset: removes all claims owned by this player and cleans up their root anchors. */
+    /**
+     * Called when a player's race is reset or changed: removes every claim they own and the root
+     * anchors they placed. Other players' chunks those anchors pinned stay claimed but lose their
+     * persistence, unless another root still covers them.
+     */
     public void unclaimAllForPlayer(UUID playerUUID) {
-        Set<Long> removed = new HashSet<>();
-        claims.entrySet().removeIf(e -> {
-            if (e.getValue().getOwnerUUID().equals(playerUUID)) {
-                removed.add(e.getKey());
+        Set<Long> owned = new HashSet<>();
+        claims.forEach((key, claim) -> {
+            if (playerUUID.equals(claim.getOwnerUUID())) owned.add(key);
+        });
+        if (owned.isEmpty()) return;
+        owned.forEach(claims::remove);
+
+        Set<Long> unpinned = new HashSet<>();
+        rootAnchors.values().removeIf(anchor -> {
+            // A root belongs to whoever it newly claimed chunks for, the same test the node limit uses.
+            if (!Collections.disjoint(anchor.newClaims, owned)) {
+                unpinned.addAll(anchor.newClaims);
+                unpinned.addAll(anchor.preExisting);
                 return true;
             }
-            return false;
+            anchor.newClaims.removeAll(owned);
+            anchor.preExisting.removeAll(owned);
+            return anchor.newClaims.isEmpty() && anchor.preExisting.isEmpty();
         });
-        if (removed.isEmpty()) return;
-        rootAnchors.entrySet().removeIf(e -> {
-            RootAnchorData d = e.getValue();
-            d.newClaims.removeAll(removed);
-            d.preExisting.removeAll(removed);
-            return d.newClaims.isEmpty() && d.preExisting.isEmpty();
-        });
+        unpinned.removeAll(pinnedChunks());
+        unpinned.forEach(this::unpin);
         setDirty();
     }
 
-    // Diplomacy
+    /** Every chunk some remaining root anchor covers. */
+    private Set<Long> pinnedChunks() {
+        Set<Long> pinned = new HashSet<>();
+        for (RootAnchorData anchor : rootAnchors.values()) {
+            pinned.addAll(anchor.newClaims);
+            pinned.addAll(anchor.preExisting);
+        }
+        return pinned;
+    }
+
+    /** Keeps the chunk claimed but lets it be unclaimed voluntarily again. */
+    private void unpin(long key) {
+        ClaimData cd = claims.get(key);
+        if (cd != null) claims.put(key, new ClaimData(cd.getRaceId(), false, cd.getOwnerUUID(), cd.getPricePaid()));
+    }
 
     public ClanData getOrCreateClan(ResourceLocation raceId) {
         ClanData existing = diplomacy.get(raceId);
@@ -313,8 +327,6 @@ public class TerritoryManager extends SavedData {
         setDirty();
     }
 
-    // Tick / Notifications
-
     public void tick(MinecraftServer server) {
         tickTerritoryNotifications(server);
     }
@@ -331,21 +343,21 @@ public class TerritoryManager extends SavedData {
 
             if (lastKey == null || lastKey == currentKey) continue;
 
-            ResourceLocation newRace = claims.containsKey(currentKey) ? claims.get(currentKey).getRaceId() : null;
-            ResourceLocation oldRace = claims.containsKey(lastKey)    ? claims.get(lastKey).getRaceId()    : null;
+            ResourceLocation newRace = raceAt(currentKey);
+            ResourceLocation oldRace = raceAt(lastKey);
 
-            if (java.util.Objects.equals(newRace, oldRace)) continue;
+            if (Objects.equals(newRace, oldRace)) continue;
 
-            ResourceLocation myRace = mc.sayda.creraces.capability.DataUtils.getVariables(player)
-                    .map(mc.sayda.creraces.capability.IPlayerVariables::getRace)
+            ResourceLocation myRace = DataUtils.getVariables(player)
+                    .map(IPlayerVariables::getRace)
                     .orElse(null);
 
-            net.minecraft.network.chat.MutableComponent msg = null;
+            MutableComponent msg = null;
 
             if (newRace != null) {
                 String name = raceName(newRace);
                 if (newRace.equals(myRace)) {
-                    msg = net.minecraft.network.chat.Component.translatable("msg.creraces.territory.entered_own", name);
+                    msg = Component.translatable("msg.creraces.territory.entered_own", name);
                 } else {
                     DiplomacyStatus rel = myRace != null ? getDiplomacy(myRace, newRace) : DiplomacyStatus.NEUTRAL;
                     String key = switch (rel) {
@@ -353,23 +365,29 @@ public class TerritoryManager extends SavedData {
                         case ENEMY   -> "msg.creraces.territory.entered_enemy";
                         case NEUTRAL -> "msg.creraces.territory.entered_neutral";
                     };
-                    msg = net.minecraft.network.chat.Component.translatable(key, name);
+                    msg = Component.translatable(key, name);
                 }
             } else if (oldRace != null && oldRace.equals(myRace)) {
-                msg = net.minecraft.network.chat.Component.translatable("msg.creraces.territory.left", raceName(oldRace));
+                msg = Component.translatable("msg.creraces.territory.left", raceName(oldRace));
             }
 
-            if (msg != null && mc.sayda.creraces.config.CreRacesConfig.TERRITORY_ENTRY_MESSAGES.get())
+            if (msg != null && CreRacesConfig.TERRITORY_ENTRY_MESSAGES.get())
                 player.displayClientMessage(msg, true);
         }
     }
 
+    @Nullable
+    private ResourceLocation raceAt(long chunkKey) {
+        ClaimData claim = claims.get(chunkKey);
+        return claim != null ? claim.getRaceId() : null;
+    }
+
     private static String raceName(ResourceLocation raceId) {
-        mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(raceId);
+        Race race = RaceRegistry.get(raceId);
         return race != null ? race.name().getString() : raceId.getPath();
     }
 
-    // ─── Persistence (vanilla SavedData, <world>/data/creraces_territory.dat) ──────────────
+    // Persistence: vanilla SavedData stored in <world>/data/creraces_territory.dat.
 
     public static void load(MinecraftServer server) {
         ServerLevel overworld = server.overworld();
@@ -381,7 +399,7 @@ public class TerritoryManager extends SavedData {
                 INSTANCE.claims.size(), INSTANCE.diplomacy.size(), INSTANCE.rootAnchors.size());
     }
 
-    /** Forces an immediate flush (in addition to vanilla's own periodic autosave, since setDirty() is called on every mutation). */
+    /** Marks the data dirty and flushes it immediately rather than waiting for the next autosave. */
     public static void save(MinecraftServer server) {
         if (INSTANCE != null) {
             INSTANCE.setDirty();
@@ -422,7 +440,7 @@ public class TerritoryManager extends SavedData {
         for (String key : claimsTag.getAllKeys()) {
             try {
                 long chunkKey = Long.parseLong(key);
-                tm.claims.put(chunkKey, deserializeClaim(chunkKey, claimsTag.getCompound(key)));
+                tm.claims.put(chunkKey, deserializeClaim(claimsTag.getCompound(key)));
             } catch (Exception ex) {
                 CreRaces.LOGGER.warn("Skipping malformed claim '{}': {}", key, ex.getMessage());
             }
@@ -465,12 +483,12 @@ public class TerritoryManager extends SavedData {
         return tag;
     }
 
-    private static ClaimData deserializeClaim(long key, CompoundTag tag) {
+    private static ClaimData deserializeClaim(CompoundTag tag) {
         ResourceLocation race = new ResourceLocation(tag.getString("race"));
         boolean persistent = tag.getBoolean("persistent");
         UUID owner = tag.contains("owner") ? UUID.fromString(tag.getString("owner")) : null;
         int price = tag.contains("price") ? tag.getInt("price") : 0;
-        return new ClaimData(key, race, persistent, owner, price);
+        return new ClaimData(race, persistent, owner, price);
     }
 
     private static CompoundTag serializeClan(ClanData c) {
@@ -495,5 +513,4 @@ public class TerritoryManager extends SavedData {
         }
         return c;
     }
-
 }

@@ -82,10 +82,6 @@
                     "value": 0
                 },
                 {
-                    "type": "creraces:remove_effect",
-                    "effect": "minecraft:slowness"
-                },
-                {
                     "type": "creraces:set_cooldown",
                     "id": "creraces:mountains_fury",
                     "value": 360
@@ -98,19 +94,26 @@
                     "value": 1
                 },
                 {
-                    "type": "creraces:apply_effect",
-                    "effect": "minecraft:slowness",
-                    "amplifier": 2,
-                    "duration": 999999,
-                    "visible": false
-                },
-                {
                     "type": "creraces:play_sound",
                     "sound": "minecraft:block.note_block.bell",
                     "volume": 1.0,
                     "pitch": 1.0
                 }
             ]
+        }
+    ],
+    "creraces:on_deactivate": [
+        {
+            "type": "creraces:modify_value",
+            "resource": "self",
+            "operation": "set",
+            "value": 0
+        },
+        {
+            "type": "creraces:modify_value",
+            "resource": "state:creraces:stacks",
+            "operation": "set",
+            "value": 0
         }
     ],
     "creraces:wiki_page": "Ability:Mountains_Fury"

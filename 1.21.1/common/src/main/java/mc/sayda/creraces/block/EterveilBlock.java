@@ -14,7 +14,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FlowingFluid;
 import org.jetbrains.annotations.Nullable;
 
-/** Blesses living entities on contact; burns undead/hostile mobs. Ported from CreRaces Classic's "Holy Water". */
+/** CreRaces Classic's "Holy Water": regenerates the living and withers the undead, undead-race players included. */
 public class EterveilBlock extends LiquidBlock {
 
     public EterveilBlock(FlowingFluid fluid, Properties properties) {
@@ -22,6 +22,7 @@ public class EterveilBlock extends LiquidBlock {
     }
 
     /** Prevents buckets from collecting eterveil. */
+    @Override
     public ItemStack pickupBlock(@Nullable Player player, LevelAccessor level, BlockPos pos, BlockState state) {
         return ItemStack.EMPTY;
     }
@@ -31,8 +32,7 @@ public class EterveilBlock extends LiquidBlock {
         if (level.isClientSide()) return;
         if (!(entity instanceof LivingEntity living) || entity.tickCount % 40 != 0) return;
 
-        // isInvertedHealAndHarm() replaced MobType.UNDEAD in 1.21+; the LivingEntityMixin
-        // override makes it true for undead-race players too, so this covers both.
+        // LivingEntityMixin makes this true for undead-race players as well, so this covers both.
         if (living.isInvertedHealAndHarm()) {
             living.addEffect(new MobEffectInstance(MobEffects.WITHER, 100, 1));
             living.hurt(level.damageSources().magic(), 4.0f);

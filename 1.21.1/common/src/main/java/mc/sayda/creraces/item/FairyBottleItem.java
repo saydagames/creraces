@@ -8,6 +8,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemUtils;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.level.Level;
@@ -24,13 +25,13 @@ public class FairyBottleItem extends Item {
     }
 
     @Override
-    public int getUseDuration(ItemStack stack, net.minecraft.world.entity.LivingEntity entity) {
+    public int getUseDuration(ItemStack stack, LivingEntity entity) {
         return 32;
     }
 
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
-        return net.minecraft.world.item.ItemUtils.startUsingInstantly(level, player, hand);
+        return ItemUtils.startUsingInstantly(level, player, hand);
     }
 
     @Override
@@ -39,11 +40,19 @@ public class FairyBottleItem extends Item {
             player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 200, 1, false, true, true));
             player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 600, 0, false, true, true));
         }
-        // Return the empty glass bottle via the standard finishUsingItem contract;
-        // do not also add it to inventory or the player gets two bottles.
-        if (!entity.level().isClientSide() && !(entity instanceof Player p && p.getAbilities().instabuild)) {
+        if (!level.isClientSide() && !(entity instanceof Player p && p.getAbilities().instabuild)) {
             stack.shrink(1);
+            if (stack.isEmpty()) {
+                return new ItemStack(Items.GLASS_BOTTLE);
+            }
+            // Drinking from a stack hands the empty bottle back separately, like vanilla honey bottles
+            if (entity instanceof Player player) {
+                ItemStack bottle = new ItemStack(Items.GLASS_BOTTLE);
+                if (!player.getInventory().add(bottle)) {
+                    player.drop(bottle, false);
+                }
+            }
         }
-        return stack.isEmpty() ? new ItemStack(Items.GLASS_BOTTLE) : stack;
+        return stack;
     }
 }

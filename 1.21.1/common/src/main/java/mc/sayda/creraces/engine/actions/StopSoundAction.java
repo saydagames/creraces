@@ -1,17 +1,19 @@
 package mc.sayda.creraces.engine.actions;
 
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.engine.ActionRegistry;
+import mc.sayda.creraces.network.BoundaryHandler;
 import mc.sayda.creraces.util.GsonHelper;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 
 import javax.annotation.Nullable;
 
-/**
- * Action that stops a specific sound for the player.
- */
+/** Stops a sound for the caster and everyone tracking them. */
 public class StopSoundAction implements ActionRegistry.RaceAction {
     private final ResourceLocation soundId;
     private final SoundSource source;
@@ -22,22 +24,17 @@ public class StopSoundAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public boolean execute(Player player, @Nullable net.minecraft.world.entity.LivingEntity target,
-            @Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @Nullable net.minecraft.core.BlockPos interact_pos) {
+    public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
+            @Nullable BlockPos interactPos) {
         if (!player.level().isClientSide()) {
-            mc.sayda.creraces.network.BoundaryHandler.broadcastStopSound(player, soundId, source);
+            BoundaryHandler.broadcastStopSound(player, soundId, source);
         }
         return true;
     }
 
     public static void register() {
-        ActionRegistry.register(ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "stop_sound"), json -> {
-            String soundStr = GsonHelper.getAsString(json, "sound", "");
-            ResourceLocation id = ResourceLocation.parse(soundStr);
-            String sourceStr = GsonHelper.getAsString(json, "source", "PLAYERS");
-            SoundSource source = SoundSource.valueOf(sourceStr.toUpperCase());
-            return new StopSoundAction(id, source);
-        });
+        ActionRegistry.register(ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "stop_sound"), json -> new StopSoundAction(
+                ResourceLocation.parse(GsonHelper.getAsString(json, "sound", "")),
+                SoundSource.valueOf(GsonHelper.getAsString(json, "source", "PLAYERS").toUpperCase())));
     }
 }

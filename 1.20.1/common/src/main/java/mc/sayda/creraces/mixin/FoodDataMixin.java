@@ -4,6 +4,7 @@ import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.capability.IPlayerVariables;
 import mc.sayda.creraces.race.Race;
 import mc.sayda.creraces.race.RaceRegistry;
+import mc.sayda.creraces.util.IFoodDataAccessor;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.food.FoodData;
 import org.spongepowered.asm.mixin.Mixin;
@@ -15,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.Optional;
 
 @Mixin(FoodData.class)
-public class FoodDataMixin implements mc.sayda.creraces.util.IFoodDataAccessor {
+public class FoodDataMixin implements IFoodDataAccessor {
 
     @Shadow
     private int foodLevel;
@@ -23,8 +24,6 @@ public class FoodDataMixin implements mc.sayda.creraces.util.IFoodDataAccessor {
     private float saturationLevel;
     @Shadow
     private float exhaustionLevel;
-
-    // ─── Food multiplier helpers (called from PlayerFoodMixin) ─────────────────
 
     @Override
     public int creraces$getFoodLevel() {
@@ -46,10 +45,7 @@ public class FoodDataMixin implements mc.sayda.creraces.util.IFoodDataAccessor {
         this.saturationLevel = saturation;
     }
 
-    /**
-     * Apply the race food multiplier AFTER vanilla eat() has updated the values.
-     * Scales the delta (gained amount) so a 2x multiplier doubles what was gained.
-     */
+    /** Called after vanilla eat(): scales only what was just gained, so a 2x multiplier doubles the gain. */
     @Override
     public void creraces$applyFoodMultiplier(int oldFood, float oldSat, double multiplier) {
         int foodGained = foodLevel - oldFood;
@@ -60,9 +56,7 @@ public class FoodDataMixin implements mc.sayda.creraces.util.IFoodDataAccessor {
         saturationLevel = Math.min(oldSat + adjustedSat, (float) foodLevel);
     }
 
-    /**
-     * Cancels the natural health regen tick for races with no_natural_regeneration.
-     */
+    /** Races with no_natural_regeneration skip the health regen FoodData grants from a full hunger bar. */
     @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;heal(F)V"), cancellable = true)
     private void creraces$cancelHeal(Player player, CallbackInfo ci) {
         if (player.level().isClientSide())
@@ -77,10 +71,7 @@ public class FoodDataMixin implements mc.sayda.creraces.util.IFoodDataAccessor {
         }
     }
 
-    /**
-     * Cancels the hunger exhaustion/drain tick for races with no_hunger_drain.
-     * This prevents the food level from ever decreasing by resetting exhaustion.
-     */
+    /** Races with no_hunger_drain have their exhaustion wiped every tick, so food never drops. */
     @Inject(method = "tick", at = @At("HEAD"))
     private void creraces$cancelHungerDrain(Player player, CallbackInfo ci) {
         if (player.level().isClientSide())

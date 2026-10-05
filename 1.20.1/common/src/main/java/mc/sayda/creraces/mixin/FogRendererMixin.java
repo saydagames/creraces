@@ -13,18 +13,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Removes the underwater and lava fog when the camera is submerged, for races
- * with {@code waterVision}/{@code lavaVision} or {@code unaffectedByWater}/
- * {@code unaffectedByLava} passives.
- *
- * By injecting into {@code setupFog} and bailing early when the passive is
- * active, the player effectively sees through the liquid as if they were in
- * air.
- *
- * The screen tint overlay (the translucent water/fire layer drawn over the
- * HUD) is a separate vanilla mechanism, {@code ScreenEffectRenderer#renderScreenEffect}
- * - see {@code LiquidOverlayMixin.java} for the equivalent suppression of that
- * overlay.
+ * Skips liquid fog while the camera is in water or lava, for races with waterVision/unaffectedByWater
+ * or lavaVision/unaffectedByLava, so they see as if in air. LiquidOverlayMixin removes the matching
+ * screen tint.
  */
 @Mixin(FogRenderer.class)
 public class FogRendererMixin {
@@ -44,9 +35,8 @@ public class FogRendererMixin {
             Race.Passives passives = race.passives() != null ? race.passives() : Race.Passives.DEFAULT;
 
             FogType fogType = camera.getFluidInCamera();
-            if ((fogType == FogType.WATER && (passives.waterVision() || passives.unaffectedByWater()))) {
-                ci.cancel();
-            } else if (fogType == FogType.LAVA && (passives.lavaVision() || passives.unaffectedByLava())) {
+            if ((fogType == FogType.WATER && (passives.waterVision() || passives.unaffectedByWater()))
+                    || (fogType == FogType.LAVA && (passives.lavaVision() || passives.unaffectedByLava()))) {
                 ci.cancel();
             }
         });

@@ -1,28 +1,38 @@
 package mc.sayda.creraces.engine.actions;
 
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.ability.AbilitySlot;
+import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.engine.ActionRegistry;
-import mc.sayda.creraces.engine.TargetFilter;
+import mc.sayda.creraces.engine.DataValue;
+import mc.sayda.creraces.network.BoundaryHandler;
 import mc.sayda.creraces.util.GsonHelper;
 import mc.sayda.creraces.util.IPersistentDataAccessor;
+import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 
+import javax.annotation.Nullable;
+
+/** Sets, adds to, multiplies or removes a key in an entity's persistent data. */
 @SuppressWarnings("null")
 public class ModifyEntityDataAction implements ActionRegistry.RaceAction {
 
+    // Writing either key on a player also sets its small-build flag (a value of 1 or more turns it on).
     private static final String KEY_MINIBUILD = "minibuild";
     private static final String KEY_SMALL_BUILD = "smallBuild";
 
     public enum Operation {
         SET, ADD, REMOVE, MULTIPLY;
 
+        /** Case-insensitive; unknown names fall back to SET. */
         public static Operation fromString(String op) {
             for (Operation o : values()) {
-                if (o.name().equalsIgnoreCase(op))
+                if (o.name().equalsIgnoreCase(op)) {
                     return o;
+                }
             }
             return SET;
         }
@@ -30,11 +40,10 @@ public class ModifyEntityDataAction implements ActionRegistry.RaceAction {
 
     private final String key;
     private final Operation operation;
-    private final mc.sayda.creraces.engine.ScalingValue value;
+    private final DataValue value;
     private final boolean useTarget;
 
-    public ModifyEntityDataAction(String key, Operation operation, mc.sayda.creraces.engine.ScalingValue value,
-            boolean useTarget) {
+    public ModifyEntityDataAction(String key, Operation operation, DataValue value, boolean useTarget) {
         this.key = key;
         this.operation = operation;
         this.value = value;
@@ -42,69 +51,72 @@ public class ModifyEntityDataAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public boolean execute(Player player, @javax.annotation.Nullable LivingEntity target,
-            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
-        LivingEntity entity = TargetFilter.resolveSmartTarget(player, target, useTarget);
-        if (entity == null)
+    public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
+            @Nullable BlockPos interactPos) {
+        LivingEntity entity = DataValue.resolveEntity(useTarget, player, target);
+        if (!(entity instanceof IPersistentDataAccessor accessor)) {
             return true;
-        if (!(entity instanceof IPersistentDataAccessor))
-            return true;
-        CompoundTag persistentData = ((IPersistentDataAccessor) entity).creraces$getPersistentData();
-        if (persistentData == null) return true;
+        }
+        CompoundTag persistentData = accessor.creraces$getPersistentData();
 
-            
         if (operation == Operation.REMOVE) {
             persistentData.remove(key);
             return true;
         }
 
-        double val = value.evaluate(player, target, slot);
-        double current = persistentData.getDouble(key);
-        double newValue = current;
-
-        switch (operation) {
-            case ADD -> newValue += val;
-            case SET -> newValue = val;
-            case MULTIPLY -> newValue *= val;
-            default -> {
+        if (operation == Operation.SET) {
+            boolean written = value.writeInto(persistentData, key, player, target, slot, interactPos);
+            if (written && entity instanceof Player playerEntity
+                    && value.resolve(player, target, slot, interactPos) instanceof Number number) {
+                applyMinibuildBridge(playerEntity, number.doubleValue());
             }
+            return true;
         }
 
-        persistentData.putDouble(key, newValue);
-
-        // Bridge to PlayerVariables if applicable
+        // ADD and MULTIPLY are numeric only.
+        if (!(value.resolve(player, target, slot, interactPos) instanceof Number number)) {
+            return true;
+        }
+        double current = persistentData.getDouble(key);
+        double newValue = operation == Operation.ADD ? current + number.doubleValue() : current * number.doubleValue();
+        if (value.type() == DataValue.DataType.INT) {
+            persistentData.putInt(key, (int) Math.round(newValue));
+        } else {
+            persistentData.putDouble(key, newValue);
+        }
         if (entity instanceof Player playerEntity) {
-            final double finalNewValue = newValue;
-            mc.sayda.creraces.capability.DataUtils.getVariables(playerEntity).ifPresent(vars -> {
-                if (key.equalsIgnoreCase(KEY_MINIBUILD) || key.equalsIgnoreCase(KEY_SMALL_BUILD)) {
-                    vars.setSmallBuild(finalNewValue >= 1.0);
-                    // Sync to client
-                    mc.sayda.creraces.network.BoundaryHandler.resyncVariables(playerEntity, playerEntity);
-                }
-            });
+            applyMinibuildBridge(playerEntity, newValue);
         }
-
         return true;
+    }
+
+    private void applyMinibuildBridge(Player playerEntity, double newValue) {
+        if (!key.equalsIgnoreCase(KEY_MINIBUILD) && !key.equalsIgnoreCase(KEY_SMALL_BUILD)) {
+            return;
+        }
+        DataUtils.getVariables(playerEntity).ifPresent(vars -> {
+            vars.setSmallBuild(newValue >= 1.0);
+            BoundaryHandler.resyncVariables(playerEntity, playerEntity);
+        });
     }
 
     public static void register() {
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "modify_entity_data"), json -> {
-            String key = GsonHelper.getAsString(json, "key");
-            // Limit key length to prevent NBT bloat via crafted race JSONs
-            int keyMaxLen = mc.sayda.creraces.config.CreRacesConfig.ENTITY_DATA_KEY_MAX_LENGTH.get();
-            if (keyMaxLen > 0 && key.length() > keyMaxLen) {
-                CreRaces.LOGGER.warn("ModifyEntityDataAction: key '{}' exceeds {} chars, truncating", key,
-                        keyMaxLen);
-                key = key.substring(0, keyMaxLen);
-            }
-            String opStr = GsonHelper.getAsString(json, "operation", "SET");
-            Operation op = Operation.fromString(opStr);
-            mc.sayda.creraces.engine.ScalingValue val = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "value",
-                    0.0);
-            boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
+            String key = DataValue.sanitizeKey(GsonHelper.getAsString(json, "key"), "ModifyEntityDataAction");
+            Operation op = Operation.fromString(GsonHelper.getAsString(json, "operation", "SET"));
 
-            return new ModifyEntityDataAction(key, op, val, useTarget);
+            DataValue value = DataValue.fromJson(json, "value", DataValue.DataType.DOUBLE);
+            if (value == null) {
+                value = DataValue.literal(DataValue.DataType.DOUBLE, 0.0);
+            }
+            if ((op == Operation.ADD || op == Operation.MULTIPLY)
+                    && value.type() != DataValue.DataType.INT && value.type() != DataValue.DataType.DOUBLE) {
+                CreRaces.LOGGER.error(
+                        "ModifyEntityDataAction: operation {} requires a numeric value type, got {} on key '{}' - using SET instead",
+                        op, value.type(), key);
+                op = Operation.SET;
+            }
+            return new ModifyEntityDataAction(key, op, value, DataValue.readUseTarget(json, false));
         });
     }
 }

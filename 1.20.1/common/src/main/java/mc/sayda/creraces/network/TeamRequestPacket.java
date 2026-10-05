@@ -1,18 +1,25 @@
 package mc.sayda.creraces.network;
 
+import dev.architectury.networking.NetworkManager;
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.capability.IPlayerVariables;
+import mc.sayda.creraces.config.CreRacesConfig;
 import mc.sayda.creraces.team.RaceTeamManager;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Supplier;
 
-/**
- * Client-to-Server packet for team requests.
- */
+/** C2S: a team action from the team screen. */
 public class TeamRequestPacket {
     public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "team_request");
+
+    private static final int DATA_MAX_LEN = 256;
 
     private final Action action;
     private String data; // Team name or player name
@@ -35,7 +42,7 @@ public class TeamRequestPacket {
     public TeamRequestPacket(FriendlyByteBuf buf) {
         this.action = buf.readEnum(Action.class);
         if (buf.readBoolean())
-            this.data = buf.readUtf(256);
+            this.data = buf.readUtf(DATA_MAX_LEN);
         if (buf.readBoolean())
             this.targetUuid = buf.readUUID();
     }
@@ -50,7 +57,7 @@ public class TeamRequestPacket {
             buf.writeUUID(targetUuid);
     }
 
-    public void handle(Supplier<dev.architectury.networking.NetworkManager.PacketContext> contextSupplier) {
+    public void handle(Supplier<NetworkManager.PacketContext> contextSupplier) {
         var context = contextSupplier.get();
         context.queue(() -> {
             if (!(context.getPlayer() instanceof ServerPlayer player))
@@ -59,11 +66,11 @@ public class TeamRequestPacket {
                 case CREATE -> {
                     if (data == null || data.isBlank())
                         return;
-                    int teamMax = mc.sayda.creraces.config.CreRacesConfig.NETWORK_TEAM_NAME_MAX_LEN.get();
-                    if (data.length() > teamMax) {
+                    int nameMaxLen = CreRacesConfig.NETWORK_TEAM_NAME_MAX_LEN.get();
+                    if (data.length() > nameMaxLen) {
                         CreRaces.LOGGER.warn("Player {} tried to create team with oversized name ({} chars)",
                                 player.getName().getString(), data.length());
-                        data = data.substring(0, teamMax);
+                        data = data.substring(0, nameMaxLen);
                     }
                     RaceTeamManager.createTeam(player, data);
                 }
@@ -73,42 +80,11 @@ public class TeamRequestPacket {
                         RaceTeamManager.joinTeam(player, invite.get());
                         RaceTeamManager.clearInvite(player.getUUID());
                     } else {
-                        player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("msg.creraces.team.no_invite"));
+                        player.sendSystemMessage(Component.translatable("msg.creraces.team.no_invite"));
                     }
                 }
                 case LEAVE -> RaceTeamManager.leaveTeam(player);
-                case INVITE -> {
-                    if (data == null || data.isBlank())
-                        return;
-                    int playerMax = mc.sayda.creraces.config.CreRacesConfig.NETWORK_TEAM_NAME_MAX_LEN.get();
-                    if (data.length() > playerMax) {
-                        CreRaces.LOGGER.warn("Player {} tried to invite oversized name ({} chars)",
-                                player.getName().getString(), data.length());
-                        data = data.substring(0, playerMax);
-                    }
-                    ServerPlayer target = player.getServer().getPlayerList().getPlayerByName(data);
-                    if (target != null) {
-                        if (mc.sayda.creraces.config.CreRacesConfig.TEAM_REQUIRE_SAME_RACE.get()) {
-                            net.minecraft.resources.ResourceLocation inviterRace = mc.sayda.creraces.capability.DataUtils
-                                    .getVariables(player).map(mc.sayda.creraces.capability.IPlayerVariables::getRace)
-                                    .orElse(null);
-                            net.minecraft.resources.ResourceLocation targetRace = mc.sayda.creraces.capability.DataUtils
-                                    .getVariables(target).map(mc.sayda.creraces.capability.IPlayerVariables::getRace)
-                                    .orElse(null);
-                            if (inviterRace == null || !inviterRace.equals(targetRace)) {
-                                player.sendSystemMessage(java.util.Objects.requireNonNull(
-                                        net.minecraft.network.chat.Component.translatable(
-                                                "msg.creraces.team.different_race")));
-                                return;
-                            }
-                        }
-                        RaceTeamManager.getPlayerTeam(player).ifPresent(team -> {
-                            RaceTeamManager.invitePlayer(player, target, team.getId());
-                        });
-                    } else {
-                        player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("msg.creraces.team.player_not_found", data));
-                    }
-                }
+                case INVITE -> invite(player);
                 case TOGGLE_FRIENDLY_FIRE -> RaceTeamManager.toggleFriendlyFire(player);
                 case PROMOTE -> {
                     if (targetUuid != null) {
@@ -127,5 +103,31 @@ public class TeamRequestPacket {
                 }
             }
         });
+    }
+
+    private void invite(ServerPlayer player) {
+        if (data == null || data.isBlank())
+            return;
+        int nameMaxLen = CreRacesConfig.NETWORK_TEAM_NAME_MAX_LEN.get();
+        if (data.length() > nameMaxLen) {
+            CreRaces.LOGGER.warn("Player {} tried to invite oversized name ({} chars)",
+                    player.getName().getString(), data.length());
+            data = data.substring(0, nameMaxLen);
+        }
+        ServerPlayer target = player.getServer().getPlayerList().getPlayerByName(data);
+        if (target == null) {
+            player.sendSystemMessage(Component.translatable("msg.creraces.team.player_not_found", data));
+            return;
+        }
+        if (CreRacesConfig.TEAM_REQUIRE_SAME_RACE.get()) {
+            ResourceLocation inviterRace = DataUtils.getVariables(player).map(IPlayerVariables::getRace).orElse(null);
+            ResourceLocation targetRace = DataUtils.getVariables(target).map(IPlayerVariables::getRace).orElse(null);
+            if (inviterRace == null || !inviterRace.equals(targetRace)) {
+                player.sendSystemMessage(Objects.requireNonNull(
+                        Component.translatable("msg.creraces.team.different_race")));
+                return;
+            }
+        }
+        RaceTeamManager.getPlayerTeam(player).ifPresent(team -> RaceTeamManager.invitePlayer(player, target, team.getId()));
     }
 }

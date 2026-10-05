@@ -12,12 +12,8 @@ import net.minecraft.world.item.ItemStack;
  */
 public class ItemUtils {
     /**
-     * Matches an ItemStack against a definition string.
-     * 
-     * @param stack      The item stack to check.
-     * @param definition The definition string (e.g., "minecraft:feather" or
-     *                   "#minecraft:feathers").
-     * @return True if the item matches.
+     * Matches a stack against an item id ("minecraft:feather") or a #-prefixed item tag
+     * ("#minecraft:feathers"). A bare path with no namespace is read as a vanilla item id.
      */
     public static boolean matches(ItemStack stack, String definition) {
         if (stack.isEmpty() || definition == null || definition.isEmpty()) {
@@ -25,33 +21,18 @@ public class ItemUtils {
         }
 
         if (definition.startsWith("#")) {
-            // Match against tag
-            String tagId = definition.substring(1);
-            TagKey<Item> tagKey = TagKey.create(Registries.ITEM, ResourceLocation.parse(tagId));
+            ResourceLocation tagId = ResourceLocation.tryParse(definition.substring(1));
+            if (tagId == null) {
+                return false;
+            }
+            TagKey<Item> tagKey = TagKey.create(Registries.ITEM, tagId);
             return stack.is(tagKey);
-        } else {
-            // Match against item ID
-            ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
-            if (id.toString().equals(definition)) {
-                return true;
-            }
-
-            // Fallback for short IDs if necessary (though engine usually uses full ones)
-            if (!definition.contains(":")) {
-                return id.getNamespace().equals("minecraft") && id.getPath().equals(definition);
-            }
         }
 
-        return false;
-    }
-
-    /**
-     * Matches an ItemStack against a ResourceLocation (ID only).
-     */
-    public static boolean matches(ItemStack stack, ResourceLocation id) {
-        if (stack.isEmpty() || id == null) {
-            return false;
+        ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        if (id.toString().equals(definition)) {
+            return true;
         }
-        return BuiltInRegistries.ITEM.getKey(stack.getItem()).equals(id);
+        return !definition.contains(":") && id.getNamespace().equals("minecraft") && id.getPath().equals(definition);
     }
 }

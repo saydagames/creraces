@@ -1,5 +1,11 @@
 package mc.sayda.creraces.util;
 
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
+
+import javax.annotation.Nonnull;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -51,7 +57,7 @@ public class WikitextUtil {
         cleaned = HTML_BR.matcher(cleaned).replaceAll("\n");
 
         // Process color spans
-        java.util.regex.Matcher colorMatcher = HTML_SPAN_COLOR.matcher(cleaned);
+        Matcher colorMatcher = HTML_SPAN_COLOR.matcher(cleaned);
         StringBuilder sb = new StringBuilder();
         int lastEnd = 0;
         while (colorMatcher.find()) {
@@ -72,22 +78,19 @@ public class WikitextUtil {
         // Strip remaining HTML tags
         cleaned = REMAINING_HTML.matcher(cleaned).replaceAll("");
 
-        if (cleaned == null)
-            return null;
-
         return cleaned.trim();
     }
 
     /**
      * Converts a string with legacy formatting codes (\u00A7) into a Component.
      */
-    @javax.annotation.Nonnull
-    public static net.minecraft.network.chat.Component toComponent(String text) {
+    @Nonnull
+    public static Component toComponent(String text) {
         if (text == null || text.isEmpty())
-            return net.minecraft.network.chat.Component.empty();
+            return Component.empty();
 
-        net.minecraft.network.chat.MutableComponent root = net.minecraft.network.chat.Component.literal("");
-        net.minecraft.network.chat.Style currentStyle = net.minecraft.network.chat.Style.EMPTY;
+        MutableComponent root = Component.literal("");
+        Style currentStyle = Style.EMPTY;
         StringBuilder currentText = new StringBuilder();
 
         int i = 0;
@@ -149,7 +152,7 @@ public class WikitextUtil {
                     case 'n' -> currentStyle = currentStyle.withUnderlined(true);
                     case 'o' -> currentStyle = currentStyle.withItalic(true);
                     case 'k' -> currentStyle = currentStyle.withObfuscated(true);
-                    case 'r' -> currentStyle = net.minecraft.network.chat.Style.EMPTY;
+                    case 'r' -> currentStyle = Style.EMPTY;
                     default -> currentText.append(c).append(text.charAt(i + 1)); // Just treat as text if unknown
                 }
                 i += 2;
@@ -164,13 +167,10 @@ public class WikitextUtil {
         return root;
     }
 
-    /**
-     * Flushes the buffered text onto the root component using the given style, then clears the buffer.
-     */
-    private static void flushBufferedText(net.minecraft.network.chat.MutableComponent root, StringBuilder buffer,
-            net.minecraft.network.chat.Style style) {
+    private static void flushBufferedText(MutableComponent root, StringBuilder buffer,
+            Style style) {
         if (buffer.length() > 0) {
-            root.append(net.minecraft.network.chat.Component.literal(buffer.toString()).withStyle(style));
+            root.append(Component.literal(buffer.toString()).withStyle(style));
             buffer.setLength(0);
         }
     }

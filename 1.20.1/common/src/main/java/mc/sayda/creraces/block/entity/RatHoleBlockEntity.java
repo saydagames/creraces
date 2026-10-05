@@ -5,6 +5,8 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import mc.sayda.creraces.registry.ModBlocks;
+
+import javax.annotation.Nonnull;
 import java.util.UUID;
 
 public class RatHoleBlockEntity extends BlockEntity {
@@ -34,7 +36,7 @@ public class RatHoleBlockEntity extends BlockEntity {
     }
 
     @Override
-    protected void saveAdditional(@javax.annotation.Nonnull CompoundTag tag) {
+    protected void saveAdditional(@Nonnull CompoundTag tag) {
         super.saveAdditional(tag);
         if (destination != null) {
             tag.putInt("destX", destination.getX());
@@ -47,7 +49,7 @@ public class RatHoleBlockEntity extends BlockEntity {
     }
 
     @Override
-    public void load(@javax.annotation.Nonnull CompoundTag tag) {
+    public void load(@Nonnull CompoundTag tag) {
         super.load(tag);
         if (tag.contains("destX") && tag.contains("destY") && tag.contains("destZ")) {
             destination = new BlockPos(tag.getInt("destX"), tag.getInt("destY"), tag.getInt("destZ"));

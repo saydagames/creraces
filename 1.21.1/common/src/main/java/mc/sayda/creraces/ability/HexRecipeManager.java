@@ -17,20 +17,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * Loads research recipes from data/creraces/research_recipes/, each mapping a hex grid
+ * pattern of essences to an ability and level.
+ */
 public class HexRecipeManager extends SimplePreparableReloadListener<Map<ResourceLocation, JsonElement>> {
     private static final String FOLDER = "research_recipes";
     private static final List<HexRecipe> RECIPES = new ArrayList<>();
 
     @Override
     @Nonnull
-    protected Map<ResourceLocation, JsonElement> prepare(@Nonnull ResourceManager rm, @Nonnull ProfilerFiller p) {
-        Map<ResourceLocation, JsonElement> files = mc.sayda.creraces.util.GsonHelper.getJsonFiles(rm, FOLDER);
+    protected Map<ResourceLocation, JsonElement> prepare(@Nonnull ResourceManager resourceManager,
+            @Nonnull ProfilerFiller profiler) {
+        Map<ResourceLocation, JsonElement> files = GsonHelper.getJsonFiles(resourceManager, FOLDER);
         return files != null ? files : new HashMap<>();
     }
 
     @Override
-    protected void apply(@Nonnull Map<ResourceLocation, JsonElement> data, @Nonnull ResourceManager rm,
-            @Nonnull ProfilerFiller p) {
+    protected void apply(@Nonnull Map<ResourceLocation, JsonElement> data, @Nonnull ResourceManager resourceManager,
+            @Nonnull ProfilerFiller profiler) {
         RECIPES.clear();
         for (Map.Entry<ResourceLocation, JsonElement> entry : data.entrySet()) {
             try {

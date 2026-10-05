@@ -35,6 +35,7 @@
                         },
                         {
                             "type": "creraces:apply_velocity",
+                            "use_target": true,
                             "y": 1.2,
                             "relative": false
                         }
@@ -153,6 +154,7 @@
                         },
                         {
                             "type": "creraces:apply_velocity",
+                            "use_target": true,
                             "y": 0.8,
                             "relative": false
                         }

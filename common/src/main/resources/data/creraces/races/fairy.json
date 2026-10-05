@@ -26,13 +26,41 @@
             }
         },
         {
+            "type": "creraces:on_tick",
+            "interval": 1,
+            "condition": {
+                "type": "creraces:and",
+                "conditions": [
+                    { "type": "creraces:not", "condition": { "type": "creraces:dimension", "value": "creraces:fairy_realm" } },
+                    {
+                        "type": "creraces:or",
+                        "conditions": [
+                            { "type": "creraces:in_water" },
+                            {
+                                "type": "creraces:and",
+                                "conditions": [
+                                    { "type": "creraces:exposed_to_rain" },
+                                    { "type": "creraces:scaling_compare", "first": "config:SAG_WINGS", "operator": ">", "second": 0 }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "creraces:soggy",
+                    "duration": 9600,
+                    "ambient": false,
+                    "visible": false
+                }
+            ]
+        },
+        {
             "type": "creraces:flight",
             "resource": "MANA",
-            "soggy_wings": true,
-            "soggy_condition": {
-                "type": "creraces:not",
-                "condition": { "type": "creraces:dimension", "value": "creraces:fairy_realm" }
-            }
+            "blocked_by_effects": ["creraces:soggy", "creraces:broken_wings"]
         },
         {
             "id": "fairy_mining",

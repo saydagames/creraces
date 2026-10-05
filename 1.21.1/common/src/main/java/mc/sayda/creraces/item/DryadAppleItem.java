@@ -1,5 +1,9 @@
 package mc.sayda.creraces.item;
 
+import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.registry.ModMobEffects;
+import mc.sayda.creraces.util.RaceUtils;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
@@ -9,10 +13,13 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.level.Level;
-import mc.sayda.creraces.capability.DataUtils;
-import mc.sayda.creraces.registry.ModMobEffects;
+
+import javax.annotation.Nonnull;
 
 public class DryadAppleItem extends Item {
+    // Nymph's Call is for nymphs and every race descended from them (dryads, oreads, aurai, naiads).
+    private static final ResourceLocation NYMPH = ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "nymph");
+
     private final Variant variant;
 
     public enum Variant {
@@ -60,16 +67,12 @@ public class DryadAppleItem extends Item {
     }
 
     @Override
-    public ItemStack finishUsingItem(ItemStack stack, Level level, @javax.annotation.Nonnull LivingEntity entity) {
+    public ItemStack finishUsingItem(ItemStack stack, Level level, @Nonnull LivingEntity entity) {
         ItemStack result = super.finishUsingItem(stack, level, entity);
 
-        if (!level.isClientSide && entity instanceof Player player) {
-            DataUtils.getVariables(player).ifPresent(vars -> {
-                mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
-                if (race != null && "nymph".equals(race.factionGroup())) {
-                    player.addEffect(new MobEffectInstance(ModMobEffects.NYMPH_CALL, 18000, 0, false, false, true));
-                }
-            });
+        if (!level.isClientSide && entity instanceof Player player
+                && RaceUtils.isRaceOrDescendant(RaceUtils.raceOf(player), NYMPH)) {
+            player.addEffect(new MobEffectInstance(ModMobEffects.NYMPH_CALL, 18000, 0, false, false, true));
         }
 
         return result;

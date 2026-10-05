@@ -1,5 +1,7 @@
 package mc.sayda.creraces.fabric.compat;
 
+import dev.emi.trinkets.api.TrinketsApi;
+import mc.sayda.creraces.registry.ModItems;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
@@ -14,9 +16,9 @@ import java.util.Optional;
  */
 public class TrinketsBeltCompat {
     public static Optional<ItemStack> findBelt(Player player) {
-        return dev.emi.trinkets.api.TrinketsApi.getTrinketComponent(player)
+        return TrinketsApi.getTrinketComponent(player)
                 .flatMap(comp -> {
-                    var equipped = comp.getEquipped(stack -> stack.getItem() == mc.sayda.creraces.registry.ModItems.ESSENCE_BELT.get());
+                    var equipped = comp.getEquipped(stack -> stack.getItem() == ModItems.ESSENCE_BELT.get());
                     return equipped.isEmpty() ? Optional.<ItemStack>empty() : Optional.of(equipped.get(0).getB());
                 });
     }

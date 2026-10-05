@@ -1,15 +1,23 @@
 package mc.sayda.creraces.capability;
 
+import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.ability.Ability;
+import mc.sayda.creraces.ability.AbilityRegistry;
 import mc.sayda.creraces.ability.AbilitySlot;
+import mc.sayda.creraces.engine.ManagedModifier;
 import mc.sayda.creraces.race.RaceRegistry;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -69,8 +77,14 @@ public class PlayerVariables implements IPlayerVariables {
     private boolean isAquatic = false;
     private boolean isUndead = false;
     private long resourceTimer = 0;
-    private final Map<ResourceLocation, mc.sayda.creraces.engine.ManagedModifier> managedModifiers = new ConcurrentHashMap<>();
+    private final Map<ResourceLocation, ManagedModifier> managedModifiers = new ConcurrentHashMap<>();
     private final Set<ResourceLocation> persistentStateIds = ConcurrentHashMap.newKeySet();
+
+    // The client predicts these every tick, so delta syncs leave them out. Full syncs (join,
+    // respawn, cast, combat resource events) still carry them.
+    private static final String[] CLIENT_PREDICTED_KEYS = {
+            "mana", "rage", "energy", "grit", "soul", "passiveCooldown", "resourceTimer" };
+
     @Override
     public ResourceLocation getRace() {
         return race;
@@ -79,12 +93,10 @@ public class PlayerVariables implements IPlayerVariables {
     @Override
     public void setRace(ResourceLocation race) {
         if (race == null) {
-            mc.sayda.creraces.CreRaces.LOGGER.warn("setRace() called with null; ignoring");
+            CreRaces.LOGGER.warn("setRace() called with null; ignoring");
             return;
         }
-        if (!Objects.equals(this.race, race)) {
-            this.race = race;
-        }
+        this.race = race;
     }
 
     @Override
@@ -216,8 +228,6 @@ public class PlayerVariables implements IPlayerVariables {
     public void setResourceTimer(long ticks) {
         this.resourceTimer = ticks;
     }
-
-    // resourceTimer is retained for save-file compatibility; only omitted from delta syncs (see serialize(boolean) below), not full ones.
 
     @Override
     public double getPassiveCooldown() {
@@ -372,8 +382,8 @@ public class PlayerVariables implements IPlayerVariables {
     }
 
     @Override
-    public void sync(net.minecraft.world.entity.player.Player player) {
-        // Overridden by PlayerMixin; this body is never reached via DataUtils.getVariables().
+    public void sync(Player player) {
+        // PlayerMixin implements sync itself and only delegates data storage here.
     }
 
     @Override
@@ -386,7 +396,7 @@ public class PlayerVariables implements IPlayerVariables {
 
         // Clear non-persistent cooldowns
         this.cooldowns.entrySet().removeIf(entry -> {
-            mc.sayda.creraces.ability.Ability ability = mc.sayda.creraces.ability.AbilityRegistry.get(entry.getKey());
+            Ability ability = AbilityRegistry.get(entry.getKey());
             return ability == null || !ability.persistent();
         });
 
@@ -395,7 +405,7 @@ public class PlayerVariables implements IPlayerVariables {
             ResourceLocation id = entry.getKey();
             if (persistentStateIds.contains(id))
                 return false;
-            mc.sayda.creraces.ability.Ability ability = mc.sayda.creraces.ability.AbilityRegistry.get(id);
+            Ability ability = AbilityRegistry.get(id);
             return ability == null || !ability.persistent();
         });
 
@@ -718,15 +728,12 @@ public class PlayerVariables implements IPlayerVariables {
 
     @Override
     public boolean isSmallBuild() {
-
         return smallBuild;
     }
 
     @Override
     public void setSmallBuild(boolean smallBuild) {
-        if (this.smallBuild != smallBuild) {
-            this.smallBuild = smallBuild;
-        }
+        this.smallBuild = smallBuild;
     }
 
     @Override
@@ -793,7 +800,7 @@ public class PlayerVariables implements IPlayerVariables {
 
         ListTag unlockedList = new ListTag();
         unlockedAbilities.forEach(
-                id -> unlockedList.add(net.minecraft.nbt.StringTag.valueOf(Objects.requireNonNull(id.toString()))));
+                id -> unlockedList.add(StringTag.valueOf(Objects.requireNonNull(id.toString()))));
         tag.put("unlockedAbilities", unlockedList);
 
         CompoundTag equippedTag = new CompoundTag();
@@ -810,7 +817,7 @@ public class PlayerVariables implements IPlayerVariables {
 
         ListTag persistentList = new ListTag();
         persistentStateIds.forEach(
-                id -> persistentList.add(net.minecraft.nbt.StringTag.valueOf(Objects.requireNonNull(id.toString()))));
+                id -> persistentList.add(StringTag.valueOf(Objects.requireNonNull(id.toString()))));
         tag.put("persistentStateIds", persistentList);
 
         CompoundTag levelsTag = new CompoundTag();
@@ -842,7 +849,7 @@ public class PlayerVariables implements IPlayerVariables {
         tag.putString("returnDim", Objects.requireNonNull(returnDim));
         tag.putInt("pocketIndex", pocketIndex);
         ListTag invitationsList = new ListTag();
-        pocketInvitations.forEach(uuid -> invitationsList.add(net.minecraft.nbt.StringTag.valueOf(uuid.toString())));
+        pocketInvitations.forEach(uuid -> invitationsList.add(StringTag.valueOf(uuid.toString())));
         tag.put("pocketInvitations", invitationsList);
         tag.putBoolean("isInSpiritRealm", isInSpiritRealm);
         tag.putBoolean("smallBuild", smallBuild);
@@ -859,12 +866,11 @@ public class PlayerVariables implements IPlayerVariables {
 
         if (!managedModifiers.isEmpty()) {
             ListTag managedList = new ListTag();
-            for (mc.sayda.creraces.engine.ManagedModifier mod : managedModifiers.values()) {
+            for (ManagedModifier mod : managedModifiers.values()) {
                 managedList.add(mod.toNBT());
             }
             tag.put("managedModifiers", managedList);
         }
-
 
         return tag;
     }
@@ -875,20 +881,10 @@ public class PlayerVariables implements IPlayerVariables {
             return serialize();
         }
 
-        // TODO: This feels cheep? What if others are added in the future, it would be
-        // better if it can obtain them from a list or similar?
-
-        // Delta sync: omit resources (mana, rage, energy, grit, soul, passiveCooldown, resourceTimer).
-        // The client predicts these every tick; a full sync fires on all discrete
-        // events.
         CompoundTag tag = serialize();
-        tag.remove("mana");
-        tag.remove("rage");
-        tag.remove("energy");
-        tag.remove("grit");
-        tag.remove("soul");
-        tag.remove("passiveCooldown");
-        tag.remove("resourceTimer");
+        for (String key : CLIENT_PREDICTED_KEYS) {
+            tag.remove(key);
+        }
         return tag;
     }
 
@@ -1032,7 +1028,8 @@ public class PlayerVariables implements IPlayerVariables {
             for (int i = 0; i < list.size(); i++) {
                 try {
                     this.pocketInvitations.add(UUID.fromString(list.getString(i)));
-                } catch (Exception ignored) {
+                } catch (IllegalArgumentException ignored) {
+                    // Skip a malformed entry rather than losing every invitation.
                 }
             }
         }
@@ -1075,12 +1072,11 @@ public class PlayerVariables implements IPlayerVariables {
             this.managedModifiers.clear();
             ListTag list = tag.getList("managedModifiers", Tag.TAG_COMPOUND);
             for (int i = 0; i < list.size(); i++) {
-                mc.sayda.creraces.engine.ManagedModifier mod = mc.sayda.creraces.engine.ManagedModifier
+                ManagedModifier mod = ManagedModifier
                         .fromNBT(list.getCompound(i));
                 if (mod != null) this.managedModifiers.put(mod.id(), mod);
             }
         }
-
 
         if (tag.contains("abilityLevels", Tag.TAG_COMPOUND)) {
             this.abilityLevels.clear();
@@ -1094,17 +1090,17 @@ public class PlayerVariables implements IPlayerVariables {
     }
 
     @Override
-    public java.util.Collection<mc.sayda.creraces.engine.ManagedModifier> getManagedModifiers() {
+    public Collection<ManagedModifier> getManagedModifiers() {
         return managedModifiers.values();
     }
 
     @Override
-    public java.util.Optional<mc.sayda.creraces.engine.ManagedModifier> getManagedModifier(ResourceLocation id) {
-        return java.util.Optional.ofNullable(managedModifiers.get(id));
+    public Optional<ManagedModifier> getManagedModifier(ResourceLocation id) {
+        return Optional.ofNullable(managedModifiers.get(id));
     }
 
     @Override
-    public void addManagedModifier(mc.sayda.creraces.engine.ManagedModifier mod) {
+    public void addManagedModifier(ManagedModifier mod) {
         managedModifiers.put(mod.id(), mod);
     }
 

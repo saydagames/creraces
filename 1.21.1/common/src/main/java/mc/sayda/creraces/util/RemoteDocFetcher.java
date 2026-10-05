@@ -7,19 +7,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Shared utility for fetching and caching remote documentation as UI
- * Components.
- */
+/** Fetches remote documentation and caches it, in memory and on disk, as UI Components. */
 public class RemoteDocFetcher {
     private static final Map<ResourceLocation, Component> FETCHED_CACHE = new ConcurrentHashMap<>();
     private static final Map<ResourceLocation, Component> PASSIVE_CACHE = new ConcurrentHashMap<>();
     private static final Map<ResourceLocation, Component> FULL_CACHE = new ConcurrentHashMap<>();
     private static final Set<ResourceLocation> FETCHING_SET = ConcurrentHashMap.newKeySet();
 
-    /**
-     * Clears all memory caches.
-     */
     public static void clearCache() {
         FETCHED_CACHE.clear();
         PASSIVE_CACHE.clear();
@@ -28,27 +22,20 @@ public class RemoteDocFetcher {
     }
 
     /**
-     * Gets a remote description, triggering a fetch if not already cached.
-     * 
-     * @param id       The ResourceLocation of the object (race or ability).
-     * @param config   The remote doc configuration.
-     * @param fallback The local fallback component.
-     * @return The cached component, a loading component, or the fallback.
+     * The remote description for a race or ability: the cached text if there is any, otherwise a
+     * "loading" placeholder while a fetch runs in the background, or {@code fallback} when the
+     * config has no source.
      */
     public static Component getRemoteDescription(ResourceLocation id, RemoteDocConfig config, Component fallback) {
         return getRemote(id, config, fallback, FETCHED_CACHE, "");
     }
 
-    /**
-     * Gets a remote passive, triggering a fetch if not already cached.
-     */
+    /** As {@link #getRemoteDescription}, for the passives section. */
     public static Component getRemotePassive(ResourceLocation id, RemoteDocConfig config, Component fallback) {
         return getRemote(id, config, fallback, PASSIVE_CACHE, "_passive");
     }
 
-    /**
-     * Gets a remote full description, triggering a fetch if not already cached.
-     */
+    /** As {@link #getRemoteDescription}, for the full description. */
     public static Component getRemoteFullDescription(ResourceLocation id, RemoteDocConfig config, Component fallback) {
         return getRemote(id, config, fallback, FULL_CACHE, "_full");
     }
@@ -58,13 +45,12 @@ public class RemoteDocFetcher {
         if (config == null || config.source().isEmpty())
             return fallback;
 
-        // Check memory cache
         Component memoryCached = cache.get(id);
         if (memoryCached != null) {
             return memoryCached;
         }
 
-        // Check disk cache using a modified ID if suffix provided
+        // Each section is stored on disk under its own suffixed id.
         ResourceLocation cacheId = cacheSuffix.isEmpty() ? id
                 : ResourceLocation.fromNamespaceAndPath(id.getNamespace(), id.getPath() + cacheSuffix);
         String diskCached = DocCache.get(cacheId);
@@ -74,24 +60,17 @@ public class RemoteDocFetcher {
             return comp;
         }
 
-        // Trigger fetch if not already fetching
-        if (!FETCHING_SET.contains(cacheId)) {
-            FETCHING_SET.add(cacheId);
+        if (FETCHING_SET.add(cacheId)) {
             DocFetcher.fetch(config.source(), config.selector())
                     .handle((result, ex) -> {
                         try {
                             if (result != null && !result.isEmpty()) {
-                                // Store in disk cache and memory cache as formatted component
                                 DocCache.store(cacheId, result);
                                 cache.put(id, WikitextUtil.toComponent(result));
+                            } else if (config.fallback() != null && !config.fallback().isEmpty()) {
+                                cache.put(id, Component.translatable(config.fallback()));
                             } else {
-                                // Use fallback translation key from config if available, else original
-                                // component
-                                if (config != null && config.fallback() != null && !config.fallback().isEmpty()) {
-                                    cache.put(id, Component.translatable(config.fallback()));
-                                } else {
-                                    cache.put(id, fallback);
-                                }
+                                cache.put(id, fallback);
                             }
                         } finally {
                             FETCHING_SET.remove(cacheId);

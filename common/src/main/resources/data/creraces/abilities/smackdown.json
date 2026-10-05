@@ -28,6 +28,7 @@
                     "actions": [
                         {
                             "type": "creraces:apply_velocity",
+                            "use_target": true,
                             "y": -4,
                             "absolute": true
                         },
@@ -53,4 +54,3 @@
     ],
     "creraces:wiki_page": "Ability:Smackdown"
 }
-

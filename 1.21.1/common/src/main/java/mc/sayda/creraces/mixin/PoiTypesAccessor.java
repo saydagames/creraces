@@ -9,7 +9,10 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 
 import java.util.Map;
 
-/** Exposes PoiTypes.TYPE_BY_STATE, populated only at vanilla bootstrap, so modded PoiTypes can add their own states afterward. */
+/**
+ * Exposes PoiTypes.TYPE_BY_STATE, which vanilla only fills at bootstrap, so modded PoiTypes can add
+ * their own states afterwards.
+ */
 @Mixin(PoiTypes.class)
 public interface PoiTypesAccessor {
     @Accessor("TYPE_BY_STATE")

@@ -5,16 +5,16 @@ import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.capability.IPlayerVariables;
 import mc.sayda.creraces.race.RaceIncidents;
+import mc.sayda.creraces.registry.ModAttributes;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 
+import java.util.Objects;
 import java.util.function.Supplier;
 
-/**
- * Packet sent from client to server to modify player variables/states for debug
- * purposes.
- */
+/** C2S: an op edits their own variables, states or attributes from the debug screen. */
 public class DebugActionPacket {
     public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "debug_action");
 
@@ -29,15 +29,15 @@ public class DebugActionPacket {
     }
 
     public DebugActionPacket(FriendlyByteBuf buf) {
-        this.action = java.util.Objects.requireNonNull(buf.readUtf(32));
-        this.key = java.util.Objects.requireNonNull(buf.readUtf(256));
-        this.value = java.util.Objects.requireNonNull(buf.readUtf(1024));
+        this.action = Objects.requireNonNull(buf.readUtf(32));
+        this.key = Objects.requireNonNull(buf.readUtf(256));
+        this.value = Objects.requireNonNull(buf.readUtf(1024));
     }
 
     public void encode(FriendlyByteBuf buf) {
-        buf.writeUtf(java.util.Objects.requireNonNull(action));
-        buf.writeUtf(java.util.Objects.requireNonNull(key));
-        buf.writeUtf(java.util.Objects.requireNonNull(value));
+        buf.writeUtf(Objects.requireNonNull(action));
+        buf.writeUtf(Objects.requireNonNull(key));
+        buf.writeUtf(Objects.requireNonNull(value));
     }
 
     public void handle(Supplier<NetworkManager.PacketContext> contextSupplier) {
@@ -53,27 +53,25 @@ public class DebugActionPacket {
                 try {
                     switch (action) {
                         case "variable", "state" -> {
-                            applyVariable(player, vars, java.util.Objects.requireNonNull(key),
-                                    java.util.Objects.requireNonNull(value));
+                            applyVariable(player, vars, Objects.requireNonNull(key), Objects.requireNonNull(value));
                             CreRaces.LOGGER.debug("Applied debug variable/state: {} = {}", key, value);
                         }
                         case "customization" -> {
-                            vars.setCustomization(java.util.Objects.requireNonNull(key),
-                                    java.util.Objects.requireNonNull(value));
+                            vars.setCustomization(Objects.requireNonNull(key), Objects.requireNonNull(value));
                             CreRaces.LOGGER.debug("Applied debug customization: {} = {}", key, value);
                         }
                         case "ability_state" -> {
-                            vars.setPersistentState(ResourceLocation.parse(java.util.Objects.requireNonNull(key)),
-                                    Double.parseDouble(java.util.Objects.requireNonNull(value)));
+                            vars.setPersistentState(ResourceLocation.parse(Objects.requireNonNull(key)),
+                                    Double.parseDouble(Objects.requireNonNull(value)));
                             CreRaces.LOGGER.debug("Applied debug ability state: {} = {}", key, value);
                         }
                         case "cooldown" -> {
-                            vars.setCooldown(ResourceLocation.parse(java.util.Objects.requireNonNull(key)),
-                                    (int) Double.parseDouble(java.util.Objects.requireNonNull(value)));
+                            vars.setCooldown(ResourceLocation.parse(Objects.requireNonNull(key)),
+                                    (int) Double.parseDouble(Objects.requireNonNull(value)));
                             CreRaces.LOGGER.debug("Applied debug cooldown: {} = {}", key, value);
                         }
                         case "race" -> {
-                            ResourceLocation id = ResourceLocation.parse(java.util.Objects.requireNonNull(value));
+                            ResourceLocation id = ResourceLocation.parse(Objects.requireNonNull(value));
                             RaceIncidents.transformPlayer(player, id);
                             CreRaces.LOGGER.debug("Applied debug race transformation: {}", value);
                         }
@@ -81,12 +79,10 @@ public class DebugActionPacket {
                             applyAttribute(player, key, value);
                             CreRaces.LOGGER.debug("Applied debug attribute: {} = {}", key, value);
                         }
-                        case "flag" -> {
-                            applyFlag(vars, key, value);
-                        }
+                        case "flag" -> applyFlag(vars, key, value);
                     }
-                    // Sync changes back to client
-                    if (!action.equals("race")) { // Race transformation already syncs
+                    // transformPlayer already resyncs everything
+                    if (!action.equals("race")) {
                         RaceIncidents.refreshPlayer(player);
                     }
                 } catch (Exception e) {
@@ -98,16 +94,19 @@ public class DebugActionPacket {
 
     private void applyVariable(ServerPlayer player, IPlayerVariables vars, String key, String value) {
         if (key.equalsIgnoreCase("race")) {
-            RaceIncidents.transformPlayer(player,
-                    ResourceLocation.parse(java.util.Objects.requireNonNull(value)));
+            RaceIncidents.transformPlayer(player, ResourceLocation.parse(Objects.requireNonNull(value)));
+            return;
+        }
+        // A dimension id rather than a number, so it has to skip the numeric parse below
+        if (key.equalsIgnoreCase("returndim")) {
+            vars.setReturnDim(value);
             return;
         }
 
-        double val = 0;
+        double val;
         try {
             val = Double.parseDouble(value);
         } catch (NumberFormatException e) {
-            // Check for boolean strings
             if (value.equalsIgnoreCase("true"))
                 val = 1.0;
             else if (value.equalsIgnoreCase("false"))
@@ -129,7 +128,6 @@ public class DebugActionPacket {
             case "coins" -> vars.setCoins(val);
             case "soul" -> vars.setSoul(val);
             case "gstate" -> vars.setGState((int) val);
-            case "returndim" -> vars.setReturnDim(value);
             case "pocketx" -> vars.setPocketX(val);
             case "pockety" -> vars.setPocketY(val);
             case "pocketz" -> vars.setPocketZ(val);
@@ -153,10 +151,10 @@ public class DebugActionPacket {
     private void applyAttribute(ServerPlayer player, String attrId, String value) {
         try {
             double val = Double.parseDouble(value);
-            ResourceLocation id = ResourceLocation.parse(java.util.Objects.requireNonNull(attrId));
-            var attr = mc.sayda.creraces.registry.ModAttributes.getAttribute(id);
+            ResourceLocation id = ResourceLocation.parse(Objects.requireNonNull(attrId));
+            var attr = ModAttributes.getAttribute(id);
             if (attr != null) {
-                net.minecraft.world.entity.ai.attributes.AttributeInstance instance = player.getAttribute(attr);
+                AttributeInstance instance = player.getAttribute(attr);
                 if (instance != null) {
                     instance.setBaseValue(val);
                 }

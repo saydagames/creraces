@@ -3,9 +3,21 @@ package mc.sayda.creraces.race;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import dev.architectury.utils.GameInstance;
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.ability.OverlayBar;
+import mc.sayda.creraces.engine.GState;
+import mc.sayda.creraces.engine.ScalingValue;
+import mc.sayda.creraces.engine.TraitRegistry;
+import mc.sayda.creraces.engine.TraitRegistry.RaceTrait;
+import mc.sayda.creraces.network.BoundaryHandler;
+import mc.sayda.creraces.network.SyncRacesPacket;
 import mc.sayda.creraces.util.GsonHelper;
+import mc.sayda.creraces.util.RemoteDocConfig;
+import mc.sayda.creraces.util.RemoteDocFetcher;
+import mc.sayda.creraces.util.WikiUtils;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
@@ -14,426 +26,354 @@ import net.minecraft.network.chat.Component;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 /**
- * Loads race JSONs from data/creraces/races/
+ * Loads race JSONs from data/creraces/races/. Keys with a namespace ("creraces:...") are race
+ * properties; unprefixed keys are trait categories.
  */
 public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLocation, JsonElement>> {
     private static final String FOLDER = "races";
-    private static volatile Map<ResourceLocation, JsonElement> lastRawData = new java.util.HashMap<>();
+    private static final Set<String> FOOD_CATEGORIES = Set.of(
+            "meat", "vegetable", "fruit", "grain", "sweet", "dairy", "seafood", "fishes");
 
-    public static mc.sayda.creraces.network.SyncRacesPacket createSyncPacket() {
-        Map<ResourceLocation, String> data = new java.util.HashMap<>();
-        lastRawData.forEach((id, element) -> {
-            data.put(id, element.toString());
-        });
-        return new mc.sayda.creraces.network.SyncRacesPacket(data);
+    private static volatile Map<ResourceLocation, JsonElement> lastRawData = new HashMap<>();
+
+    public static SyncRacesPacket createSyncPacket() {
+        Map<ResourceLocation, String> data = new HashMap<>();
+        lastRawData.forEach((id, element) -> data.put(id, element.toString()));
+        return new SyncRacesPacket(data);
     }
 
-    @SuppressWarnings("unchecked")
+    @Override
     @Nonnull
     protected Map<ResourceLocation, JsonElement> prepare(@Nonnull ResourceManager resourceManager,
             @Nonnull ProfilerFiller profiler) {
-        mc.sayda.creraces.CreRaces.LOGGER.info("RaceManager: Preparing data reload...");
-        Map<?, ?> files = GsonHelper.getJsonFiles(resourceManager, FOLDER);
-        return files != null ? (Map<ResourceLocation, JsonElement>) files : new java.util.HashMap<>();
+        CreRaces.LOGGER.info("RaceManager: Preparing data reload...");
+        Map<ResourceLocation, JsonElement> files = GsonHelper.getJsonFiles(resourceManager, FOLDER);
+        return files != null ? files : new HashMap<>();
     }
 
     @Override
     protected void apply(@Nonnull Map<ResourceLocation, JsonElement> data, @Nonnull ResourceManager resourceManager,
             @Nonnull ProfilerFiller profiler) {
-        mc.sayda.creraces.CreRaces.LOGGER.info("RaceManager: Applying data reload ({} files found)", data.size());
+        CreRaces.LOGGER.info("RaceManager: Applying data reload ({} files found)", data.size());
         lastRawData = data;
-        mc.sayda.creraces.util.RemoteDocFetcher.clearCache();
+        RemoteDocFetcher.clearCache();
         syncFromServer(data);
 
-        // Sync to all online players
-        var server = dev.architectury.utils.GameInstance.getServer();
+        var server = GameInstance.getServer();
         if (server != null) {
             var pkt = createSyncPacket();
-            for (net.minecraft.server.level.ServerPlayer player : server.getPlayerList().getPlayers()) {
-                mc.sayda.creraces.network.BoundaryHandler.syncRacesToPlayer(player, pkt);
+            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                BoundaryHandler.syncRacesToPlayer(player, pkt);
             }
         }
     }
 
     public static void syncFromServer(Map<ResourceLocation, JsonElement> data) {
         RaceRegistry.clear();
-        final int[] count = { 0 };
 
-        // 1. Pre-process inheritance
-        Map<ResourceLocation, JsonObject> resolvedData = new java.util.HashMap<>();
+        Map<ResourceLocation, JsonObject> resolvedData = new HashMap<>();
         data.forEach((id, element) -> {
             if (element.isJsonObject()) {
                 try {
-                    resolvedData.put(id, resolveInheritance(id, data, new java.util.HashSet<>()));
+                    resolvedData.put(id, resolveInheritance(id, data, new HashSet<>()));
                 } catch (Exception e) {
                     CreRaces.LOGGER.error("Failed to resolve inheritance for race {}: {}", id, e.getMessage());
-                    // Fallback to raw data if inheritance fails
                     resolvedData.put(id, element.getAsJsonObject());
                 }
             }
         });
 
-        // 2. Parse and Register
-        resolvedData.forEach((id, jsonObject) -> {
+        int count = 0;
+        for (Map.Entry<ResourceLocation, JsonObject> entry : resolvedData.entrySet()) {
             try {
-                @SuppressWarnings("null")
-                String path = java.util.Objects.requireNonNull(id.getPath());
-                String nameStr = java.util.Objects.requireNonNull(GsonHelper.getAsString(jsonObject, "creraces:name", path));
-                String descStr = GsonHelper.getAsString(jsonObject, "creraces:description", "");
-
-                // Race images (icon, portrait, splash, name texture, background)
-                @Nonnull
-                String iconStr = GsonHelper.getAsString(jsonObject, "creraces:icon",
-                        "minecraft:textures/item/barrier.png");
-                @SuppressWarnings("null")
-                ResourceLocation icon = ResourceLocation.tryParse(iconStr);
-                if (icon == null)
-                    icon = new ResourceLocation("minecraft", "textures/item/barrier.png");
-
-                @Nonnull
-                String portraitStr = GsonHelper.getAsString(jsonObject, "creraces:portrait",
-                        "creraces:textures/screens/race.png");
-                @SuppressWarnings("null")
-                ResourceLocation portrait = ResourceLocation.tryParse(portraitStr);
-                if (portrait == null)
-                    portrait = new ResourceLocation("creraces", "textures/screens/race.png");
-
-                @Nonnull
-                String splashStr = GsonHelper.getAsString(jsonObject, "creraces:splash",
-                        "creraces:textures/screens/unknown_splash.png");
-                @SuppressWarnings("null")
-                ResourceLocation splash = ResourceLocation.tryParse(splashStr);
-                if (splash == null)
-                    splash = new ResourceLocation("creraces", "textures/screens/unknown_splash.png");
-
-                @Nullable
-                String nameTextureStr = GsonHelper.getNullableString(jsonObject, "creraces:name_texture", null);
-                ResourceLocation nameTex = nameTextureStr != null ? ResourceLocation.tryParse(nameTextureStr) : null;
-
-                @Nonnull
-                String bgTextureStr = GsonHelper.getAsString(jsonObject, "creraces:bg_texture",
-                        "creraces:textures/screens/selection_bg.png");
-                @SuppressWarnings("null")
-                ResourceLocation bgTex = ResourceLocation.tryParse(bgTextureStr);
-                if (bgTex == null)
-                    bgTex = new ResourceLocation("creraces", "textures/screens/selection_bg.png");
-
-
-                double indexValue = GsonHelper.getAsDouble(jsonObject, "creraces:index", Double.MAX_VALUE);
-
-                int baseAp = GsonHelper.getAsInt(jsonObject, "creraces:base_ap", 0);
-                int baseAd = GsonHelper.getAsInt(jsonObject, "creraces:base_ad", 0);
-                int baseAh = GsonHelper.getAsInt(jsonObject, "creraces:base_ah", 0);
-                int baseCr = GsonHelper.getAsInt(jsonObject, "creraces:base_cr", 0);
-                String resourceTypeStr = GsonHelper.getAsString(jsonObject, "creraces:resource_type", "NONE");
-                if (resourceTypeStr.contains(":"))
-                    resourceTypeStr = resourceTypeStr.substring(resourceTypeStr.indexOf(':') + 1);
-
-                ResourceType resourceType = ResourceType.NONE;
-                try {
-                    resourceType = ResourceType.valueOf(resourceTypeStr.toUpperCase());
-                } catch (Exception e) {
-                    CreRaces.LOGGER.warn("Race {} has unknown resource type: {}", id, resourceTypeStr);
-                }
-
-                JsonElement scaleElem = jsonObject.get("creraces:scale");
-                RaceScale scale = RaceScale.fromJson(scaleElem);
-
-                int difficulty = GsonHelper.getAsInt(jsonObject, "creraces:difficulty", 0);
-
-                // Splash dimensions
-                int splashX = GsonHelper.getAsInt(jsonObject, "creraces:splash_x", 15);
-                int splashY = GsonHelper.getAsInt(jsonObject, "creraces:splash_y", -10);
-                int splashW = GsonHelper.getAsInt(jsonObject, "creraces:splash_w", 141);
-                int splashH = GsonHelper.getAsInt(jsonObject, "creraces:splash_h", 199);
-
-                // Name Dimensions
-                int nameTexX = GsonHelper.getAsInt(jsonObject, "creraces:name_tex_x", 44);
-                int nameTexY = GsonHelper.getAsInt(jsonObject, "creraces:name_tex_y", -35);
-                int nameTexW = GsonHelper.getAsInt(jsonObject, "creraces:name_tex_w", 86);
-                int nameTexH = GsonHelper.getAsInt(jsonObject, "creraces:name_tex_h", 20);
-
-                // Global Race Defaults (Customizations)
-                Map<String, Map<String, String>> globalDefaults = new java.util.HashMap<>();
-                JsonElement gdElem = jsonObject.get("creraces:race_defaults");
-                if (gdElem != null && gdElem.isJsonObject()) {
-                    JsonObject gdObj = gdElem.getAsJsonObject();
-                    for (Map.Entry<String, JsonElement> raceEntry : gdObj.entrySet()) {
-                        if (raceEntry.getValue().isJsonObject()) {
-                            Map<String, String> defaults = new java.util.HashMap<>();
-                            JsonObject defsObj = raceEntry.getValue().getAsJsonObject();
-                            for (Map.Entry<String, JsonElement> defEntry : defsObj.entrySet()) {
-                                defaults.put(defEntry.getKey(), defEntry.getValue().getAsString());
-                            }
-                            globalDefaults.put(raceEntry.getKey(), defaults);
-                        }
-                    }
-                }
-
-                // Customizations
-                List<RaceCustomization> customizations = new ArrayList<>();
-                JsonArray custArray = jsonObject.has("creraces:customization")
-                        ? jsonObject.getAsJsonArray("creraces:customization")
-                        : null;
-                if (custArray != null) {
-                    for (JsonElement custElem : custArray) {
-                        JsonObject cObj = custElem.getAsJsonObject();
-                        String cId = GsonHelper.getAsString(cObj, "id", "unknown");
-
-                        // Extract relevant defaults for THIS customization from all races
-                        Map<String, String> custDefaults = new java.util.HashMap<>();
-                        globalDefaults.forEach((rId, rDefs) -> {
-                            if (rDefs.containsKey(cId)) {
-                                custDefaults.put(rId, rDefs.get(cId));
-                            }
-                        });
-
-                        customizations.add(RaceCustomization.fromJson(cObj, custDefaults));
-                    }
-                }
-
-                // Starting Items/Abilities
-                List<ResourceLocation> startingAbilities = new ArrayList<>();
-                JsonArray abilArray = jsonObject.has("creraces:starting_abilities") && jsonObject.get("creraces:starting_abilities").isJsonArray()
-                        ? jsonObject.getAsJsonArray("creraces:starting_abilities")
-                        : null;
-                if (abilArray != null) {
-                    for (JsonElement e : abilArray) {
-                        String abilStr = java.util.Objects.requireNonNull(e.getAsString());
-                        ResourceLocation rl = ResourceLocation.tryParse(abilStr);
-                        if (rl != null)
-                            startingAbilities.add(rl);
-                    }
-                }
-
-                List<ResourceLocation> startingItems = new ArrayList<>();
-                JsonArray itemArray = jsonObject.has("creraces:starting_items") && jsonObject.get("creraces:starting_items").isJsonArray()
-                        ? jsonObject.getAsJsonArray("creraces:starting_items")
-                        : null;
-                if (itemArray != null) {
-                    for (JsonElement e : itemArray) {
-                        String itemStr = java.util.Objects.requireNonNull(e.getAsString());
-                        ResourceLocation rl = ResourceLocation.tryParse(itemStr);
-                        if (rl != null)
-                            startingItems.add(rl);
-                    }
-                }
-
-                // Traits & Categories (Discovery)
-                List<mc.sayda.creraces.engine.TraitRegistry.RaceTrait> traits = new ArrayList<>();
-                for (java.util.Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
-                    String key = entry.getKey();
-
-                    if (!key.contains(":")) { // Treat non-prefixed fields as trait categories
-                        JsonElement value = entry.getValue();
-                        if (value.isJsonArray()) {
-                            JsonArray array = value.getAsJsonArray();
-                            for (int i = 0; i < array.size(); i++) {
-                                JsonElement e = array.get(i);
-                                if (e.isJsonObject()) {
-                                    traits.add(mc.sayda.creraces.engine.TraitRegistry.fromJson(e.getAsJsonObject(),
-                                            key + ":" + i));
-                                }
-                            }
-                        } else if (value.isJsonObject()) {
-                            JsonObject obj = value.getAsJsonObject();
-                            if (obj.has("type")) {
-                                traits.add(mc.sayda.creraces.engine.TraitRegistry.fromJson(obj, key + ":0"));
-                            }
-                        }
-                    }
-                }
-
-                // Explicit creraces:traits list (namespaced key, not caught by discovery loop above)
-                if (jsonObject.has("creraces:traits") && jsonObject.get("creraces:traits").isJsonArray()) {
-                    JsonArray coreTraits = jsonObject.getAsJsonArray("creraces:traits");
-                    for (int i = 0; i < coreTraits.size(); i++) {
-                        JsonElement e = coreTraits.get(i);
-                        if (e.isJsonObject()) {
-                            traits.add(mc.sayda.creraces.engine.TraitRegistry.fromJson(
-                                    e.getAsJsonObject(), "creraces:traits:" + i));
-                        }
-                    }
-                }
-
-                // gState
-                mc.sayda.creraces.engine.GState gState = mc.sayda.creraces.engine.GState.BOTH;
-                @Nullable
-                String gStateStr = GsonHelper.getNullableString(jsonObject, "creraces:gstate", null);
-                if (gStateStr != null) {
-                    gState = mc.sayda.creraces.engine.GState.fromString(gStateStr);
-                }
-
-                // Remote Documentation
-                if (jsonObject.has("creraces:wiki_page")) {
-                    String wikiPage = GsonHelper.getAsString(jsonObject, "creraces:wiki_page", "");
-                    RaceRegistry.registerRemoteDoc(id, mc.sayda.creraces.util.RemoteDocConfig.fromWikiPage(wikiPage,
-                            mc.sayda.creraces.util.RemoteDocConfig.INFODOC_SELECTOR,
-                            "race.creraces." + id.getPath() + ".description"));
-                    RaceRegistry.registerRemotePassive(id, mc.sayda.creraces.util.RemoteDocConfig.fromWikiPage(wikiPage,
-                            mc.sayda.creraces.util.RemoteDocConfig.PASSIVE_SELECTOR,
-                            "race.creraces." + path + ".passive"));
-                }
-
-                if (jsonObject.has("creraces:remote_description")) {
-                    RaceRegistry.registerRemoteDoc(id, new mc.sayda.creraces.util.RemoteDocConfig(
-                            java.util.Objects.requireNonNull(mc.sayda.creraces.util.WikiUtils
-                                    .getRaceUrl(net.minecraft.network.chat.Component.literal(nameStr))),
-                            mc.sayda.creraces.util.RemoteDocConfig.RACE_DESCRIPTION_SELECTOR,
-                            "race.creraces." + id.getPath() + ".description"));
-                }
-
-                if (jsonObject.has("creraces:remote_passive") && jsonObject.get("creraces:remote_passive").isJsonObject()) {
-                    JsonObject rpObj = jsonObject.getAsJsonObject("creraces:remote_passive");
-                    mc.sayda.creraces.util.RemoteDocConfig remoteConfig = mc.sayda.creraces.util.RemoteDocConfig
-                            .fromJson(rpObj);
-                    if (remoteConfig != null) {
-                        RaceRegistry.registerRemotePassive(id, remoteConfig);
-                    }
-                }
-
-                // Selection teleport (optional)
-                @Nullable String selDimStr =
-                        GsonHelper.getNullableString(jsonObject, "creraces:selection_dimension", null);
-                @Nullable ResourceLocation selDim =
-                        selDimStr != null ? ResourceLocation.tryParse(selDimStr) : null;
-
-                double[] selPos = null;
-                JsonElement selPosElem = jsonObject.get("creraces:selection_pos");
-                if (selPosElem != null && selPosElem.isJsonObject()) {
-                    JsonObject p = selPosElem.getAsJsonObject();
-                    selPos = new double[]{
-                        p.get("x").getAsDouble(),
-                        p.get("y").getAsDouble(),
-                        p.get("z").getAsDouble()
-                    };
-                }
-
-                // Default respawn location (optional; used when no bed/anchor spawn is set)
-                @Nullable String respawnDimStr =
-                        GsonHelper.getNullableString(jsonObject, "creraces:respawn_dimension", null);
-                @Nullable ResourceLocation respawnDim =
-                        respawnDimStr != null ? ResourceLocation.tryParse(respawnDimStr) : null;
-
-                double[] respawnPos = null;
-                JsonElement respawnPosElem = jsonObject.get("creraces:respawn_pos");
-                if (respawnPosElem != null && respawnPosElem.isJsonObject()) {
-                    JsonObject rp = respawnPosElem.getAsJsonObject();
-                    respawnPos = new double[]{
-                        rp.get("x").getAsDouble(),
-                        rp.get("y").getAsDouble(),
-                        rp.get("z").getAsDouble()
-                    };
-                }
-
-                // Parents
-                List<ResourceLocation> parentRaces = new java.util.ArrayList<>();
-                String singleParent = GsonHelper.getNullableString(jsonObject, "creraces:parent_race", null);
-                if (singleParent != null) {
-                    ResourceLocation pId = ResourceLocation.tryParse(singleParent);
-                    if (pId != null) parentRaces.add(pId);
-                }
-                if (jsonObject.has("creraces:parent_races") && jsonObject.get("creraces:parent_races").isJsonArray()) {
-                    for (JsonElement e : jsonObject.getAsJsonArray("creraces:parent_races")) {
-                        ResourceLocation pId = ResourceLocation.tryParse(e.getAsString());
-                        if (pId != null && !parentRaces.contains(pId)) parentRaces.add(pId);
-                    }
-                }
-
-                Race race = new Race.Builder(id, Component.translatable(nameStr))
-                        .description(Component.translatable(descStr))
-                        .icon(icon)
-                        .portrait(portrait)
-                        .splash(splash)
-                        .nameTexture(nameTex)
-                        .parentRaces(parentRaces)
-                        .index(indexValue)
-                        .stats(baseAp, baseAd, baseAh, baseCr)
-                        .scale(scale)
-                        .resource(resourceType)
-                        .bgTexture(bgTex)
-                        .difficulty(difficulty)
-                        .splashDimensions(splashX, splashY, splashW, splashH)
-                        .nameBoxDimensions(nameTexX, nameTexY, nameTexW, nameTexH)
-                        .customizations(customizations)
-                        .startingAbilities(startingAbilities)
-                        .startingItems(startingItems)
-                        .passives(parsePassives(jsonObject))
-                        .traits(traits)
-                        .overlayBars(mc.sayda.creraces.ability.OverlayBar.collectOverlayBarsResult(jsonObject))
-                        .isSpirit(GsonHelper.getAsBoolean(jsonObject, "creraces:is_spirit", false))
-                        .isTiny(GsonHelper.getAsBoolean(jsonObject, "creraces:is_tiny", false))
-                        .isAquatic(GsonHelper.getAsBoolean(jsonObject, "creraces:is_aquatic", false))
-                        .isUndead(GsonHelper.getAsBoolean(jsonObject, "creraces:is_undead", false))
-                        .selectable(GsonHelper.getAsBoolean(jsonObject, "creraces:selectable", true))
-                        .gState(gState)
-                        .state(Race.RaceState.fromString(GsonHelper.getNullableString(jsonObject, "creraces:state", "FINISHED")))
-                        .selectionDimension(selDim)
-                        .selectionPos(selPos)
-                        .respawnDimension(respawnDim)
-                        .respawnPos(respawnPos)
-                        .biomePreview(GsonHelper.getAsBoolean(jsonObject, "creraces:territory_biome_preview", false))
-                        .claimValidBiomes(parseStringList(jsonObject, "creraces:territory_valid_biomes"))
-                        .claimBiomeThreshold(GsonHelper.getAsFloat(jsonObject, "creraces:territory_biome_threshold", 0.5f))
-                        .enableTerritory(GsonHelper.getAsBoolean(jsonObject, "creraces:enable_territory", false))
-                        .factionGroup(GsonHelper.getNullableString(jsonObject, "creraces:faction_group", null))
-                        .build();
-
-                RaceRegistry.register(race);
-                count[0]++;
+                RaceRegistry.register(parseRace(entry.getKey(), entry.getValue()));
+                count++;
             } catch (Exception e) {
-                CreRaces.LOGGER.error("Failed to load race {}: ", id, e);
+                CreRaces.LOGGER.error("Failed to load race {}: ", entry.getKey(), e);
             }
-        });
+        }
 
-        CreRaces.LOGGER.info("Loaded {} races.", count[0]);
-        RaceRegistry.getAll().forEach(race -> {
-            if (race.passives() != null) {
-                double val = race.passives().liquidSpeedMultiplier().base();
-                if (val != 1.0) {
-                    CreRaces.LOGGER.info("Race {} has liquid speed multiplier: {}", race.id(), val);
-                }
+        CreRaces.LOGGER.info("Loaded {} races.", count);
+        for (Race race : RaceRegistry.getAll()) {
+            if (race.passives() != null && race.passives().liquidSpeedMultiplier().base() != 1.0) {
+                CreRaces.LOGGER.debug("Race {} has liquid speed multiplier: {}", race.id(),
+                        race.passives().liquidSpeedMultiplier().base());
             }
-        });
-
+        }
     }
 
+    private static Race parseRace(ResourceLocation id, JsonObject json) {
+        String path = Objects.requireNonNull(id.getPath());
+        String nameStr = Objects.requireNonNull(GsonHelper.getAsString(json, "creraces:name", path));
+        String descStr = GsonHelper.getAsString(json, "creraces:description", "");
+
+        ResourceLocation icon = parseLocation(json, "creraces:icon", "minecraft:textures/item/barrier.png");
+        ResourceLocation portrait = parseLocation(json, "creraces:portrait", "creraces:textures/screens/race.png");
+        ResourceLocation splash = parseLocation(json, "creraces:splash", "creraces:textures/screens/unknown_splash.png");
+        String nameTextureStr = GsonHelper.getNullableString(json, "creraces:name_texture", null);
+        ResourceLocation nameTexture = nameTextureStr != null ? ResourceLocation.tryParse(nameTextureStr) : null;
+        ResourceLocation bgTexture = parseLocation(json, "creraces:bg_texture", "creraces:textures/screens/selection_bg.png");
+
+        double index = GsonHelper.getAsDouble(json, "creraces:index", Double.MAX_VALUE);
+        int baseAp = GsonHelper.getAsInt(json, "creraces:base_ap", 0);
+        int baseAd = GsonHelper.getAsInt(json, "creraces:base_ad", 0);
+        int baseAh = GsonHelper.getAsInt(json, "creraces:base_ah", 0);
+        int baseCr = GsonHelper.getAsInt(json, "creraces:base_cr", 0);
+        ResourceType resourceType = parseResourceType(id, json);
+        RaceScale scale = RaceScale.fromJson(json.get("creraces:scale"));
+        int difficulty = GsonHelper.getAsInt(json, "creraces:difficulty", 0);
+
+        int splashX = GsonHelper.getAsInt(json, "creraces:splash_x", 15);
+        int splashY = GsonHelper.getAsInt(json, "creraces:splash_y", -10);
+        int splashW = GsonHelper.getAsInt(json, "creraces:splash_w", 141);
+        int splashH = GsonHelper.getAsInt(json, "creraces:splash_h", 199);
+
+        int nameTexX = GsonHelper.getAsInt(json, "creraces:name_tex_x", 44);
+        int nameTexY = GsonHelper.getAsInt(json, "creraces:name_tex_y", -35);
+        int nameTexW = GsonHelper.getAsInt(json, "creraces:name_tex_w", 86);
+        int nameTexH = GsonHelper.getAsInt(json, "creraces:name_tex_h", 20);
+
+        List<RaceCustomization> customizations = parseCustomizations(json);
+        List<ResourceLocation> startingAbilities = parseIdList(json, "creraces:starting_abilities");
+        List<ResourceLocation> startingItems = parseIdList(json, "creraces:starting_items");
+        List<RaceTrait> traits = parseTraits(json);
+
+        GState gState = GState.BOTH;
+        String gStateStr = GsonHelper.getNullableString(json, "creraces:gstate", null);
+        if (gStateStr != null) {
+            gState = GState.fromString(gStateStr);
+        }
+
+        registerRemoteDocs(id, nameStr, json);
+
+        String selectionDimStr = GsonHelper.getNullableString(json, "creraces:selection_dimension", null);
+        ResourceLocation selectionDim = selectionDimStr != null ? ResourceLocation.tryParse(selectionDimStr) : null;
+        double[] selectionPos = parsePosition(json, "creraces:selection_pos");
+
+        // Default respawn point, used when the player has no bed or anchor spawn.
+        String respawnDimStr = GsonHelper.getNullableString(json, "creraces:respawn_dimension", null);
+        ResourceLocation respawnDim = respawnDimStr != null ? ResourceLocation.tryParse(respawnDimStr) : null;
+        double[] respawnPos = parsePosition(json, "creraces:respawn_pos");
+
+        return new Race.Builder(id, Component.translatable(nameStr))
+                .description(Component.translatable(descStr))
+                .icon(icon)
+                .portrait(portrait)
+                .splash(splash)
+                .nameTexture(nameTexture)
+                .parentRaces(parseParentRaces(json))
+                .index(index)
+                .stats(baseAp, baseAd, baseAh, baseCr)
+                .scale(scale)
+                .resource(resourceType)
+                .bgTexture(bgTexture)
+                .difficulty(difficulty)
+                .splashDimensions(splashX, splashY, splashW, splashH)
+                .nameBoxDimensions(nameTexX, nameTexY, nameTexW, nameTexH)
+                .customizations(customizations)
+                .startingAbilities(startingAbilities)
+                .startingItems(startingItems)
+                .passives(parsePassives(json))
+                .traits(traits)
+                .overlayBars(OverlayBar.collectOverlayBarsResult(json))
+                .isSpirit(GsonHelper.getAsBoolean(json, "creraces:is_spirit", false))
+                .isTiny(GsonHelper.getAsBoolean(json, "creraces:is_tiny", false))
+                .isAquatic(GsonHelper.getAsBoolean(json, "creraces:is_aquatic", false))
+                .isUndead(GsonHelper.getAsBoolean(json, "creraces:is_undead", false))
+                .selectable(GsonHelper.getAsBoolean(json, "creraces:selectable", true))
+                .gState(gState)
+                .state(Race.RaceState.fromString(GsonHelper.getNullableString(json, "creraces:state", "FINISHED")))
+                .selectionDimension(selectionDim)
+                .selectionPos(selectionPos)
+                .respawnDimension(respawnDim)
+                .respawnPos(respawnPos)
+                .biomePreview(GsonHelper.getAsBoolean(json, "creraces:territory_biome_preview", false))
+                .claimValidBiomes(parseStringList(json, "creraces:territory_valid_biomes"))
+                .claimBiomeThreshold(GsonHelper.getAsFloat(json, "creraces:territory_biome_threshold", 0.5f))
+                .enableTerritory(GsonHelper.getAsBoolean(json, "creraces:enable_territory", false))
+                .build();
+    }
+
+    /** Parses a texture location, falling back when the key is missing or malformed. */
+    private static ResourceLocation parseLocation(JsonObject json, String key, String fallback) {
+        ResourceLocation location = ResourceLocation.tryParse(GsonHelper.getAsString(json, key, fallback));
+        return location != null ? location : ResourceLocation.tryParse(fallback);
+    }
+
+    private static ResourceType parseResourceType(ResourceLocation id, JsonObject json) {
+        String typeStr = GsonHelper.getAsString(json, "creraces:resource_type", "NONE");
+        if (typeStr.contains(":"))
+            typeStr = typeStr.substring(typeStr.indexOf(':') + 1);
+        try {
+            return ResourceType.valueOf(typeStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            CreRaces.LOGGER.warn("Race {} has unknown resource type: {}", id, typeStr);
+            return ResourceType.NONE;
+        }
+    }
+
+    /**
+     * creraces:race_defaults maps a race id to per-customization defaults. Each customization
+     * keeps only the entries for its own id.
+     */
+    private static List<RaceCustomization> parseCustomizations(JsonObject json) {
+        Map<String, Map<String, String>> defaultsByRace = new HashMap<>();
+        JsonElement defaultsElem = json.get("creraces:race_defaults");
+        if (defaultsElem != null && defaultsElem.isJsonObject()) {
+            for (Map.Entry<String, JsonElement> raceEntry : defaultsElem.getAsJsonObject().entrySet()) {
+                if (raceEntry.getValue().isJsonObject()) {
+                    Map<String, String> defaults = new HashMap<>();
+                    for (Map.Entry<String, JsonElement> defEntry : raceEntry.getValue().getAsJsonObject().entrySet()) {
+                        defaults.put(defEntry.getKey(), defEntry.getValue().getAsString());
+                    }
+                    defaultsByRace.put(raceEntry.getKey(), defaults);
+                }
+            }
+        }
+
+        List<RaceCustomization> customizations = new ArrayList<>();
+        if (json.has("creraces:customization")) {
+            for (JsonElement custElem : json.getAsJsonArray("creraces:customization")) {
+                JsonObject custObj = custElem.getAsJsonObject();
+                String custId = GsonHelper.getAsString(custObj, "id", "unknown");
+
+                Map<String, String> custDefaults = new HashMap<>();
+                defaultsByRace.forEach((raceId, defaults) -> {
+                    if (defaults.containsKey(custId)) {
+                        custDefaults.put(raceId, defaults.get(custId));
+                    }
+                });
+
+                customizations.add(RaceCustomization.fromJson(custObj, custDefaults));
+            }
+        }
+        return customizations;
+    }
+
+    /** Collects every trait in unprefixed category keys, plus the explicit creraces:traits list. */
+    private static List<RaceTrait> parseTraits(JsonObject json) {
+        List<RaceTrait> traits = new ArrayList<>();
+        for (Map.Entry<String, JsonElement> entry : json.entrySet()) {
+            String key = entry.getKey();
+            if (key.contains(":"))
+                continue;
+
+            JsonElement value = entry.getValue();
+            if (value.isJsonArray()) {
+                JsonArray array = value.getAsJsonArray();
+                for (int i = 0; i < array.size(); i++) {
+                    JsonElement e = array.get(i);
+                    if (e.isJsonObject()) {
+                        traits.add(TraitRegistry.fromJson(e.getAsJsonObject(), key + ":" + i));
+                    }
+                }
+            } else if (value.isJsonObject()) {
+                JsonObject obj = value.getAsJsonObject();
+                if (obj.has("type")) {
+                    traits.add(TraitRegistry.fromJson(obj, key + ":0"));
+                }
+            }
+        }
+
+        if (json.has("creraces:traits") && json.get("creraces:traits").isJsonArray()) {
+            JsonArray coreTraits = json.getAsJsonArray("creraces:traits");
+            for (int i = 0; i < coreTraits.size(); i++) {
+                JsonElement e = coreTraits.get(i);
+                if (e.isJsonObject()) {
+                    traits.add(TraitRegistry.fromJson(e.getAsJsonObject(), "creraces:traits:" + i));
+                }
+            }
+        }
+        return traits;
+    }
+
+    private static void registerRemoteDocs(ResourceLocation id, String nameStr, JsonObject json) {
+        String descriptionKey = "race.creraces." + id.getPath() + ".description";
+        if (json.has("creraces:wiki_page")) {
+            String wikiPage = GsonHelper.getAsString(json, "creraces:wiki_page", "");
+            RaceRegistry.registerRemoteDoc(id, RemoteDocConfig.fromWikiPage(wikiPage,
+                    RemoteDocConfig.INFODOC_SELECTOR, descriptionKey));
+            RaceRegistry.registerRemotePassive(id, RemoteDocConfig.fromWikiPage(wikiPage,
+                    RemoteDocConfig.PASSIVE_SELECTOR, "race.creraces." + id.getPath() + ".passive"));
+        }
+
+        if (json.has("creraces:remote_description")) {
+            RaceRegistry.registerRemoteDoc(id, new RemoteDocConfig(
+                    Objects.requireNonNull(WikiUtils.getRaceUrl(Component.literal(nameStr))),
+                    RemoteDocConfig.RACE_DESCRIPTION_SELECTOR, descriptionKey));
+        }
+
+        if (json.has("creraces:remote_passive") && json.get("creraces:remote_passive").isJsonObject()) {
+            RemoteDocConfig remoteConfig = RemoteDocConfig.fromJson(json.getAsJsonObject("creraces:remote_passive"));
+            if (remoteConfig != null) {
+                RaceRegistry.registerRemotePassive(id, remoteConfig);
+            }
+        }
+    }
+
+    /** Reads an {"x", "y", "z"} object, or returns null if the key is absent. */
+    @Nullable
+    private static double[] parsePosition(JsonObject json, String key) {
+        JsonElement elem = json.get(key);
+        if (elem == null || !elem.isJsonObject())
+            return null;
+        JsonObject pos = elem.getAsJsonObject();
+        return new double[] { pos.get("x").getAsDouble(), pos.get("y").getAsDouble(), pos.get("z").getAsDouble() };
+    }
+
+    private static List<ResourceLocation> parseParentRaces(JsonObject json) {
+        List<ResourceLocation> parentRaces = new ArrayList<>();
+        String singleParent = GsonHelper.getNullableString(json, "creraces:parent_race", null);
+        if (singleParent != null) {
+            ResourceLocation parentId = ResourceLocation.tryParse(singleParent);
+            if (parentId != null)
+                parentRaces.add(parentId);
+        }
+        if (json.has("creraces:parent_races") && json.get("creraces:parent_races").isJsonArray()) {
+            for (JsonElement e : json.getAsJsonArray("creraces:parent_races")) {
+                ResourceLocation parentId = ResourceLocation.tryParse(e.getAsString());
+                if (parentId != null && !parentRaces.contains(parentId))
+                    parentRaces.add(parentId);
+            }
+        }
+        return parentRaces;
+    }
+
+    /** Merges each parent's fully resolved JSON under the race's own, child values winning. */
     private static JsonObject resolveInheritance(ResourceLocation id, Map<ResourceLocation, JsonElement> data,
-            java.util.Set<ResourceLocation> visited) {
+            Set<ResourceLocation> visited) {
         if (!visited.add(id)) {
-            return data.get(id).getAsJsonObject().deepCopy(); // Circular dependency
+            // Already on this inheritance path: a cycle, so stop and use the raw JSON.
+            return data.get(id).getAsJsonObject().deepCopy();
         }
 
         JsonObject current = data.get(id).getAsJsonObject().deepCopy();
 
-        // 1. Single Parent (Legacy)
-        @Nullable
         String singleParent = GsonHelper.getNullableString(current, "creraces:parent_race", null);
         if (singleParent != null) {
-            ResourceLocation pId = ResourceLocation.tryParse(singleParent);
-            if (pId != null && data.containsKey(pId)) {
-                JsonObject pResolved = resolveInheritance(pId, data, visited);
-                current = mergeRaces(pResolved, current);
-            } else if (pId != null) {
-                CreRaces.LOGGER.warn("Race {} references missing parent race: {}", id, pId);
+            ResourceLocation parentId = ResourceLocation.tryParse(singleParent);
+            if (parentId != null && data.containsKey(parentId)) {
+                current = mergeRaces(resolveInheritance(parentId, data, visited), current);
+            } else if (parentId != null) {
+                CreRaces.LOGGER.warn("Race {} references missing parent race: {}", id, parentId);
             }
         }
 
-        // 2. Multiple Parents
         if (current.has("creraces:parent_races") && current.get("creraces:parent_races").isJsonArray()) {
-            JsonArray parents = current.getAsJsonArray("creraces:parent_races");
-            for (JsonElement e : parents) {
-                String pStr = e.getAsString();
-                ResourceLocation pId = ResourceLocation.tryParse(pStr);
-                if (pId != null && data.containsKey(pId)) {
-                    JsonObject pResolved = resolveInheritance(pId, data, visited);
-                    current = mergeRaces(pResolved, current);
-                } else if (pId != null) {
-                    CreRaces.LOGGER.warn("Race {} references missing multi-parent race: {}", id, pId);
+            for (JsonElement e : current.getAsJsonArray("creraces:parent_races")) {
+                ResourceLocation parentId = ResourceLocation.tryParse(e.getAsString());
+                if (parentId != null && data.containsKey(parentId)) {
+                    current = mergeRaces(resolveInheritance(parentId, data, visited), current);
+                } else if (parentId != null) {
+                    CreRaces.LOGGER.warn("Race {} references missing multi-parent race: {}", id, parentId);
                 }
             }
         }
@@ -443,74 +383,30 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
 
     private static JsonObject mergeRaces(JsonObject parent, JsonObject child) {
         JsonObject merged = parent.deepCopy();
-        
-        // Exclude parent-specific metadata that should not be inherited
+
+        // Selection metadata belongs to the parent itself and is never inherited.
         merged.remove("creraces:selectable");
         merged.remove("creraces:parent_race");
         merged.remove("creraces:parent_races");
         merged.remove("creraces:index");
-        
-        for (java.util.Map.Entry<String, JsonElement> entry : child.entrySet()) {
+
+        for (Map.Entry<String, JsonElement> entry : child.entrySet()) {
             String key = entry.getKey();
             JsonElement childVal = entry.getValue();
+            JsonElement parentVal = merged.get(key);
 
-            if (merged.has(key)) {
-                JsonElement parentVal = merged.get(key);
-                if (childVal.isJsonObject() && parentVal.isJsonObject()) {
-                    // Deep merge objects (Passives or Custom Categories)
-                    JsonObject parentObj = parentVal.getAsJsonObject();
-                    JsonObject childObj = childVal.getAsJsonObject();
-                    for (java.util.Map.Entry<String, JsonElement> childEntry : childObj.entrySet()) {
-                        parentObj.add(childEntry.getKey(), childEntry.getValue());
-                    }
-                } else if (childVal.isJsonArray() && parentVal.isJsonArray()) {
-                    // Append for specific lists
-                    if (key.endsWith("traits") || key.equals("creraces:starting_abilities")
-                            || key.equals("starting_abilities")
-                            || key.equals("creraces:starting_items") || key.equals("starting_items")
-                            || key.equals("creraces:race_addons") || key.equals("race_addons")
-                            || !key.contains(":")) { // Categories append too
-                        parentVal.getAsJsonArray().addAll(childVal.getAsJsonArray());
-                    } else if (key.equals("creraces:customization") || key.equals("customization")) {
-                        // Merge customizations by ID
-                        JsonArray parentArray = parentVal.getAsJsonArray();
-                        JsonArray childArray = childVal.getAsJsonArray();
-                        for (JsonElement childElem : childArray) {
-                            if (childElem.isJsonObject()) {
-                                JsonObject childObj = childElem.getAsJsonObject();
-                                @Nullable
-                                String childId = GsonHelper.getNullableString(childObj, "id", null);
-                                if (childId != null) {
-                                    boolean found = false;
-                                    for (int i = 0; i < parentArray.size(); i++) {
-                                        JsonElement pElem = parentArray.get(i);
-                                        if (pElem.isJsonObject()) {
-                                            JsonObject pObj = pElem.getAsJsonObject();
-                                            @Nullable
-                                            String pId = GsonHelper.getNullableString(pObj, "id", null);
-                                            if (childId.equals(pId)) {
-                                                // Child overrides parent entry
-                                                parentArray.set(i, childObj);
-                                                found = true;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                    if (!found) {
-                                        parentArray.add(childElem);
-                                    }
-                                } else {
-                                    parentArray.add(childElem);
-                                }
-                            }
-                        }
-                    } else {
-                        merged.add(key, childVal);
-                    }
-
-                } else {
-                    merged.add(key, childVal);
+            if (parentVal != null && childVal.isJsonObject() && parentVal.isJsonObject()) {
+                // Objects (passives, trait categories) merge one level deep.
+                JsonObject parentObj = parentVal.getAsJsonObject();
+                for (Map.Entry<String, JsonElement> childEntry : childVal.getAsJsonObject().entrySet()) {
+                    parentObj.add(childEntry.getKey(), childEntry.getValue());
                 }
+            } else if (parentVal != null && childVal.isJsonArray() && parentVal.isJsonArray()
+                    && isAppendedList(key)) {
+                parentVal.getAsJsonArray().addAll(childVal.getAsJsonArray());
+            } else if (parentVal != null && childVal.isJsonArray() && parentVal.isJsonArray()
+                    && (key.equals("creraces:customization") || key.equals("customization"))) {
+                mergeCustomizationsById(parentVal.getAsJsonArray(), childVal.getAsJsonArray());
             } else {
                 merged.add(key, childVal);
             }
@@ -519,129 +415,95 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
         return merged;
     }
 
-    private static java.util.List<String> parseStringList(JsonObject json, String key) {
-        java.util.List<String> result = new java.util.ArrayList<>();
+    /** Lists whose child entries are added to the parent's rather than replacing them. */
+    private static boolean isAppendedList(String key) {
+        return key.endsWith("traits")
+                || key.equals("creraces:starting_abilities") || key.equals("starting_abilities")
+                || key.equals("creraces:starting_items") || key.equals("starting_items")
+                || key.equals("creraces:race_addons") || key.equals("race_addons")
+                || !key.contains(":");
+    }
+
+    /** A child customization replaces the parent's entry with the same id, otherwise it is appended. */
+    private static void mergeCustomizationsById(JsonArray parentArray, JsonArray childArray) {
+        for (JsonElement childElem : childArray) {
+            if (!childElem.isJsonObject())
+                continue;
+            JsonObject childObj = childElem.getAsJsonObject();
+            String childId = GsonHelper.getNullableString(childObj, "id", null);
+            if (childId == null) {
+                parentArray.add(childElem);
+                continue;
+            }
+
+            boolean replaced = false;
+            for (int i = 0; i < parentArray.size(); i++) {
+                JsonElement parentElem = parentArray.get(i);
+                if (parentElem.isJsonObject()
+                        && childId.equals(GsonHelper.getNullableString(parentElem.getAsJsonObject(), "id", null))) {
+                    parentArray.set(i, childObj);
+                    replaced = true;
+                    break;
+                }
+            }
+            if (!replaced) {
+                parentArray.add(childElem);
+            }
+        }
+    }
+
+    private static List<String> parseStringList(JsonObject json, String key) {
+        List<String> result = new ArrayList<>();
         if (json.has(key) && json.get(key).isJsonArray()) {
-            for (com.google.gson.JsonElement e : json.getAsJsonArray(key)) {
+            for (JsonElement e : json.getAsJsonArray(key)) {
                 result.add(e.getAsString());
             }
         }
         return result;
     }
 
-    private static mc.sayda.creraces.race.Race.Passives parsePassives(JsonObject p) {
-        List<String> immuneToDamageTypes = new ArrayList<>();
-        JsonArray immuneArray = p.has("creraces:immune_to_damage") && p.get("creraces:immune_to_damage").isJsonArray()
-                ? p.getAsJsonArray("creraces:immune_to_damage")
-                : null;
-        if (immuneArray != null) {
-            for (JsonElement e : immuneArray) {
-                immuneToDamageTypes.add(standardizeId(e.getAsString()));
-            }
+    /** Parses a list of resource ids, silently skipping malformed ones. */
+    private static List<ResourceLocation> parseIdList(JsonObject json, String key) {
+        List<ResourceLocation> result = new ArrayList<>();
+        for (String entry : parseStringList(json, key)) {
+            ResourceLocation id = ResourceLocation.tryParse(Objects.requireNonNull(entry));
+            if (id != null)
+                result.add(id);
         }
+        return result;
+    }
 
-        List<String> negateEffects = new ArrayList<>();
-        JsonArray negateArray = p.has("creraces:negate_effects") && p.get("creraces:negate_effects").isJsonArray()
-                ? p.getAsJsonArray("creraces:negate_effects") : null;
-        if (negateArray != null) {
-            for (JsonElement e : negateArray) {
-                negateEffects.add(standardizeId(e.getAsString()));
-            }
+    private static List<String> parseStandardizedIdList(JsonObject json, String key) {
+        List<String> result = new ArrayList<>();
+        for (String entry : parseStringList(json, key)) {
+            result.add(standardizeId(entry));
         }
+        return result;
+    }
 
-        List<String> hatedBy = new ArrayList<>();
-        JsonArray hatedArray = p.has("creraces:hated_by_entities") && p.get("creraces:hated_by_entities").isJsonArray()
-                ? p.getAsJsonArray("creraces:hated_by_entities")
-                : null;
-        if (hatedArray != null) {
-            for (JsonElement e : hatedArray) {
-                hatedBy.add(standardizeId(e.getAsString()));
-            }
-        }
+    private static Race.Passives parsePassives(JsonObject p) {
+        // burns_in_sunlight: true means once a second; a number is the interval in ticks.
+        int sunlightBurnInterval = parseInterval(p, "creraces:burns_in_sunlight", 20, -1);
+        // can_breathe_on_land: false suffocates on a 1-tick interval; a number is the interval in ticks.
+        int landSuffocationInterval = parseInterval(p, "creraces:can_breathe_on_land", -1, 1);
 
-        List<String> respectedBy = new ArrayList<>();
-        JsonArray respectedArray = p.has("creraces:respected_by_entities") && p.get("creraces:respected_by_entities").isJsonArray()
-                ? p.getAsJsonArray("creraces:respected_by_entities")
-                : null;
-        if (respectedArray != null) {
-            for (JsonElement e : respectedArray) {
-                respectedBy.add(standardizeId(e.getAsString()));
-            }
-        }
-
-        List<String> defendedBy = new ArrayList<>();
-        JsonArray defendedArray = p.has("creraces:defended_by_entities") && p.get("creraces:defended_by_entities").isJsonArray()
-                ? p.getAsJsonArray("creraces:defended_by_entities")
-                : null;
-        if (defendedArray != null) {
-            for (JsonElement e : defendedArray) {
-                defendedBy.add(standardizeId(e.getAsString()));
-            }
-        }
-
-        // Parse entity spawn data
-        mc.sayda.creraces.race.Race.EntitySpawnData spawnOnDeath = null;
+        Race.EntitySpawnData spawnOnDeath = null;
         JsonElement spawnElement = p.get("creraces:spawn_on_death");
         if (spawnElement != null && spawnElement.isJsonObject()) {
             JsonObject spawn = spawnElement.getAsJsonObject();
-            spawnOnDeath = new mc.sayda.creraces.race.Race.EntitySpawnData(
+            spawnOnDeath = new Race.EntitySpawnData(
                     GsonHelper.getAsString(spawn, "entity_type", ""),
                     GsonHelper.getAsString(spawn, "nbt", "{}"),
                     GsonHelper.getAsInt(spawn, "count", 1));
         }
 
-        // Food & Hunger
-        List<String> blockedFoodTypes = new ArrayList<>();
-        JsonArray blockedArray = p.has("creraces:blocked_food_types") && p.get("creraces:blocked_food_types").isJsonArray()
-                ? p.getAsJsonArray("creraces:blocked_food_types")
-                : null;
-        if (blockedArray != null) {
-            for (JsonElement e : blockedArray) {
-                blockedFoodTypes.add(standardizeId(e.getAsString()));
-            }
-        }
-
-        List<String> allowedFoodTypes = new ArrayList<>();
-        JsonArray allowedArray = p.has("creraces:allowed_food_types") && p.get("creraces:allowed_food_types").isJsonArray()
-                ? p.getAsJsonArray("creraces:allowed_food_types")
-                : null;
-        if (allowedArray != null) {
-            for (JsonElement e : allowedArray) {
-                allowedFoodTypes.add(standardizeId(e.getAsString()));
-            }
-        }
-
-        int sunlightBurnInterval = -1;
-        if (p.has("creraces:burns_in_sunlight")) {
-            com.google.gson.JsonElement el = p.get("creraces:burns_in_sunlight");
-            if (el.isJsonPrimitive()) {
-                if (el.getAsJsonPrimitive().isBoolean()) {
-                    sunlightBurnInterval = el.getAsBoolean() ? 20 : -1;
-                } else if (el.getAsJsonPrimitive().isNumber()) {
-                    sunlightBurnInterval = el.getAsInt();
-                }
-            }
-        }
-
-        int landSuffocationInterval = -1;
-        if (p.has("creraces:can_breathe_on_land")) {
-            com.google.gson.JsonElement el = p.get("creraces:can_breathe_on_land");
-            if (el.isJsonPrimitive()) {
-                if (el.getAsJsonPrimitive().isBoolean()) {
-                    landSuffocationInterval = el.getAsBoolean() ? -1 : 1;
-                } else if (el.getAsJsonPrimitive().isNumber()) {
-                    landSuffocationInterval = el.getAsInt();
-                }
-            }
-        }
-
-        return new mc.sayda.creraces.race.Race.Passives(
+        return new Race.Passives(
                 // Breathing & Environmental
                 GsonHelper.getAsBoolean(p, "creraces:can_breathe_underwater", false),
                 landSuffocationInterval,
                 sunlightBurnInterval,
-                immuneToDamageTypes,
-                negateEffects,
+                parseStandardizedIdList(p, "creraces:immune_to_damage"),
+                parseStandardizedIdList(p, "creraces:negate_effects"),
 
                 // Vision & Perception
                 GsonHelper.getAsBoolean(p, "creraces:water_vision", false),
@@ -649,53 +511,63 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
 
                 // Movement & Physics
                 GsonHelper.getAsBoolean(p, "creraces:can_fly", false),
-                mc.sayda.creraces.engine.ScalingValue.fromJson(p, "creraces:liquid_speed_multiplier", 1.0),
+                ScalingValue.fromJson(p, "creraces:liquid_speed_multiplier", 1.0),
                 GsonHelper.getAsBoolean(p, "creraces:unaffected_by_water", false),
                 GsonHelper.getAsBoolean(p, "creraces:unaffected_by_lava", false),
                 GsonHelper.getAsBoolean(p, "creraces:cannot_sprint", false),
 
                 // Health & Regeneration
                 GsonHelper.getAsBoolean(p, "creraces:no_natural_regeneration", false),
-                mc.sayda.creraces.engine.ScalingValue.fromJson(p, "creraces:regeneration_multiplier", 1.0),
+                ScalingValue.fromJson(p, "creraces:regeneration_multiplier", 1.0),
 
                 // Combat & Damage
                 GsonHelper.getAsBoolean(p, "creraces:immune_to_knockback", false),
-                mc.sayda.creraces.engine.ScalingValue.fromJson(p, "creraces:invulnerability_ticks_multiplier", 1.0),
+                ScalingValue.fromJson(p, "creraces:invulnerability_ticks_multiplier", 1.0),
 
                 // Food & Hunger
                 GsonHelper.getAsBoolean(p, "creraces:no_hunger", false),
                 GsonHelper.getAsBoolean(p, "creraces:no_hunger_drain", false),
-                mc.sayda.creraces.engine.ScalingValue.fromJson(p, "creraces:fixed_hunger", 0.0),
-                blockedFoodTypes,
-                allowedFoodTypes,
+                ScalingValue.fromJson(p, "creraces:fixed_hunger", 0.0),
+                parseStandardizedIdList(p, "creraces:blocked_food_types"),
+                parseStandardizedIdList(p, "creraces:allowed_food_types"),
                 GsonHelper.getAsBoolean(p, "creraces:can_eat_when_full", false),
 
                 // Social & Interaction
-                hatedBy,
-                respectedBy,
-                defendedBy,
+                parseStandardizedIdList(p, "creraces:hated_by_entities"),
+                parseStandardizedIdList(p, "creraces:respected_by_entities"),
+                parseStandardizedIdList(p, "creraces:defended_by_entities"),
 
                 // Special Mechanics
                 spawnOnDeath,
                 GsonHelper.getAsBoolean(p, "creraces:can_command_socials", false));
     }
 
+    /** Reads a boolean-or-number interval field; -1 means disabled. */
+    private static int parseInterval(JsonObject json, String key, int whenTrue, int whenFalse) {
+        JsonElement el = json.get(key);
+        if (el == null || !el.isJsonPrimitive())
+            return -1;
+        if (el.getAsJsonPrimitive().isBoolean())
+            return el.getAsBoolean() ? whenTrue : whenFalse;
+        if (el.getAsJsonPrimitive().isNumber())
+            return el.getAsInt();
+        return -1;
+    }
+
+    /**
+     * Normalises an id or #tag to a namespaced form, defaulting to minecraft. Food category
+     * keywords (also accepted as #keyword or #creraces:keyword) come back as the bare keyword.
+     */
     private static String standardizeId(String id) {
         if (id == null || id.isEmpty())
             return "";
-        // Don't standardize special keywords (support #creraces:keyword, #keyword, or keyword)
         String stripped = id.startsWith("#") ? id.substring(1) : id;
-        String finalId = (stripped.contains(":") && stripped.startsWith("creraces:")) ? stripped.substring(stripped.indexOf(":") + 1) : stripped;
+        String keyword = stripped.startsWith("creraces:") ? stripped.substring("creraces:".length()) : stripped;
+        if (FOOD_CATEGORIES.stream().anyMatch(keyword::equalsIgnoreCase))
+            return keyword.toLowerCase();
 
-        if (finalId.equalsIgnoreCase("meat") || finalId.equalsIgnoreCase("vegetable") || finalId.equalsIgnoreCase("fruit")
-                || finalId.equalsIgnoreCase("grain") || finalId.equalsIgnoreCase("sweet") || finalId.equalsIgnoreCase("dairy")
-                || finalId.equalsIgnoreCase("seafood") || finalId.equalsIgnoreCase("fishes"))
-            return finalId.toLowerCase();
-
-        // If it starts with #, it's a tag
         if (id.startsWith("#")) {
-            String content = id.substring(1);
-            return "#" + (content.contains(":") ? content : "minecraft:" + content);
+            return "#" + (stripped.contains(":") ? stripped : "minecraft:" + stripped);
         }
         return id.contains(":") ? id : "minecraft:" + id;
     }

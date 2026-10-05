@@ -2,15 +2,21 @@ package mc.sayda.creraces.quest;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import dev.architectury.utils.GameInstance;
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.network.BoundaryHandler;
+import mc.sayda.creraces.network.SyncQuestsPacket;
 import mc.sayda.creraces.util.GsonHelper;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 
 import javax.annotation.Nonnull;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -18,21 +24,20 @@ import java.util.Map;
  */
 public class QuestManager extends SimplePreparableReloadListener<Map<ResourceLocation, JsonElement>> {
     private static final String FOLDER = "quests";
-    private static volatile Map<ResourceLocation, JsonElement> lastRawData = new java.util.HashMap<>();
+    private static volatile Map<ResourceLocation, JsonElement> lastRawData = new HashMap<>();
 
-    public static mc.sayda.creraces.network.SyncQuestsPacket createSyncPacket() {
-        Map<ResourceLocation, String> data = new java.util.HashMap<>();
+    public static SyncQuestsPacket createSyncPacket() {
+        Map<ResourceLocation, String> data = new HashMap<>();
         lastRawData.forEach((id, element) -> data.put(id, element.toString()));
-        return new mc.sayda.creraces.network.SyncQuestsPacket(data);
+        return new SyncQuestsPacket(data);
     }
 
-    @SuppressWarnings("unchecked")
+    @Override
     @Nonnull
     protected Map<ResourceLocation, JsonElement> prepare(@Nonnull ResourceManager resourceManager,
             @Nonnull ProfilerFiller profiler) {
         CreRaces.LOGGER.info("QuestManager: Preparing data reload...");
-        Map<?, ?> files = GsonHelper.getJsonFiles(resourceManager, FOLDER);
-        return files != null ? (Map<ResourceLocation, JsonElement>) files : new java.util.HashMap<>();
+        return GsonHelper.getJsonFiles(resourceManager, FOLDER);
     }
 
     @Override
@@ -42,23 +47,25 @@ public class QuestManager extends SimplePreparableReloadListener<Map<ResourceLoc
         lastRawData = data;
         syncFromServer(data);
 
-        var server = dev.architectury.utils.GameInstance.getServer();
+        MinecraftServer server = GameInstance.getServer();
         if (server != null) {
-            var pkt = createSyncPacket();
-            for (net.minecraft.server.level.ServerPlayer player : server.getPlayerList().getPlayers()) {
-                mc.sayda.creraces.network.BoundaryHandler.syncQuestsToPlayer(player, pkt);
+            SyncQuestsPacket pkt = createSyncPacket();
+            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                BoundaryHandler.syncQuestsToPlayer(player, pkt);
             }
         }
     }
 
+    /** Rebuilds the quest registry from raw JSON; runs on the server after a reload and on clients from the sync packet. */
     public static void syncFromServer(Map<ResourceLocation, JsonElement> data) {
         QuestRegistry.clear();
-        final int[] count = {0};
+        int count = 0;
 
-        data.forEach((id, element) -> {
-            if (!element.isJsonObject()) return;
+        for (Map.Entry<ResourceLocation, JsonElement> entry : data.entrySet()) {
+            ResourceLocation id = entry.getKey();
+            if (!entry.getValue().isJsonObject()) continue;
             try {
-                JsonObject json = element.getAsJsonObject();
+                JsonObject json = entry.getValue().getAsJsonObject();
 
                 int tier = GsonHelper.getAsInt(json, "tier", 1);
                 String nameStr = GsonHelper.getAsString(json, "name", id.getPath());
@@ -68,7 +75,7 @@ public class QuestManager extends SimplePreparableReloadListener<Map<ResourceLoc
                 Quest.Objective objective = parseObjective(id, json.getAsJsonObject("objective"));
                 if (objective == null) {
                     CreRaces.LOGGER.error("Quest {} has an invalid or missing objective; skipping.", id);
-                    return;
+                    continue;
                 }
 
                 Quest quest = new Quest.Builder(id)
@@ -80,13 +87,14 @@ public class QuestManager extends SimplePreparableReloadListener<Map<ResourceLoc
                         .build();
 
                 QuestRegistry.register(quest);
-                count[0]++;
+                count++;
             } catch (Exception e) {
+                // Malformed JSON can throw a range of Gson/runtime exceptions; one bad quest must not stop the rest loading.
                 CreRaces.LOGGER.error("Failed to load quest {}: ", id, e);
             }
-        });
+        }
 
-        CreRaces.LOGGER.info("Loaded {} quests.", count[0]);
+        CreRaces.LOGGER.info("Loaded {} quests.", count);
     }
 
     private static Quest.Objective parseObjective(ResourceLocation questId, JsonObject obj) {

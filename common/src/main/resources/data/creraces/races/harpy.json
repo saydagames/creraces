@@ -148,6 +148,7 @@
             },
             "exhaustion_cooldown": "creraces:flight_exhaustion",
             "exhaustion_duration": 400,
+            "blocked_by_effects": ["creraces:broken_wings"],
             "show_bar": true,
             "bar_color": "#87CEEB",
             "label": "Flight Exhaustion",

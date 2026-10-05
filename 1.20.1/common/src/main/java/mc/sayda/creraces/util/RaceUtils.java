@@ -1,21 +1,88 @@
 package mc.sayda.creraces.util;
 
+import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.capability.IPlayerVariables;
+import mc.sayda.creraces.engine.TraitDispatch;
 import mc.sayda.creraces.engine.TraitRegistry;
 import mc.sayda.creraces.engine.traits.FoodMultiplierTrait;
 import mc.sayda.creraces.race.Race;
 import mc.sayda.creraces.race.RaceRegistry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+
+import javax.annotation.Nullable;
+import java.util.List;
+import java.util.Map;
 
 public class RaceUtils {
+    private static final ResourceLocation KITSUNE = new ResourceLocation(CreRaces.MODID, "kitsune");
+
+    /**
+     * Food keywords a race's allowed/blocked food lists can use, each standing for the common
+     * loader and Farmer's Delight tags that cover it.
+     */
+    private static final Map<String, List<String>> FOOD_KEYWORD_TAGS = Map.of(
+            "vegetable", List.of("#forge:vegetables", "#farmersdelight:vegetables", "#forge:salad_ingredients",
+                    "#c:vegetables"),
+            "fruit", List.of("#forge:fruits", "#farmersdelight:fruits", "#forge:berries", "#c:fruits"),
+            "grain", List.of("#forge:grain", "#forge:grains", "#farmersdelight:grains", "#forge:bread",
+                    "#forge:pasta", "#c:grains"),
+            "sweet", List.of("#forge:sweets", "#forge:desserts", "#farmersdelight:desserts", "#c:sweets"),
+            "dairy", List.of("#forge:dairy", "#forge:milk", "#farmersdelight:milk", "#c:dairy"),
+            "seafood", List.of("#minecraft:fishes", "#forge:raw_fishes", "#forge:cooked_fishes",
+                    "#farmersdelight:fish", "#c:fishes"),
+            "fishes", List.of("#minecraft:fishes", "#forge:raw_fishes", "#forge:cooked_fishes",
+                    "#farmersdelight:fish", "#c:fishes"));
+
+    /** The player's race id, or null if their data isn't available. */
+    @Nullable
+    public static ResourceLocation raceOf(Player player) {
+        return DataUtils.getVariables(player).map(IPlayerVariables::getRace).orElse(null);
+    }
+
+    /** Torii gates and their waypoints belong to the kitsune and to any race that lists it as a parent. */
+    public static boolean isKitsune(Player player) {
+        return isRaceOrDescendant(raceOf(player), KITSUNE);
+    }
+
+    /**
+     * A spirit by race (its JSON sets creraces:is_spirit) or by the per-player is_spirit flag. Being in
+     * the spirit realm has nothing to do with it.
+     */
+    public static boolean isSpirit(Player player) {
+        return DataUtils.getVariables(player).map(RaceUtils::isSpirit).orElse(false);
+    }
+
+    public static boolean isSpirit(IPlayerVariables vars) {
+        if (vars.isSpirit()) return true;
+        Race race = RaceRegistry.get(vars.getRace());
+        return race != null && race.isSpirit();
+    }
+
+    /** True if {@code raceId} is {@code ancestorId} or has it somewhere up its parent chain. */
+    public static boolean isRaceOrDescendant(@Nullable ResourceLocation raceId, ResourceLocation ancestorId) {
+        if (raceId == null) return false;
+        if (raceId.equals(ancestorId)) return true;
+        Race race = RaceRegistry.get(raceId);
+        if (race == null) return false;
+        for (ResourceLocation parentId : race.parentRaces()) {
+            if (isRaceOrDescendant(parentId, ancestorId)) return true;
+        }
+        return false;
+    }
+
     public static double getFoodMultiplier(Player player) {
         return DataUtils.getVariables(player).map(vars -> {
-            Race race = RaceRegistry.get(vars.getRace());
-            if (race != null && race.traits() != null) {
-                for (TraitRegistry.RaceTrait trait : race.traits()) {
-                    if (trait instanceof FoodMultiplierTrait fmt) {
-                        return fmt.getMultiplier().evaluate(player);
-                    }
+            for (TraitRegistry.RaceTrait trait : TraitDispatch.forPlayer(player)) {
+                if (trait instanceof FoodMultiplierTrait fmt) {
+                    return fmt.getMultiplier().evaluate(player);
                 }
             }
             return 1.0;
@@ -23,13 +90,11 @@ public class RaceUtils {
     }
 
     /**
-     * Checks if the entity (if it's a player) is immune to the specified potion
-     * effect
-     * based on their race's negate_effects list.
+     * Checks if the entity (if it's a player) is immune to the specified potion effect based on
+     * their race's negate_effects list.
      */
     @SuppressWarnings("null")
-    public static boolean isImmuneToEffect(net.minecraft.world.entity.LivingEntity entity,
-            net.minecraft.resources.ResourceLocation effectId) {
+    public static boolean isImmuneToEffect(LivingEntity entity, ResourceLocation effectId) {
         if (!(entity instanceof Player player))
             return false;
 
@@ -38,7 +103,7 @@ public class RaceUtils {
             if (race == null || race.passives() == null)
                 return false;
 
-            java.util.List<String> negated = race.passives().immuneToPotionEffects();
+            List<String> negated = race.passives().immuneToPotionEffects();
             if (negated == null)
                 return false;
             String idStr = effectId.toString();
@@ -57,7 +122,7 @@ public class RaceUtils {
      * Checks if the specified food item is blocked for the player's race.
      */
     @SuppressWarnings("null")
-    public static boolean isFoodBlocked(Player player, net.minecraft.world.item.ItemStack stack) {
+    public static boolean isFoodBlocked(Player player, ItemStack stack) {
         if (stack.isEmpty() || !stack.isEdible())
             return false;
 
@@ -66,48 +131,32 @@ public class RaceUtils {
             if (race == null || race.passives() == null)
                 return false;
 
-            java.util.List<String> blocked = race.passives().blockedFoodTypes();
-            java.util.List<String> allowed = race.passives().allowedFoodTypes();
-            
-            // 1. If allowlist is not empty, everything is blocked unless allowed
-            if (allowed != null && !allowed.isEmpty()) {
-                boolean isAllowed = false;
-                for (String filter : allowed) {
-                    if (stackMatchesFilter(stack, filter)) {
-                        isAllowed = true;
-                        break;
-                    }
-                }
-                if (!isAllowed) return true;
-            }
+            List<String> blocked = race.passives().blockedFoodTypes();
+            List<String> allowed = race.passives().allowedFoodTypes();
 
-            // 2. Blacklist check
-            if (blocked != null) {
-                for (String filter : blocked) {
-                    if (stackMatchesFilter(stack, filter)) {
-                        return true;
-                    }
-                }
+            // A non-empty allowlist blocks everything it doesn't name.
+            if (allowed != null && !allowed.isEmpty()
+                    && allowed.stream().noneMatch(filter -> stackMatchesFilter(stack, filter))) {
+                return true;
             }
-            return false;
+            return blocked != null && blocked.stream().anyMatch(filter -> stackMatchesFilter(stack, filter));
         }).orElse(false);
     }
 
     @SuppressWarnings("null")
-    private static boolean stackMatchesFilter(net.minecraft.world.item.ItemStack stack, String filter) {
+    private static boolean stackMatchesFilter(ItemStack stack, String filter) {
         if (stack.isEmpty()) return false;
 
-        // Check native keywords first (handles # and creraces: prefix)
+        // Food keywords first; they accept the same # and creraces: prefixes as ids.
         if (stackMatchesNativeKeyword(stack, filter)) return true;
 
-        net.minecraft.world.item.Item item = stack.getItem();
-        net.minecraft.resources.ResourceLocation itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item);
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
         if (itemId == null) return false;
 
         if (filter.startsWith("#")) {
-            net.minecraft.resources.ResourceLocation tagId = net.minecraft.resources.ResourceLocation.tryParse(filter.substring(1));
+            ResourceLocation tagId = ResourceLocation.tryParse(filter.substring(1));
             if (tagId != null) {
-                net.minecraft.tags.TagKey<net.minecraft.world.item.Item> tag = net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, tagId);
+                TagKey<Item> tag = TagKey.create(Registries.ITEM, tagId);
                 return stack.is(tag);
             }
         } else if (filter.contains(":")) {
@@ -118,60 +167,17 @@ public class RaceUtils {
         return false;
     }
 
-    private static boolean stackMatchesNativeKeyword(net.minecraft.world.item.ItemStack stack, String keyword) {
+    private static boolean stackMatchesNativeKeyword(ItemStack stack, String keyword) {
         String stripped = keyword.startsWith("#") ? keyword.substring(1) : keyword;
         if (stripped.startsWith("creraces:")) stripped = stripped.substring(9);
 
         if (stripped.equalsIgnoreCase("meat")) {
             return stack.getItem().getFoodProperties() != null && stack.getItem().getFoodProperties().isMeat();
         }
-        
-        java.util.List<String> tags = new java.util.ArrayList<>();
-        switch (stripped.toLowerCase()) {
-            case "vegetable" -> {
-                tags.add("#forge:vegetables");
-                tags.add("#farmersdelight:vegetables");
-                tags.add("#forge:salad_ingredients");
-                tags.add("#c:vegetables");
-            }
-            case "fruit" -> {
-                tags.add("#forge:fruits");
-                tags.add("#farmersdelight:fruits");
-                tags.add("#forge:berries");
-                tags.add("#c:fruits");
-            }
-            case "grain" -> {
-                tags.add("#forge:grain");
-                tags.add("#forge:grains");
-                tags.add("#farmersdelight:grains");
-                tags.add("#forge:bread");
-                tags.add("#forge:pasta");
-                tags.add("#c:grains");
-            }
-            case "sweet" -> {
-                tags.add("#forge:sweets");
-                tags.add("#forge:desserts");
-                tags.add("#farmersdelight:desserts");
-                tags.add("#c:sweets");
-            }
-            case "dairy" -> {
-                tags.add("#forge:dairy");
-                tags.add("#forge:milk");
-                tags.add("#farmersdelight:milk");
-                tags.add("#c:dairy");
-            }
-            case "seafood", "fishes" -> {
-                tags.add("#minecraft:fishes");
-                tags.add("#forge:raw_fishes");
-                tags.add("#forge:cooked_fishes");
-                tags.add("#farmersdelight:fish");
-                tags.add("#c:fishes");
-            }
-        }
-        
-        for (String tagStr : tags) {
-            // Recursively call stackMatchesFilter since it handles # tags correctly
-            if (stackMatchesFilter(stack, tagStr)) return true;
+
+        // Tag ids never name a keyword, so this recursion stops one level down.
+        for (String tagFilter : FOOD_KEYWORD_TAGS.getOrDefault(stripped.toLowerCase(), List.of())) {
+            if (stackMatchesFilter(stack, tagFilter)) return true;
         }
         return false;
     }

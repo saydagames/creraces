@@ -9,7 +9,10 @@ import net.minecraft.server.level.ServerPlayer;
 
 import java.util.function.Supplier;
 
-/** Works from anywhere, not just at the board - the scroll itself is the source of truth. */
+/**
+ * C2S: abandons an active quest. Works from anywhere, not just at the board, since the scroll
+ * itself is the source of truth.
+ */
 public class AbandonQuestPacket {
     public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "abandon_quest");
 

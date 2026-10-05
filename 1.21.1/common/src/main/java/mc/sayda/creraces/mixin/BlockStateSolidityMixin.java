@@ -22,14 +22,12 @@ public abstract class BlockStateSolidityMixin {
     public abstract Block getBlock();
 
     @Inject(method = "isFaceSturdy(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/Direction;Lnet/minecraft/world/level/block/SupportType;)Z", at = @At("HEAD"), cancellable = true)
-    private void creraces$isMicroFaceSturdy(BlockGetter level, net.minecraft.core.BlockPos pos, Direction face,
+    private void creraces$isMicroFaceSturdy(BlockGetter level, BlockPos pos, Direction face,
             SupportType supportType,
             CallbackInfoReturnable<Boolean> cir) {
         if (this.getBlock() instanceof MicroBlock) {
             if (level.getBlockEntity(pos) instanceof MicroBlockEntity micro) {
-                // Check if any mini-block on this face is solid.
-                // For the micro-grid, we consider a face sturdy if ANY slot touching that face
-                // is occupied.
+                // A micro block's face counts as sturdy if any slot touching that face is occupied.
                 int xStart = (face == Direction.EAST) ? 3 : 0;
                 int xEnd = (face == Direction.WEST) ? 0 : 3;
                 int yStart = (face == Direction.UP) ? 3 : 0;

@@ -4,12 +4,13 @@ import mc.sayda.creraces.ability.EssenceType;
 import mc.sayda.creraces.registry.ModParticles;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerLevel;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SoundType;
@@ -54,9 +55,9 @@ public class EssenceClusterBlock extends Block {
     }
 
     @Override
-    public net.minecraft.network.chat.MutableComponent getName() {
-        return net.minecraft.network.chat.Component.translatable("block.creraces.essence_cluster",
-                net.minecraft.network.chat.Component.translatable("essence.creraces." + essenceType.getSerializedName()));
+    public MutableComponent getName() {
+        return Component.translatable("block.creraces.essence_cluster",
+                Component.translatable("essence.creraces." + essenceType.getSerializedName()));
     }
 
     @Override
@@ -77,7 +78,7 @@ public class EssenceClusterBlock extends Block {
     }
 
     @Override
-    public boolean canSurvive(BlockState state, net.minecraft.world.level.LevelReader level, BlockPos pos) {
+    public boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
         Direction facing = state.getValue(FACING);
         BlockPos supportPos = pos.relative(facing.getOpposite());
         return level.getBlockState(supportPos).isFaceSturdy(level, supportPos, facing);
@@ -93,23 +94,22 @@ public class EssenceClusterBlock extends Block {
     }
 
     @Override
-    public void spawnAfterBreak(BlockState state, ServerLevel level, BlockPos pos, ItemStack tool, boolean drop) {
-        super.spawnAfterBreak(state, level, pos, tool, drop);
-    }
-
-    @Override
     public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
         if (random.nextInt(6) != 0) return;
-        int color = essenceType.getColor();
-        float r = ((color >> 16) & 0xFF) / 255.0f;
-        float g = ((color >> 8) & 0xFF) / 255.0f;
-        float b = (color & 0xFF) / 255.0f;
         Direction facing = state.getValue(FACING);
-        // emit from the crystal tip
+        // Emit from the crystal tip
         double px = pos.getX() + 0.5 + facing.getStepX() * 0.55 + (random.nextDouble() - 0.5) * 0.3;
         double py = pos.getY() + 0.5 + facing.getStepY() * 0.55 + (random.nextDouble() - 0.5) * 0.3;
         double pz = pos.getZ() + 0.5 + facing.getStepZ() * 0.55 + (random.nextDouble() - 0.5) * 0.3;
-        level.addParticle(ModParticles.ESSENCE_PARTICLE.get(), px, py, pz, r, g, b);
+        addEssenceParticle(level, essenceType, px, py, pz);
     }
 
+    /** Spawns one essence particle tinted with the essence type's colour. Shared with EssenceVortexBlock. */
+    static void addEssenceParticle(Level level, EssenceType type, double x, double y, double z) {
+        int color = type.getColor();
+        float r = ((color >> 16) & 0xFF) / 255.0f;
+        float g = ((color >> 8) & 0xFF) / 255.0f;
+        float b = (color & 0xFF) / 255.0f;
+        level.addParticle(ModParticles.ESSENCE_PARTICLE.get(), x, y, z, r, g, b);
+    }
 }

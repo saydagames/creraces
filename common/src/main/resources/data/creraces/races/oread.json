@@ -10,6 +10,7 @@
     "creraces:name_texture": "creraces:textures/screens/oread_text.png",
     "creraces:resource_type": "MANA",
     "creraces:gstate": "FEMALE",
+    "creraces:difficulty": 2,
     "creraces:lava_vision": true,
     "creraces:unaffected_by_lava": true,
     "creraces:regeneration_multiplier": 1.1,
@@ -40,7 +41,8 @@
                     "type": "creraces:apply_effect",
                     "effect": "minecraft:slowness",
                     "amplifier": 1,
-                    "duration": -1
+                    "duration": -1,
+                    "visible": false
                 }
             ],
             "on_fail": [

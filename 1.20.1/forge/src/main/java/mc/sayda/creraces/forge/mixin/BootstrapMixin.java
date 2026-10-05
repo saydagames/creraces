@@ -1,5 +1,6 @@
 package mc.sayda.creraces.forge.mixin;
 
+import mc.sayda.creraces.worldgen.ModWorldgen;
 import net.minecraft.server.Bootstrap;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -10,6 +11,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class BootstrapMixin {
     @Inject(method = "bootStrap", at = @At("RETURN"))
     private static void creraces$bootStrap(CallbackInfo ci) {
-        mc.sayda.creraces.worldgen.ModWorldgen.registerCodecs();
+        ModWorldgen.registerCodecs();
     }
 }

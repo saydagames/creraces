@@ -25,6 +25,9 @@ public final class GuildReceptionistTrades {
     private GuildReceptionistTrades() {
     }
 
+    static final int MAX_TIER = 5;
+
+    // Indexed by tier; tier 0 does not exist
     private static final int[] TIER_DIME_REWARDS = {0, 5, 10, 20, 35, 50};
 
     public static VillagerTrades.ItemListing[] buildOffers(int tier) {

@@ -36,14 +36,10 @@ public class VeilWillowSaplingBlock extends BaseEntityBlock implements Bonemeala
         this.registerDefaultState(this.stateDefinition.any().setValue(STAGE, 0));
     }
 
-    // Shape
-
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return SHAPE;
     }
-
-    // Survival
 
     @Override
     public boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
@@ -70,8 +66,6 @@ public class VeilWillowSaplingBlock extends BaseEntityBlock implements Bonemeala
         }
     }
 
-    // Growth
-
     @Override
     public boolean isRandomlyTicking(BlockState state) {
         return true;
@@ -92,8 +86,6 @@ public class VeilWillowSaplingBlock extends BaseEntityBlock implements Bonemeala
         }
     }
 
-    // Bonemeal
-
     @Override
     public boolean isValidBonemealTarget(LevelReader level, BlockPos pos, BlockState state, boolean isClient) {
         return true;
@@ -109,14 +101,10 @@ public class VeilWillowSaplingBlock extends BaseEntityBlock implements Bonemeala
         advanceTree(level, pos, state, random);
     }
 
-    // Block state
-
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(STAGE);
     }
-
-    // Block entity
 
     @Override
     public RenderShape getRenderShape(BlockState state) {

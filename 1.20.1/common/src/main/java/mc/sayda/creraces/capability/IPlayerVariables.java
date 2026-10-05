@@ -1,8 +1,13 @@
 package mc.sayda.creraces.capability;
 
 import mc.sayda.creraces.ability.AbilitySlot;
+import mc.sayda.creraces.engine.ManagedModifier;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
+
+import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -22,7 +27,6 @@ public interface IPlayerVariables extends ISerializableData {
 
     void setKarma(double karma);
 
-    // Legacy RPG Attributes - simplified
     double getAp();
 
     void setAp(double ap);
@@ -99,7 +103,7 @@ public interface IPlayerVariables extends ISerializableData {
     void revokeAbility(ResourceLocation abilityId);
 
     boolean isAbilityUnlocked(ResourceLocation abilityId);
- 
+
     int getAbilityLevel(ResourceLocation abilityId);
 
     void setAbilityLevel(ResourceLocation abilityId, int level);
@@ -121,11 +125,11 @@ public interface IPlayerVariables extends ISerializableData {
     double getPersistentState(ResourceLocation id);
 
     void setPersistentState(ResourceLocation id, double value);
-    
+
     /** Marks a specific state ID as persistent across player death. */
     void setStatePersistent(ResourceLocation id, boolean persistent);
-    
-    /** returns true if the state ID is marked as persistent. */
+
+    /** Returns true if the state ID is marked as persistent. */
     boolean isStatePersistent(ResourceLocation id);
 
     AbilitySlot getSlotForAbility(ResourceLocation abilityId);
@@ -134,9 +138,9 @@ public interface IPlayerVariables extends ISerializableData {
 
     void setMorphed(boolean morphed);
 
-    java.util.UUID getTeamId();
+    UUID getTeamId();
 
-    void setTeamId(java.util.UUID teamId);
+    void setTeamId(UUID teamId);
 
     String getTeamName();
 
@@ -209,23 +213,23 @@ public interface IPlayerVariables extends ISerializableData {
     void setInSpiritRealm(boolean inSpiritRealm);
 
     boolean isSmallBuild();
- 
+
     void setSmallBuild(boolean smallBuild);
- 
+
     boolean isUndead();
- 
+
     void setUndead(boolean undead);
- 
+
     boolean isAquatic();
- 
+
     void setAquatic(boolean aquatic);
- 
+
     boolean isSpirit();
- 
+
     void setSpirit(boolean spirit);
- 
+
     boolean isTiny();
- 
+
     void setTiny(boolean tiny);
 
     Map<ResourceLocation, Integer> getTraitTimers();
@@ -237,14 +241,14 @@ public interface IPlayerVariables extends ISerializableData {
     void setResourceTimer(long ticks);
 
     void resetOnDeath();
-    
-    // Managed Attribute Modifiers
-    java.util.Collection<mc.sayda.creraces.engine.ManagedModifier> getManagedModifiers();
-    java.util.Optional<mc.sayda.creraces.engine.ManagedModifier> getManagedModifier(java.util.UUID uuid);
-    void addManagedModifier(mc.sayda.creraces.engine.ManagedModifier mod);
-    void removeManagedModifier(java.util.UUID uuid);
+
+    // Attribute modifiers re-evaluated on their own interval by AttributeIncidents.
+    Collection<ManagedModifier> getManagedModifiers();
+    Optional<ManagedModifier> getManagedModifier(UUID uuid);
+    void addManagedModifier(ManagedModifier mod);
+    void removeManagedModifier(UUID uuid);
     void clearManagedModifiers();
 
     /** Triggers a network sync for this data. */
-    void sync(net.minecraft.world.entity.player.Player player);
+    void sync(Player player);
 }

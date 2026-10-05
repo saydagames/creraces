@@ -1,8 +1,10 @@
 package mc.sayda.creraces.client.render;
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
@@ -10,6 +12,8 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import com.mojang.math.Axis;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fStack;
+import org.lwjgl.opengl.GL11;
 
 import java.util.Map;
 import java.util.UUID;
@@ -24,10 +28,6 @@ public class TetherRenderer {
 
     // caster -> (target -> data)
     private static final Map<UUID, Map<UUID, TetherRenderData>> ACTIVE_TETHERS = new ConcurrentHashMap<>();
-
-    // -------------------------------------------------------------------------
-    // Public API
-    // -------------------------------------------------------------------------
 
     public static void clear() {
         ACTIVE_TETHERS.clear();
@@ -48,10 +48,7 @@ public class TetherRenderer {
         }
     }
 
-    /**
-     * Render all active tethers. Called from LevelRendererMixin at TAIL of
-     * renderLevel.
-     */
+    /** Called from LevelRendererMixin at the TAIL of renderLevel; {@code gameTime} is the level's tick count. */
     public static void render(PoseStack poseStack, Matrix4f projectionMatrix,
             float partialTick, long gameTime, Minecraft mc) {
         if (ACTIVE_TETHERS.isEmpty() || mc.level == null)
@@ -63,18 +60,16 @@ public class TetherRenderer {
         Matrix4f savedProj = new Matrix4f(RenderSystem.getProjectionMatrix());
         RenderSystem.setProjectionMatrix(projectionMatrix, null);
 
-        org.joml.Matrix4fStack mvs = RenderSystem.getModelViewStack();
+        Matrix4fStack mvs = RenderSystem.getModelViewStack();
         mvs.pushMatrix();
         mvs.set(cameraRotation);
         RenderSystem.applyModelViewMatrix();
 
         try {
-            // Pruning pass: Remove tethers with dead or missing casters/targets
+            // Drop tethers whose caster or target is gone or dead
             ACTIVE_TETHERS.entrySet().removeIf(casterEntry -> {
                 Entity caster = mc.level.getPlayerByUUID(Objects.requireNonNull(casterEntry.getKey()));
                 if (caster == null || !caster.isAlive()) {
-                    // Only prune if they've been missing for a while (handled by target checks
-                    // or just immediate for the caster as they are players)
                     return true;
                 }
 
@@ -100,14 +95,13 @@ public class TetherRenderer {
                 }
             }
         } finally {
-
             mvs.popMatrix();
             RenderSystem.applyModelViewMatrix();
             RenderSystem.setProjectionMatrix(savedProj, null);
         }
     }
 
-    private static Entity getClientEntityByUUID(net.minecraft.client.multiplayer.ClientLevel level, UUID uuid) {
+    private static Entity getClientEntityByUUID(ClientLevel level, UUID uuid) {
         for (Entity e : level.entitiesForRendering()) {
             if (e.getUUID().equals(uuid))
                 return e;
@@ -115,48 +109,43 @@ public class TetherRenderer {
         return null;
     }
 
-    // -------------------------------------------------------------------------
-    // Core rendering
-    // -------------------------------------------------------------------------
-
     private static void renderTether(Entity caster, Entity target, TetherRenderData data, Vec3 cam,
             float partialTick, long gameTime, Minecraft mc) {
 
-        Vec3 start = getTetherPos(caster, partialTick).add(0, caster.getBbHeight() * 0.5, 0);
-        Vec3 end   = getTetherPos(target, partialTick).add(0, target.getBbHeight() * 0.5, 0);
+        Vec3 start = caster.getPosition(partialTick).add(0, caster.getBbHeight() * 0.5, 0);
+        Vec3 end   = target.getPosition(partialTick).add(0, target.getBbHeight() * 0.5, 0);
 
         Vec3 dir = end.subtract(start);
         float beamLen = (float) dir.length() + 1.0f;
         Vec3 dirNorm = dir.normalize();
 
-        // Euler angles to align local Y axis with the beam direction (vanilla approach)
-        float n = (float) Math.acos(Mth.clamp((float) dirNorm.y, -1.0f, 1.0f));
-        float o = (float) Math.atan2(dirNorm.z, dirNorm.x);
+        // Angles that turn local +Y onto the beam direction, as vanilla's guardian beam does
+        float pitch = (float) Math.acos(Mth.clamp((float) dirNorm.y, -1.0f, 1.0f));
+        float yaw = (float) Math.atan2(dirNorm.z, dirNorm.x);
 
-        // Animation driven by game ticks - gameTime param is finishNanoTime (ns), unusable here
-        long tick = mc.level.getGameTime();
-        float j = (float)(tick % 100) + partialTick;
-        float k = j * 0.5f % 1.0f;   // texture scroll offset
-        float q = j * 0.05f * -1.5f;  // cross-section spin angle
+        // Guardian-beam timing on an unwrapped clock: wrapping the tick count would make the spin jump,
+        // as its period is not a whole number of ticks. Doubles keep large game times precise.
+        double animTime = gameTime + (double) partialTick;
+        float scroll = (float) (animTime * 0.5 % 1.0);
+        float spin = (float) (animTime * 0.05 * -1.5 % (Math.PI * 2)); // cross-section rotation angle
 
         float innerR = data.width * 0.2f;
         float outerR = data.width * 0.282f;
 
         // Inner beam cross-section corners (4 points evenly around the circle)
-        float af = Mth.cos(q + (float) Math.PI)       * innerR;
-        float ag = Mth.sin(q + (float) Math.PI)       * innerR;
-        float ah = Mth.cos(q)                          * innerR;
-        float ai = Mth.sin(q)                          * innerR;
-        float aj = Mth.cos(q + (float) Math.PI / 2f)  * innerR;
-        float ak = Mth.sin(q + (float) Math.PI / 2f)  * innerR;
-        float al = Mth.cos(q + (float) Math.PI * 1.5f)* innerR;
-        float am = Mth.sin(q + (float) Math.PI * 1.5f)* innerR;
+        float af = Mth.cos(spin + (float) Math.PI)       * innerR;
+        float ag = Mth.sin(spin + (float) Math.PI)       * innerR;
+        float ah = Mth.cos(spin)                          * innerR;
+        float ai = Mth.sin(spin)                          * innerR;
+        float aj = Mth.cos(spin + (float) Math.PI / 2f)  * innerR;
+        float ak = Mth.sin(spin + (float) Math.PI / 2f)  * innerR;
+        float al = Mth.cos(spin + (float) Math.PI * 1.5f)* innerR;
+        float am = Mth.sin(spin + (float) Math.PI * 1.5f)* innerR;
 
-        // V scroll: vanilla uses -1+k as base and scales by 2.5 per world-unit
-        float vq = -1.0f + k;
+        // V scroll: vanilla uses -1+scroll as base and scales by 2.5 per world-unit
+        float vq = -1.0f + scroll;
         float vr = beamLen * 2.5f + vq;
 
-        // GL state
         RenderSystem.disableDepthTest();
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
@@ -166,24 +155,21 @@ public class TetherRenderer {
         // setShaderTexture only records the ID; bind explicitly so _texParameter
         // actually modifies the tether texture object, not whatever GL had bound last.
         int glId = mc.getTextureManager().getTexture(data.texture).getId();
-        com.mojang.blaze3d.platform.GlStateManager._bindTexture(glId);
-        com.mojang.blaze3d.platform.GlStateManager._texParameter(
-                org.lwjgl.opengl.GL11.GL_TEXTURE_2D,
-                org.lwjgl.opengl.GL11.GL_TEXTURE_WRAP_T,
-                org.lwjgl.opengl.GL11.GL_REPEAT);
+        GlStateManager._bindTexture(glId);
+        GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, GL11.GL_REPEAT);
 
         // Push per-beam transform so local Y aligns with the beam axis.
         // Vertices are emitted in local beam space (Y=0 → caster, Y=beamLen → target).
-        org.joml.Matrix4fStack mvs = RenderSystem.getModelViewStack();
+        Matrix4fStack mvs = RenderSystem.getModelViewStack();
         mvs.pushMatrix();
         mvs.translate((float) (start.x - cam.x), (float) (start.y - cam.y), (float) (start.z - cam.z));
-        mvs.rotate(Axis.YP.rotationDegrees((((float) Math.PI / 2f) - o) * (180f / (float) Math.PI)));
-        mvs.rotate(Axis.XP.rotationDegrees(n * (180f / (float) Math.PI)));
+        mvs.rotate(Axis.YP.rotationDegrees((((float) Math.PI / 2f) - yaw) * (180f / (float) Math.PI)));
+        mvs.rotate(Axis.XP.rotationDegrees(pitch * (180f / (float) Math.PI)));
         RenderSystem.applyModelViewMatrix();
 
         Tesselator tess = Tesselator.getInstance();
 
-        // Two crossing quads - same X-shape geometry as vanilla guardian beam, U 0.0–0.5
+        // Two crossing quads, the same X-shaped geometry as vanilla's guardian beam, using U 0.0 to 0.5
         BufferBuilder buf = tess.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
         buf.addVertex(af, beamLen, ag).setColor(1f, 1f, 1f, 1f).setUv(0.4999f, vr);
         buf.addVertex(af, 0f,      ag).setColor(1f, 1f, 1f, 1f).setUv(0.4999f, vq);
@@ -195,17 +181,17 @@ public class TetherRenderer {
         buf.addVertex(al, beamLen, am).setColor(1f, 1f, 1f, 1f).setUv(0.0f,    vr);
         BufferUploader.drawWithShader(buf.buildOrThrow());
 
-        // Effects cap - rotating diamond at the beam tip using right half of texture, U 0.5–1.0
+        // Effects cap: a rotating diamond at the beam tip, using the right half of the texture (U 0.5 to 1.0)
         if (data.effects) {
-            float ex = Mth.cos(q + 2.3561945f)            * outerR;
-            float ey = Mth.sin(q + 2.3561945f)            * outerR;
-            float ez = Mth.cos(q + (float) Math.PI / 4f)  * outerR;
-            float ew = Mth.sin(q + (float) Math.PI / 4f)  * outerR;
-            float ea = Mth.cos(q + 3.926991f)              * outerR;
-            float eb = Mth.sin(q + 3.926991f)              * outerR;
-            float ec = Mth.cos(q + 5.4977875f)             * outerR;
-            float ed = Mth.sin(q + 5.4977875f)             * outerR;
-            float as = (tick % 2 == 0) ? 0.0f : 0.5f;
+            float ex = Mth.cos(spin + 2.3561945f)            * outerR;
+            float ey = Mth.sin(spin + 2.3561945f)            * outerR;
+            float ez = Mth.cos(spin + (float) Math.PI / 4f)  * outerR;
+            float ew = Mth.sin(spin + (float) Math.PI / 4f)  * outerR;
+            float ea = Mth.cos(spin + 3.926991f)              * outerR;
+            float eb = Mth.sin(spin + 3.926991f)              * outerR;
+            float ec = Mth.cos(spin + 5.4977875f)             * outerR;
+            float ed = Mth.sin(spin + 5.4977875f)             * outerR;
+            float as = (gameTime % 2 == 0) ? 0.0f : 0.5f;
 
             BufferBuilder capBuf = tess.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
             capBuf.addVertex(ex, beamLen, ey).setColor(1f, 1f, 1f, 1f).setUv(0.5f, as + 0.5f);
@@ -221,13 +207,6 @@ public class TetherRenderer {
         RenderSystem.enableDepthTest();
         RenderSystem.enableCull();
         RenderSystem.disableBlend();
-    }
-
-    private static Vec3 getTetherPos(Entity entity, float partialTick) {
-        return new Vec3(
-                Mth.lerp(partialTick, entity.xo, entity.getX()),
-                Mth.lerp(partialTick, entity.yo, entity.getY()),
-                Mth.lerp(partialTick, entity.zo, entity.getZ()));
     }
 
     private static class TetherRenderData {

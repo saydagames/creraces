@@ -1,7 +1,11 @@
 package mc.sayda.creraces.ability;
 
+import mc.sayda.creraces.engine.ActionRegistry.RaceAction;
+import mc.sayda.creraces.engine.condition.Condition;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+
+import javax.annotation.Nullable;
 import java.util.List;
 
 /**
@@ -10,28 +14,28 @@ import java.util.List;
  */
 public class Ability {
     private final ResourceLocation id;
-    private final net.minecraft.network.chat.Component name;
-    private final net.minecraft.network.chat.Component description;
+    private final Component name;
+    private final Component description;
     private final AbilityType type;
     private final ResourceLocation icon;
     private final int cooldown;
     private final int cost;
     private final boolean persistent;
     private final List<ResourceLocation> allowedRaces;
-    private final List<mc.sayda.creraces.engine.ActionRegistry.RaceAction> onActivate;
-    private final List<mc.sayda.creraces.engine.ActionRegistry.RaceAction> onDeactivate;
-    private final mc.sayda.creraces.engine.condition.Condition condition;
-    @javax.annotation.Nullable
+    private final List<RaceAction> onActivate;
+    private final List<RaceAction> onDeactivate;
+    private final Condition condition;
+    @Nullable
     private final String conditionFailMessage;
     private final List<OverlayBar> overlayBars;
 
-    public Ability(ResourceLocation id, net.minecraft.network.chat.Component name,
-            net.minecraft.network.chat.Component description, AbilityType type, ResourceLocation icon, int cooldown,
+    public Ability(ResourceLocation id, Component name,
+            Component description, AbilityType type, ResourceLocation icon, int cooldown,
             int cost, boolean persistent, List<ResourceLocation> allowedRaces,
-            List<mc.sayda.creraces.engine.ActionRegistry.RaceAction> onActivate,
-            List<mc.sayda.creraces.engine.ActionRegistry.RaceAction> onDeactivate,
-            mc.sayda.creraces.engine.condition.Condition condition,
-            @javax.annotation.Nullable String conditionFailMessage,
+            List<RaceAction> onActivate,
+            List<RaceAction> onDeactivate,
+            Condition condition,
+            @Nullable String conditionFailMessage,
             List<OverlayBar> overlayBars) {
         this.id = id;
         this.name = name;
@@ -49,11 +53,11 @@ public class Ability {
         this.overlayBars = overlayBars;
     }
 
-    public mc.sayda.creraces.engine.condition.Condition condition() {
+    public Condition condition() {
         return condition;
     }
 
-    @javax.annotation.Nullable
+    @Nullable
     public String conditionFailMessage() {
         return conditionFailMessage;
     }
@@ -62,11 +66,11 @@ public class Ability {
         return id;
     }
 
-    public net.minecraft.network.chat.Component name() {
+    public Component name() {
         return name;
     }
 
-    public net.minecraft.network.chat.Component description() {
+    public Component description() {
         return description;
     }
 
@@ -94,11 +98,11 @@ public class Ability {
         return allowedRaces;
     }
 
-    public List<mc.sayda.creraces.engine.ActionRegistry.RaceAction> onActivate() {
+    public List<RaceAction> onActivate() {
         return onActivate;
     }
 
-    public List<mc.sayda.creraces.engine.ActionRegistry.RaceAction> onDeactivate() {
+    public List<RaceAction> onDeactivate() {
         return onDeactivate;
     }
 

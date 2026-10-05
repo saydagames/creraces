@@ -1,17 +1,21 @@
 package mc.sayda.creraces.network;
 
+import dev.architectury.networking.NetworkManager;
+import dev.architectury.utils.Env;
+import dev.architectury.utils.EnvExecutor;
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.client.render.TetherRenderer;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.UUID;
 import java.util.function.Supplier;
 
-/**
- * Packet to sync tether rendering state from server to client.
- */
+/** S2C: starts or stops rendering a tether between two entities. */
 public class SyncTetherPacket {
     public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "sync_tether");
+
+    private static final int TEXTURE_MAX_LEN = 512;
 
     private final UUID casterId;
     private final UUID targetId;
@@ -34,7 +38,7 @@ public class SyncTetherPacket {
         this.targetId = buf.readUUID();
         this.active = buf.readBoolean();
         if (this.active) {
-            this.texture = buf.readUtf(512);
+            this.texture = buf.readUtf(TEXTURE_MAX_LEN);
             this.width = buf.readFloat();
             this.effects = buf.readBoolean();
         } else {
@@ -49,20 +53,15 @@ public class SyncTetherPacket {
         buf.writeUUID(this.targetId);
         buf.writeBoolean(this.active);
         if (this.active) {
-            buf.writeUtf(this.texture);
+            buf.writeUtf(this.texture, TEXTURE_MAX_LEN);
             buf.writeFloat(this.width);
             buf.writeBoolean(this.effects);
         }
     }
 
-    public void handle(Supplier<dev.architectury.networking.NetworkManager.PacketContext> contextSupplier) {
+    public void handle(Supplier<NetworkManager.PacketContext> contextSupplier) {
         var context = contextSupplier.get();
-        context.queue(() -> {
-            dev.architectury.utils.EnvExecutor.runInEnv(dev.architectury.utils.Env.CLIENT,
-                    () -> () -> {
-                        mc.sayda.creraces.client.render.TetherRenderer.handleSync(this.casterId, this.targetId,
-                                this.active, this.texture, this.width, this.effects);
-                    });
-        });
+        context.queue(() -> EnvExecutor.runInEnv(Env.CLIENT, () -> () -> TetherRenderer.handleSync(
+                this.casterId, this.targetId, this.active, this.texture, this.width, this.effects)));
     }
 }

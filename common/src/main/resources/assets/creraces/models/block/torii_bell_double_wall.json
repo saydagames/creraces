@@ -1,9 +1,9 @@
 {
-    "parent": "minecraft:block/bell_between_walls",
-    "textures": {
-        "top": "creraces:block/torii_bell_top",
-        "side": "creraces:block/torii_bell_side",
-        "bottom": "creraces:block/torii_bell_bottom",
-        "particle": "creraces:block/torii_bell_side"
-    }
+  "parent": "minecraft:block/bell_between_walls",
+  "textures": {
+    "top": "creraces:block/torii_bell_top",
+    "side": "creraces:block/torii_bell_side",
+    "bottom": "creraces:block/torii_bell_bottom",
+    "particle": "creraces:block/torii_bell_side"
+  }
 }

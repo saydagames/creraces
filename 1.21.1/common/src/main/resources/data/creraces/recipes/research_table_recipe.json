@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "PPP",
+    "ISI",
+    "I I"
+  ],
+  "key": {
+    "P": {
+      "item": "creraces:veil_willow_planks"
+    },
+    "S": {
+      "item": "creraces:veil_willow_slab"
+    },
+    "I": {
+      "item": "minecraft:stick"
+    }
+  },
+  "result": {
+    "id": "creraces:research_table",
+    "count": 1
+  }
+}

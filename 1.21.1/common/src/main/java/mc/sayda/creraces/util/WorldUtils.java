@@ -1,13 +1,18 @@
 package mc.sayda.creraces.util;
 
+import mc.sayda.creraces.block.entity.MicroBlockEntity;
+import mc.sayda.creraces.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.state.BlockState;
 
+import javax.annotation.Nonnull;
+
 /**
  * Utility methods for world manipulation and common gameplay mechanics.
- * Replaces legacy MCreator procedures.
  */
 public class WorldUtils {
 
@@ -25,9 +30,9 @@ public class WorldUtils {
      * Default Dryad values (3×3×2) reproduce the legacy 3×3 hole.
      */
     @SuppressWarnings("null")
-    public static void removeDoor(LevelAccessor world, @javax.annotation.Nonnull BlockPos origin,
-            @javax.annotation.Nonnull BlockState blockToMatch,
-            @javax.annotation.Nonnull Direction panelFacing,
+    public static void removeDoor(LevelAccessor world, @Nonnull BlockPos origin,
+            @Nonnull BlockState blockToMatch,
+            @Nonnull Direction panelFacing,
             int width, int height, int depth) {
         if (origin == null || panelFacing == null)
             return;
@@ -72,29 +77,27 @@ public class WorldUtils {
      * and custom CreRaces micro-blocks.
      */
     @SuppressWarnings("null")
-    public static boolean isExposedToRain(net.minecraft.world.entity.LivingEntity entity) {
-        net.minecraft.world.level.Level level = entity.level();
+    public static boolean isExposedToRain(LivingEntity entity) {
+        Level level = entity.level();
         BlockPos pos = entity.blockPosition();
 
         if (!level.isRainingAt(pos)) {
             return false;
         }
 
-        // Check for micro-block shelter starting from the entity's position up to 16
-        // blocks
+        // Look up to 16 blocks overhead for a micro-block roof over the entity's sub-column.
         for (int dy = 0; dy <= 16; dy++) {
             BlockPos overheadPos = pos.above(dy);
             BlockState state = level.getBlockState(overheadPos);
 
-            if (state.is(mc.sayda.creraces.registry.ModBlocks.MICRO_BLOCK.get())) {
-                if (level.getBlockEntity(overheadPos) instanceof mc.sayda.creraces.block.entity.MicroBlockEntity micro) {
+            if (state.is(ModBlocks.MICRO_BLOCK.get())) {
+                if (level.getBlockEntity(overheadPos) instanceof MicroBlockEntity micro) {
                     int playerSlotY = -1;
                     if (dy == 0) {
                         double yOffset = entity.getY() - pos.getY();
                         playerSlotY = (int) (yOffset * 4);
                     }
 
-                    // Calculate entity's sub-grid column once
                     int sx = (int) (((entity.getX() - overheadPos.getX()) % 1.0 + 1.0) % 1.0 * 4);
                     int sz = (int) (((entity.getZ() - overheadPos.getZ()) % 1.0 + 1.0) % 1.0 * 4);
                     sx = Math.max(0, Math.min(3, sx));
@@ -102,13 +105,12 @@ public class WorldUtils {
 
                     for (int sy = playerSlotY + 1; sy < 4; sy++) {
                         if (!micro.getSlot(sx, sy, sz).isAir()) {
-                            return false; // Sheltered by mini-block roof in THIS column!
+                            return false;
                         }
                     }
                 }
             } else if (dy > 0 && state.isSolidRender(level, overheadPos)) {
-                // Regular solid block shelter - redundant due to isRainingAt but kept for
-                // safety
+                // isRainingAt already rules this out; kept as a cheap guard.
                 return false;
             }
         }

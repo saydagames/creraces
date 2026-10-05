@@ -2,6 +2,8 @@ package mc.sayda.creraces.item;
 
 import mc.sayda.creraces.ability.EssenceType;
 import mc.sayda.creraces.registry.ModItems;
+import mc.sayda.creraces.util.ItemNbt;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
@@ -22,7 +24,7 @@ public class EssenceBucketItem extends Item {
         ItemStack stack = new ItemStack(ModItems.ESSENCE_BUCKET.get());
         CompoundTag tag = new CompoundTag();
         tag.putString(TAG_ESSENCE, type.getSerializedName());
-        mc.sayda.creraces.util.ItemNbt.set(stack, tag);
+        ItemNbt.set(stack, tag);
         if (copyDisplayFrom != null) {
             transferDisplay(copyDisplayFrom, stack);
         }
@@ -31,27 +33,27 @@ public class EssenceBucketItem extends Item {
 
     /**
      * Transfers display data (custom name, lore) from one stack to another. Used when emptying
-     * the bucket. These lived in a "display" NBT subtag before 1.20.5 and are separate data
-     * components now.
+     * the bucket. Both are data components on 1.20.5+, not a "display" NBT subtag.
      */
     public static void transferDisplay(ItemStack from, ItemStack to) {
-        var name = from.get(net.minecraft.core.component.DataComponents.CUSTOM_NAME);
+        var name = from.get(DataComponents.CUSTOM_NAME);
         if (name != null) {
-            to.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, name);
+            to.set(DataComponents.CUSTOM_NAME, name);
         }
-        var lore = from.get(net.minecraft.core.component.DataComponents.LORE);
+        var lore = from.get(DataComponents.LORE);
         if (lore != null) {
-            to.set(net.minecraft.core.component.DataComponents.LORE, lore);
+            to.set(DataComponents.LORE, lore);
         }
     }
 
     @Nullable
     public static EssenceType getEssenceType(ItemStack stack) {
-        CompoundTag tag = mc.sayda.creraces.util.ItemNbt.get(stack);
+        CompoundTag tag = ItemNbt.get(stack);
         if (!tag.contains(TAG_ESSENCE)) return null;
         try {
             return EssenceType.byId(tag.getString(TAG_ESSENCE));
         } catch (IllegalArgumentException ignored) {
+            // Unrecognised essence id; getName falls back to the plain bucket name.
             return null;
         }
     }

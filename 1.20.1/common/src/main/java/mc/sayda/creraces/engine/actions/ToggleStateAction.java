@@ -1,32 +1,41 @@
 package mc.sayda.creraces.engine.actions;
 
-import com.google.gson.JsonElement;
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.capability.IPlayerVariables;
 import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.engine.ScalingValue;
+import mc.sayda.creraces.network.BoundaryHandler;
 import mc.sayda.creraces.util.GsonHelper;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 
-import java.util.ArrayList;
+import javax.annotation.Nullable;
 import java.util.List;
 
+/**
+ * Flips a persistent state between on_value and off_value, running on_enable or on_disable. The
+ * state is "self" (the casting ability's own state) or a state id.
+ */
 public class ToggleStateAction implements ActionRegistry.RaceAction {
 
+    private static final double EPSILON = 0.001;
+
     private final String stateVariable;
-    private final @javax.annotation.Nullable ResourceLocation abilityId;
+    @Nullable
+    private final ResourceLocation stateId;
     private final ScalingValue onValue;
     private final ScalingValue offValue;
     private final List<ActionRegistry.RaceAction> onEnable;
     private final List<ActionRegistry.RaceAction> onDisable;
 
-    public ToggleStateAction(String stateVariable, @javax.annotation.Nullable ResourceLocation abilityId,
-            ScalingValue onValue, ScalingValue offValue,
-            List<ActionRegistry.RaceAction> onEnable,
-            List<ActionRegistry.RaceAction> onDisable) {
+    public ToggleStateAction(String stateVariable, @Nullable ResourceLocation stateId, ScalingValue onValue,
+            ScalingValue offValue, List<ActionRegistry.RaceAction> onEnable, List<ActionRegistry.RaceAction> onDisable) {
         this.stateVariable = stateVariable;
-        this.abilityId = abilityId;
+        this.stateId = stateId;
         this.onValue = onValue;
         this.offValue = offValue;
         this.onEnable = onEnable;
@@ -34,82 +43,50 @@ public class ToggleStateAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public boolean execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
-            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
-        boolean[] success = { true };
-        DataUtils.getVariables(player).ifPresent(vars -> {
-            ResourceLocation targetAbilityId = abilityId;
+    public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
+            @Nullable BlockPos interactPos) {
+        return DataUtils.getVariables(player)
+                .map(vars -> toggle(vars, player, target, slot, interactPos))
+                .orElse(true);
+    }
 
-            if (targetAbilityId == null && "self".equalsIgnoreCase(stateVariable) && slot != null) {
-                targetAbilityId = vars.getAbilityInSlot(slot);
-            } else if (targetAbilityId == null) {
-                mc.sayda.creraces.CreRaces.LOGGER.warn("ToggleStateAction: could not resolve state '{}': no slot context and no valid resource location", stateVariable);
-            }
+    private boolean toggle(IPlayerVariables vars, Player player, @Nullable LivingEntity target,
+            @Nullable AbilitySlot slot, @Nullable BlockPos interactPos) {
+        ResourceLocation id = stateId;
+        if (id == null && "self".equalsIgnoreCase(stateVariable) && slot != null) {
+            id = vars.getAbilityInSlot(slot);
+        } else if (id == null) {
+            CreRaces.LOGGER.warn("ToggleStateAction: could not resolve state '{}': no slot context and no valid "
+                    + "resource location", stateVariable);
+        }
+        if (id == null) {
+            return true;
+        }
 
-            if (targetAbilityId == null)
-                return;
-
-            double on = onValue.evaluate(player, target, slot);
-            double off = offValue.evaluate(player, target, slot);
-
-            double current = vars.getPersistentState(targetAbilityId);
-            // Compare against on_value: if currently on, disable; otherwise enable.
-            // This means any state that isn't exactly "on" (including intermediate values
-            // left by a crash or race condition) will always resolve to "enable".
-            if (Math.abs(current - on) < 0.001) {
-                vars.setPersistentState(targetAbilityId, off);
-                for (ActionRegistry.RaceAction a : onDisable) {
-                    if (!a.execute(player, target, slot, interact_pos)) {
-                        success[0] = false;
-                        break;
-                    }
-                }
-            } else {
-                vars.setPersistentState(targetAbilityId, on);
-                for (ActionRegistry.RaceAction a : onEnable) {
-                    if (!a.execute(player, target, slot, interact_pos)) {
-                        success[0] = false;
-                        break;
-                    }
-                }
-            }
-
-            mc.sayda.creraces.network.BoundaryHandler.resyncVariables(player, player);
-        });
-        return success[0];
+        double on = onValue.evaluate(player, target, slot);
+        double off = offValue.evaluate(player, target, slot);
+        // Only an exact "on" counts as on, so anything in between (e.g. left over from a crash) turns it on.
+        boolean currentlyOn = Math.abs(vars.getPersistentState(id) - on) < EPSILON;
+        vars.setPersistentState(id, currentlyOn ? off : on);
+        boolean success = ActionRegistry.runChain(currentlyOn ? onDisable : onEnable, player, target, slot,
+                interactPos);
+        BoundaryHandler.resyncVariables(player, player);
+        return success;
     }
 
     public static void register() {
         ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "toggle_state"), json -> {
-            String stateStr = GsonHelper.getAsString(json, "state", "self");
-            ScalingValue on = ScalingValue.fromJson(json, "on_value", 1.0);
-            ScalingValue off = ScalingValue.fromJson(json, "off_value", 0.0);
-
-            List<ActionRegistry.RaceAction> onEnable = new ArrayList<>();
-            if (json.has("on_enable")) {
-                for (JsonElement e : json.getAsJsonArray("on_enable")) {
-                    onEnable.add(ActionRegistry.fromJson(e.getAsJsonObject()));
-                }
+            String state = GsonHelper.getAsString(json, "state", "self");
+            ResourceLocation stateId = null;
+            if (!"self".equalsIgnoreCase(state)) {
+                String id = state.startsWith("state:") ? state.substring("state:".length()) : state;
+                stateId = ResourceLocation.tryParse(id.contains(":") ? id : CreRaces.MODID + ":" + id);
             }
-
-            List<ActionRegistry.RaceAction> onDisable = new ArrayList<>();
-            if (json.has("on_disable")) {
-                for (JsonElement e : json.getAsJsonArray("on_disable")) {
-                    onDisable.add(ActionRegistry.fromJson(e.getAsJsonObject()));
-                }
-            }
-
-            ResourceLocation stateLoc = null;
-            if (!"self".equalsIgnoreCase(stateStr)) {
-                String sub = stateStr.startsWith("state:") ? stateStr.substring(6) : stateStr;
-                if (!sub.contains(":")) {
-                    sub = "creraces:" + sub;
-                }
-                stateLoc = ResourceLocation.tryParse(sub);
-            }
-
-            return new ToggleStateAction(stateStr, stateLoc, on, off, onEnable, onDisable);
+            return new ToggleStateAction(state, stateId,
+                    ScalingValue.fromJson(json, "on_value", 1.0),
+                    ScalingValue.fromJson(json, "off_value", 0.0),
+                    ActionRegistry.listFromJson(json, "on_enable"),
+                    ActionRegistry.listFromJson(json, "on_disable"));
         });
     }
 }

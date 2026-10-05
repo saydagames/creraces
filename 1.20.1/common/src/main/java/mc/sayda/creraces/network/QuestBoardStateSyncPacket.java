@@ -1,13 +1,19 @@
 package mc.sayda.creraces.network;
 
 import dev.architectury.networking.NetworkManager;
+import dev.architectury.utils.Env;
+import dev.architectury.utils.EnvExecutor;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.block.entity.QuestBoardBlockEntity;
 import mc.sayda.creraces.world.inventory.QuestBoardMenu;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 
 /**
@@ -40,21 +46,19 @@ public class QuestBoardStateSyncPacket {
     }
 
     public void handle(Supplier<NetworkManager.PacketContext> ctx) {
-        ctx.get().queue(() -> {
-            dev.architectury.utils.EnvExecutor.runInEnv(dev.architectury.utils.Env.CLIENT, () -> () -> {
-                if (net.minecraft.client.Minecraft.getInstance().player != null
-                        && net.minecraft.client.Minecraft.getInstance().player.containerMenu instanceof QuestBoardMenu menu) {
-                    menu.applyTakenSync(this.taken);
-                    menu.applyLockedSync(this.locked);
-                }
-            });
-        });
+        ctx.get().queue(() -> EnvExecutor.runInEnv(Env.CLIENT, () -> () -> {
+            LocalPlayer player = Minecraft.getInstance().player;
+            if (player != null && player.containerMenu instanceof QuestBoardMenu menu) {
+                menu.applyTakenSync(this.taken);
+                menu.applyLockedSync(this.locked);
+            }
+        }));
     }
 
     /** If the player currently has a Quest Board GUI open, resyncs its taken[]/locked[] state. */
     public static void resyncIfOpen(ServerPlayer player) {
         if (player.containerMenu instanceof QuestBoardMenu menu) {
-            var ids = new java.util.ArrayList<ResourceLocation>();
+            List<ResourceLocation> ids = new ArrayList<>();
             for (int i = 0; i < menu.getSlotCount(); i++) ids.add(menu.getQuestId(i));
             boolean[] taken = QuestBoardBlockEntity.computeTaken(player, ids);
             boolean[] locked = QuestBoardBlockEntity.computeLocked(player, ids);

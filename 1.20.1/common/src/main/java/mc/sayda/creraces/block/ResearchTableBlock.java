@@ -1,6 +1,8 @@
 package mc.sayda.creraces.block;
 
+import dev.architectury.registry.menu.MenuRegistry;
 import mc.sayda.creraces.block.entity.ResearchTableBlockEntity;
+import mc.sayda.creraces.network.BoundaryHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
@@ -17,6 +19,7 @@ import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LevelEvent;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -145,9 +148,9 @@ public class ResearchTableBlock extends BaseEntityBlock {
         if (!level.isClientSide) {
             Direction facing = state.getValue(FACING);
             BlockPos rightPos = pos.relative(facing.getClockWise());
-            level.setBlock(rightPos, state.setValue(PART, ResearchTablePart.RIGHT), 3);
+            level.setBlock(rightPos, state.setValue(PART, ResearchTablePart.RIGHT), Block.UPDATE_ALL);
             level.blockUpdated(pos, Blocks.AIR);
-            state.updateNeighbourShapes(level, pos, 3);
+            state.updateNeighbourShapes(level, pos, Block.UPDATE_ALL);
         }
     }
 
@@ -161,20 +164,14 @@ public class ResearchTableBlock extends BaseEntityBlock {
                     : pos.relative(facing.getCounterClockWise());
             BlockState partnerState = level.getBlockState(partnerPos);
             if (partnerState.is(this) && partnerState.getValue(PART) != part) {
-                level.setBlock(partnerPos, Blocks.AIR.defaultBlockState(), 35);
-                level.levelEvent(player, 2001, partnerPos, Block.getId(partnerState));
+                level.setBlock(partnerPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL | Block.UPDATE_SUPPRESS_DROPS);
+                level.levelEvent(player, LevelEvent.PARTICLES_DESTROY_BLOCK, partnerPos, Block.getId(partnerState));
             }
         }
         super.playerWillDestroy(level, pos, state, player);
     }
 
-    /**
-     * Belt-and-suspenders guard against creative-mode drops: the loot table should only ever
-     * be consulted by vanilla's own destroy flow in survival, but this intercepts at the single
-     * choke point every drop path (dropResources/playerDestroy/etc) funnels through, so a
-     * creative/instabuild breaker never gets a physical item regardless of how the break was
-     * triggered.
-     */
+    /** Creative breakers never get a drop, whichever break path consults the loot table. */
     @Override
     public List<ItemStack> getDrops(BlockState state, LootParams.Builder params) {
         Entity entity = params.getOptionalParameter(LootContextParams.THIS_ENTITY);
@@ -214,8 +211,8 @@ public class ResearchTableBlock extends BaseEntityBlock {
 
         if (level.getBlockEntity(mainPos) instanceof ResearchTableBlockEntity tableEntity
                 && player instanceof ServerPlayer sp) {
-            dev.architectury.registry.menu.MenuRegistry.openExtendedMenu(sp, tableEntity);
-            mc.sayda.creraces.network.BoundaryHandler.syncHexGrid(sp, tableEntity);
+            MenuRegistry.openExtendedMenu(sp, tableEntity);
+            BoundaryHandler.syncHexGrid(sp, tableEntity);
         }
         return InteractionResult.CONSUME;
     }

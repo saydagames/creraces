@@ -1,6 +1,6 @@
 {
-    "parent": "minecraft:item/generated",
-    "textures": {
-        "layer0": "creraces:item/tori_bell"
-    }
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "creraces:item/tori_bell"
+  }
 }

@@ -13,12 +13,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Scales food and saturation gains by the race food multiplier.
- *
- * Two @Inject points on Player.eat():
- * 1. HEAD – snapshot food/saturation values BEFORE vanilla eats
- * 2. RETURN – read new values, scale the delta, write back via
- * IFoodDataAccessor
+ * Scales food and saturation gains by the race food multiplier: eat() is snapshotted at HEAD and the
+ * gained amount is scaled at RETURN (see FoodDataMixin.creraces$applyFoodMultiplier).
  */
 @Mixin(Player.class)
 public abstract class PlayerFoodMixin {
@@ -26,7 +22,7 @@ public abstract class PlayerFoodMixin {
     @Shadow
     public abstract FoodData getFoodData();
 
-    // ThreadLocal instead of a permanent field, since this snapshot is only needed transiently during eat().
+    // ThreadLocal rather than a field: the snapshot only lives for the duration of one eat() call.
     private static final ThreadLocal<long[]> PRE_EAT_SNAPSHOT = ThreadLocal.withInitial(() -> new long[] { 0L, 0L });
 
     @Inject(method = "eat", at = @At("HEAD"))

@@ -1,6 +1,13 @@
 package mc.sayda.creraces.block;
 
+import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.block.entity.RatHoleBlockEntity;
+import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.capability.IPlayerVariables;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -11,6 +18,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -21,19 +29,18 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import mc.sayda.creraces.block.entity.RatHoleBlockEntity;
-import mc.sayda.creraces.capability.DataUtils;
-import mc.sayda.creraces.capability.IPlayerVariables;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 /**
  * Flat, invisible, indestructible tunnel marker placed by Ratkin's Rat Tunnels ability.
  */
 public class RatHoleBlock extends Block implements EntityBlock {
 
-    // 15×1×15 pixel-thin floor-level hitbox, same as legacy
+    // Persistent state the Rat Tunnels ability uses to count its placed holes
+    private static final ResourceLocation RAT_TUNNELS = new ResourceLocation(CreRaces.MODID, "rat_tunnels");
+
+    // 15x1x15 pixel floor-level hitbox
     private static final VoxelShape SHAPE = Block.box(0.5, 0, 0.5, 15.5, 1, 15.5);
 
     public RatHoleBlock() {
@@ -52,62 +59,44 @@ public class RatHoleBlock extends Block implements EntityBlock {
     }
 
     @Override
-    @SuppressWarnings("deprecation")
-    public InteractionResult use(@Nonnull BlockState state, @Nonnull Level level, @Nonnull BlockPos pos, @Nonnull Player player, @Nonnull InteractionHand hand,
-            @Nonnull BlockHitResult hit) {
+    public InteractionResult use(@Nonnull BlockState state, @Nonnull Level level, @Nonnull BlockPos pos,
+            @Nonnull Player player, @Nonnull InteractionHand hand, @Nonnull BlockHitResult hit) {
         if (level.isClientSide())
             return InteractionResult.SUCCESS;
 
-        BlockEntity be = level.getBlockEntity(pos);
-        if (be instanceof mc.sayda.creraces.block.entity.RatHoleBlockEntity hole) {
-            // Sneak-click deletion
-            if (player.isSecondaryUseActive()) {
-                if (player.getUUID().equals(hole.getOwnerUUID())) {
-                    BlockPos destPos = hole.getDestination();
-                    mc.sayda.creraces.capability.IPlayerVariables vars = mc.sayda.creraces.capability.DataUtils
-                            .getVariables(player).orElse(null);
-
-                    if (destPos != null && !destPos.equals(BlockPos.ZERO) && !destPos.equals(pos)) {
-                        // Remove linked partner
-                        level.setBlockAndUpdate(destPos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
-                        if (vars != null) {
-                            ResourceLocation stateId = new ResourceLocation("creraces", "rat_tunnels");
-                            vars.setPersistentState(stateId, Math.max(0, vars.getPersistentState(stateId) - 2));
-                        }
-                    } else {
-                        // Remove unlinked single hole
-                        if (vars != null) {
-                            ResourceLocation stateId = new ResourceLocation("creraces", "rat_tunnels");
-                            vars.setPersistentState(stateId, Math.max(0, vars.getPersistentState(stateId) - 1));
-                        }
-                    }
-
-                    // Remove current hole
-                    level.setBlockAndUpdate(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
-                    level.playSound(null, pos, SoundEvents.ZOMBIE_BREAK_WOODEN_DOOR,
-                            SoundSource.BLOCKS, 1.0f, 1.0f);
-                    
-                    return InteractionResult.SUCCESS;
-                }
-            }
-
-            // Teleportation
-            BlockPos dest = hole.getDestination();
-            if (dest != null && !dest.equals(BlockPos.ZERO)) {
-                // Perform tunneling
-                player.teleportTo(dest.getX() + 0.5, dest.getY() + 0.1, dest.getZ() + 0.5);
-                
-                // Play sounds at both ends
-                level.playSound(null, pos, SoundEvents.GRAVEL_BREAK, SoundSource.PLAYERS, 1.0f, 1.5f);
-                level.playSound(null, dest, SoundEvents.GRAVEL_PLACE, SoundSource.PLAYERS, 1.0f, 1.2f);
-
-                return InteractionResult.CONSUME;
-            } else {
-                player.displayClientMessage(net.minecraft.network.chat.Component.translatable("msg.creraces.invalid_rat_hole").withStyle(net.minecraft.ChatFormatting.WHITE), true);
-            }
+        if (!(level.getBlockEntity(pos) instanceof RatHoleBlockEntity hole)) {
+            return InteractionResult.SUCCESS;
         }
 
-        return InteractionResult.SUCCESS;
+        // The owner sneak-clicks to fill the hole in, along with its linked partner
+        if (player.isSecondaryUseActive() && player.getUUID().equals(hole.getOwnerUUID())) {
+            BlockPos destPos = hole.getDestination();
+            int holesRemoved = 1;
+            if (destPos != null && !destPos.equals(BlockPos.ZERO) && !destPos.equals(pos)) {
+                level.setBlockAndUpdate(destPos, Blocks.AIR.defaultBlockState());
+                holesRemoved = 2;
+            }
+            IPlayerVariables vars = DataUtils.getVariables(player).orElse(null);
+            if (vars != null) {
+                vars.setPersistentState(RAT_TUNNELS, Math.max(0, vars.getPersistentState(RAT_TUNNELS) - holesRemoved));
+            }
+
+            level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+            level.playSound(null, pos, SoundEvents.ZOMBIE_BREAK_WOODEN_DOOR, SoundSource.BLOCKS, 1.0f, 1.0f);
+            return InteractionResult.SUCCESS;
+        }
+
+        BlockPos dest = hole.getDestination();
+        if (dest == null || dest.equals(BlockPos.ZERO)) {
+            player.displayClientMessage(
+                    Component.translatable("msg.creraces.invalid_rat_hole").withStyle(ChatFormatting.WHITE), true);
+            return InteractionResult.SUCCESS;
+        }
+
+        player.teleportTo(dest.getX() + 0.5, dest.getY() + 0.1, dest.getZ() + 0.5);
+        level.playSound(null, pos, SoundEvents.GRAVEL_BREAK, SoundSource.PLAYERS, 1.0f, 1.5f);
+        level.playSound(null, dest, SoundEvents.GRAVEL_PLACE, SoundSource.PLAYERS, 1.0f, 1.2f);
+        return InteractionResult.CONSUME;
     }
 
     @Override
@@ -132,12 +121,11 @@ public class RatHoleBlock extends Block implements EntityBlock {
 
     @Override
     public void animateTick(@Nonnull BlockState state, @Nonnull Level level, @Nonnull BlockPos pos, @Nonnull RandomSource random) {
-        // Subtle dust particles
         if (random.nextFloat() < 0.1f) {
-            level.addParticle(net.minecraft.core.particles.ParticleTypes.ASH, 
-                pos.getX() + 0.5 + random.nextGaussian() * 0.2, 
-                pos.getY() + 0.1, 
-                pos.getZ() + 0.5 + random.nextGaussian() * 0.2, 
+            level.addParticle(ParticleTypes.ASH,
+                pos.getX() + 0.5 + random.nextGaussian() * 0.2,
+                pos.getY() + 0.1,
+                pos.getZ() + 0.5 + random.nextGaussian() * 0.2,
                 0, 0, 0);
         }
     }

@@ -1,21 +1,22 @@
 package mc.sayda.creraces.util;
 
 import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.item.CommandingStaffItem;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.OwnableEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.Projectile;
 
 import javax.annotation.Nullable;
 import java.util.UUID;
 
 public class CombatUtils {
     /**
-     * Resolves the "root" player owner of an entity.
-     * Handles:
-     * 1. If entity is a player, returns the player.
-     * 2. If entity is Ownable (e.g. Wolf), returns the owner if it's a player.
-     * 3. If entity is a CreRaces servant, returns the owner from NBT.
+     * Resolves the player ultimately responsible for an entity: the entity itself if it is a
+     * player, otherwise the owner of a tame, a projectile or a claimed servant, followed through
+     * nested owners (e.g. an arrow shot by a tame wolf).
      */
     @Nullable
     public static Player getRootOwner(@Nullable Entity entity) {
@@ -41,7 +42,7 @@ public class CombatUtils {
             }
         }
 
-        if (entity instanceof net.minecraft.world.entity.projectile.Projectile projectile) {
+        if (entity instanceof Projectile projectile) {
             Entity owner = projectile.getOwner();
             if (owner instanceof Player player) {
                 return player;
@@ -53,13 +54,16 @@ public class CombatUtils {
         }
 
         if (entity instanceof LivingEntity le && entity instanceof IPersistentDataAccessor accessor) {
-            if (accessor.creraces$getPersistentData().contains("creraces:servant_of")) {
+            CompoundTag data = accessor.creraces$getPersistentData();
+            if (data.contains(CommandingStaffItem.SERVANT_OF)) {
                 try {
-                    UUID ownerUuid = DataUtils.loadUUID(accessor.creraces$getPersistentData(), "creraces:servant_of");
+                    UUID ownerUuid = DataUtils.loadUUID(data, CommandingStaffItem.SERVANT_OF);
                     if (ownerUuid != null) {
                         return le.level().getPlayerByUUID(ownerUuid);
                     }
-                } catch (Exception ignored) {}
+                } catch (IllegalArgumentException ignored) {
+                    // Wrong-length UUID array: the servant just has no resolvable owner.
+                }
             }
         }
 

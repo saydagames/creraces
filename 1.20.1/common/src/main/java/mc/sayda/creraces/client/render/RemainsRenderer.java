@@ -8,18 +8,15 @@ import mc.sayda.creraces.entity.UndeadRemainsEntity;
 import mc.sayda.creraces.client.model.RemainsModel;
 
 public class RemainsRenderer extends MobRenderer<RemainsEntity, RemainsModel<RemainsEntity>> {
-	private static final ResourceLocation NORMAL_TEXTURE = new ResourceLocation("creraces", "textures/entities/remains.png");
-	private static final ResourceLocation UNDEAD_TEXTURE = new ResourceLocation("creraces", "textures/entities/remains_undead.png");
+    private static final ResourceLocation NORMAL_TEXTURE = new ResourceLocation("creraces", "textures/entities/remains.png");
+    private static final ResourceLocation UNDEAD_TEXTURE = new ResourceLocation("creraces", "textures/entities/remains_undead.png");
 
-	public RemainsRenderer(EntityRendererProvider.Context context) {
-		super(context, new RemainsModel<>(context.bakeLayer(RemainsModel.LAYER_LOCATION)), 0.5f);
-	}
+    public RemainsRenderer(EntityRendererProvider.Context context) {
+        super(context, new RemainsModel<>(context.bakeLayer(RemainsModel.LAYER_LOCATION)), 0.5f);
+    }
 
-	@Override
-	public ResourceLocation getTextureLocation(RemainsEntity entity) {
-		if (entity instanceof UndeadRemainsEntity) {
-			return UNDEAD_TEXTURE;
-		}
-		return NORMAL_TEXTURE;
-	}
+    @Override
+    public ResourceLocation getTextureLocation(RemainsEntity entity) {
+        return entity instanceof UndeadRemainsEntity ? UNDEAD_TEXTURE : NORMAL_TEXTURE;
+    }
 }

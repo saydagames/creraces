@@ -23,6 +23,7 @@
     "passive": [
         {
             "type": "creraces:flight",
+            "blocked_by_effects": ["creraces:broken_wings"],
             "condition": {
                 "type": "creraces:not",
                 "condition": {
@@ -59,23 +60,6 @@
                     ]
                 }
             }
-        },
-        {
-            "type": "creraces:on_tick",
-            "interval": 5,
-            "condition": {
-                "type": "creraces:not",
-                "condition": {
-                    "type": "creraces:has_effect",
-                    "effect": "creraces:nymph_call"
-                }
-            },
-            "actions": [
-                {
-                    "type": "creraces:apply_velocity",
-                    "y": 0.5
-                }
-            ]
         }
     ],
     "creraces:territory_valid_biomes": ["#c:is_plains"],

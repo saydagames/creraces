@@ -1,6 +1,6 @@
 package mc.sayda.creraces.worldgen;
 
-import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -30,7 +30,6 @@ import net.minecraft.world.level.levelgen.blending.Blender;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 
 /**
  * Fairy realm chunk generator: hash-based value noise, no sine functions,
@@ -53,8 +52,6 @@ import java.util.concurrent.Executor;
  */
 public class FairyRealmChunkGenerator extends ChunkGenerator {
 
-    // ─── Geographic constants ────────────────────────────────────────────────────
-
     static final int RIVER_LEVEL       = 63;
     static final int RIVER_HALF        = 12;
     static final int ISLAND_RADIUS     = 56;
@@ -68,9 +65,7 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
     private static final long ISLAND_RADIUS_SQ     = (long) ISLAND_RADIUS     * ISLAND_RADIUS;
     private static final long ISLAND_MOAT_OUTER_SQ = (long) ISLAND_MOAT_OUTER * ISLAND_MOAT_OUTER;
 
-    // ─── Codec ───────────────────────────────────────────────────────────────────
-
-    public static final com.mojang.serialization.MapCodec<FairyRealmChunkGenerator> CODEC = RecordCodecBuilder.mapCodec(instance ->
+    public static final MapCodec<FairyRealmChunkGenerator> CODEC = RecordCodecBuilder.mapCodec(instance ->
             instance.group(
                     BiomeSource.CODEC.fieldOf("biome_source")
                             .forGetter(ChunkGenerator::getBiomeSource),
@@ -88,9 +83,7 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
         this.delegate = new NoiseBasedChunkGenerator(biomeSource, settings);
     }
 
-    @Override protected com.mojang.serialization.MapCodec<? extends ChunkGenerator> codec() { return CODEC; }
-
-    // ─── Noise primitives ────────────────────────────────────────────────────────
+    @Override protected MapCodec<? extends ChunkGenerator> codec() { return CODEC; }
 
     private static double lerp(double a, double b, double t) { return a + t * (b - a); }
     private static double smooth(double t) { return t * t * (3.0 - 2.0 * t); }
@@ -127,8 +120,6 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
         return lerp(y0, y1, fz);
     }
 
-    // ─── Terrain noise ───────────────────────────────────────────────────────────
-
     /**
      * Domain-warped 6-octave fBm. The warp displaces sampling coords by up to
      * ±30 blocks using low-frequency noise, breaking up grid regularity.
@@ -153,7 +144,7 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
              +  2.5 * n2(coord * 0.019,  41.7);
     }
 
-    // ─── Geometry helpers (package-private for FairyRealmBiomeSource) ───────────
+    // Package-private so FairyRealmBiomeSource lines its biomes up with the terrain generated here.
 
     static boolean isIsland(int x, int z) {
         return (long) x * x + (long) z * z < ISLAND_RADIUS_SQ;
@@ -183,8 +174,6 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
         return isIslandMoat(x, z) || isRiverCorridor(x, z);
     }
 
-    // ─── Cave & block helpers ─────────────────────────────────────────────────────
-
     /**
      * Two independent 3D value noises; tunnel forms where both approach zero.
      * Starts >= 12 blocks below surface to prevent craters and side-exposure on slopes.
@@ -207,8 +196,6 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
         if (v < 37) return Blocks.GRAVEL.defaultBlockState();
         return Blocks.STONE.defaultBlockState();
     }
-
-    // ─── Core generation ─────────────────────────────────────────────────────────
 
     @Override
     public CompletableFuture<ChunkAccess> fillFromNoise(Blender blender,
@@ -305,8 +292,8 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
     /**
      * Dense, organically-shaped oak undergrowth across the island surface.
      *
-     * All centres kept at [2..13] so the widest footprint (|dx|+|dz|≤3 diamond,
-     * max offset ±3) never crosses chunk boundaries.
+     * Centres stay within [2..13], so every shape but the broad bush's radius-3 base (which can
+     * reach one block past the chunk edge) fits inside the chunk.
      *
      * Shapes avoid rectangular patterns by using diamond masks and per-column
      * hash-driven corner dropping so no two bushes look identical.
@@ -554,8 +541,6 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
         delegate.addDebugScreenInfo(info, randomState, pos);
     }
 
-    // ─── Geographic post-processing ──────────────────────────────────────────────
-
     private static void postProcessGeography(ChunkAccess chunk) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         int startX = chunk.getPos().getMinBlockX();
@@ -571,7 +556,7 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
                     double distFromOuter = ISLAND_MOAT_OUTER - rr;
                     if (distFromInner < MOAT_INNER_BANK_W) {
                         // Inner bank slope: heights already set by fillFromNoise, just material
-                        blendTowardRiver(chunk, pos, wx, wz, distFromInner);
+                        blendTowardRiver(chunk, pos, wx, wz);
                     } else {
                         double moatDist = -Math.min(distFromInner, distFromOuter);
                         carveToWater(chunk, pos, wx, wz, moatDist);
@@ -584,7 +569,7 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
                 double distToWater = Math.min(rEdge, moatOuterDist);
 
                 if (distToWater < 0)                 carveToWater(chunk, pos, wx, wz, distToWater);
-                else if (distToWater < BLEND_RADIUS)  blendTowardRiver(chunk, pos, wx, wz, distToWater);
+                else if (distToWater < BLEND_RADIUS)  blendTowardRiver(chunk, pos, wx, wz);
             }
         }
     }
@@ -674,14 +659,13 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
      *
      * Above water: sand within beachHeight blocks of RIVER_LEVEL, grass beyond.
      * This mirrors the island beach logic and naturally produces a visible sandy
-     * strip right where the slope meets the waterline regardless of edgeDist.
+     * strip right where the slope meets the waterline, since it keys off height, not distance.
      *
      * Below water: sand for the first 3 depths, noise-blended sand/gravel for
      * depths 4-5, pure gravel beyond, producing a smooth
      * sand→gravel transition on the submerged bank.
      */
-    private static void blendTowardRiver(ChunkAccess chunk, BlockPos.MutableBlockPos pos,
-            int wx, int wz, double edgeDist) {
+    private static void blendTowardRiver(ChunkAccess chunk, BlockPos.MutableBlockPos pos, int wx, int wz) {
         int terrainTop = findTopSolid(chunk, pos, wx, wz);
 
         if (terrainTop >= RIVER_LEVEL) {

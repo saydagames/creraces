@@ -1,29 +1,28 @@
 package mc.sayda.creraces.item;
 
+import dev.architectury.registry.registries.RegistrySupplier;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.RecordItem;
-import net.minecraft.sounds.SoundEvent;
-
-import java.util.function.Supplier;
 
 /**
- * A RecordItem wrapper that defers resolving the SoundEvent until after
- * registries have initialized.
- * This prevents null pointer exceptions or mapping issues when RecordItems are
- * registered before SoundEvents are frozen.
+ * A RecordItem whose sound is looked up on demand, so the disc still works if it is registered
+ * before the mod's own SoundEvents exist.
  */
 public class LazyRecordItem extends RecordItem {
-    private final Supplier<SoundEvent> soundSupplier;
+    private final RegistrySupplier<SoundEvent> sound;
 
-    public LazyRecordItem(int analogOutput, Supplier<SoundEvent> soundSupplier, Item.Properties properties,
+    public LazyRecordItem(int analogOutput, RegistrySupplier<SoundEvent> sound, Item.Properties properties,
             int lengthInTicks) {
-        // Pass a valid vanilla sound to prevent a Forge registration crash.
-        super(analogOutput, net.minecraft.sounds.SoundEvents.MUSIC_DISC_11, properties, lengthInTicks);
-        this.soundSupplier = soundSupplier;
+        // RecordItem keys the "Now Playing" lookup on this sound, so it must be the disc's own. The fallback
+        // has to be a registered sound (Forge resolves it here) that no vanilla disc uses.
+        super(analogOutput, sound.isPresent() ? sound.get() : SoundEvents.EMPTY, properties, lengthInTicks);
+        this.sound = sound;
     }
 
     @Override
     public SoundEvent getSound() {
-        return this.soundSupplier.get();
+        return this.sound.get();
     }
 }

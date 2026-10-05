@@ -1,15 +1,19 @@
 package mc.sayda.creraces.engine.actions;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.engine.ActionRegistry;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.player.Player;
-import java.util.ArrayList;
-import java.util.List;
 import mc.sayda.creraces.engine.condition.Condition;
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 
+import javax.annotation.Nullable;
+import java.util.List;
+
+/** Runs if_true or if_false depending on a condition; fails if the chosen branch fails. */
 public class ConditionalAction implements ActionRegistry.RaceAction {
 
     public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "conditional");
@@ -26,49 +30,24 @@ public class ConditionalAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public boolean execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
-            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
-        boolean result = condition.evaluate(player, target, slot, interact_pos);
-        List<ActionRegistry.RaceAction> actions = result ? ifTrue : ifFalse;
-
-        if (actions.isEmpty()) {
-            return true;
-        }
-
-        for (ActionRegistry.RaceAction action : actions) {
-            if (!action.execute(player, target, slot, interact_pos)) {
-                return false;
-            }
-        }
-        return true;
+    public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
+            @Nullable BlockPos interactPos) {
+        List<ActionRegistry.RaceAction> branch = condition.evaluate(player, target, slot, interactPos)
+                ? ifTrue
+                : ifFalse;
+        return ActionRegistry.runChain(branch, player, target, slot, interactPos);
     }
 
     public static void register() {
         ActionRegistry.register(ID, json -> {
-            JsonElement condEl = json.get("condition");
-            if (condEl == null) {
-                CreRaces.LOGGER.error("ConditionalAction missing 'condition' - skipping execution core.");
-                return (player, target, slot, interact_pos) -> true;
+            JsonElement conditionJson = json.get("condition");
+            if (conditionJson == null) {
+                CreRaces.LOGGER.error("ConditionalAction missing 'condition' - the action will do nothing.");
+                return (player, target, slot, interactPos) -> true;
             }
-            Condition condition = Condition.fromJson(condEl.getAsJsonObject());
-
-            List<ActionRegistry.RaceAction> ifTrue = new ArrayList<>();
-            if (json.has("if_true")) {
-                JsonArray array = json.getAsJsonArray("if_true");
-                for (int i = 0; i < array.size(); i++) {
-                    ifTrue.add(ActionRegistry.fromJson(array.get(i).getAsJsonObject()));
-                }
-            }
-
-            List<ActionRegistry.RaceAction> ifFalse = new ArrayList<>();
-            if (json.has("if_false")) {
-                JsonArray array = json.getAsJsonArray("if_false");
-                for (int i = 0; i < array.size(); i++) {
-                    ifFalse.add(ActionRegistry.fromJson(array.get(i).getAsJsonObject()));
-                }
-            }
-            return new ConditionalAction(condition, ifTrue, ifFalse);
+            return new ConditionalAction(Condition.fromJson(conditionJson.getAsJsonObject()),
+                    ActionRegistry.listFromJson(json, "if_true"),
+                    ActionRegistry.listFromJson(json, "if_false"));
         });
     }
 }

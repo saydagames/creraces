@@ -1,5 +1,7 @@
 package mc.sayda.creraces.block;
 
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import mc.sayda.creraces.block.entity.VeilWillowSaplingBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -26,8 +28,8 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 public class VeilWillowSaplingBlock extends BaseEntityBlock implements BonemealableBlock {
 
-    public static final com.mojang.serialization.MapCodec<VeilWillowSaplingBlock> CODEC =
-            com.mojang.serialization.codecs.RecordCodecBuilder.mapCodec(instance -> instance.group(
+    public static final MapCodec<VeilWillowSaplingBlock> CODEC =
+            RecordCodecBuilder.mapCodec(instance -> instance.group(
                     TreeGrower.CODEC.fieldOf("tree").forGetter(b -> b.treeGrower),
                     propertiesCodec()).apply(instance, VeilWillowSaplingBlock::new));
     public static final IntegerProperty STAGE = BlockStateProperties.STAGE;
@@ -41,18 +43,14 @@ public class VeilWillowSaplingBlock extends BaseEntityBlock implements Bonemeala
     }
 
     @Override
-    protected com.mojang.serialization.MapCodec<? extends VeilWillowSaplingBlock> codec() {
+    protected MapCodec<? extends VeilWillowSaplingBlock> codec() {
         return CODEC;
     }
-
-    // Shape
 
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return SHAPE;
     }
-
-    // Survival
 
     @Override
     public boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
@@ -79,8 +77,6 @@ public class VeilWillowSaplingBlock extends BaseEntityBlock implements Bonemeala
         }
     }
 
-    // Growth
-
     @Override
     public boolean isRandomlyTicking(BlockState state) {
         return true;
@@ -101,8 +97,6 @@ public class VeilWillowSaplingBlock extends BaseEntityBlock implements Bonemeala
         }
     }
 
-    // Bonemeal
-
     @Override
     public boolean isValidBonemealTarget(LevelReader level, BlockPos pos, BlockState state) {
         return true;
@@ -118,14 +112,10 @@ public class VeilWillowSaplingBlock extends BaseEntityBlock implements Bonemeala
         advanceTree(level, pos, state, random);
     }
 
-    // Block state
-
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(STAGE);
     }
-
-    // Block entity
 
     @Override
     public RenderShape getRenderShape(BlockState state) {

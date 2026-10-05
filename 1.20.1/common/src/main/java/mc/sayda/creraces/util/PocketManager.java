@@ -8,15 +8,13 @@ import net.minecraft.world.level.saveddata.SavedData;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Manages the global registry of pockets.
- */
+/** Hands out pocket indices and persists the next free one in the overworld's saved data. */
 public class PocketManager {
     private static final String DATA_ID = "creraces_pockets";
 
     private static final AtomicInteger NEXT_POCKET_INDEX = new AtomicInteger(1);
     private static volatile MinecraftServer currentServer = null;
-    /** Holds no state of its own, NEXT_POCKET_INDEX above is the source of truth; this is just the SavedData handle to mark dirty. */
+    /** Only the SavedData handle to mark dirty; NEXT_POCKET_INDEX is the real state. */
     private static Data currentData;
 
     private static class Data extends SavedData {

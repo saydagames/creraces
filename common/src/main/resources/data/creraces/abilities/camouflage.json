@@ -58,10 +58,8 @@
     ],
     "creraces:on_deactivate": [
         {
-            "type": "creraces:modify_value",
-            "resource": "self",
-            "operation": "SET",
-            "value": 0
+            "type": "creraces:remove_effect",
+            "effect": "creraces:camouflage"
         }
     ],
     "creraces:wiki_page": "Ability:Camouflage"

@@ -24,7 +24,9 @@ final class ItemSlotResolver {
                 if (index >= 0 && index < player.getInventory().getContainerSize()) {
                     return player.getInventory().getItem(index);
                 }
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ignored) {
+                // Neither a slot name nor an index: there is no item to return.
+            }
         }
 
         return ItemStack.EMPTY;

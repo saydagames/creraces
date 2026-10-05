@@ -1,5 +1,6 @@
 package mc.sayda.creraces.world.inventory;
 
+import mc.sayda.creraces.block.entity.QuestBoardBlockEntity;
 import mc.sayda.creraces.quest.Quest;
 import mc.sayda.creraces.quest.QuestRegistry;
 import mc.sayda.creraces.registry.ModMenuTypes;
@@ -10,6 +11,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,8 +38,8 @@ public class QuestBoardMenu extends AbstractContainerMenu {
     }
 
     public QuestBoardMenu(int syncId, Inventory playerInv, FriendlyByteBuf buf) {
-        this(syncId, playerInv, buf.readBlockPos(), readQuestIds(buf), new boolean[QuestBoardMenuConstants.SLOT_COUNT],
-                new boolean[QuestBoardMenuConstants.SLOT_COUNT]);
+        this(syncId, playerInv, buf.readBlockPos(), readQuestIds(buf), new boolean[QuestBoardBlockEntity.SLOT_COUNT],
+                new boolean[QuestBoardBlockEntity.SLOT_COUNT]);
     }
 
     private static List<ResourceLocation> readQuestIds(FriendlyByteBuf buf) {
@@ -63,7 +65,7 @@ public class QuestBoardMenu extends AbstractContainerMenu {
         return slot < taken.length && taken[slot];
     }
 
-    /** True if this slot's quest is on the player's abandon/expiry cooldown - takeable again once it lifts. */
+    /** True if this slot's quest is on the player's abandon/expiry cooldown; it can be taken again once that lifts. */
     public boolean isLocked(int slot) {
         return slot < locked.length && locked[slot];
     }
@@ -83,15 +85,11 @@ public class QuestBoardMenu extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(Player player) {
-        return player.distanceToSqr(net.minecraft.world.phys.Vec3.atCenterOf(boardPos)) <= 64.0;
+        return player.distanceToSqr(Vec3.atCenterOf(boardPos)) <= 64.0;
     }
 
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
         return ItemStack.EMPTY;
-    }
-
-    private static final class QuestBoardMenuConstants {
-        static final int SLOT_COUNT = mc.sayda.creraces.block.entity.QuestBoardBlockEntity.SLOT_COUNT;
     }
 }

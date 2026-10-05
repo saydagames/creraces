@@ -1,14 +1,18 @@
 package mc.sayda.creraces.network;
 
+import dev.architectury.networking.NetworkManager;
+import dev.architectury.utils.Env;
+import dev.architectury.utils.EnvExecutor;
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.client.render.AnimationHandler;
+import mc.sayda.creraces.client.render.BeamRenderer;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
+
 import java.util.UUID;
 import java.util.function.Supplier;
 
-/**
- * Packet to sync beam rendering state from server to client.
- */
+/** S2C: starts or stops rendering a player's beam, along with its casting pose. */
 public class SyncBeamPacket {
     public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "sync_beam");
 
@@ -62,15 +66,11 @@ public class SyncBeamPacket {
         }
     }
 
-    public void handle(Supplier<dev.architectury.networking.NetworkManager.PacketContext> contextSupplier) {
+    public void handle(Supplier<NetworkManager.PacketContext> contextSupplier) {
         var context = contextSupplier.get();
-        context.queue(() -> {
-            dev.architectury.utils.EnvExecutor.runInEnv(dev.architectury.utils.Env.CLIENT,
-                    () -> () -> {
-                        mc.sayda.creraces.client.render.BeamRenderer.handleSync(this.playerId, this.active, r, g, b, a,
-                                radius, length);
-                        mc.sayda.creraces.client.render.AnimationHandler.setBeamCasting(this.playerId, this.active);
-                    });
-        });
+        context.queue(() -> EnvExecutor.runInEnv(Env.CLIENT, () -> () -> {
+            BeamRenderer.handleSync(this.playerId, this.active, r, g, b, a, radius, length);
+            AnimationHandler.setBeamCasting(this.playerId, this.active);
+        }));
     }
 }

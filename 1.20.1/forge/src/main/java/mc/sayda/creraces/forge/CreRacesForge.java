@@ -1,17 +1,62 @@
 package mc.sayda.creraces.forge;
 
+import dev.architectury.platform.Platform;
+import dev.architectury.platform.forge.EventBuses;
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.block.EterveilBlock;
+import mc.sayda.creraces.block.FairySourceBlock;
 import mc.sayda.creraces.client.CreRacesClient;
+import mc.sayda.creraces.config.forge.ForgeConfig;
+import mc.sayda.creraces.forge.compat.CuriosBeltCompat;
+import mc.sayda.creraces.forge.migration.LegacyBlockRemaps;
+import mc.sayda.creraces.forge.migration.LegacyMigrationHooks;
+import mc.sayda.creraces.item.SpiritCompassItem;
+import mc.sayda.creraces.registry.ModFluids;
+import mc.sayda.creraces.registry.ModItems;
+import mc.sayda.creraces.registry.ModPotions;
+import mc.sayda.creraces.util.PlatformServices;
+import mc.sayda.creraces.worldgen.VeilwoodBiomeInjector;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.item.ItemProperties;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.alchemy.PotionUtils;
+import net.minecraft.world.item.alchemy.Potions;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions;
+import net.minecraftforge.common.ForgeHooks;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.brewing.BrewingRecipeRegistry;
+import net.minecraftforge.event.entity.player.FillBucketEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fluids.FluidType;
+import net.minecraftforge.fml.DistExecutor;
+import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.config.ModConfig;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegistryObject;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
 
 @Mod(CreRaces.MODID)
 public class CreRacesForge {
 
     /** Populated during mod construction; read by FairyFluidTypeMixin via getFluidType(). */
-    public static net.minecraftforge.registries.RegistryObject<net.minecraftforge.fluids.FluidType> FAIRY_FLUID_TYPE;
-    public static net.minecraftforge.registries.RegistryObject<net.minecraftforge.fluids.FluidType> ETERVEIL_FLUID_TYPE;
+    public static RegistryObject<FluidType> FAIRY_FLUID_TYPE;
+    public static RegistryObject<FluidType> ETERVEIL_FLUID_TYPE;
 
     /**
      * FluidTypes that should get full vanilla-water semantics (isInWater(), swim splash, fall-reset,
@@ -20,159 +65,113 @@ public class CreRacesForge {
      * FluidType has to opt in here explicitly. Fairy Source is deliberately NOT in this list, fairy
      * wings are meant to go soggy in real water, and their own fluid shouldn't trigger that.
      */
-    public static final java.util.List<net.minecraftforge.registries.RegistryObject<net.minecraftforge.fluids.FluidType>> WATER_EQUIVALENT_FLUID_TYPES = new java.util.ArrayList<>();
+    public static final List<RegistryObject<FluidType>> WATER_EQUIVALENT_FLUID_TYPES = new ArrayList<>();
 
     public CreRacesForge() {
         // Must run before CreRaces.init() below: it registers a PLAYER_JOIN handler that has to
         // resolve a migrated race before IncidentResolver's own PLAYER_JOIN handler syncs state
         // to the client, so registration order here matters.
-        mc.sayda.creraces.forge.migration.LegacyMigrationHooks.init();
-        mc.sayda.creraces.forge.migration.LegacyBlockRemaps.init();
+        LegacyMigrationHooks.init();
+        LegacyBlockRemaps.init();
         CreRacesForgeVillagerTrades.init();
         CreRacesForgeVillageStructures.init();
 
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
-        net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
-                net.minecraftforge.fml.config.ModConfig.Type.COMMON,
-                mc.sayda.creraces.config.forge.ForgeConfig.COMMON_SPEC,
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, ForgeConfig.COMMON_SPEC,
                 "creraces/creraces-common.toml");
-        net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
-                net.minecraftforge.fml.config.ModConfig.Type.CLIENT,
-                mc.sayda.creraces.config.forge.ForgeConfig.CLIENT_SPEC,
+        ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, ForgeConfig.CLIENT_SPEC,
                 "creraces/creraces-client.toml");
-        net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
-                net.minecraftforge.fml.config.ModConfig.Type.COMMON,
-                mc.sayda.creraces.config.forge.ForgeConfig.ENTITIES_SPEC,
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, ForgeConfig.ENTITIES_SPEC,
                 "creraces/creraces-entities.toml");
 
-        dev.architectury.platform.forge.EventBuses.registerModEventBus(CreRaces.MODID, modBus);
-        mc.sayda.creraces.util.PlatformServices.burnTimeHandler = stack -> net.minecraftforge.common.ForgeHooks
-                .getBurnTime(stack, null);
-        // Curios isn't a hard dependency (mods.toml has no [[dependencies]] entry for it), so it can
-        // be absent. Only assign the Curios-backed lookup when it's actually loaded; the default
-        // beltFinder (Optional.empty()) otherwise avoids a NoClassDefFoundError on CuriosApi the
-        // moment a player tries to use the belt.
-        if (dev.architectury.platform.Platform.isModLoaded("curios")) {
-                mc.sayda.creraces.util.PlatformServices.beltFinder = mc.sayda.creraces.forge.compat.CuriosBeltCompat::findBelt;
+        EventBuses.registerModEventBus(CreRaces.MODID, modBus);
+        PlatformServices.burnTimeHandler = stack -> ForgeHooks.getBurnTime(stack, null);
+        // Curios is not a hard dependency (mods.toml has no entry for it), so only assign the
+        // Curios-backed lookup when it is actually loaded. The default beltFinder (Optional.empty())
+        // otherwise avoids a NoClassDefFoundError on CuriosApi the moment a player uses the belt.
+        if (Platform.isModLoaded("curios")) {
+            PlatformServices.beltFinder = CuriosBeltCompat::findBelt;
         }
 
-        // Register the single Forge FluidType shared by both source and flowing variants.
-        net.minecraftforge.registries.DeferredRegister<net.minecraftforge.fluids.FluidType> fluidTypes =
-                net.minecraftforge.registries.DeferredRegister.create(
-                        net.minecraftforge.registries.ForgeRegistries.Keys.FLUID_TYPES, CreRaces.MODID);
-        net.minecraftforge.fluids.FluidType.Properties fairyProps = net.minecraftforge.fluids.FluidType.Properties
-                .create().density(1000).viscosity(1000).lightLevel(7);
-        FAIRY_FLUID_TYPE = fluidTypes.register("fairy_source", () -> new net.minecraftforge.fluids.FluidType(fairyProps) {
+        registerFluidTypes(modBus);
+
+        // Forge's FillBucketEvent fires before BucketPickup.pickupBlock and uses the fluid
+        // capability to fill the bucket, bypassing our pickupBlock override. Cancel it at
+        // HIGHEST priority so Forge's default handler never runs for fairy_source/eterveil.
+        MinecraftForge.EVENT_BUS.addListener(EventPriority.HIGHEST, (FillBucketEvent event) -> {
+            if (event.getTarget() instanceof BlockHitResult blockHit) {
+                BlockState state = event.getLevel().getBlockState(blockHit.getBlockPos());
+                if (state.getBlock() instanceof FairySourceBlock || state.getBlock() instanceof EterveilBlock) {
+                    event.setCanceled(true);
+                }
+            }
+        });
+
+        modBus.addListener((FMLClientSetupEvent event) -> event.enqueueWork(() -> {
+            // Translucent layer for the fluids themselves, so LiquidBlockRenderer alpha-blends them
+            ItemBlockRenderTypes.setRenderLayer(ModFluids.FAIRY_SOURCE.get(), RenderType.translucent());
+            ItemBlockRenderTypes.setRenderLayer(ModFluids.FAIRY_SOURCE_FLOWING.get(), RenderType.translucent());
+            ItemBlockRenderTypes.setRenderLayer(ModFluids.ETERVEIL.get(), RenderType.translucent());
+            ItemBlockRenderTypes.setRenderLayer(ModFluids.ETERVEIL_FLOWING.get(), RenderType.translucent());
+            // Spirit Compass needle model predicate
+            ItemProperties.register(ModItems.SPIRIT_COMPASS.get(), new ResourceLocation("creraces", "angle"),
+                    (stack, level, entity, seed) -> SpiritCompassItem.needleAngle(stack, level, entity));
+        }));
+
+        modBus.addListener((FMLCommonSetupEvent event) -> event.enqueueWork(() -> {
+            VeilwoodBiomeInjector.init();
+            if (VeilwoodBiomeInjector.isEnabled() && !Platform.isModLoaded("terrablender")) {
+                CreRaces.LOGGER.warn(
+                        "[CreRaces] Veilwood Forest requires TerraBlender on Forge. Install TerraBlender or set veilwood_forest_enabled=false in config.");
+            }
+            BrewingRecipeRegistry.addRecipe(
+                    Ingredient.of(PotionUtils.setPotion(new ItemStack(Items.POTION), Potions.AWKWARD)),
+                    Ingredient.of(ModItems.VEIL_BLOOM_ITEM.get()),
+                    PotionUtils.setPotion(new ItemStack(Items.POTION), ModPotions.REVEALING.get()));
+        }));
+
+        CreRaces.init();
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> CreRacesClient::init);
+    }
+
+    /** One FluidType per fluid, shared by that fluid's source and flowing variants. */
+    private static void registerFluidTypes(IEventBus modBus) {
+        DeferredRegister<FluidType> fluidTypes =
+                DeferredRegister.create(ForgeRegistries.Keys.FLUID_TYPES, CreRaces.MODID);
+
+        FluidType.Properties fairyProps = FluidType.Properties.create().density(1000).viscosity(1000).lightLevel(7);
+        FAIRY_FLUID_TYPE = fluidTypes.register("fairy_source", () -> new FluidType(fairyProps) {
             @Override
-            public void initializeClient(java.util.function.Consumer<net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions> consumer) {
-                consumer.accept(new net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions() {
-                    private static final net.minecraft.resources.ResourceLocation STILL =
-                            new net.minecraft.resources.ResourceLocation("creraces", "block/fairy_source_still");
-                    private static final net.minecraft.resources.ResourceLocation FLOW =
-                            new net.minecraft.resources.ResourceLocation("creraces", "block/fairy_source_flow");
-                    @Override public net.minecraft.resources.ResourceLocation getStillTexture() { return STILL; }
-                    @Override public net.minecraft.resources.ResourceLocation getFlowingTexture() { return FLOW; }
+            public void initializeClient(Consumer<IClientFluidTypeExtensions> consumer) {
+                consumer.accept(new IClientFluidTypeExtensions() {
+                    private static final ResourceLocation STILL =
+                            new ResourceLocation("creraces", "block/fairy_source_still");
+                    private static final ResourceLocation FLOW =
+                            new ResourceLocation("creraces", "block/fairy_source_flow");
+                    @Override public ResourceLocation getStillTexture() { return STILL; }
+                    @Override public ResourceLocation getFlowingTexture() { return FLOW; }
                     /** 0xAA = ~67% opacity; preserves texture colours, adds water-like transparency. */
                     @Override public int getTintColor() { return 0xAAFFFFFF; }
                 });
             }
         });
-        net.minecraftforge.fluids.FluidType.Properties eterveilProps = net.minecraftforge.fluids.FluidType.Properties
-                .create().density(1000).viscosity(1000).lightLevel(1);
-        ETERVEIL_FLUID_TYPE = fluidTypes.register("eterveil", () -> new net.minecraftforge.fluids.FluidType(eterveilProps) {
+
+        FluidType.Properties eterveilProps = FluidType.Properties.create().density(1000).viscosity(1000).lightLevel(1);
+        ETERVEIL_FLUID_TYPE = fluidTypes.register("eterveil", () -> new FluidType(eterveilProps) {
             @Override
-            public void initializeClient(java.util.function.Consumer<net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions> consumer) {
-                consumer.accept(new net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions() {
-                    private static final net.minecraft.resources.ResourceLocation STILL =
-                            new net.minecraft.resources.ResourceLocation("creraces", "block/eterveil_still");
-                    private static final net.minecraft.resources.ResourceLocation FLOW =
-                            new net.minecraft.resources.ResourceLocation("creraces", "block/eterveil_flow");
-                    @Override public net.minecraft.resources.ResourceLocation getStillTexture() { return STILL; }
-                    @Override public net.minecraft.resources.ResourceLocation getFlowingTexture() { return FLOW; }
+            public void initializeClient(Consumer<IClientFluidTypeExtensions> consumer) {
+                consumer.accept(new IClientFluidTypeExtensions() {
+                    private static final ResourceLocation STILL =
+                            new ResourceLocation("creraces", "block/eterveil_still");
+                    private static final ResourceLocation FLOW =
+                            new ResourceLocation("creraces", "block/eterveil_flow");
+                    @Override public ResourceLocation getStillTexture() { return STILL; }
+                    @Override public ResourceLocation getFlowingTexture() { return FLOW; }
                 });
             }
         });
+
         WATER_EQUIVALENT_FLUID_TYPES.add(ETERVEIL_FLUID_TYPE);
         fluidTypes.register(modBus);
-
-        // Forge's FillBucketEvent fires before BucketPickup.pickupBlock and uses the fluid
-        // capability to fill the bucket, bypassing our pickupBlock override. Cancel it at
-        // HIGHEST priority so Forge's default handler never runs for fairy_source/eterveil.
-        net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(
-                net.minecraftforge.eventbus.api.EventPriority.HIGHEST,
-                (net.minecraftforge.event.entity.player.FillBucketEvent event) -> {
-                    if (event.getTarget() instanceof net.minecraft.world.phys.BlockHitResult blockHit) {
-                        net.minecraft.world.level.block.state.BlockState state =
-                                event.getLevel().getBlockState(blockHit.getBlockPos());
-                        if (state.getBlock() instanceof mc.sayda.creraces.block.FairySourceBlock
-                                || state.getBlock() instanceof mc.sayda.creraces.block.EterveilBlock) {
-                            event.setCanceled(true);
-                        }
-                    }
-                });
-
-        modBus.addListener((net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent event) ->
-            event.enqueueWork(() -> {
-                // Register translucent render layer for the fluid so LiquidBlockRenderer uses alpha blending.
-                net.minecraft.client.renderer.ItemBlockRenderTypes.setRenderLayer(
-                        mc.sayda.creraces.registry.ModFluids.FAIRY_SOURCE.get(),
-                        net.minecraft.client.renderer.RenderType.translucent());
-                net.minecraft.client.renderer.ItemBlockRenderTypes.setRenderLayer(
-                        mc.sayda.creraces.registry.ModFluids.FAIRY_SOURCE_FLOWING.get(),
-                        net.minecraft.client.renderer.RenderType.translucent());
-                net.minecraft.client.renderer.ItemBlockRenderTypes.setRenderLayer(
-                        mc.sayda.creraces.registry.ModFluids.ETERVEIL.get(),
-                        net.minecraft.client.renderer.RenderType.translucent());
-                net.minecraft.client.renderer.ItemBlockRenderTypes.setRenderLayer(
-                        mc.sayda.creraces.registry.ModFluids.ETERVEIL_FLOWING.get(),
-                        net.minecraft.client.renderer.RenderType.translucent());
-                // Saplings have transparent pixels and must use cutout so they don't render black.
-                net.minecraft.client.renderer.ItemBlockRenderTypes.setRenderLayer(
-                        mc.sayda.creraces.registry.ModBlocks.DRYAD_SAPLING.get(),
-                        net.minecraft.client.renderer.RenderType.cutout());
-                net.minecraft.client.renderer.ItemBlockRenderTypes.setRenderLayer(
-                        mc.sayda.creraces.registry.ModBlocks.VEIL_WILLOW_SAPLING.get(),
-                        net.minecraft.client.renderer.RenderType.cutout());
-                // Spirit Compass angle model predicate
-                net.minecraft.client.renderer.item.ItemProperties.register(
-                        mc.sayda.creraces.registry.ModItems.SPIRIT_COMPASS.get(),
-                        new net.minecraft.resources.ResourceLocation("creraces", "angle"),
-                        (stack, level, entity, seed) -> {
-                            if (entity == null) return 0f;
-                            net.minecraft.nbt.CompoundTag tag = stack.getTag();
-                            if (tag == null || !tag.getBoolean("HasTarget")) {
-                                return level != null ? (float) ((level.getGameTime() % 32) / 32.0) : 0f;
-                            }
-                            double dx = tag.getInt("TargetX") - entity.getX();
-                            double dz = tag.getInt("TargetZ") - entity.getZ();
-                            double worldAngle = Math.toDegrees(Math.atan2(dx, dz));
-                            double relative = ((worldAngle - entity.getYRot()) % 360 + 360) % 360;
-                            return (float) (relative / 360.0);
-                        });
-            }));
-
-        modBus.addListener((net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent event) ->
-                event.enqueueWork(() -> {
-                    mc.sayda.creraces.worldgen.VeilwoodBiomeInjector.init();
-                    if (mc.sayda.creraces.worldgen.VeilwoodBiomeInjector.isEnabled()
-                            && !dev.architectury.platform.Platform.isModLoaded("terrablender")) {
-                        mc.sayda.creraces.CreRaces.LOGGER.warn(
-                                "[CreRaces] Veilwood Forest requires TerraBlender on Forge. Install TerraBlender or set veilwood_forest_enabled=false in config.");
-                    }
-                    net.minecraftforge.common.brewing.BrewingRecipeRegistry.addRecipe(
-                        net.minecraft.world.item.crafting.Ingredient.of(
-                            net.minecraft.world.item.alchemy.PotionUtils.setPotion(
-                                new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.POTION),
-                                net.minecraft.world.item.alchemy.Potions.AWKWARD)),
-                        net.minecraft.world.item.crafting.Ingredient.of(
-                            mc.sayda.creraces.registry.ModItems.VEIL_BLOOM_ITEM.get()),
-                        net.minecraft.world.item.alchemy.PotionUtils.setPotion(
-                            new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.POTION),
-                            mc.sayda.creraces.registry.ModPotions.REVEALING.get()));
-                }));
-
-        CreRaces.init();
-        net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
-                () -> CreRacesClient::init);
     }
 }

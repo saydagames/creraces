@@ -11,18 +11,24 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
+import javax.annotation.Nullable;
+
 /**
- * Applies velocity to the player or target.
+ * Applies velocity to the caster or target. "pull" and "push" move it along the line to or from
+ * the caster; otherwise x/y/z are used as-is, or along the entity's look direction when relative.
  */
 public class ApplyVelocityAction implements ActionRegistry.RaceAction {
-    public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath("creraces", "apply_velocity");
+    public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "apply_velocity");
+
+    /** Below this squared distance the push/pull direction is undefined, so no horizontal force is applied. */
+    private static final double MIN_DIRECTION_LENGTH_SQR = 1.0E-4D;
 
     private final ScalingValue x;
     private final ScalingValue y;
     private final ScalingValue z;
     private final boolean relative;
     private final boolean useTarget;
-    private final String mode; // push, pull, default
+    private final String mode;
     private final ScalingValue strength;
     private final boolean absolute;
 
@@ -39,12 +45,12 @@ public class ApplyVelocityAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public boolean execute(Player player, @javax.annotation.Nullable LivingEntity target,
-            @javax.annotation.Nullable AbilitySlot slot, @javax.annotation.Nullable BlockPos interact_pos) {
-        if (player == null) return false;
-        LivingEntity entity = (target != null) ? target : (useTarget ? null : player);
-        if (entity == null)
+    public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
+            @Nullable BlockPos interactPos) {
+        LivingEntity entity = useTarget ? target : player;
+        if (entity == null) {
             return true;
+        }
 
         double s = strength.evaluate(player, target, slot);
         double vx = x.evaluate(player, target, slot);
@@ -53,50 +59,36 @@ public class ApplyVelocityAction implements ActionRegistry.RaceAction {
 
         Vec3 velocity;
         if (mode.equalsIgnoreCase("pull")) {
-            Vec3 playerPos = player.position();
-            Vec3 entityPos = entity.position();
-            if (playerPos == null || entityPos == null) return false;
-            Vec3 diff = playerPos.subtract(entityPos);
-            Vec3 dir = diff.lengthSqr() > 1.0E-4D ? diff.normalize() : Vec3.ZERO;
-            if (dir == null) return false;
-            velocity = dir.scale(s).add(0, vy, 0); 
+            velocity = direction(entity.position(), player.position()).scale(s).add(0, vy, 0);
         } else if (mode.equalsIgnoreCase("push")) {
-            Vec3 playerPos = player.position();
-            Vec3 entityPos = entity.position();
-            if (playerPos == null || entityPos == null) return false;
-            Vec3 diff = entityPos.subtract(playerPos);
-            Vec3 dir = diff.lengthSqr() > 1.0E-4D ? diff.normalize() : Vec3.ZERO;
-            if (dir == null) return false;
-            velocity = dir.scale(s).add(0, vy, 0);
+            velocity = direction(player.position(), entity.position()).scale(s).add(0, vy, 0);
         } else if (relative) {
-            float yaw = entity.getYRot();
-            float pitch = entity.getXRot();
-            Vec3 dir = Vec3.directionFromRotation(pitch, yaw);
-            if (dir == null) return false;
-            velocity = dir.scale(vx).add(0, vy, 0);
+            velocity = Vec3.directionFromRotation(entity.getXRot(), entity.getYRot()).scale(vx).add(0, vy, 0);
         } else {
             velocity = new Vec3(vx, vy, vz);
         }
 
         if (absolute) {
-            if (velocity == null) return false;
             entity.setDeltaMovement(velocity);
-            entity.hurtMarked = true;
         } else {
-            if (velocity == null) return false;
             entity.push(velocity.x, velocity.y, velocity.z);
-            entity.hurtMarked = true;
         }
+        entity.hurtMarked = true;
         return true;
     }
 
+    private static Vec3 direction(Vec3 from, Vec3 to) {
+        Vec3 diff = to.subtract(from);
+        return diff.lengthSqr() > MIN_DIRECTION_LENGTH_SQR ? diff.normalize() : Vec3.ZERO;
+    }
+
     public static void register() {
-        ActionRegistry.register(ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "apply_velocity"), json -> {
+        ActionRegistry.register(ID, json -> {
             ScalingValue x = ScalingValue.fromJson(json, "x", 0.0);
             ScalingValue y = ScalingValue.fromJson(json, "y", 0.0);
             ScalingValue z = ScalingValue.fromJson(json, "z", 0.0);
             boolean relative = GsonHelper.getAsBoolean(json, "relative", false);
-            boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", true);
+            boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
             String mode = GsonHelper.getAsString(json, "mode", "default");
             ScalingValue strength = ScalingValue.fromJson(json, "strength", 1.0);
             boolean absolute = GsonHelper.getAsBoolean(json, "absolute", false);

@@ -1,16 +1,13 @@
 package mc.sayda.creraces.engine;
 
 import net.minecraft.world.level.block.*;
-import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
 
 /**
- * Determines which blocks are safe to place inside a MicroBlock.
+ * Decides which blocks may be placed inside a MicroBlock.
  *
- * EntityBlocks are denied by default except the explicit whitelist in
- * isInteractive() below (chests, furnaces, crafting stations, and similar).
- * Non-EntityBlocks are filtered by category further down: multi-block
- * structures, liquids, redstone/active blocks, and portals are handled case
- * by case.
+ * EntityBlocks are refused unless isInteractive() lists them (chests, furnaces, crafting stations
+ * and similar). Other blocks are allowed unless isAllowed() refuses their category: pistons,
+ * fluids other than water and lava, fire, tall plants, redstone components and nether portals.
  */
 public class MicroBlockWhitelist {
 
@@ -34,7 +31,7 @@ public class MicroBlockWhitelist {
                 || block instanceof BrewingStandBlock
                 || block instanceof CampfireBlock
                 || block instanceof SmithingTableBlock
-                || block == net.minecraft.world.level.block.Blocks.LODESTONE
+                || block == Blocks.LODESTONE
                 || block instanceof LecternBlock
                 || block instanceof ChiseledBookShelfBlock
                 || block instanceof DecoratedPotBlock
@@ -45,15 +42,12 @@ public class MicroBlockWhitelist {
     }
 
     public static boolean isAllowed(Block block) {
-        // EntityBlocks are blocked by default, EXCEPT our explicitly supported
-        // interactive types.
+        // Also refuses command, structure and jigsaw blocks and end portals, which all carry block entities.
         if (block instanceof EntityBlock) {
             return isInteractive(block);
         }
 
-        // Multi-block structures (Enabled as single-slot components)
-        if (block instanceof BedBlock)
-            return true;
+        // Always allowed, including two-block doors, which fit as single-slot components.
         if (block instanceof DoorBlock)
             return true;
         if (block instanceof TrapDoorBlock)
@@ -65,25 +59,14 @@ public class MicroBlockWhitelist {
         if (block instanceof RedstoneTorchBlock)
             return true;
 
-        // Piston family: pistons have a block entity so already blocked above,
-        // but MovingPistonBlock does not - exclude it explicitly.
-        // Note: class names vary by mapping; we use a property-based check instead.
+        // Piston bases and heads have no block entity, so the EntityBlock check above misses them.
+        // Matching on the description id also catches modded pistons.
         if (block.getDescriptionId().contains("piston"))
             return false;
 
-        // Command / structure blocks
-        if (block instanceof CommandBlock)
-            return false;
-        if (block instanceof StructureBlock)
-            return false;
-        if (block instanceof JigsawBlock)
-            return false;
-
-        // Liquids / fire / void
+        // Only vanilla water and lava; other fluid blocks are refused.
         if (block instanceof LiquidBlock) {
-            // Allow water and lava source blocks (static only, no flow logic)
-            return block == net.minecraft.world.level.block.Blocks.WATER
-                    || block == net.minecraft.world.level.block.Blocks.LAVA;
+            return block == Blocks.WATER || block == Blocks.LAVA;
         }
         if (block instanceof BaseFireBlock)
             return false;
@@ -95,7 +78,6 @@ public class MicroBlockWhitelist {
             return false;
         if (block instanceof SugarCaneBlock)
             return false;
-        // BambooStalkBlock (old bamboo plant in 1.20.1)
         if (block instanceof BambooStalkBlock)
             return false;
         if (block instanceof ScaffoldingBlock)
@@ -121,19 +103,9 @@ public class MicroBlockWhitelist {
         if (block instanceof TripWireBlock)
             return false;
 
-        // Portal blocks
         if (block instanceof NetherPortalBlock)
             return false;
-        if (block instanceof EndPortalBlock)
-            return false;
-        if (block instanceof EndGatewayBlock)
-            return false;
 
-        // Air / void
-        if (block instanceof AirBlock)
-            return false;
-
-        // Passed all checks
-        return true;
+        return !(block instanceof AirBlock);
     }
 }

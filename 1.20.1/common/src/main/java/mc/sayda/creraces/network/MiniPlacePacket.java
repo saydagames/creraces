@@ -1,8 +1,12 @@
 package mc.sayda.creraces.network;
 
+import dev.architectury.networking.NetworkManager;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.block.entity.MicroBlockEntity;
-
+import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.capability.IPlayerVariables;
+import mc.sayda.creraces.config.CreRacesConfig;
+import mc.sayda.creraces.engine.MicroBlockWhitelist;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -14,17 +18,24 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.DoorBlock;
+import net.minecraft.world.level.block.FenceGateBlock;
+import net.minecraft.world.level.block.LadderBlock;
+import net.minecraft.world.level.block.VineBlock;
+import net.minecraft.world.level.block.WallTorchBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BedPart;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.function.Supplier;
 
-/**
- * C2S: Client requests to place a mini-block in a specific slot.
- */
+/** C2S: places the held block as a mini-block in one slot of a micro block. */
 @SuppressWarnings("null")
 public class MiniPlacePacket {
 
@@ -70,6 +81,140 @@ public class MiniPlacePacket {
         buf.writeResourceLocation(blockId);
     }
 
+    public void handle(Supplier<NetworkManager.PacketContext> ctxSupplier) {
+        var ctx = ctxSupplier.get();
+        ctx.queue(() -> {
+            if (!(ctx.getPlayer() instanceof ServerPlayer serverPlayer))
+                return;
+            if (!MiniBuildRequests.canTarget(serverPlayer, hostPos, slotX, slotY, slotZ, "MiniPlacePacket"))
+                return;
+
+            ServerLevel level = serverPlayer.serverLevel();
+
+            IPlayerVariables vars = DataUtils.getVariables(serverPlayer).orElse(null);
+            if (vars == null || !vars.isSmallBuild()) {
+                CreRaces.LOGGER.warn("MiniPlace: Player {} is not in smallBuild mode (vars={}, smallBuild={})",
+                        serverPlayer.getName().getString(), vars != null, vars != null && vars.isSmallBuild());
+                return;
+            }
+
+            Block block = BuiltInRegistries.BLOCK.get(blockId);
+            if (block == Blocks.AIR) {
+                CreRaces.LOGGER.warn("MiniPlace: invalid block ID {}", blockId);
+                return;
+            }
+            if (CreRacesConfig.MINI_PLACE_WHITELIST_ENABLED.get() && !MicroBlockWhitelist.isAllowed(block)) {
+                CreRaces.LOGGER.warn("MiniPlace: block {} is not whitelisted", blockId);
+                return;
+            }
+            if (!CreRacesConfig.MINI_BUILD_ENABLED.get()) {
+                CreRaces.LOGGER.warn("MiniPlacePacket: Rejected placement: Feature disabled in config.");
+                return;
+            }
+            if (CreRacesConfig.MINI_BUILD_DIMENSION_BLACKLIST.get().contains(level.dimension().location().toString())) {
+                return;
+            }
+            if (!MicroBlockEntity.getSlotGlobal(level, hostPos, slotX, slotY, slotZ).isAir()) {
+                return;
+            }
+
+            InteractionHand hand = findHandHolding(serverPlayer, blockId);
+            if (hand == null) {
+                CreRaces.LOGGER.warn("MiniPlacePacket: Rejected placement: Player {} not holding block {}",
+                        serverPlayer.getName().getString(), blockId);
+                return;
+            }
+            ItemStack held = serverPlayer.getItemInHand(hand);
+
+            BlockState placementState = resolvePlacementState(serverPlayer, hand, held, block);
+            if (!placeInSlots(level, block, placementState)) {
+                return;
+            }
+
+            CreRaces.LOGGER.debug("MiniPlacePacket: Placing {} for {} at {} slot {},{},{}", blockId,
+                    serverPlayer.getName().getString(), hostPos, slotX, slotY, slotZ);
+
+            if (!serverPlayer.isCreative()) {
+                held.shrink(1);
+            }
+        });
+    }
+
+    /** The hand in use gets first pick, then main hand, then off hand; null if neither holds the block. */
+    private static InteractionHand findHandHolding(ServerPlayer player, ResourceLocation blockId) {
+        InteractionHand usedHand = player.getUsedItemHand();
+        if (holdsBlock(player.getItemInHand(usedHand), blockId)) return usedHand;
+        if (holdsBlock(player.getMainHandItem(), blockId)) return InteractionHand.MAIN_HAND;
+        if (holdsBlock(player.getOffhandItem(), blockId)) return InteractionHand.OFF_HAND;
+        return null;
+    }
+
+    private static boolean holdsBlock(ItemStack stack, ResourceLocation blockId) {
+        return !stack.isEmpty() && stack.getItem() instanceof BlockItem blockItem
+                && BuiltInRegistries.BLOCK.getKey(blockItem.getBlock()).equals(blockId);
+    }
+
+    private BlockState resolvePlacementState(ServerPlayer player, InteractionHand hand, ItemStack held, Block block) {
+        // Wall torches, ladders and vines depend on the clicked face alone, which vanilla's placement
+        // logic would get wrong at slot scale
+        Block wallTorch = getWallTorch(block);
+        if ((wallTorch != null && clickedFace.getAxis().isHorizontal())
+                || block instanceof LadderBlock || block instanceof VineBlock) {
+            return resolveUniversalOrientation(block, clickedFace, player);
+        }
+
+        // Scale the hit from inside the slot up to a whole block, so vanilla sees a normal-sized click
+        Vec3 virtualHitPos = new Vec3(
+                toFullBlock(hitPos.x, hostPos.getX(), slotX),
+                toFullBlock(hitPos.y, hostPos.getY(), slotY),
+                toFullBlock(hitPos.z, hostPos.getZ(), slotZ));
+        BlockPlaceContext placeContext = new BlockPlaceContext(player, hand, held,
+                new BlockHitResult(virtualHitPos, clickedFace, hostPos, false));
+        BlockState state = block.getStateForPlacement(placeContext);
+        return state != null ? state : resolveUniversalOrientation(block, clickedFace, player);
+    }
+
+    private static double toFullBlock(double hit, int hostCoord, int slot) {
+        return hostCoord + (hit - hostCoord - slot * (1.0 / MicroBlockEntity.SIZE)) * MicroBlockEntity.SIZE;
+    }
+
+    /** Writes the state into its slot, plus the second slot for doors and beds. False if it doesn't fit. */
+    private boolean placeInSlots(ServerLevel level, Block block, BlockState placementState) {
+        if (block instanceof DoorBlock) {
+            if (!MiniBuildRequests.isInGrid(slotY + 1)) {
+                CreRaces.LOGGER.warn("MiniPlacePacket: Door placement rejected: Top of host.");
+                return false;
+            }
+            if (!MicroBlockEntity.getSlotGlobal(level, hostPos, slotX, slotY + 1, slotZ).isAir()) {
+                CreRaces.LOGGER.warn("MiniPlacePacket: Door placement rejected: Upper slot occupied.");
+                return false;
+            }
+            MicroBlockEntity.setSlotGlobal(level, hostPos, slotX, slotY, slotZ,
+                    placementState.setValue(DoorBlock.HALF, DoubleBlockHalf.LOWER));
+            MicroBlockEntity.setSlotGlobal(level, hostPos, slotX, slotY + 1, slotZ,
+                    placementState.setValue(DoorBlock.HALF, DoubleBlockHalf.UPPER));
+        } else if (block instanceof BedBlock) {
+            Direction facing = placementState.getValue(BedBlock.FACING);
+            int headSlotX = slotX + facing.getStepX();
+            int headSlotZ = slotZ + facing.getStepZ();
+            if (!MiniBuildRequests.isInGrid(headSlotX) || !MiniBuildRequests.isInGrid(headSlotZ)) {
+                CreRaces.LOGGER.warn("MiniPlacePacket: Bed placement rejected: Head slot out of bounds at {},{}",
+                        headSlotX, headSlotZ);
+                return false;
+            }
+            if (!MicroBlockEntity.getSlotGlobal(level, hostPos, headSlotX, slotY, headSlotZ).isAir()) {
+                return false;
+            }
+            MicroBlockEntity.setSlotGlobal(level, hostPos, slotX, slotY, slotZ,
+                    placementState.setValue(BedBlock.PART, BedPart.FOOT));
+            MicroBlockEntity.setSlotGlobal(level, hostPos, headSlotX, slotY, headSlotZ,
+                    placementState.setValue(BedBlock.PART, BedPart.HEAD));
+        } else {
+            MicroBlockEntity.setSlotGlobal(level, hostPos, slotX, slotY, slotZ, placementState);
+        }
+        return true;
+    }
+
     private static Block getWallTorch(Block block) {
         if (block == Blocks.TORCH)
             return Blocks.WALL_TORCH;
@@ -80,227 +225,44 @@ public class MiniPlacePacket {
         return null;
     }
 
+    /** Orients a block from the clicked face and the player's facing alone. */
     private static BlockState resolveUniversalOrientation(Block block, Direction clickedFace, ServerPlayer player) {
         BlockState def = block.defaultBlockState();
 
-        // 1. Ladders
-        if (block instanceof net.minecraft.world.level.block.LadderBlock) {
-            if (clickedFace.getAxis().isHorizontal()) {
-                return def.setValue(net.minecraft.world.level.block.LadderBlock.FACING, clickedFace);
-            }
+        if (block instanceof LadderBlock && clickedFace.getAxis().isHorizontal()) {
+            return def.setValue(LadderBlock.FACING, clickedFace);
         }
 
-        // 2. Torches (Unified Logic)
         Block wallTorch = getWallTorch(block);
         if (wallTorch != null && clickedFace.getAxis().isHorizontal()) {
-            return wallTorch.defaultBlockState().setValue(net.minecraft.world.level.block.WallTorchBlock.FACING,
-                    clickedFace);
+            return wallTorch.defaultBlockState().setValue(WallTorchBlock.FACING, clickedFace);
         }
 
-        // 3. Vines
-        if (block instanceof net.minecraft.world.level.block.VineBlock) {
-            net.minecraft.core.Direction attachFace = clickedFace.getOpposite();
+        if (block instanceof VineBlock) {
+            Direction attachFace = clickedFace.getOpposite();
             if (attachFace.getAxis().isHorizontal() || attachFace == Direction.UP) {
-                return def.setValue(
-                        net.minecraft.world.level.block.VineBlock.getPropertyForFace(attachFace),
-                        true);
+                return def.setValue(VineBlock.getPropertyForFace(attachFace), true);
             }
         }
 
-        // 4. Doors (Miniature version)
-        if (block instanceof net.minecraft.world.level.block.DoorBlock) {
-            Direction facing = player.getDirection();
-            return def.setValue(net.minecraft.world.level.block.DoorBlock.FACING, facing)
-                    .setValue(net.minecraft.world.level.block.DoorBlock.HALF,
-                            net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER);
+        if (block instanceof DoorBlock) {
+            return def.setValue(DoorBlock.FACING, player.getDirection())
+                    .setValue(DoorBlock.HALF, DoubleBlockHalf.LOWER);
         }
 
-        // 5. Fence Gates
-        if (block instanceof net.minecraft.world.level.block.FenceGateBlock) {
-            Direction facing = player.getDirection();
-            return def.setValue(net.minecraft.world.level.block.FenceGateBlock.FACING, facing);
+        if (block instanceof FenceGateBlock) {
+            return def.setValue(FenceGateBlock.FACING, player.getDirection());
         }
 
-        // 6. Beds (Miniature version)
-        if (block instanceof net.minecraft.world.level.block.BedBlock) {
-            Direction facing = player.getDirection();
-            return def.setValue(net.minecraft.world.level.block.BedBlock.FACING, facing)
-                    .setValue(net.minecraft.world.level.block.BedBlock.PART,
-                            net.minecraft.world.level.block.state.properties.BedPart.FOOT);
+        if (block instanceof BedBlock) {
+            return def.setValue(BedBlock.FACING, player.getDirection())
+                    .setValue(BedBlock.PART, BedPart.FOOT);
         }
 
-        // 7. Generic Horizontal Facing blocks
-        if (def.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING)) {
-            if (clickedFace.getAxis().isHorizontal()) {
-                net.minecraft.world.level.block.state.properties.Property<Direction> prop = (net.minecraft.world.level.block.state.properties.Property<Direction>) net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING;
-                return def.setValue(prop, clickedFace);
-            }
+        if (def.hasProperty(BlockStateProperties.HORIZONTAL_FACING) && clickedFace.getAxis().isHorizontal()) {
+            return def.setValue(BlockStateProperties.HORIZONTAL_FACING, clickedFace);
         }
 
         return def;
-    }
-
-    public void handle(Supplier<dev.architectury.networking.NetworkManager.PacketContext> ctxSupplier) {
-        var ctx = ctxSupplier.get();
-        ctx.queue(() -> {
-            if (!(ctx.getPlayer() instanceof ServerPlayer serverPlayer))
-                return;
-
-            if (!mc.sayda.creraces.capability.DataUtils.canInteractWithMiniBuild(serverPlayer)) {
-                return;
-            }
-
-            ServerLevel level = serverPlayer.serverLevel();
-
-            // Validate reach distance to prevent arbitrary remote placement
-            double reachSq = mc.sayda.creraces.config.CreRacesConfig.MINI_CRAFTING_DISTANCE_SQR.get();
-            if (serverPlayer.distanceToSqr(hostPos.getX() + 0.5, hostPos.getY() + 0.5,
-                    hostPos.getZ() + 0.5) > reachSq) {
-                CreRaces.LOGGER.warn("MiniPlacePacket: Rejected - player {} too far from hostPos {}",
-                        serverPlayer.getName().getString(), hostPos);
-                return;
-            }
-
-            // Validate slot
-            if (slotX < 0 || slotX >= 4 || slotY < 0 || slotY >= 4 || slotZ < 0 || slotZ >= 4)
-                return;
-
-            // Validate player state
-            var vars = mc.sayda.creraces.capability.DataUtils.getVariables(serverPlayer).orElse(null);
-            if (vars == null || !vars.isSmallBuild()) {
-                mc.sayda.creraces.CreRaces.LOGGER.warn(
-                        "MiniPlace: Player {} is not in smallBuild mode (vars={}, smallBuild={})",
-                        serverPlayer.getName().getString(), vars != null, vars != null && vars.isSmallBuild());
-                return;
-            }
-
-            // Validate block
-            Block block = BuiltInRegistries.BLOCK.get(blockId);
-            if (block == null || block == net.minecraft.world.level.block.Blocks.AIR) {
-                mc.sayda.creraces.CreRaces.LOGGER.warn("MiniPlace: invalid block ID {}", blockId);
-                return;
-            }
-            // Whitelist check (Configurable)
-            if (mc.sayda.creraces.config.CreRacesConfig.MINI_PLACE_WHITELIST_ENABLED.get() &&
-                    !mc.sayda.creraces.engine.MicroBlockWhitelist.isAllowed(block)) {
-                CreRaces.LOGGER.warn("MiniPlace: block {} is not whitelisted", blockId);
-                return;
-            }
-
-            if (!mc.sayda.creraces.config.CreRacesConfig.MINI_BUILD_ENABLED.get()) {
-                CreRaces.LOGGER.warn("MiniPlacePacket: Rejected placement: Feature disabled in config.");
-                return;
-            }
-
-            ResourceLocation currentDim = level.dimension().location();
-            if (mc.sayda.creraces.config.CreRacesConfig.MINI_BUILD_DIMENSION_BLACKLIST.get()
-                    .contains(currentDim.toString())) {
-                return;
-            }
-
-            // Target slot should be empty (check via global helper)
-            if (!MicroBlockEntity.getSlotGlobal(level, hostPos, slotX, slotY, slotZ).isAir()) {
-                return;
-            }
-
-            // Compute the correct BlockState (including rotation)
-            InteractionHand handUsed = serverPlayer.getUsedItemHand();
-            ItemStack held = serverPlayer.getItemInHand(handUsed);
-            if (held.isEmpty() || !BuiltInRegistries.BLOCK.getKey(
-                    held.getItem() instanceof BlockItem bi ? bi.getBlock() : Blocks.AIR)
-                    .equals(blockId)) {
-                // Try to find the block in any hand if the primary hand doesn't match
-                if (serverPlayer.getMainHandItem().getItem() instanceof BlockItem bi
-                        && BuiltInRegistries.BLOCK.getKey(bi.getBlock()).equals(blockId)) {
-                    held = serverPlayer.getMainHandItem();
-                    handUsed = InteractionHand.MAIN_HAND;
-                } else if (serverPlayer.getOffhandItem().getItem() instanceof BlockItem bi
-                        && BuiltInRegistries.BLOCK.getKey(bi.getBlock()).equals(blockId)) {
-                    held = serverPlayer.getOffhandItem();
-                    handUsed = InteractionHand.OFF_HAND;
-                } else {
-                    CreRaces.LOGGER.warn("MiniPlacePacket: Rejected placement: Player {} not holding block {}",
-                            serverPlayer.getName().getString(), blockId);
-                    return; // No matching block in hand
-                }
-            }
-
-            BlockState placementState = block.defaultBlockState();
-            if (held.getItem() instanceof BlockItem) {
-                double vx = hostPos.getX() + ((hitPos.x - hostPos.getX() - (slotX * 0.25)) * 4.0);
-                double vy = hostPos.getY() + ((hitPos.y - hostPos.getY() - (slotY * 0.25)) * 4.0);
-                double vz = hostPos.getZ() + ((hitPos.z - hostPos.getZ() - (slotZ * 0.25)) * 4.0);
-                Vec3 virtualHitPos = new Vec3(vx, vy, vz);
-
-                BlockPlaceContext placeContext = new BlockPlaceContext(
-                        serverPlayer, handUsed, held,
-                        new BlockHitResult(virtualHitPos, clickedFace, hostPos, false));
-
-                // PRIORITIZE Wall Torch, Ladder, and Vine Logic if clicked appropriately
-                Block wallTorch = getWallTorch(block);
-                if (wallTorch != null && clickedFace.getAxis().isHorizontal()) {
-                    placementState = wallTorch.defaultBlockState()
-                            .setValue(net.minecraft.world.level.block.WallTorchBlock.FACING, clickedFace);
-                } else if (block instanceof net.minecraft.world.level.block.LadderBlock ||
-                        block instanceof net.minecraft.world.level.block.VineBlock) {
-                    placementState = resolveUniversalOrientation(block, clickedFace, serverPlayer);
-                } else {
-                    BlockState state = block.getStateForPlacement(placeContext);
-                    if (state != null) {
-                        placementState = state;
-                    } else {
-                        placementState = resolveUniversalOrientation(block, clickedFace, serverPlayer);
-                    }
-                }
-            }
-
-            // Multi-slot occupancy check
-            if (block instanceof net.minecraft.world.level.block.DoorBlock) {
-                if (slotY + 1 >= 4) {
-                    CreRaces.LOGGER.warn("MiniPlacePacket: Door placement rejected: Top of host.");
-                    return;
-                }
-                if (!MicroBlockEntity.getSlotGlobal(level, hostPos, slotX, slotY + 1, slotZ).isAir()) {
-                    CreRaces.LOGGER.warn("MiniPlacePacket: Door placement rejected: Upper slot occupied.");
-                    return;
-                }
-
-                MicroBlockEntity.setSlotGlobal(level, hostPos, slotX, slotY, slotZ,
-                        placementState.setValue(net.minecraft.world.level.block.DoorBlock.HALF,
-                                net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER));
-                MicroBlockEntity.setSlotGlobal(level, hostPos, slotX, slotY + 1, slotZ,
-                        placementState.setValue(net.minecraft.world.level.block.DoorBlock.HALF,
-                                net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER));
-            } else if (block instanceof net.minecraft.world.level.block.BedBlock) {
-                Direction facing = placementState.getValue(net.minecraft.world.level.block.BedBlock.FACING);
-                int headSlotX = slotX + facing.getStepX();
-                int headSlotZ = slotZ + facing.getStepZ();
-
-                if (headSlotX < 0 || headSlotX >= 4 || headSlotZ < 0 || headSlotZ >= 4) {
-                    CreRaces.LOGGER.warn("MiniPlacePacket: Bed placement rejected: Head slot out of bounds at {},{}",
-                            headSlotX, headSlotZ);
-                    return;
-                }
-                if (!MicroBlockEntity.getSlotGlobal(level, hostPos, headSlotX, slotY, headSlotZ).isAir())
-                    return;
-
-                MicroBlockEntity.setSlotGlobal(level, hostPos, slotX, slotY, slotZ,
-                        placementState.setValue(net.minecraft.world.level.block.BedBlock.PART,
-                                net.minecraft.world.level.block.state.properties.BedPart.FOOT));
-                MicroBlockEntity.setSlotGlobal(level, hostPos, headSlotX, slotY, headSlotZ,
-                        placementState.setValue(net.minecraft.world.level.block.BedBlock.PART,
-                                net.minecraft.world.level.block.state.properties.BedPart.HEAD));
-            } else {
-                MicroBlockEntity.setSlotGlobal(level, hostPos, slotX, slotY, slotZ, placementState);
-            }
-
-            CreRaces.LOGGER.debug("MiniPlacePacket: Placing {} for {} at {} slot {},{},{}", blockId,
-                    serverPlayer.getName().getString(), hostPos, slotX, slotY, slotZ);
-
-            // Consume item
-            if (!serverPlayer.isCreative()) {
-                held.shrink(1);
-            }
-        });
     }
 }

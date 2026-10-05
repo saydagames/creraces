@@ -1,6 +1,11 @@
 package mc.sayda.creraces.block;
 
+import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.territory.TerritoryManager;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
@@ -8,29 +13,25 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.MapColor;
 
 /**
- * Generic Root Block.
- * Acts as an anchor for race-specific locations (e.g. Dryad's tree).
- * Indestructible by default. Interaction logic is handled via race traits
- * (JSON).
+ * Anchor for race-specific locations such as the Dryad's tree; the interaction logic lives in race
+ * traits (JSON). Territory anchors are registered by ClaimTerritoryAction rather than on placement,
+ * so a hand-placed block can't create a spurious anchor that later unclaims territory.
  */
 @SuppressWarnings({"null", "deprecation"})
 public class RootBlock extends Block {
+
+    private static final ResourceLocation NODE_X = ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "node_x");
+    private static final ResourceLocation NODE_Y = ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "node_y");
+    private static final ResourceLocation NODE_Z = ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "node_z");
 
     public RootBlock(Properties properties) {
         super(properties);
     }
 
     @Override
-    public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean isMoving) {
-        super.onPlace(state, level, pos, oldState, isMoving);
-        // Territory anchoring is handled by ClaimTerritoryAction, not here, to prevent
-        // manually placed blocks from registering spurious anchors and later unclaiming territory.
-    }
-
-    @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
         if (!level.isClientSide() && !state.is(newState.getBlock())) {
-            mc.sayda.creraces.territory.TerritoryManager.get().removeRootBlock(pos);
+            TerritoryManager.get().removeRootBlock(pos);
         }
         super.onRemove(state, level, pos, newState, isMoving);
     }
@@ -43,16 +44,9 @@ public class RootBlock extends Block {
                 .noLootTable();
     }
 
-    private static final net.minecraft.resources.ResourceLocation NODE_X =
-            net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(mc.sayda.creraces.CreRaces.MODID, "node_x");
-    private static final net.minecraft.resources.ResourceLocation NODE_Y =
-            net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(mc.sayda.creraces.CreRaces.MODID, "node_y");
-    private static final net.minecraft.resources.ResourceLocation NODE_Z =
-            net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(mc.sayda.creraces.CreRaces.MODID, "node_z");
-
-    public static boolean isOwner(net.minecraft.world.entity.player.Player player,
-            net.minecraft.core.BlockPos pos) {
-        return mc.sayda.creraces.capability.DataUtils.getVariables(player).map(vars -> {
+    /** True if {@code pos} is the node recorded in the player's node_x/y/z persistent state. */
+    public static boolean isOwner(Player player, BlockPos pos) {
+        return DataUtils.getVariables(player).map(vars -> {
             double tx = vars.getPersistentState(NODE_X);
             double ty = vars.getPersistentState(NODE_Y);
             double tz = vars.getPersistentState(NODE_Z);

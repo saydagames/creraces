@@ -5,17 +5,15 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.MobType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FlowingFluid;
-import org.jetbrains.annotations.Nullable;
 
-/** Blesses living entities on contact; burns undead/hostile mobs. Ported from CreRaces Classic's "Holy Water". */
+/** CreRaces Classic's "Holy Water": regenerates the living and withers the undead, undead-race players included. */
 public class EterveilBlock extends LiquidBlock {
 
     public EterveilBlock(FlowingFluid fluid, Properties properties) {
@@ -23,7 +21,8 @@ public class EterveilBlock extends LiquidBlock {
     }
 
     /** Prevents buckets from collecting eterveil. */
-    public ItemStack pickupBlock(@Nullable Player player, LevelAccessor level, BlockPos pos, BlockState state) {
+    @Override
+    public ItemStack pickupBlock(LevelAccessor level, BlockPos pos, BlockState state) {
         return ItemStack.EMPTY;
     }
 
@@ -32,12 +31,8 @@ public class EterveilBlock extends LiquidBlock {
         if (level.isClientSide()) return;
         if (!(entity instanceof LivingEntity living) || entity.tickCount % 40 != 0) return;
 
-        boolean isUndeadOrHostile = (living instanceof Mob mob && mob.getMobType() == net.minecraft.world.entity.MobType.UNDEAD)
-                || (living instanceof Player player
-                        && mc.sayda.creraces.capability.DataUtils.getVariables(player)
-                                .map(mc.sayda.creraces.capability.IPlayerVariables::isUndead).orElse(false));
-
-        if (isUndeadOrHostile) {
+        // LivingEntityMixin reports undead-race players as MobType.UNDEAD, so this covers both.
+        if (living.getMobType() == MobType.UNDEAD) {
             living.addEffect(new MobEffectInstance(MobEffects.WITHER, 100, 1));
             living.hurt(level.damageSources().magic(), 4.0f);
         } else {

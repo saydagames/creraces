@@ -25,8 +25,8 @@ public class TrollPillarRenderer extends MobRenderer<TrollPillarEntity, TrollPil
 
     @Override
     protected void scale(TrollPillarEntity entity, PoseStack poseStack, float partialTick) {
-        float s = entity.getScale();
-        poseStack.scale(s, s, s);
+        float scale = entity.getScale();
+        poseStack.scale(scale, scale, scale);
     }
 
     @Override

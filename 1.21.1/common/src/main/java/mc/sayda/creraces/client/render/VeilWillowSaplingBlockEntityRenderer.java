@@ -2,6 +2,7 @@ package mc.sayda.creraces.client.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import mc.sayda.creraces.block.entity.VeilWillowSaplingBlockEntity;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
@@ -13,6 +14,6 @@ public class VeilWillowSaplingBlockEntityRenderer implements BlockEntityRenderer
     @Override
     public void render(VeilWillowSaplingBlockEntity entity, float partialTick, PoseStack stack,
             MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
-        VeilMushroomBlockEntityRenderer.renderStaticModel(entity, stack, bufferSource);
+        VeilMushroomBlockEntityRenderer.renderStaticModel(entity, stack, bufferSource, LightTexture.FULL_BRIGHT);
     }
 }

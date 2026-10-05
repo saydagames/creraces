@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class QuestBoardBlockEntity extends BlockEntity implements ExtendedMenuProvider {
     public static final int TIERS = 5;
@@ -34,7 +35,6 @@ public class QuestBoardBlockEntity extends BlockEntity implements ExtendedMenuPr
 
     public QuestBoardBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlocks.QUEST_BOARD_ENTITY.get(), pos, state);
-        //mc.sayda.creraces.CreRaces.LOGGER.info("[CreRaces] Quest Board block entity loaded at {}", pos);
     }
 
     /**
@@ -56,7 +56,7 @@ public class QuestBoardBlockEntity extends BlockEntity implements ExtendedMenuPr
                     .filter(q -> q.tier() == t)
                     .map(Quest::id)
                     .sorted(Comparator.comparing(ResourceLocation::toString))
-                    .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+                    .collect(Collectors.toCollection(ArrayList::new));
 
             List<ResourceLocation> chosen = new ArrayList<>();
             for (ResourceLocation id : pool) {
@@ -99,7 +99,7 @@ public class QuestBoardBlockEntity extends BlockEntity implements ExtendedMenuPr
         return taken;
     }
 
-    /** True per slot if that quest is on this player's abandon/expiry cooldown - takeable again once it lifts, matching the check in TakeQuestPacket. */
+    /** Per slot: is the quest on this player's abandon/expiry cooldown (the same check TakeQuestPacket makes). */
     public static boolean[] computeLocked(Player player, List<ResourceLocation> ids) {
         long currentDay = WorldState.currentDay(player.level());
         boolean[] locked = new boolean[ids.size()];
@@ -109,7 +109,7 @@ public class QuestBoardBlockEntity extends BlockEntity implements ExtendedMenuPr
         return locked;
     }
 
-    /** Called by QuestBoardBlock.use() before opening the menu, so createMenu/saveExtraData agree. */
+    /** Must run before the menu opens so createMenu and saveExtraData agree on the offered quests. */
     public void prepareOfferedIds(Player player) {
         this.pendingOfferedIds = computeOfferedIds(player);
     }

@@ -1,7 +1,9 @@
 package mc.sayda.creraces.engine;
 
+import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.capability.DataUtils;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffect;
@@ -16,14 +18,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+/** Server-side state for channelled actions: one active channel per player, ticked from the server loop. */
 public class ChannelingManager {
 
     public static final class DuringEffect {
-        public final net.minecraft.core.Holder<MobEffect> effect;
+        public final Holder<MobEffect> effect;
         public final int amplifier;
         public final int duration;
 
-        public DuringEffect(net.minecraft.core.Holder<MobEffect> effect, int amplifier, int duration) {
+        public DuringEffect(Holder<MobEffect> effect, int amplifier, int duration) {
             this.effect = effect;
             this.amplifier = amplifier;
             this.duration = duration;
@@ -40,7 +43,7 @@ public class ChannelingManager {
         final boolean allowPanicCast;
         final List<DuringEffect> duringEffects;
         final LivingEntity target;
-        final mc.sayda.creraces.ability.AbilitySlot slot;
+        final AbilitySlot slot;
         final BlockPos interactPos;
         int ticksRemaining;
         Vec3 lastPos;
@@ -51,8 +54,7 @@ public class ChannelingManager {
                 List<ActionRegistry.RaceAction> onPanicComplete,
                 List<ActionRegistry.RaceAction> onInterrupt,
                 List<ActionRegistry.RaceAction> duringActions,
-                Vec3 startPos, LivingEntity target,
-                mc.sayda.creraces.ability.AbilitySlot slot, BlockPos interactPos) {
+                Vec3 startPos, LivingEntity target, AbilitySlot slot, BlockPos interactPos) {
             this.ticksRemaining = duration;
             this.cancelableByDamage = cancelableByDamage;
             this.cancelableByMovement = cancelableByMovement;
@@ -71,8 +73,8 @@ public class ChannelingManager {
     }
 
     private static final Map<UUID, ActiveChannel> CHANNELS = new ConcurrentHashMap<>();
-    // 0.15 blocks of movement triggers cancel
-    private static final double MOVEMENT_THRESHOLD_SQ = 0.0225;
+    // Moving more than 0.15 blocks within a single tick interrupts a movement-cancelable channel.
+    private static final double MAX_MOVE_PER_TICK_SQ = 0.15 * 0.15;
 
     public static boolean isChanneling(UUID id) {
         return CHANNELS.containsKey(id);
@@ -85,7 +87,7 @@ public class ChannelingManager {
             List<ActionRegistry.RaceAction> onPanicComplete,
             List<ActionRegistry.RaceAction> onInterrupt,
             List<ActionRegistry.RaceAction> duringActions,
-            LivingEntity target, mc.sayda.creraces.ability.AbilitySlot slot, BlockPos interactPos) {
+            LivingEntity target, AbilitySlot slot, BlockPos interactPos) {
         CHANNELS.put(player.getUUID(), new ActiveChannel(
                 duration, cancelableByDamage, cancelableByMovement, allowPanicCast,
                 duringEffects, onComplete, onPanicComplete, onInterrupt, duringActions,
@@ -96,7 +98,7 @@ public class ChannelingManager {
         ActiveChannel ch = CHANNELS.remove(player.getUUID());
         if (ch == null) return;
         DataUtils.getVariables(player).ifPresent(vars -> vars.setMana(0));
-        run(ch.onPanicComplete, player, ch.target, ch.slot, ch.interactPos);
+        run(ch.onPanicComplete, player, ch);
     }
 
     public static void onDamage(Player player) {
@@ -104,7 +106,7 @@ public class ChannelingManager {
         if (ch == null || !ch.cancelableByDamage) return;
         CHANNELS.remove(player.getUUID());
         if (player instanceof ServerPlayer sp) {
-            run(ch.onInterrupt, sp, ch.target, ch.slot, ch.interactPos);
+            run(ch.onInterrupt, sp, ch);
         }
     }
 
@@ -126,9 +128,9 @@ public class ChannelingManager {
 
             if (ch.cancelableByMovement) {
                 Vec3 pos = player.position();
-                if (pos.distanceToSqr(ch.lastPos) > MOVEMENT_THRESHOLD_SQ) {
+                if (pos.distanceToSqr(ch.lastPos) > MAX_MOVE_PER_TICK_SQ) {
                     it.remove();
-                    run(ch.onInterrupt, player, ch.target, ch.slot, ch.interactPos);
+                    run(ch.onInterrupt, player, ch);
                     continue;
                 }
                 ch.lastPos = pos;
@@ -140,22 +142,17 @@ public class ChannelingManager {
                 }
             }
 
-            for (ActionRegistry.RaceAction action : ch.duringActions) {
-                if (!action.execute(player, ch.target, ch.slot, ch.interactPos)) break;
-            }
+            run(ch.duringActions, player, ch);
 
             ch.ticksRemaining--;
             if (ch.ticksRemaining <= 0) {
                 it.remove();
-                run(ch.onComplete, player, ch.target, ch.slot, ch.interactPos);
+                run(ch.onComplete, player, ch);
             }
         }
     }
 
-    private static void run(List<ActionRegistry.RaceAction> actions, ServerPlayer player,
-            LivingEntity target, mc.sayda.creraces.ability.AbilitySlot slot, BlockPos interactPos) {
-        for (ActionRegistry.RaceAction action : actions) {
-            if (!action.execute(player, target, slot, interactPos)) break;
-        }
+    private static void run(List<ActionRegistry.RaceAction> actions, ServerPlayer player, ActiveChannel ch) {
+        ActionRegistry.runChain(actions, player, ch.target, ch.slot, ch.interactPos);
     }
 }

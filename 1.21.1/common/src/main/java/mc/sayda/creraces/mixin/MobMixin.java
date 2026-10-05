@@ -1,6 +1,10 @@
 package mc.sayda.creraces.mixin;
 
+import mc.sayda.creraces.engine.SpiritMobilityHandler;
 import mc.sayda.creraces.race.SocialPassivesHelper;
+import mc.sayda.creraces.registry.ModMobEffects;
+import mc.sayda.creraces.util.CombatUtils;
+import net.minecraft.world.entity.EntitySelector;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
@@ -10,12 +14,14 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/**
- * Mixin to implement social interaction passives at the base Mob level.
- */
+/** Mob targeting rules for the social passives, the spirit realm and servants, plus Sun Resistance. */
 @Mixin(Mob.class)
 public abstract class MobMixin {
+
+    @Unique
+    private static final double CRERACES_HATE_SCAN_RANGE = 16.0;
 
     @Shadow
     public abstract void setTarget(LivingEntity target);
@@ -24,29 +30,24 @@ public abstract class MobMixin {
     public abstract LivingEntity getTarget();
 
     /**
-     * Prevent targeting of respected players (the "respectedByEntities" passive),
-     * and prevent overworld mobs from targeting spirit-realm entities or vice
-     * versa.
+     * Refuses targets the mob may not pick: players it respects ("respectedByEntities"), spirit-realm
+     * entities when the mob isn't a spirit itself, and anything sharing its servant commander.
      */
     @Inject(method = "setTarget", at = @At("HEAD"), cancellable = true)
     private void creraces$preventRespectedTargeting(LivingEntity target, CallbackInfo ci) {
-        if (target instanceof Player player) {
-            if (SocialPassivesHelper.isRespectedBy(player, (Mob) (Object) this)) {
-                ci.cancel();
-                return;
-            }
+        if (target instanceof Player player && SocialPassivesHelper.isRespectedBy(player, (Mob) (Object) this)) {
+            ci.cancel();
+            return;
         }
         if (target != null
-                && mc.sayda.creraces.engine.SpiritMobilityHandler.isSpirit(target)
-                && !mc.sayda.creraces.engine.SpiritMobilityHandler.isSpirit((LivingEntity) (Object) this)) {
+                && SpiritMobilityHandler.isOnSpiritPlane(target)
+                && !SpiritMobilityHandler.isOnSpiritPlane((LivingEntity) (Object) this)) {
             ci.cancel();
             return;
         }
 
-        // A servant may never target a fellow servant of the same commander (or the
-        // commander itself). Blocking this at the source stops the mob from ever
-        // acquiring the target in the first place, instead of just reacting after
-        // it's already stuck trying (and failing) to fight it out.
+        // Blocking this at the source means a servant never acquires a fellow servant (or its
+        // commander) as a target, rather than getting stuck on one it can never hurt.
         if (target != null && creraces$sharesServantOwner((Mob) (Object) this, target)) {
             ci.cancel();
         }
@@ -54,42 +55,44 @@ public abstract class MobMixin {
 
     @Unique
     private boolean creraces$sharesServantOwner(Mob mob, LivingEntity target) {
-        Player mobOwner = mc.sayda.creraces.util.CombatUtils.getRootOwner(mob);
+        Player mobOwner = CombatUtils.getRootOwner(mob);
         if (mobOwner == null)
             return false;
-        Player targetOwner = mc.sayda.creraces.util.CombatUtils.getRootOwner(target);
+        Player targetOwner = CombatUtils.getRootOwner(target);
         return targetOwner != null && mobOwner.getUUID().equals(targetOwner.getUUID());
     }
 
-    /**
-     * Periodically check for hated players and force attack them.
-     * This handles "hatedByEntities".
-     */
+    /** Once a second, an idle mob picks a fight with the nearest player whose race it hates ("hatedByEntities"). */
     @Inject(method = "customServerAiStep", at = @At("HEAD"))
     private void creraces$hateRaces(CallbackInfo ci) {
         Mob mob = (Mob) (Object) this;
 
-        // Stagger by entity ID so mobs don't all scan on the same tick (thundering
-        // herd)
+        // Staggered by entity id so every mob doesn't scan on the same tick.
         if (mob.level().getGameTime() % 20 != mob.getId() % 20)
             return;
-
-        // If already has a target, don't force a new one
         if (this.getTarget() != null)
             return;
 
-        // Find nearby players that this entity type hates
-        // Exclude creative/spectator players, matching vanilla's targeting convention
-        // (EntitySelector.NO_CREATIVE_OR_SPECTATOR) so untargetable players aren't aggroed.
+        // Creative and spectator players are skipped, as in vanilla targeting.
         Player nearestHatedPlayer = mob.level().getNearestPlayer(
-                mob.getX(), mob.getY(), mob.getZ(),
-                16.0, // Range
+                mob.getX(), mob.getY(), mob.getZ(), CRERACES_HATE_SCAN_RANGE,
                 entity -> entity instanceof Player player
-                        && net.minecraft.world.entity.EntitySelector.NO_CREATIVE_OR_SPECTATOR.test(player)
+                        && EntitySelector.NO_CREATIVE_OR_SPECTATOR.test(player)
                         && SocialPassivesHelper.isHatedBy(player, mob));
 
         if (nearestHatedPlayer != null) {
             this.setTarget(nearestHatedPlayer);
+        }
+    }
+
+    /**
+     * Sun Resistance stops daylight burning, no helmet needed. Covers every mob whose burn check goes
+     * through Mob.isSunBurnTick: zombies (except husks), skeletons and phantoms.
+     */
+    @Inject(method = "isSunBurnTick", at = @At("HEAD"), cancellable = true)
+    private void creraces$blockSunBurnWithResistance(CallbackInfoReturnable<Boolean> cir) {
+        if (((Mob) (Object) this).hasEffect(ModMobEffects.SUN_RESISTANCE)) {
+            cir.setReturnValue(false);
         }
     }
 }

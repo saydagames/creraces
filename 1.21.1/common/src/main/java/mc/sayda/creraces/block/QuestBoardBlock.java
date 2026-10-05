@@ -1,20 +1,24 @@
 package mc.sayda.creraces.block;
 
+import com.mojang.serialization.MapCodec;
+import dev.architectury.registry.menu.MenuRegistry;
 import mc.sayda.creraces.block.entity.QuestBoardBlockEntity;
+import mc.sayda.creraces.network.QuestBoardStateSyncPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LevelEvent;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.Rotation;
@@ -34,13 +38,11 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import javax.annotation.Nullable;
 
 /**
- * A 3-wide x 2-tall wall, auto-placed all at once around the clicked block - mirrors
- * ResearchTableBlock's single-partner auto-placement, generalized to 5 required cells (the
- * bottom-middle cell has no visible geometry in the model and is never placed - see
- * isOptional()). The clicked position becomes column 0 / row 0 of the wall (bottom-left,
- * relative to the placing player's facing); the wall extends via FACING.getClockWise() and
- * upward. Each cell stores its own FACING/COL/ROW, so any cell can deterministically compute
- * the whole structure's layout without a separate detection/scan step.
+ * A 3-wide x 2-tall wall placed all at once around the clicked block, like ResearchTableBlock's
+ * two-part placement. The clicked position becomes column 0 / row 0 (bottom-left as seen by the
+ * placing player) and the wall extends along FACING.getClockWise() and upwards. The bottom-middle
+ * cell has no geometry and is never placed (see isOptional()). Each cell stores its own
+ * FACING/COL/ROW, so any cell can work out the whole layout without scanning.
  */
 public class QuestBoardBlock extends BaseEntityBlock {
 
@@ -52,7 +54,7 @@ public class QuestBoardBlock extends BaseEntityBlock {
     public static final IntegerProperty COL = IntegerProperty.create("col", 0, WIDTH - 1);
     public static final IntegerProperty ROW = IntegerProperty.create("row", 0, HEIGHT - 1);
 
-    public static final com.mojang.serialization.MapCodec<QuestBoardBlock> CODEC = simpleCodec(QuestBoardBlock::new);
+    public static final MapCodec<QuestBoardBlock> CODEC = simpleCodec(QuestBoardBlock::new);
 
     public QuestBoardBlock(Properties properties) {
         super(properties);
@@ -61,17 +63,13 @@ public class QuestBoardBlock extends BaseEntityBlock {
     }
 
     @Override
-    protected com.mojang.serialization.MapCodec<? extends QuestBoardBlock> codec() {
+    protected MapCodec<? extends QuestBoardBlock> codec() {
         return CODEC;
     }
 
-    // Raw (unrotated, "facing=north" reference frame) geometry mirroring the Blockbench
-    // models exactly, clipped to each cell's own 0-16 local Y range - col 0/2 share the post
-    // model's boxes (col 2 is the same raw geometry rotated an extra 180deg, matching how the
-    // blockstate reuses quest_board_post with y+180 rather than a separate mirrored model).
-    // The middle column forms the crossbar of an upside-down U: its one required block sits
-    // at the top (row 1), spanning between the two posts' tops - the bottom-middle cell
-    // (col 1, row 0) has no geometry at all and is never placed, see isOptional().
+    // Unrotated geometry of the Blockbench models, clipped to each cell's own 0-16 Y range. The
+    // post boxes are quest_board_post as authored; the middle column is the crossbar of an
+    // upside-down U, so only its top cell (row 1) has geometry.
     private static final double[][] POST_ROW0 = {
             {10, 0, 6, 14, 1, 10},      // foot
             {11, 1, 7, 13, 16, 9},      // post, clipped to this cell's height
@@ -90,16 +88,15 @@ public class QuestBoardBlock extends BaseEntityBlock {
     private static VoxelShape[][][] buildShapes() {
         VoxelShape[][][] shapes = new VoxelShape[4][WIDTH][HEIGHT];
         for (int steps = 0; steps < 4; steps++) {
-            // Hitbox-only correction: the side-column (post) collision boxes need an extra 180deg
-            // relative to the model specifically when facing north/south (steps 0 and 2) - the
-            // model's own rotation (blockstate y values) is untouched, this only affects getShape().
-            int sideSteps = (steps == 0 || steps == 2) ? (steps + 2) % 4 : steps;
-            shapes[steps][0][0] = rotatedUnion(POST_ROW0, sideSteps);
-            shapes[steps][0][1] = rotatedUnion(POST_ROW1, sideSteps);
-            shapes[steps][1][0] = Shapes.empty(); // col 1, row 0 is never placed - see isOptional()
-            shapes[steps][1][1] = rotatedUnion(PANEL_ROW1, steps);
-            shapes[steps][2][0] = rotatedUnion(POST_ROW0, (sideSteps + 2) % 4);
-            shapes[steps][2][1] = rotatedUnion(POST_ROW1, (sideSteps + 2) % 4);
+            // Same rotations as the blockstate file: col 2 uses the post model as-is, while col 0
+            // and the panel are turned a further 180 degrees.
+            int flipped = (steps + 2) % 4;
+            shapes[steps][0][0] = rotatedUnion(POST_ROW0, flipped);
+            shapes[steps][0][1] = rotatedUnion(POST_ROW1, flipped);
+            shapes[steps][1][0] = Shapes.empty(); // never placed, see isOptional()
+            shapes[steps][1][1] = rotatedUnion(PANEL_ROW1, flipped);
+            shapes[steps][2][0] = rotatedUnion(POST_ROW0, steps);
+            shapes[steps][2][1] = rotatedUnion(POST_ROW1, steps);
         }
         return shapes;
     }
@@ -116,8 +113,8 @@ public class QuestBoardBlock extends BaseEntityBlock {
     private static VoxelShape rotatedBox(double x1, double y1, double z1, double x2, double y2, double z2, int steps) {
         double rx1 = x1, rz1 = z1, rx2 = x2, rz2 = z2;
         for (int i = 0; i < steps; i++) {
-            double nx1 = rz1, nz1 = 16 - rx1;
-            double nx2 = rz2, nz2 = 16 - rx2;
+            double nx1 = 16 - rz1, nz1 = rx1;
+            double nx2 = 16 - rz2, nz2 = rx2;
             rx1 = nx1; rz1 = nz1; rx2 = nx2; rz2 = nz2;
         }
         return Block.box(Math.min(rx1, rx2), y1, Math.min(rz1, rz2), Math.max(rx1, rx2), y2, Math.max(rz1, rz2));
@@ -134,8 +131,7 @@ public class QuestBoardBlock extends BaseEntityBlock {
     }
 
     @Override
-    public VoxelShape getShape(BlockState state, net.minecraft.world.level.BlockGetter level, BlockPos pos,
-            CollisionContext context) {
+    public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return SHAPES[steps(state.getValue(FACING))][state.getValue(COL)][state.getValue(ROW)];
     }
 
@@ -233,11 +229,11 @@ public class QuestBoardBlock extends BaseEntityBlock {
             for (int r = 0; r < HEIGHT; r++) {
                 if ((c == 0 && r == 0) || isOptional(c, r)) continue;
                 BlockPos cellPos = pos.relative(sideDir, c).above(r);
-                level.setBlock(cellPos, state.setValue(COL, c).setValue(ROW, r), 3);
+                level.setBlock(cellPos, state.setValue(COL, c).setValue(ROW, r), Block.UPDATE_ALL);
             }
         }
         level.blockUpdated(pos, Blocks.AIR);
-        state.updateNeighbourShapes(level, pos, 3);
+        state.updateNeighbourShapes(level, pos, Block.UPDATE_ALL);
     }
 
     @Override
@@ -251,8 +247,9 @@ public class QuestBoardBlock extends BaseEntityBlock {
                     if (cellPos.equals(pos)) continue;
                     BlockState cellState = level.getBlockState(cellPos);
                     if (cellState.is(state.getBlock())) {
-                        level.setBlock(cellPos, Blocks.AIR.defaultBlockState(), 35);
-                        level.levelEvent(player, 2001, cellPos, Block.getId(cellState));
+                        level.setBlock(cellPos, Blocks.AIR.defaultBlockState(),
+                                Block.UPDATE_ALL | Block.UPDATE_SUPPRESS_DROPS);
+                        level.levelEvent(player, LevelEvent.PARTICLES_DESTROY_BLOCK, cellPos, Block.getId(cellState));
                     }
                 }
             }
@@ -274,9 +271,9 @@ public class QuestBoardBlock extends BaseEntityBlock {
         BlockPos masterPos = masterPos(state, pos);
         if (level.getBlockEntity(masterPos) instanceof QuestBoardBlockEntity be) {
             be.prepareOfferedIds(sp);
-            dev.architectury.registry.menu.MenuRegistry.openExtendedMenu(sp, be);
+            MenuRegistry.openExtendedMenu(sp, be);
             // Client-reconstructed menus start taken[]/locked[] all-false, so force a resync on open.
-            mc.sayda.creraces.network.QuestBoardStateSyncPacket.resyncIfOpen(sp);
+            QuestBoardStateSyncPacket.resyncIfOpen(sp);
         }
         return InteractionResult.CONSUME;
     }

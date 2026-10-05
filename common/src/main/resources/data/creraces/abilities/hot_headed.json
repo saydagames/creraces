@@ -41,7 +41,7 @@
         {
             "type": "creraces:modify_value",
             "resource": "self",
-            "operation": "SET",
+            "operation": "set",
             "value": 0
         }
     ],

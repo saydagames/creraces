@@ -1,6 +1,6 @@
 package mc.sayda.creraces.worldgen;
 
-import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Holder;
 import net.minecraft.world.level.biome.Biome;
@@ -32,7 +32,7 @@ public class FairyRealmBiomeSource extends BiomeSource {
     private final Holder<Biome> river;
     private final Holder<Biome> frozenRiver;
 
-    public static final com.mojang.serialization.MapCodec<FairyRealmBiomeSource> CODEC = RecordCodecBuilder.mapCodec(instance ->
+    public static final MapCodec<FairyRealmBiomeSource> CODEC = RecordCodecBuilder.mapCodec(instance ->
             instance.group(
                     Biome.CODEC.fieldOf("center").forGetter(b -> b.center),
                     Biome.CODEC.fieldOf("spring").forGetter(b -> b.spring),
@@ -57,7 +57,7 @@ public class FairyRealmBiomeSource extends BiomeSource {
     }
 
     @Override
-    protected com.mojang.serialization.MapCodec<? extends BiomeSource> codec() {
+    protected MapCodec<? extends BiomeSource> codec() {
         return CODEC;
     }
 

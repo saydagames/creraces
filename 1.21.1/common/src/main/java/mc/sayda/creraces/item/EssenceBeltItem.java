@@ -1,26 +1,27 @@
 package mc.sayda.creraces.item;
 
-import mc.sayda.creraces.ability.EssenceRegistry;
+import dev.architectury.registry.menu.ExtendedMenuProvider;
+import dev.architectury.registry.menu.MenuRegistry;
 import mc.sayda.creraces.ability.EssenceType;
+import mc.sayda.creraces.util.EssenceBeltHelper;
+import mc.sayda.creraces.util.ItemNbt;
 import mc.sayda.creraces.world.inventory.EssenceBeltMenu;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
-
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
-import net.minecraft.network.chat.Component;
-import dev.architectury.registry.menu.ExtendedMenuProvider;
-import net.minecraft.network.FriendlyByteBuf;
 
 public class EssenceBeltItem extends Item {
 
@@ -43,7 +44,7 @@ public class EssenceBeltItem extends Item {
         ItemStack belt = EssenceBeltMenu.findBeltStack(player);
         if (belt == null) return;
         SimpleContainer beltInv = loadInventory(belt, player.level().registryAccess());
-        dev.architectury.registry.menu.MenuRegistry.openExtendedMenu(player, new ExtendedMenuProvider() {
+        MenuRegistry.openExtendedMenu(player, new ExtendedMenuProvider() {
             @Override
             public void saveExtraData(FriendlyByteBuf buf) {}
             @Override
@@ -61,68 +62,43 @@ public class EssenceBeltItem extends Item {
      * Serializing a nested ItemStack needs a registry lookup in 1.20.5+, so the belt's contents
      * are read and written against the level's registries rather than bare NBT.
      */
-    public static SimpleContainer loadInventory(ItemStack stack, net.minecraft.core.HolderLookup.Provider registries) {
+    public static SimpleContainer loadInventory(ItemStack stack, HolderLookup.Provider registries) {
         SimpleContainer inv = new SimpleContainer(SLOTS);
-        CompoundTag tag = mc.sayda.creraces.util.ItemNbt.get(stack);
+        CompoundTag tag = ItemNbt.get(stack);
         if (tag.contains(NBT_KEY, Tag.TAG_LIST)) {
             ListTag list = tag.getList(NBT_KEY, Tag.TAG_COMPOUND);
             for (int i = 0; i < list.size() && i < SLOTS; i++) {
                 CompoundTag slotTag = list.getCompound(i);
                 int slot = slotTag.getByte("Slot") & 0xFF;
-                if (slot < SLOTS && slotTag.contains("Item")) {
-                    inv.setItem(slot, ItemStack.parseOptional(registries, slotTag.getCompound("Item")));
+                if (slot < SLOTS) {
+                    inv.setItem(slot, ItemStack.parseOptional(registries, slotTag));
                 }
             }
         }
         return inv;
     }
 
-    public static void saveInventory(ItemStack stack, SimpleContainer inv,
-            net.minecraft.core.HolderLookup.Provider registries) {
+    public static void saveInventory(ItemStack stack, SimpleContainer inv, HolderLookup.Provider registries) {
         ListTag list = new ListTag();
         for (int i = 0; i < SLOTS; i++) {
             ItemStack slotStack = inv.getItem(i);
             if (!slotStack.isEmpty()) {
                 CompoundTag slotTag = new CompoundTag();
-                slotTag.put("Item", slotStack.save(registries));
                 slotTag.putByte("Slot", (byte) i);
-                list.add(slotTag);
+                list.add(slotStack.save(registries, slotTag));
             }
         }
-        mc.sayda.creraces.util.ItemNbt.mutate(stack, t -> t.put(NBT_KEY, list));
+        ItemNbt.mutate(stack, t -> t.put(NBT_KEY, list));
     }
 
-    public int getEssenceCount(ItemStack beltStack, EssenceType type, net.minecraft.core.HolderLookup.Provider registries) {
-        SimpleContainer inv = loadInventory(beltStack, registries);
-        int total = 0;
-        for (int i = 0; i < SLOTS; i++) {
-            ItemStack slot = inv.getItem(i);
-            EssenceType slotType = EssenceRegistry.typeFromBottle(slot.getItem());
-            if (slotType == type) {
-                total += slot.getMaxDamage() - slot.getDamageValue();
-            }
-        }
-        return total;
+    public int getEssenceCount(ItemStack beltStack, EssenceType type, HolderLookup.Provider registries) {
+        return EssenceBeltHelper.countInContainer(loadInventory(beltStack, registries), type);
     }
 
-    public boolean consumeEssence(ItemStack beltStack, EssenceType type, int amount, net.minecraft.core.HolderLookup.Provider registries) {
+    /** Drains {@code amount} charges from the belt's bottles. Leaves the belt untouched and returns false if it holds too few. */
+    public boolean consumeEssence(ItemStack beltStack, EssenceType type, int amount, HolderLookup.Provider registries) {
         SimpleContainer inv = loadInventory(beltStack, registries);
-        int remaining = amount;
-        for (int i = 0; i < SLOTS && remaining > 0; i++) {
-            ItemStack slot = inv.getItem(i);
-            EssenceType slotType = EssenceRegistry.typeFromBottle(slot.getItem());
-            if (slotType == type && slot.getItem() instanceof EssenceBottleItem) {
-                int charges = slot.getMaxDamage() - slot.getDamageValue();
-                if (charges <= remaining) {
-                    remaining -= charges;
-                    inv.setItem(i, new ItemStack(Items.GLASS_BOTTLE));
-                } else {
-                    slot.setDamageValue(slot.getDamageValue() + remaining);
-                    remaining = 0;
-                }
-            }
-        }
-        if (remaining > 0) return false;
+        if (EssenceBeltHelper.drainFromContainer(inv, type, amount) > 0) return false;
         saveInventory(beltStack, inv, registries);
         return true;
     }

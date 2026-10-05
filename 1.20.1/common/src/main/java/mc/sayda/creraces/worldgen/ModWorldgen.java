@@ -1,23 +1,29 @@
 package mc.sayda.creraces.worldgen;
 
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.config.CreRacesConfig;
+import mc.sayda.creraces.mixin.TreeDecoratorTypeAccessor;
+import mc.sayda.creraces.world.tree.VeilDrapeDecorator;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.border.WorldBorder;
+import net.minecraft.world.level.levelgen.feature.treedecorators.TreeDecoratorType;
 import net.minecraft.world.level.levelgen.structure.templatesystem.BlockIgnoreProcessor;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
-import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
+
+import java.util.Optional;
 
 /**
- * Registers the fairy_realm biome source codec.
- * Must be called before any world loads; both loaders invoke this from a
+ * Registers the fairy_realm biome source and chunk generator codecs, the surface-offset jigsaw
+ * structure type, and the veil drape tree decorator type, and places the fairy realm's
+ * hand-built trees.
+ *
+ * Registration must happen before any world loads; both loaders call registerCodecs from a
  * BootstrapMixin so it runs before vanilla registries freeze.
  */
 public class ModWorldgen {
@@ -53,26 +59,18 @@ public class ModWorldgen {
         CreRaces.LOGGER.info("CreRaces: Registered fairy_realm biome source + chunk generator codecs.");
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     private static void registerVeilDrapeDecoratorType() {
-        try {
-            java.lang.reflect.Constructor ctor =
-                    net.minecraft.world.level.levelgen.feature.treedecorators.TreeDecoratorType.class
-                            .getDeclaredConstructor(com.mojang.serialization.Codec.class);
-            ctor.setAccessible(true);
-            net.minecraft.world.level.levelgen.feature.treedecorators.TreeDecoratorType decoratorType =
-                    (net.minecraft.world.level.levelgen.feature.treedecorators.TreeDecoratorType)
-                            ctor.newInstance(mc.sayda.creraces.world.tree.VeilDrapeDecorator.CODEC);
-            Registry.register((Registry) BuiltInRegistries.TREE_DECORATOR_TYPE,
-                    new ResourceLocation(CreRaces.MODID, "veil_drape"), decoratorType);
-            mc.sayda.creraces.world.tree.VeilDrapeDecorator.TYPE = decoratorType;
-        } catch (Exception e) {
-            throw new RuntimeException("CreRaces: Failed to register veil_drape tree decorator type", e);
-        }
+        // TreeDecoratorType's constructor is private. The accessor mixin reaches it without raw
+        // reflection, which JPMS-style loaders reject with an unchecked InaccessibleObjectException.
+        TreeDecoratorType<VeilDrapeDecorator> decoratorType =
+                TreeDecoratorTypeAccessor.creraces$callNew(VeilDrapeDecorator.CODEC);
+        Registry.register(BuiltInRegistries.TREE_DECORATOR_TYPE,
+                new ResourceLocation(CreRaces.MODID, "veil_drape"), decoratorType);
+        VeilDrapeDecorator.TYPE = decoratorType;
     }
 
     /**
-     * Resets the placement flag on server stop so placement re-checks on next start.
+     * Resets the placement flags on server stop so placement re-checks on next start.
      * Call from SERVER_STOPPING event.
      */
     public static void onServerStop() {
@@ -119,17 +117,7 @@ public class ModWorldgen {
 
     private static void placeTreeAt(ServerLevel level, String name, BlockPos origin, BlockPos sentinel) {
         if (!level.getBlockState(sentinel).isAir()) return;
-        StructureTemplateManager mgr = level.getStructureManager();
-        ResourceLocation treeId = new ResourceLocation(CreRaces.MODID, name);
-        StructureTemplate template = mgr.getOrCreate(treeId);
-        if (template == null) {
-            CreRaces.LOGGER.error("CreRaces: {} not found; skipping placement.", name);
-            return;
-        }
-        StructurePlaceSettings settings = new StructurePlaceSettings()
-                .addProcessor(BlockIgnoreProcessor.STRUCTURE_AND_AIR);
-        template.placeInWorld(level, origin, origin, settings, level.random, 3);
-        CreRaces.LOGGER.info("CreRaces: Placed {} at {}.", name, origin);
+        placeTemplate(level, name, origin);
     }
 
     /**
@@ -143,9 +131,9 @@ public class ModWorldgen {
     public static void placeFairyTreeIfNeeded(ServerLevel fairyLevel) {
         // Set world border every time (idempotent); needed because the level
         // loads lazily so SERVER_STARTED fires before the level exists.
-        net.minecraft.world.level.border.WorldBorder border = fairyLevel.getWorldBorder();
+        WorldBorder border = fairyLevel.getWorldBorder();
         border.setCenter(0, 0);
-        border.setSize(mc.sayda.creraces.config.CreRacesConfig.FAIRY_REALM_BORDER_SIZE.get());
+        border.setSize(CreRacesConfig.FAIRY_REALM_BORDER_SIZE.get());
         border.setWarningBlocks(20); // start red glow 20 blocks before the edge
 
         if (treeWasPlaced) return;
@@ -157,22 +145,25 @@ public class ModWorldgen {
             return;
         }
 
-        StructureTemplateManager mgr = fairyLevel.getStructureManager();
-        ResourceLocation treeId = new ResourceLocation(CreRaces.MODID, "giant_tree_paulzero");
-        StructureTemplate template = mgr.getOrCreate(treeId);
-        if (template == null) {
-            CreRaces.LOGGER.error("CreRaces: giant_tree_paulzero.nbt not found; skipping island tree placement.");
-            return;
+        // Template (0,0,0) lands at (-66, 56, -57): the 132×114 footprint is centred on X=0, Z=0
+        // and the tree base (16 blocks up) sits at Y=72.
+        if (placeTemplate(fairyLevel, "giant_tree_paulzero", new BlockPos(-66, 56, -57))) {
+            treeWasPlaced = true;
         }
+    }
 
-        // Origin: template (0,0,0) → world (-66, 56, -57)
-        // Centers the 132×114 footprint at X=0,Z=0 and puts tree base (16 blocks up) at Y=72
-        BlockPos origin = new BlockPos(-66, 56, -57);
+    /** Places a structure template from this mod's namespace, skipping its air. Returns false if the template is missing. */
+    private static boolean placeTemplate(ServerLevel level, String name, BlockPos origin) {
+        // get() rather than getOrCreate(): the latter hands back an empty template for a missing file.
+        Optional<StructureTemplate> template = level.getStructureManager().get(new ResourceLocation(CreRaces.MODID, name));
+        if (template.isEmpty()) {
+            CreRaces.LOGGER.error("CreRaces: structure template {} not found; skipping placement.", name);
+            return false;
+        }
         StructurePlaceSettings settings = new StructurePlaceSettings()
                 .addProcessor(BlockIgnoreProcessor.STRUCTURE_AND_AIR);
-
-        template.placeInWorld(fairyLevel, origin, origin, settings, fairyLevel.random, 3);
-        treeWasPlaced = true;
-        CreRaces.LOGGER.info("CreRaces: Placed giant_tree_paulzero on fairy realm island.");
+        template.get().placeInWorld(level, origin, origin, settings, level.random, 3);
+        CreRaces.LOGGER.info("CreRaces: Placed {} at {}.", name, origin);
+        return true;
     }
 }

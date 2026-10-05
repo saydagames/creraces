@@ -1,6 +1,6 @@
 package mc.sayda.creraces.item;
 
-import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.registry.ModMobEffects;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.LivingEntity;
@@ -21,8 +21,8 @@ public class TowelItem extends Item {
     }
 
     @Override
-    public int getUseDuration(ItemStack stack, net.minecraft.world.entity.LivingEntity entity) {
-        return 20; // 1 second to use
+    public int getUseDuration(ItemStack stack, LivingEntity entity) {
+        return 20;
     }
 
     @Override
@@ -35,12 +35,10 @@ public class TowelItem extends Item {
     @Override
     public ItemStack finishUsingItem(ItemStack stack, Level level, LivingEntity entity) {
         if (!level.isClientSide() && entity instanceof Player player) {
-            var effect = mc.sayda.creraces.registry.ModMobEffects.SOGGY;
+            var effect = ModMobEffects.SOGGY;
             if (effect != null && player.hasEffect(effect)) {
                 player.removeEffect(effect);
-                stack.hurtAndBreak(1, player,
-                        net.minecraft.world.entity.EquipmentSlot.byName(player.getUsedItemHand() == net.minecraft.world.InteractionHand.MAIN_HAND
-                                ? "mainhand" : "offhand"));
+                stack.hurtAndBreak(1, player, LivingEntity.getSlotForHand(player.getUsedItemHand()));
             }
         }
         return super.finishUsingItem(stack, level, entity);

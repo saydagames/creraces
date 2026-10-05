@@ -9,14 +9,10 @@ import net.minecraft.resources.ResourceLocation;
 import javax.annotation.Nonnull;
 
 /**
- * Button backed by a plain texture file with UV coordinates, the way vanilla's ImageButton
- * worked before 1.21. ImageButton now takes WidgetSprites (GUI atlas sprites) instead, which
- * would mean authoring sprite JSON for every button texture the mod ships, so this keeps the
- * existing raw-texture assets working unchanged.
- *
- * The hovered state draws from {@code v + hoverVOffset} and the disabled state from
- * {@code v + hoverVOffset * 2}, matching vanilla's {@code AbstractWidget.renderTexture}
- * three-frame layout (normal/hovered/disabled stacked in one file).
+ * Button drawn from a plain texture holding its normal, hovered and disabled frames stacked
+ * {@code hoverVOffset} pixels apart, the way vanilla's ImageButton worked on 1.20.1. ImageButton
+ * now only takes GUI atlas sprites, which would mean authoring sprite JSON for every button
+ * texture the mod ships.
  */
 public class TextureButton extends Button {
 

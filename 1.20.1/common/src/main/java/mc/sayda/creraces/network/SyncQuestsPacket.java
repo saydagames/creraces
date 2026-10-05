@@ -1,18 +1,20 @@
 package mc.sayda.creraces.network;
 
+import dev.architectury.networking.NetworkManager;
+import dev.architectury.utils.Env;
+import dev.architectury.utils.EnvExecutor;
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.client.ClientAccess;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
-/**
- * Syncs the entire QuestRegistry (in JSON form) from server to client.
- */
+/** S2C: every quest definition, as JSON, so the client can mirror the server's QuestRegistry. */
 public class SyncQuestsPacket {
     public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "sync_quests");
+
     private final Map<ResourceLocation, String> questData;
 
     public SyncQuestsPacket(Map<ResourceLocation, String> questData) {
@@ -20,27 +22,15 @@ public class SyncQuestsPacket {
     }
 
     public SyncQuestsPacket(FriendlyByteBuf buf) {
-        this.questData = new HashMap<>();
-        int size = buf.readInt();
-        for (int i = 0; i < size; i++) {
-            this.questData.put(buf.readResourceLocation(), buf.readUtf(262144));
-        }
+        this.questData = JsonDefinitions.read(buf);
     }
 
     public void encode(FriendlyByteBuf buf) {
-        buf.writeInt(questData.size());
-        questData.forEach((id, json) -> {
-            buf.writeResourceLocation(id);
-            buf.writeUtf(json, 262144);
-        });
+        JsonDefinitions.write(buf, questData);
     }
 
-    public void handle(Supplier<dev.architectury.networking.NetworkManager.PacketContext> contextSupplier) {
+    public void handle(Supplier<NetworkManager.PacketContext> contextSupplier) {
         var context = contextSupplier.get();
-        context.queue(() -> {
-            dev.architectury.utils.EnvExecutor.runInEnv(dev.architectury.utils.Env.CLIENT, () -> () -> {
-                mc.sayda.creraces.client.ClientAccess.handleQuestSync(this.questData);
-            });
-        });
+        context.queue(() -> EnvExecutor.runInEnv(Env.CLIENT, () -> () -> ClientAccess.handleQuestSync(this.questData)));
     }
 }

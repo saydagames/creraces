@@ -5,6 +5,7 @@ import mc.sayda.creraces.race.Race;
 import mc.sayda.creraces.race.RaceRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ScreenEffectRenderer;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -13,15 +14,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import com.mojang.blaze3d.vertex.PoseStack;
 
 /**
- * Suppresses the underwater and lava screen overlay (the blue/orange
- * translucent
- * layer drawn over the viewport) for races with waterVision/unaffectedByWater
- * or lavaVision/unaffectedByLava passives.
- *
- * {@link ScreenEffectRenderer#renderScreenEffect} draws both the water overlay
- * (when submerged) and the fire overlay (when on fire) in one method, so
- * cancelling it here also suppresses fire whenever that same tick would have
- * shown it (e.g. a lavaVision race standing in lava).
+ * Hides the underwater/lava screen overlay for races with waterVision/unaffectedByWater or
+ * lavaVision/unaffectedByLava. {@link ScreenEffectRenderer#renderScreenEffect} also draws the fire
+ * overlay, so cancelling it hides fire on the same frames (e.g. a lavaVision race standing in lava).
+ * FogRendererMixin handles the matching fog.
  */
 @Mixin(ScreenEffectRenderer.class)
 public class LiquidOverlayMixin {
@@ -38,15 +34,11 @@ public class LiquidOverlayMixin {
                 return;
             Race.Passives passives = race.passives() != null ? race.passives() : Race.Passives.DEFAULT;
 
-            boolean inWater = player.isEyeInFluid(net.minecraft.tags.FluidTags.WATER);
-            boolean inLava = player.isEyeInFluid(net.minecraft.tags.FluidTags.LAVA);
+            boolean inWater = player.isEyeInFluid(FluidTags.WATER);
+            boolean inLava = player.isEyeInFluid(FluidTags.LAVA);
 
             if ((inWater && (passives.waterVision() || passives.unaffectedByWater())) ||
                     (inLava && (passives.lavaVision() || passives.unaffectedByLava()))) {
-                // Cancels the whole overlay pass at HEAD. Note this also suppresses the fire
-                // overlay if this same tick would have shown one (e.g. a lavaVision race
-                // standing in lava), since fire and liquid overlays share this one vanilla
-                // method.
                 ci.cancel();
             }
         });

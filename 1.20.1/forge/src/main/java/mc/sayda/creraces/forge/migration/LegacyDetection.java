@@ -17,20 +17,18 @@ import java.util.Objects;
 
 /**
  * Detects a leftover CreRaces Classic world (Forge SavedData files this rewrite never writes)
- * and tracks whether the one-time migration prompt has already been resolved for this world.
+ * and tracks whether the one-time migration prompt has already been answered for this world.
  *
- * Deliberately its own small plain-text JSON file (<world>/creraces/migration.json), not folded
- * into a generic settings store or vanilla's binary SavedData, a server owner should be able to
- * force a re-run just by deleting one obviously-named file, without needing to hand-edit a blob
- * shared with unrelated settings or an opaque .dat file.
+ * The answer lives in its own plain-text file, <world>/creraces/migration.json, so a server owner
+ * can force the prompt to run again by deleting one obviously-named file.
  *
- * Path-based overloads exist because for singleplayer, the decision is made client-side (see
- * LegacyWorldLoadGate) before an integrated server object even exists.
+ * Path-based overloads exist because in singleplayer the decision is made client side (see
+ * LegacyWorldLoadGate) before an integrated server object exists.
  */
 public final class LegacyDetection {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final String MARKER_FILE = "migration.json";
-    /** Classic's MapVariables SavedData, its mere presence proves Classic was once loaded here. */
+    /** Classic's MapVariables SavedData; its presence proves Classic once ran on this world. */
     private static final String CLASSIC_MAPVARS_FILE = "creraces_mapvars.dat";
 
     private LegacyDetection() {}
@@ -51,7 +49,7 @@ public final class LegacyDetection {
         return readChoice(worldRoot) != null;
     }
 
-    /** Returns the previously-written choice ("migrate"/"skip"), or null if never written. */
+    /** Returns the previously written choice ("migrate"/"skip"), or null if there is none or it can't be read. */
     @Nullable
     public static String readChoice(MinecraftServer server) {
         return readChoiceFromFile(WorldDataPaths.resolve(server, MARKER_FILE));
@@ -74,7 +72,7 @@ public final class LegacyDetection {
         }
     }
 
-    /** choice: "migrate" or "skip". Never called for the abort option, that path must re-prompt next time. */
+    /** choice is "migrate" or "skip". Aborting never writes a marker, so the prompt shows again next time. */
     public static void writeMarker(MinecraftServer server, String choice) {
         writeMarkerToFile(WorldDataPaths.resolve(server, MARKER_FILE), choice);
     }

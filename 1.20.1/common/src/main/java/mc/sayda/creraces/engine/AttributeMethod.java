@@ -1,9 +1,8 @@
 package mc.sayda.creraces.engine;
 
 /**
- * Shared operation type for attribute modifiers.
- * ADD: Applies the modifier to the entity.
- * REMOVE: Strips the modifier (by ID/UUID) from the entity.
+ * Whether an attribute_modifier trait or action adds its modifier or strips it (by id) from the
+ * entity. Anything unrecognised falls back to ADD.
  */
 public enum AttributeMethod {
     ADD, REMOVE;
@@ -12,7 +11,7 @@ public enum AttributeMethod {
         if (str == null) return ADD;
         try {
             return valueOf(str.toUpperCase());
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
             return ADD;
         }
     }

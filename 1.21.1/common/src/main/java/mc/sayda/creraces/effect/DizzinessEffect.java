@@ -5,10 +5,7 @@ import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 
-/**
- * Dizziness effect - ported from legacy CreRaces.
- * Causes the entity to move randomly in horizontal directions.
- */
+/** Replaces the entity's horizontal movement with a random stagger every tick. */
 public class DizzinessEffect extends MobEffect {
     public DizzinessEffect(MobEffectCategory category, int color) {
         super(category, color);
@@ -24,7 +21,7 @@ public class DizzinessEffect extends MobEffect {
 
         Vec3 currentMovement = entity.getDeltaMovement();
         entity.setDeltaMovement(randomX, currentMovement.y, randomZ);
-        entity.hurtMarked = true; // Force sync to client
+        entity.hurtMarked = true; // pushes the new velocity to the client
         return true;
     }
 

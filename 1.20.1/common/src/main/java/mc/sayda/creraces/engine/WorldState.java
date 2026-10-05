@@ -2,32 +2,24 @@ package mc.sayda.creraces.engine;
 
 import net.minecraft.world.level.Level;
 
-/**
- * Manages global celestial and world-wide states for the CreRaces engine.
- */
+/** World-wide, time-based states that read the same for every player in a level. */
 public class WorldState {
+    private static final int SPIRIT_MOON_CYCLE_DAYS = 9;
+    // Dusk until just before sunrise, as ticks within the day.
+    private static final long NIGHT_START = 12500;
+    private static final long NIGHT_END = 23500;
 
-    /** The current in-world day number, per this level's dayTime. */
+    /** The current in-world day number (0-based), per this level's day time. */
     public static long currentDay(Level level) {
-        return Math.floorDiv(level.getDayTime(), 24000L);
+        return Math.floorDiv(level.getDayTime(), Level.TICKS_PER_DAY);
     }
 
-    /**
-     * Checks if the Spirit Moon is currently active in the given level.
-     * The Spirit Moon occurs during the night of Day 9, 18, 27, etc.
-     */
+    /** True during the night of every 9th day (days 9, 18, 27, ... counting the first day as day 1). */
     public static boolean isSpiritMoon(Level level) {
         if (level == null) return false;
 
-        long time = level.getDayTime();
-        long day = currentDay(level);
-        long timeOfDay = Math.floorMod(time, 24000L);
-        
-        // Day 9 (day count 8) during Night (Sunset to Dawn)
-        // Night window: 12500 (Dusk) to 23500 (approx. dawn)
-        boolean isDay9 = Math.floorMod(day, 9L) == 8L;
-        boolean isNightTime = timeOfDay >= 12500 && timeOfDay < 23500;
-        
-        return isDay9 && isNightTime;
+        long timeOfDay = Math.floorMod(level.getDayTime(), Level.TICKS_PER_DAY);
+        boolean isCycleDay = Math.floorMod(currentDay(level), SPIRIT_MOON_CYCLE_DAYS) == SPIRIT_MOON_CYCLE_DAYS - 1;
+        return isCycleDay && timeOfDay >= NIGHT_START && timeOfDay < NIGHT_END;
     }
 }

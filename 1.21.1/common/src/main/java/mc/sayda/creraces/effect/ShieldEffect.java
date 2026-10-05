@@ -1,15 +1,13 @@
 package mc.sayda.creraces.effect;
 
-import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 
 /**
- * Shield Effect - a permanent shield effect.
- * Absorbs damage until the shield amount (amplifier) is depleted.
- * Variants include AP (Magic), AD (Physical), and Normal (All).
- * Logic is handled in LivingEntityMixin.
+ * Marker for the tiered shields. LivingEntityMixin absorbs incoming damage with it, treating
+ * amplifier + 1 as the shield's remaining HP: SHIELD blocks everything, AP_SHIELD only magic
+ * damage and AD_SHIELD only physical damage.
  */
-public class ShieldEffect extends MobEffect {
+public class ShieldEffect extends SimpleEffect {
     public ShieldEffect(MobEffectCategory category, int color) {
         super(category, color);
     }

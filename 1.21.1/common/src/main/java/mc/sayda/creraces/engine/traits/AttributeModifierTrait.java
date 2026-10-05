@@ -1,38 +1,39 @@
 package mc.sayda.creraces.engine.traits;
 
+import com.google.gson.JsonObject;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.engine.AttributeMethod;
+import mc.sayda.creraces.engine.ScalingValue;
 import mc.sayda.creraces.engine.TraitRegistry;
+import mc.sayda.creraces.engine.condition.Condition;
 import mc.sayda.creraces.registry.ModAttributes;
 import mc.sayda.creraces.util.GsonHelper;
+import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.minecraft.world.entity.player.Player;
-import mc.sayda.creraces.engine.ScalingValue;
-import mc.sayda.creraces.engine.condition.Condition;
+
 import javax.annotation.Nullable;
 
+/** Data holder for an attribute modifier; AttributeIncidents applies, syncs and removes it. */
 public class AttributeModifierTrait implements TraitRegistry.RaceTrait {
 
     private final ResourceLocation attributeId;
     private final ScalingValue value;
-    private final com.google.gson.JsonObject valueJson;
+    private final JsonObject valueJson;
     private final AttributeModifier.Operation operation;
     @Nullable
     private final Condition condition;
     @Nullable
-    private final com.google.gson.JsonObject rawCondition;
+    private final JsonObject rawCondition;
     private final int interval;
     private final boolean managed;
     private final AttributeMethod method;
     private String traitId = "";
 
-    public AttributeModifierTrait(ResourceLocation attributeId, ScalingValue value, 
-            com.google.gson.JsonObject valueJson,
-            AttributeModifier.Operation operation, @Nullable Condition condition, 
-            @Nullable com.google.gson.JsonObject rawCondition, int interval, boolean managed,
-            AttributeMethod method) {
+    public AttributeModifierTrait(ResourceLocation attributeId, ScalingValue value, JsonObject valueJson,
+            AttributeModifier.Operation operation, @Nullable Condition condition,
+            @Nullable JsonObject rawCondition, int interval, boolean managed, AttributeMethod method) {
         this.attributeId = attributeId;
         this.value = value;
         this.valueJson = valueJson;
@@ -44,30 +45,25 @@ public class AttributeModifierTrait implements TraitRegistry.RaceTrait {
         this.method = method;
     }
 
-    @Override
-    public void tick(Player player) {
-        // No-op for attributes, they are applied statically or via AttributeIncidents
-    }
-
     /**
      * Resolves the attribute lazily at runtime using the centralized ModAttributes resolver.
      * Returns null if the attribute is not registered (e.g. the mod is absent).
      */
     @Nullable
-    public net.minecraft.core.Holder<Attribute> getAttribute() {
+    public Holder<Attribute> getAttribute() {
         return ModAttributes.getAttribute(attributeId);
     }
 
-    /**
-     * Race JSON still uses the pre-1.21 operation names, so those keep working here
-     * alongside the current ones.
-     */
+    /** Accepts both the pre-1.21 operation names and the current ones, since race JSON is shared. */
     private static AttributeModifier.Operation parseOperation(String opStr) {
         return switch (opStr) {
             case "ADDITION", "ADD_VALUE" -> AttributeModifier.Operation.ADD_VALUE;
             case "MULTIPLY_BASE", "ADD_MULTIPLIED_BASE" -> AttributeModifier.Operation.ADD_MULTIPLIED_BASE;
             case "MULTIPLY_TOTAL", "ADD_MULTIPLIED_TOTAL" -> AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL;
-            default -> AttributeModifier.Operation.ADD_VALUE;
+            default -> {
+                CreRaces.LOGGER.warn("Unknown attribute modifier operation '{}', using addition", opStr);
+                yield AttributeModifier.Operation.ADD_VALUE;
+            }
         };
     }
 
@@ -90,7 +86,7 @@ public class AttributeModifierTrait implements TraitRegistry.RaceTrait {
     }
 
     @Nullable
-    public com.google.gson.JsonObject getRawCondition() {
+    public JsonObject getRawCondition() {
         return rawCondition;
     }
 
@@ -106,7 +102,7 @@ public class AttributeModifierTrait implements TraitRegistry.RaceTrait {
         return method;
     }
 
-    public com.google.gson.JsonObject getValueJson() {
+    public JsonObject getValueJson() {
         return valueJson;
     }
 
@@ -124,28 +120,28 @@ public class AttributeModifierTrait implements TraitRegistry.RaceTrait {
         TraitRegistry.register(ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "attribute_modifier"), json -> {
             String attrIdStr = GsonHelper.getAsString(json, "attribute", "minecraft:generic.attack_damage");
 
-            // Store the raw ResourceLocation; do NOT resolve the Attribute here.
+            // Resolved lazily in getAttribute(), where aliases and Apothic replacements are handled.
             ResourceLocation attrId = ResourceLocation.tryParse(attrIdStr);
             if (attrId == null) {
-                attrId = ResourceLocation.fromNamespaceAndPath("creraces", attrIdStr.toLowerCase());
+                attrId = ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, attrIdStr.toLowerCase());
             }
 
             ScalingValue value = ScalingValue.fromJson(json, "value", 0.0);
             String opStr = GsonHelper.getAsString(json, "operation", "addition").toUpperCase();
             AttributeModifier.Operation op = parseOperation(opStr);
 
-            com.google.gson.JsonObject valueJson;
+            JsonObject valueJson;
             if (json.has("value") && json.get("value").isJsonObject()) {
                 valueJson = json.getAsJsonObject("value");
             } else if (json.has("value") && json.get("value").isJsonPrimitive()) {
-                valueJson = new com.google.gson.JsonObject();
+                valueJson = new JsonObject();
                 valueJson.add("base", json.get("value"));
             } else {
-                valueJson = new com.google.gson.JsonObject();
+                valueJson = new JsonObject();
             }
 
             Condition condition = null;
-            com.google.gson.JsonObject rawCondition = null;
+            JsonObject rawCondition = null;
             if (json.has("condition") && json.get("condition").isJsonObject()) {
                 rawCondition = json.getAsJsonObject("condition");
                 condition = Condition.fromJson(rawCondition);

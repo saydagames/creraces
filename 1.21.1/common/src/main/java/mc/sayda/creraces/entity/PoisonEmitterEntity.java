@@ -1,14 +1,21 @@
 package mc.sayda.creraces.entity;
 
+import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.config.CreRacesConfig;
-
+import mc.sayda.creraces.effect.SourceTrackedEffect;
 import mc.sayda.creraces.registry.ModMobEffects;
+import mc.sayda.creraces.registry.ModParticles;
+import mc.sayda.creraces.team.RaceTeamManager;
 import mc.sayda.creraces.util.IPersistentDataAccessor;
-
+import mc.sayda.creraces.util.RaceUtils;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.AgeableMob;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.TamableAnimal;
@@ -16,7 +23,6 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -26,11 +32,13 @@ import java.util.List;
 
 /**
  * Poison Emitter - a stationary entity summoned by the Ratkin.
- * Pulses Ratvenom to enemies within 5.5 blocks.
+ * Pulses Ratvenom to enemies within the configured radius (5.5 blocks by default).
  * Stacks increase every 0.2 of the emitter's lifetime.
  */
 @SuppressWarnings("null")
 public class PoisonEmitterEntity extends TamableAnimal {
+
+    private static final ResourceLocation RAT_VENOM_ID = ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "rat_venom");
 
     private int ticksAlive = 0;
 
@@ -62,58 +70,53 @@ public class PoisonEmitterEntity extends TamableAnimal {
             return;
 
         ticksAlive++;
+        pulseVenom(this, ticksAlive);
+    }
+
+    /**
+     * One server tick of the venom aura, shared with PoisonEmitterMobileEntity: particles, a
+     * Ratvenom pulse on every enemy in range, and self-destruct once the lifetime runs out.
+     */
+    static void pulseVenom(TamableAnimal emitter, int ticksAlive) {
+        Level level = emitter.level();
         double lifetime = Math.max(1, CreRacesConfig.ENTITY_POISON_EMITTER_LIFETIME_TICKS.get());
-        double progress = (double) ticksAlive / lifetime;
-
-        // Legacy Stacks logic (0 to 4 based on lifetime progress)
-        int stacks = 0;
-        if (progress >= 0.8) stacks = 4;
-        else if (progress >= 0.6) stacks = 3;
-        else if (progress >= 0.4) stacks = 2;
-        else if (progress >= 0.2) stacks = 1;
-
-        // Sky visibility bonus (+1 amplifier)
-        if (this.level().canSeeSky(this.blockPosition())) {
+        int stacks = venomStacks(ticksAlive / lifetime);
+        // Open sky strengthens the venom by one more stack.
+        if (level.canSeeSky(emitter.blockPosition())) {
             stacks += 1;
         }
 
-        // Particle VFX every tick (server side send to all)
-        if (this.level() instanceof ServerLevel serverLevel) {
-            serverLevel.sendParticles(mc.sayda.creraces.registry.ModParticles.POISON_EMITTER.get(),
-                    this.getX(), this.getY(), this.getZ(),
+        if (level instanceof ServerLevel serverLevel) {
+            serverLevel.sendParticles(ModParticles.POISON_EMITTER.get(),
+                    emitter.getX(), emitter.getY(), emitter.getZ(),
                     15, 3.0, 3.0, 3.0, 0.0);
         }
 
-        // Pulse Ratvenom to nearby entities
         var venomEffect = ModMobEffects.RAT_VENOM;
         if (venomEffect != null) {
-            Vec3 center = this.position();
-            LivingEntity owner = getOwner();
-
-            // Cleanup: if owner IS a player but is no longer online/valid, discard the emitter
-            if (owner instanceof Player p && (!p.isAlive() || !this.level().players().contains(p))) {
-                this.discard();
+            LivingEntity owner = emitter.getOwner();
+            // A player owner who died or logged out takes the emitter with them.
+            if (owner instanceof Player p && (!p.isAlive() || !level.players().contains(p))) {
+                emitter.discard();
                 return;
             }
 
-            net.minecraft.resources.ResourceLocation venomId = net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(
-                    "creraces", "rat_venom");
-            List<LivingEntity> nearby = this.level().getEntitiesOfClass(
+            Vec3 center = emitter.position();
+            List<LivingEntity> nearby = level.getEntitiesOfClass(
                     LivingEntity.class,
                     new AABB(center, center).inflate(CreRacesConfig.ENTITY_POISON_EMITTER_RADIUS.get()),
-                    e -> e != this && e != owner && (owner == null || mc.sayda.creraces.team.RaceTeamManager.canHurt(e, owner))
-                            && !mc.sayda.creraces.util.RaceUtils.isImmuneToEffect(e, venomId));
+                    e -> e != emitter && e != owner && (owner == null || RaceTeamManager.canHurt(e, owner))
+                            && !RaceUtils.isImmuneToEffect(e, RAT_VENOM_ID));
 
             for (LivingEntity target : nearby) {
-                // Apply source tag for attribution if owner is present
+                // Lets the venom's damage be credited to the owner.
                 if (owner != null && target instanceof IPersistentDataAccessor accessor) {
                     CompoundTag data = accessor.creraces$getPersistentData();
-                    data.putString("creraces:source", owner.getUUID().toString());
+                    data.putString(SourceTrackedEffect.SOURCE_KEY, owner.getUUID().toString());
                 }
 
-                // Only apply/upgrade when target lacks the effect or stacks have increased;
-                // re-applying every tick would reset the duration before shouldApplyEffectTickThisTick
-                // could fire (102 % 10 != 0 meant damage was never dealt).
+                // Only apply or upgrade: re-applying every tick would keep resetting the duration,
+                // so RatVenomEffect's every-10-ticks damage would never line up.
                 MobEffectInstance existing = target.getEffect(venomEffect);
                 if (existing == null || existing.getAmplifier() < stacks) {
                     target.addEffect(new MobEffectInstance(venomEffect, 100, stacks, true, true));
@@ -121,13 +124,19 @@ public class PoisonEmitterEntity extends TamableAnimal {
             }
         }
 
-        // Self-destruct after lifetime expires
         if (ticksAlive >= lifetime) {
-            this.level().playSound(null, this.blockPosition(),
-                    net.minecraft.sounds.SoundEvents.STONE_BREAK,
-                    net.minecraft.sounds.SoundSource.NEUTRAL, 1.0f, 1.0f);
-            this.discard();
+            level.playSound(null, emitter.blockPosition(), SoundEvents.STONE_BREAK, SoundSource.NEUTRAL, 1.0f, 1.0f);
+            emitter.discard();
         }
+    }
+
+    /** One stack per fifth of the lifetime elapsed, 0 to 4. */
+    private static int venomStacks(double lifetimeProgress) {
+        if (lifetimeProgress >= 0.8) return 4;
+        if (lifetimeProgress >= 0.6) return 3;
+        if (lifetimeProgress >= 0.4) return 2;
+        if (lifetimeProgress >= 0.2) return 1;
+        return 0;
     }
 
     @Override
@@ -144,7 +153,7 @@ public class PoisonEmitterEntity extends TamableAnimal {
 
     @Override
     public boolean isFood(ItemStack stack) {
-        return Ingredient.of().test(stack);
+        return false;
     }
 
     @Nullable
@@ -159,7 +168,7 @@ public class PoisonEmitterEntity extends TamableAnimal {
     }
 
     @Override
-    protected void doPush(net.minecraft.world.entity.Entity entity) {
+    protected void doPush(Entity entity) {
     }
 
     @Override
@@ -167,7 +176,7 @@ public class PoisonEmitterEntity extends TamableAnimal {
     }
 
     @Override
-    public boolean canCollideWith(net.minecraft.world.entity.Entity entity) {
+    public boolean canCollideWith(Entity entity) {
         return true;
     }
 

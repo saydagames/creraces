@@ -2,8 +2,8 @@ package mc.sayda.creraces.entity;
 
 import mc.sayda.creraces.registry.ModParticles;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.sounds.SoundEvent;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.EntityType;
@@ -68,9 +68,9 @@ public class FloatingMoteEntity extends PathfinderMob {
 
     /** Motes drift instead of pathfinding, so water is avoided by steering, not by a goal. */
     private boolean waterUnderfoot() {
-        net.minecraft.core.BlockPos pos = blockPosition();
-        return level().getFluidState(pos).is(net.minecraft.tags.FluidTags.WATER)
-                || level().getFluidState(pos.below()).is(net.minecraft.tags.FluidTags.WATER);
+        BlockPos pos = blockPosition();
+        return level().getFluidState(pos).is(FluidTags.WATER)
+                || level().getFluidState(pos.below()).is(FluidTags.WATER);
     }
 
     @Override
@@ -139,10 +139,4 @@ public class FloatingMoteEntity extends PathfinderMob {
 
     @Override
     public SoundEvent getDeathSound() { return null; }
-
-    @Override
-    public void readAdditionalSaveData(CompoundTag tag) { super.readAdditionalSaveData(tag); }
-
-    @Override
-    public void addAdditionalSaveData(CompoundTag tag) { super.addAdditionalSaveData(tag); }
 }

@@ -1,25 +1,31 @@
 package mc.sayda.creraces.network;
 
+import dev.architectury.networking.NetworkManager;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.block.entity.MicroBlockEntity;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.BedBlock;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.DoorBlock;
+import net.minecraft.world.level.block.JukeboxBlock;
+import net.minecraft.world.level.block.LevelEvent;
 import net.minecraft.world.level.block.state.BlockState;
-
-import java.util.function.Supplier;
+import net.minecraft.world.level.block.state.properties.BedPart;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
-import net.minecraft.world.level.block.state.properties.BedPart;
-import net.minecraft.core.Direction;
+import net.minecraft.world.level.gameevent.GameEvent;
 
-/**
- * C2S: Client requests to remove a mini-block from a specific slot.
- * The item is dropped server-side.
- */
+import java.util.function.Supplier;
+
+/** C2S: removes the mini-block in one slot and hands its item to the player (or drops it). */
 @SuppressWarnings("null")
 public class MiniRemovePacket {
 
@@ -49,89 +55,67 @@ public class MiniRemovePacket {
         buf.writeByte(slotZ);
     }
 
-    public void handle(Supplier<dev.architectury.networking.NetworkManager.PacketContext> ctxSupplier) {
+    public void handle(Supplier<NetworkManager.PacketContext> ctxSupplier) {
         var ctx = ctxSupplier.get();
         ctx.queue(() -> {
             if (!(ctx.getPlayer() instanceof ServerPlayer serverPlayer))
                 return;
-
-            if (!mc.sayda.creraces.capability.DataUtils.canInteractWithMiniBuild(serverPlayer)) {
+            if (!MiniBuildRequests.canTarget(serverPlayer, hostPos, slotX, slotY, slotZ, "MiniRemovePacket"))
                 return;
-            }
 
             ServerLevel level = serverPlayer.serverLevel();
-
-            // Validate reach distance to prevent arbitrary remote removal
-            double reachSq = mc.sayda.creraces.config.CreRacesConfig.MINI_CRAFTING_DISTANCE_SQR.get();
-            if (serverPlayer.distanceToSqr(hostPos.getX() + 0.5, hostPos.getY() + 0.5, hostPos.getZ() + 0.5) > reachSq) {
-                CreRaces.LOGGER.warn("MiniRemovePacket: Rejected - player {} too far from hostPos {}",
-                        serverPlayer.getName().getString(), hostPos);
-                return;
-            }
-
             if (!(level.getBlockEntity(hostPos) instanceof MicroBlockEntity micro))
-                return;
-
-            // Validate slot bounds
-            if (slotX < 0 || slotX >= 4 || slotY < 0 || slotY >= 4 || slotZ < 0 || slotZ >= 4)
                 return;
 
             BlockState removed = micro.getSlot(slotX, slotY, slotZ);
             if (removed.isAir())
-                return; // Nothing to remove
+                return;
 
-            // Try to add to inventory first
             ItemStack drop = new ItemStack(removed.getBlock().asItem());
-            if (!drop.isEmpty()) {
-                if (!serverPlayer.getInventory().add(drop)) {
-                    // Drop on the ground if inventory is full
-                    net.minecraft.world.entity.item.ItemEntity itemEntity = new net.minecraft.world.entity.item.ItemEntity(
-                            level, serverPlayer.getX(), serverPlayer.getY(), serverPlayer.getZ(), drop);
-                    itemEntity.setDefaultPickUpDelay();
-                    level.addFreshEntity(itemEntity);
-                }
+            if (!drop.isEmpty() && !serverPlayer.getInventory().add(drop)) {
+                ItemEntity itemEntity = new ItemEntity(level, serverPlayer.getX(), serverPlayer.getY(),
+                        serverPlayer.getZ(), drop);
+                itemEntity.setDefaultPickUpDelay();
+                level.addFreshEntity(itemEntity);
             }
 
-            // Clear the targeted slot
-            micro.setSlot(slotX, slotY, slotZ, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+            micro.setSlot(slotX, slotY, slotZ, Blocks.AIR.defaultBlockState());
+            clearLinkedParts(serverPlayer, level, removed);
 
-            // --- DESTRUCTION COORDINATION (Fix dupes) ---
-            if (removed.getBlock() instanceof net.minecraft.world.level.block.DoorBlock) {
-                DoubleBlockHalf half = removed.getValue(BlockStateProperties.DOUBLE_BLOCK_HALF);
-                int otherY = (half == DoubleBlockHalf.LOWER) ? slotY + 1 : slotY - 1;
-                BlockState otherState = MicroBlockEntity.getSlotGlobal(level, hostPos, slotX, otherY, slotZ);
-                if (otherState.getBlock() == removed.getBlock()) {
-                    MicroBlockEntity.setSlotGlobal(level, hostPos, slotX, otherY, slotZ,
-                            net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
-                }
-            } else if (removed.getBlock() instanceof net.minecraft.world.level.block.BedBlock) {
-                BedPart part = removed.getValue(BlockStateProperties.BED_PART);
-                Direction facing = removed.getValue(BlockStateProperties.HORIZONTAL_FACING);
-                int ox = (part == BedPart.FOOT) ? facing.getStepX() : -facing.getStepX();
-                int oz = (part == BedPart.FOOT) ? facing.getStepZ() : -facing.getStepZ();
-                int headX = slotX + ox;
-                int headZ = slotZ + oz;
-                BlockState otherState = MicroBlockEntity.getSlotGlobal(level, hostPos, headX, slotY, headZ);
-                if (otherState.getBlock() == removed.getBlock()) {
-                    MicroBlockEntity.setSlotGlobal(level, hostPos, headX, slotY, headZ,
-                            net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
-                }
-            } else if (removed.getBlock() instanceof net.minecraft.world.level.block.JukeboxBlock) {
-                level.levelEvent(serverPlayer, 1010, hostPos, 0);
-                level.gameEvent(net.minecraft.world.level.gameevent.GameEvent.JUKEBOX_STOP_PLAY, hostPos,
-                        net.minecraft.world.level.gameevent.GameEvent.Context.of(removed));
-            }
-
-            // Trigger neighbor updates
             micro.updateConnections(slotX, slotY, slotZ);
-
             BlockState hostState = level.getBlockState(hostPos);
-            level.sendBlockUpdated(hostPos, hostState, hostState, 3);
+            level.sendBlockUpdated(hostPos, hostState, hostState, Block.UPDATE_ALL);
 
-            // If the MicroBlock is now empty, remove the host block
             if (micro.isEmpty()) {
                 level.removeBlock(hostPos, false);
             }
         });
+    }
+
+    /**
+     * Doors and beds fill two slots, so the other half is cleared too; otherwise it could be
+     * removed again for a second item. A removed jukebox also stops its music.
+     */
+    private void clearLinkedParts(ServerPlayer player, ServerLevel level, BlockState removed) {
+        if (removed.getBlock() instanceof DoorBlock) {
+            DoubleBlockHalf half = removed.getValue(BlockStateProperties.DOUBLE_BLOCK_HALF);
+            int otherY = half == DoubleBlockHalf.LOWER ? slotY + 1 : slotY - 1;
+            clearIfSameBlock(level, removed, slotX, otherY, slotZ);
+        } else if (removed.getBlock() instanceof BedBlock) {
+            BedPart part = removed.getValue(BlockStateProperties.BED_PART);
+            Direction facing = removed.getValue(BlockStateProperties.HORIZONTAL_FACING);
+            int step = part == BedPart.FOOT ? 1 : -1;
+            clearIfSameBlock(level, removed, slotX + step * facing.getStepX(), slotY, slotZ + step * facing.getStepZ());
+        } else if (removed.getBlock() instanceof JukeboxBlock) {
+            // The remover is left out: MiniBlockPlaceMixin fires this event on their client already
+            level.levelEvent(player, LevelEvent.SOUND_STOP_JUKEBOX_SONG, hostPos, 0);
+            level.gameEvent(GameEvent.JUKEBOX_STOP_PLAY, hostPos, GameEvent.Context.of(removed));
+        }
+    }
+
+    private void clearIfSameBlock(ServerLevel level, BlockState removed, int x, int y, int z) {
+        if (MicroBlockEntity.getSlotGlobal(level, hostPos, x, y, z).getBlock() == removed.getBlock()) {
+            MicroBlockEntity.setSlotGlobal(level, hostPos, x, y, z, Blocks.AIR.defaultBlockState());
+        }
     }
 }

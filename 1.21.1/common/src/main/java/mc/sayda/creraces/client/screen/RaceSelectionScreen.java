@@ -1,7 +1,6 @@
 package mc.sayda.creraces.client.screen;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import mc.sayda.creraces.network.BoundaryHandler;
 import mc.sayda.creraces.race.Race;
 import mc.sayda.creraces.race.RaceRegistry;
 import net.minecraft.client.gui.GuiGraphics;
@@ -10,239 +9,144 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.Calendar;
+import java.util.Comparator;
 import java.util.List;
 
-/**
- * Race selection screen matching legacy Race3GUIScreen precisely.
- */
+/** Paged grid of the selectable root races. A parent race opens its sub-races instead of the details page. */
 public class RaceSelectionScreen extends Screen {
-        private static final ResourceLocation SELECTION_BG = ResourceLocation.fromNamespaceAndPath("creraces",
-                        "textures/screens/selection_bg.png");
-        private static final ResourceLocation SELECTION_BORDER = ResourceLocation.fromNamespaceAndPath("creraces",
-                        "textures/screens/selection_border.png");
-        private static final ResourceLocation ARROW_LEFT = ResourceLocation.fromNamespaceAndPath("creraces",
-                        "textures/screens/atlas/arrow_left.png");
-        private static final ResourceLocation ARROW_RIGHT = ResourceLocation.fromNamespaceAndPath("creraces",
-                        "textures/screens/atlas/arrow_right.png");
-        private static final ResourceLocation RACE_SLOT = ResourceLocation.fromNamespaceAndPath("creraces", "textures/screens/race.png");
-        private static final ResourceLocation PORTRAIT_WARNING = ResourceLocation.fromNamespaceAndPath("creraces", "textures/screens/portrait_warning.png");
-        private static final ResourceLocation PORTRAIT_ERROR = ResourceLocation.fromNamespaceAndPath("creraces", "textures/screens/portrait_error.png");
-        private static final ResourceLocation PORTRAIT_INFO = ResourceLocation.fromNamespaceAndPath("creraces", "textures/screens/portrait_info.png");
+    private int leftPos;
+    private int topPos;
+    private int page = 0;
+    private List<RaceEntry> raceEntries = new ArrayList<>();
 
-        private static final ResourceLocation DECO_CHRISTMAS = ResourceLocation.fromNamespaceAndPath("creraces",
-                        "textures/screens/christmas_decoration.png");
-        private static final ResourceLocation DECO_HALLOWEEN = ResourceLocation.fromNamespaceAndPath("creraces",
-                        "textures/screens/halloween_decoration.png");
-        private static final ResourceLocation DECO_MIDSUMMER = ResourceLocation.fromNamespaceAndPath("creraces",
-                        "textures/screens/midsummer_decoration.png");
+    public RaceSelectionScreen() {
+        super(Component.translatable("screen.creraces.race_selection_grid"));
+    }
 
-        // Legacy positioning
-        private static final int[] PORTRAIT_COLS = { 8, 67, 124 };
-        private static final int[] PORTRAIT_ROWS = { -20, 49, 119 };
-        private static final int[] BTN_COLS = { 5, 63, 120 };
-        private static final int[] BTN_ROWS = { -19, 50, 120 };
+    @Override
+    protected void init() {
+        this.leftPos = RaceMenuArt.panelLeft(this.width);
+        this.topPos = RaceMenuArt.panelTop(this.height);
 
-        private static final int PORTRAIT_SIZE = 43;
-        private static final int BTN_W = 50;
-
-        private int leftPos, topPos;
-        /** Set while drawing portraits in renderBackground, consumed by render() on top of the widgets. */
-        private Component hoverTooltip = null;
-        private int page = 0;
-        private List<RaceEntry> raceEntries = new ArrayList<>();
-
-        public RaceSelectionScreen() {
-                super(Component.translatable("screen.creraces.race_selection_grid"));
+        if (this.minecraft != null) {
+            raceEntries = RaceRegistry.getAll().stream()
+                    .filter(RaceRegistry::isSelectableRoot)
+                    .sorted(Comparator.comparing(Race::index).thenComparing(r -> r.name().getString()))
+                    .map(r -> new RaceEntry(r.id(), r.name(), r.portrait(), RaceRegistry.isParent(r.id()), r.state()))
+                    .toList();
         }
 
-        @Override
-        protected void init() {
-                this.leftPos = (this.width - 176) / 2;
-                this.topPos = (this.height - 166) / 2;
+        rebuildButtons();
+    }
 
-                if (this.minecraft != null) {
-                        raceEntries = RaceRegistry.getRaces().stream()
-                                .filter(RaceRegistry::isSelectableRoot)
-                                .sorted(java.util.Comparator.comparing(Race::index)
-                                                .thenComparing(r -> r.name().getString()))
-                                .map(r -> new RaceEntry(r.id(), r.name(), r.portrait(), RaceRegistry.isParent(r.id()), r.state()))
-                                .toList();
-                }
+    private void rebuildButtons() {
+        this.clearWidgets();
 
+        int firstIndex = page * RaceMenuArt.GRID_SLOTS;
+        for (int slot = 0; slot < RaceMenuArt.GRID_SLOTS && firstIndex + slot < raceEntries.size(); slot++) {
+            RaceEntry entry = raceEntries.get(firstIndex + slot);
+            this.addRenderableWidget(RaceMenuArt.selectButton(this.leftPos, this.topPos, slot,
+                    btn -> onRaceSelected(entry)));
+        }
+
+        this.addRenderableWidget(RaceMenuArt.backArrow(this.leftPos, this.topPos, btn -> {
+            if (page > 0) {
+                page--;
                 rebuildButtons();
+            } else if (this.minecraft != null) {
+                this.minecraft.setScreen(new MenuGUIScreen());
+            }
+        }));
+        this.addRenderableWidget(RaceMenuArt.nextArrow(this.leftPos, this.topPos, btn -> {
+            if ((page + 1) * RaceMenuArt.GRID_SLOTS < raceEntries.size()) {
+                page++;
+                rebuildButtons();
+            }
+        }));
+    }
+
+    private void onRaceSelected(RaceEntry entry) {
+        if (this.minecraft == null) {
+            return;
+        }
+        if (entry.isParentGroup()) {
+            this.minecraft.setScreen(new SubRaceScreen(this, entry.name(), RaceRegistry.getSubRaces(entry.id())));
+        } else {
+            Race race = RaceRegistry.get(entry.id());
+            if (race != null) {
+                this.minecraft.setScreen(new RaceDetailsScreen(this, race));
+            }
+        }
+    }
+
+    @Override
+    @SuppressWarnings("null")
+    public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        super.renderBackground(graphics, mouseX, mouseY, partialTick);
+        renderPanel(graphics);
+        super.render(graphics, mouseX, mouseY, partialTick);
+
+        Component stateTooltip = hoveredStateTooltip(mouseX, mouseY);
+        if (stateTooltip != null) {
+            graphics.renderTooltip(this.font, stateTooltip, mouseX, mouseY);
         }
 
-        private void rebuildButtons() {
-                this.clearWidgets();
+        RenderSystem.disableBlend();
 
-                int startIndex = page * 9;
-                for (int i = 0; i < 9; i++) {
-                        int currentIdx = startIndex + i;
-                        int rowIdx = i / 3;
-                        int colIdx = i % 3;
+        int pageCount = (raceEntries.size() + RaceMenuArt.GRID_SLOTS - 1) / RaceMenuArt.GRID_SLOTS;
+        Component pageCounter = Component.translatable("gui.creraces.selection.page", page + 1, pageCount);
+        graphics.drawString(this.font, pageCounter, this.leftPos + 73, this.topPos + 205, -1, false);
+    }
 
-                        int slotX = this.leftPos + BTN_COLS[colIdx];
-                        int slotY = this.topPos + BTN_ROWS[rowIdx];
+    private void renderPanel(GuiGraphics graphics) {
+        RenderSystem.setShaderColor(1, 1, 1, 1);
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
 
-                        final int capturedIdx = currentIdx;
-                        if (currentIdx < raceEntries.size()) {
-                                this.addRenderableWidget(new GenericRaceButton(
-                                                slotX, slotY + 44, BTN_W, 20,
-                                                Component.translatable("gui.creraces.button.select"),
-                                                btn -> {
-                                                        onRaceSelected(raceEntries.get(capturedIdx));
-                                                }));
-                        }
-                }
+        RaceMenuArt.drawPanel(graphics, this.leftPos, this.topPos);
 
-                // Arrows (Page Navigation)
-                this.addRenderableWidget(new TextureButton(
-                                this.leftPos + -24, this.topPos + 184, 86, 48,
-                                0, 0, 48, ARROW_LEFT, 86, 144,
-                                btn -> {
-                                        if (page > 0) {
-                                                page--;
-                                                rebuildButtons();
-                                        } else {
-                                                // Page 0 -> Return to Welcome Screen
-                                                net.minecraft.client.Minecraft.getInstance().setScreen(new MenuGUIScreen());
-                                        }
-                                }));
-
-                this.addRenderableWidget(new TextureButton(
-                                this.leftPos + 113, this.topPos + 184, 86, 48,
-                                0, 0, 48, ARROW_RIGHT, 86, 144,
-                                btn -> {
-                                        if ((page + 1) * 9 < raceEntries.size()) {
-                                                page++;
-                                                rebuildButtons();
-                                        }
-                                }));
+        int firstIndex = page * RaceMenuArt.GRID_SLOTS;
+        for (int slot = 0; slot < RaceMenuArt.GRID_SLOTS; slot++) {
+            int x = RaceMenuArt.portraitX(this.leftPos, slot);
+            int y = RaceMenuArt.portraitY(this.topPos, slot);
+            if (firstIndex + slot < raceEntries.size()) {
+                RaceEntry entry = raceEntries.get(firstIndex + slot);
+                RaceMenuArt.drawPortrait(graphics, entry.portrait(), entry.state(), x, y);
+            } else {
+                RaceMenuArt.drawEmptySlot(graphics, x, y);
+            }
         }
 
-        private void onRaceSelected(RaceEntry entry) {
-                if (entry.isParentGroup) {
-                        if (this.minecraft != null) {
-                                this.minecraft.setScreen(new SubRaceScreen(this, entry.name,
-                                                RaceRegistry.getSubRaces(entry.id)));
-                        }
-                } else {
-                        // Open Focus Details Screen
-                        Race race = RaceRegistry.get(entry.id);
-                        if (race != null && this.minecraft != null) {
-                                this.minecraft.setScreen(new RaceDetailsScreen(this, race));
-                        }
-                }
+        RaceMenuArt.drawSeasonalDecoration(graphics, this.leftPos + 11, this.topPos - 56);
+    }
+
+    @Nullable
+    private Component hoveredStateTooltip(int mouseX, int mouseY) {
+        int firstIndex = page * RaceMenuArt.GRID_SLOTS;
+        for (int slot = 0; slot < RaceMenuArt.GRID_SLOTS && firstIndex + slot < raceEntries.size(); slot++) {
+            Component tooltip = RaceMenuArt.stateTooltip(raceEntries.get(firstIndex + slot).state(),
+                    RaceMenuArt.portraitX(this.leftPos, slot), RaceMenuArt.portraitY(this.topPos, slot),
+                    mouseX, mouseY);
+            if (tooltip != null) {
+                return tooltip;
+            }
         }
+        return null;
+    }
 
-        /**
-         * 1.21's Screen.render() calls renderBackground() before drawing widgets, and vanilla's
-         * renderBackground() blurs the whole framebuffer. Drawing the panel here instead of in
-         * render() puts it above that blur, which is the ordering vanilla's own menus rely on
-         * (their content is widgets, so it always lands after the blur pass).
-         */
-        @Override
-        @SuppressWarnings("null")
-        public void renderBackground(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-                super.renderBackground(graphics, mouseX, mouseY, partialTick);
-                RenderSystem.setShaderColor(1, 1, 1, 1);
-                RenderSystem.enableBlend();
-                RenderSystem.defaultBlendFunc();
+    @Override
+    public boolean isPauseScreen() {
+        return false;
+    }
 
-                // 1. BG and Border
-                graphics.blit(SELECTION_BG, this.leftPos + -4, this.topPos + -26, 0, 0, 181, 220, 181, 220);
-                graphics.blit(SELECTION_BORDER, this.leftPos + -25, this.topPos + -47, 0, 0, 225, 264, 225, 264);
+    private record RaceEntry(ResourceLocation id, Component name, ResourceLocation portrait, boolean isParentGroup,
+            Race.RaceState state) {
+    }
 
-                // 2. Portraits (or empty slots)
-                int startIndex = page * 9;
-                this.hoverTooltip = null;
-                for (int i = 0; i < 9; i++) {
-                        int currentIdx = startIndex + i;
-                        int rowIdx = i / 3;
-                        int colIdx = i % 3;
-                        int portraitX = this.leftPos + PORTRAIT_COLS[colIdx];
-                        int portraitY = this.topPos + PORTRAIT_ROWS[rowIdx];
-
-                        if (currentIdx < raceEntries.size()) {
-                                graphics.blit(raceEntries.get(currentIdx).portrait, portraitX, portraitY, 0, 0,
-                                                PORTRAIT_SIZE,
-                                                PORTRAIT_SIZE, PORTRAIT_SIZE, PORTRAIT_SIZE);
-                                
-                                // Render State Overlays
-                                Race.RaceState state = raceEntries.get(currentIdx).state;
-                                if (state != Race.RaceState.FINISHED) {
-                                        ResourceLocation overlay = switch (state) {
-                                                case NEW -> PORTRAIT_INFO;
-                                                case EXPERIMENTAL -> PORTRAIT_ERROR;
-                                                case UNFINISHED -> PORTRAIT_WARNING;
-                                                default -> null;
-                                        };
-                                        if (overlay != null) {
-                                                graphics.blit(overlay, portraitX, portraitY, 0, 0, PORTRAIT_SIZE, PORTRAIT_SIZE, PORTRAIT_SIZE, PORTRAIT_SIZE);
-                                                
-                                                // Check for hover
-                                                if (mouseX >= portraitX && mouseX < portraitX + PORTRAIT_SIZE && mouseY >= portraitY && mouseY < portraitY + PORTRAIT_SIZE) {
-                                                        this.hoverTooltip = Component.translatable("gui.creraces.status." + state.name().toLowerCase());
-                                                }
-                                        }
-                                }
-                        } else {
-                                graphics.blit(RACE_SLOT, portraitX, portraitY, 0, 0, PORTRAIT_SIZE, PORTRAIT_SIZE,
-                                                PORTRAIT_SIZE,
-                                                PORTRAIT_SIZE);
-                        }
-                }
-
-                // 3. Decorations based on date
-                Calendar now = Calendar.getInstance();
-                int month = now.get(Calendar.MONTH);
-                int day = now.get(Calendar.DAY_OF_MONTH);
-                if (month == Calendar.DECEMBER) {
-                        graphics.blit(DECO_CHRISTMAS, this.leftPos + 11, this.topPos - 56, 0, 0, 151, 42, 151, 42);
-                } else if (month == Calendar.OCTOBER) {
-                        graphics.blit(DECO_HALLOWEEN, this.leftPos + 11, this.topPos - 56, 0, 0, 151, 42, 151, 42);
-                } else if (month == Calendar.JUNE && day >= 19 && day <= 26) {
-                        // Midsummer week: traditional Nordic celebration around the summer solstice, not the whole summer.
-                        graphics.blit(DECO_MIDSUMMER, this.leftPos + 11, this.topPos - 56, 0, 0, 151, 42, 151, 42);
-                }
-        }
-
-        @Override
-        @SuppressWarnings("null")
-        public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-                super.render(graphics, mouseX, mouseY, partialTick);
-
-                if (this.hoverTooltip != null) {
-                        graphics.renderTooltip(this.font, this.hoverTooltip, mouseX, mouseY);
-                }
-
-                RenderSystem.disableBlend();
-
-                Component pageCounter = Component.translatable("gui.creraces.selection.page", (page + 1),
-                                ((raceEntries.size() + 8) / 9));
-                graphics.drawString(this.font, pageCounter, this.leftPos + 73, this.topPos + 205, -1, false);
-        }
-
-        @Override
-        public boolean isPauseScreen() {
-                return false;
-        }
-
-        private static class RaceEntry {
-                public final ResourceLocation id;
-                public final Component name;
-                public final ResourceLocation portrait;
-                public final boolean isParentGroup;
-                public final Race.RaceState state;
-
-                public RaceEntry(ResourceLocation id, Component name, ResourceLocation portrait, boolean isParentGroup, Race.RaceState state) {
-                        this.id = id;
-                        this.name = name;
-                        this.portrait = portrait;
-                        this.isParentGroup = isParentGroup;
-                        this.state = state;
-                }
-        }
+    // Drawn at the top of render() instead, so Screen.render() does not blur over the panel.
+    @Override
+    public void renderBackground(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    }
 }

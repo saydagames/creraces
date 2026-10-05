@@ -1,76 +1,65 @@
 package mc.sayda.creraces.mixin;
 
+import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.util.RacePackProvider;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.repository.PackRepository;
 import net.minecraft.server.packs.repository.RepositorySource;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Mutable;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.lang.reflect.Field;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
+/** Adds RacePackProvider to every pack repository, for both resource packs and data packs. */
 @Mixin(PackRepository.class)
 public class PackRepositoryMixin {
+
+    @Shadow
+    @Final
+    @Mutable
+    private Set<RepositorySource> sources;
 
     @Inject(method = "<init>", at = @At("TAIL"))
     private void creraces$addRacePackSource(CallbackInfo ci) {
         try {
-            // PackRepository still doesn't store its PackType, so infer it from the call stack.
-            // Server data repositories are created via ServerPacksSource, even on the client.
-            PackType detectedType = PackType.SERVER_DATA;
-            StackTraceElement[] stack = Thread.currentThread().getStackTrace();
-            boolean isClientContext = false;
-            boolean isServerSource = false;
-
-            for (StackTraceElement element : stack) {
-                String className = element.getClassName();
-                if (className.contains("net.minecraft.server.packs.repository.ServerPacksSource")) {
-                    isServerSource = true;
-                    break;
-                }
-                if (className.contains("net.minecraft.client.Minecraft") ||
-                        className.contains("net.minecraft.client.main.Main")) {
-                    isClientContext = true;
-                }
-            }
-
-            if (isClientContext && !isServerSource) {
-                detectedType = PackType.CLIENT_RESOURCES;
-            }
-
-            // Locate the sources field. Named "sources" in Mojang mappings; the fallbacks cover
-            // remapped runtimes where that name does not survive.
-            Field sourcesField = null;
-            for (String name : new String[] { "sources", "repositorySources", "field_14227" }) {
-                try {
-                    sourcesField = PackRepository.class.getDeclaredField(name);
-                    break;
-                } catch (NoSuchFieldException ignored) {
-                }
-            }
-
-            if (sourcesField == null) {
-                return;
-            }
-            sourcesField.setAccessible(true);
-
-            @SuppressWarnings("unchecked")
-            Set<RepositorySource> sources = (Set<RepositorySource>) sourcesField.get(this);
-
+            RacePackProvider provider = new RacePackProvider(creraces$detectPackType());
             try {
-                sources.add(new RacePackProvider(detectedType));
+                this.sources.add(provider);
             } catch (UnsupportedOperationException e) {
-                // If unmodifiable (common on NeoForge), create a mutable copy and replace
-                Set<RepositorySource> mutableSources = new java.util.LinkedHashSet<>(sources);
-                mutableSources.add(new RacePackProvider(detectedType));
-                sourcesField.set(this, mutableSources);
+                // Vanilla keeps the sources in an immutable set, so swap in a mutable copy.
+                Set<RepositorySource> mutableSources = new LinkedHashSet<>(this.sources);
+                mutableSources.add(provider);
+                this.sources = mutableSources;
             }
-
         } catch (Throwable e) {
-            com.mojang.logging.LogUtils.getLogger().error("Failed to inject RacePackProvider", e);
+            CreRaces.LOGGER.error("Failed to inject RacePackProvider", e);
         }
+    }
+
+    /**
+     * PackRepository doesn't store its PackType, so infer it from the call stack. Server data
+     * repositories are created via ServerPacksSource, even on the client.
+     */
+    @Unique
+    private static PackType creraces$detectPackType() {
+        boolean isClientContext = false;
+        for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
+            String className = element.getClassName();
+            if (className.contains("net.minecraft.server.packs.repository.ServerPacksSource")) {
+                return PackType.SERVER_DATA;
+            }
+            if (className.contains("net.minecraft.client.Minecraft")
+                    || className.contains("net.minecraft.client.main.Main")) {
+                isClientContext = true;
+            }
+        }
+        return isClientContext ? PackType.CLIENT_RESOURCES : PackType.SERVER_DATA;
     }
 }

@@ -2,30 +2,41 @@ package mc.sayda.creraces.util;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
+import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.config.CreRacesConfig;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.io.File;
+import java.io.FileReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import javax.annotation.Nonnull;
+import java.util.Objects;
 
 public class GsonHelper {
     @Nonnull
     public static String getAsString(JsonObject json, String memberName, @Nonnull String fallback) {
         if (!json.has(memberName) || json.get(memberName).isJsonNull())
             return fallback;
-        return java.util.Objects.requireNonNull(json.get(memberName).getAsString());
+        return Objects.requireNonNull(json.get(memberName).getAsString());
     }
 
     @Nonnull
     public static String getAsString(JsonObject json, String memberName) {
         if (json.has(memberName))
-            return java.util.Objects.requireNonNull(json.get(memberName).getAsString());
-        throw new com.google.gson.JsonSyntaxException("Missing " + memberName);
+            return Objects.requireNonNull(json.get(memberName).getAsString());
+        throw new JsonSyntaxException("Missing " + memberName);
     }
 
-    @javax.annotation.Nullable
-    public static String getNullableString(JsonObject json, String memberName,
-            @javax.annotation.Nullable String fallback) {
+    @Nullable
+    public static String getNullableString(JsonObject json, String memberName, @Nullable String fallback) {
         if (!json.has(memberName) || json.get(memberName).isJsonNull())
             return fallback;
         return json.get(memberName).getAsString();
@@ -47,12 +58,18 @@ public class GsonHelper {
         return json.has(memberName) ? json.get(memberName).getAsBoolean() : fallback;
     }
 
+    /**
+     * Reads every .json under {@code folder} from all loaded packs, keyed by namespace and the path
+     * below the folder. When DEVELOPER_RESOURCE_PATH is set, that directory's files replace the
+     * packaged ones namespace by namespace.
+     */
     @Nonnull
     public static Map<ResourceLocation, JsonElement> getJsonFiles(ResourceManager resourceManager, String folder) {
         Map<ResourceLocation, JsonElement> map = new HashMap<>();
         resourceManager.listResources(folder, path -> path.getPath().endsWith(".json")).forEach((id, resource) -> {
-            try (java.io.InputStream is = resource.open()) {
-                JsonElement json = com.google.gson.JsonParser.parseReader(new java.io.InputStreamReader(is));
+            // JSON is UTF-8; the platform default charset (Java 17 on Windows) would mangle anything non-ASCII.
+            try (InputStream is = resource.open()) {
+                JsonElement json = JsonParser.parseReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 
                 String path = id.getPath();
                 // Find the index after the folder name and the following slash
@@ -67,24 +84,24 @@ public class GsonHelper {
                 ResourceLocation registryId = ResourceLocation.fromNamespaceAndPath(id.getNamespace(), name);
 
                 map.put(registryId, json);
-                mc.sayda.creraces.CreRaces.LOGGER.info("Discovered JSON file: {} -> {} from pack: {}", id, registryId,
+                CreRaces.LOGGER.info("Discovered JSON file: {} -> {} from pack: {}", id, registryId,
                         resource.sourcePackId());
             } catch (Exception e) {
-                mc.sayda.creraces.CreRaces.LOGGER.error("Failed to parse JSON file {}: {}", id, e.getMessage());
+                // Covers I/O, Gson and bad-id failures alike; one broken file must not stop the reload.
+                CreRaces.LOGGER.error("Failed to parse JSON file {}: {}", id, e.getMessage());
             }
         });
 
-        // Developer Fallback: scan local filesystem if DEVELOPER_RESOURCE_PATH is set
-        String devPathStr = mc.sayda.creraces.config.CreRacesConfig.DEVELOPER_RESOURCE_PATH.get();
+        String devPathStr = CreRacesConfig.DEVELOPER_RESOURCE_PATH.get();
         if (devPathStr != null && !devPathStr.isEmpty()) {
-            java.io.File devDir = new java.io.File(devPathStr);
+            File devDir = new File(devPathStr);
             if (devDir.exists() && devDir.isDirectory()) {
                 // Expected structure: <devPath>/<namespace>/<folder>/...
-                java.io.File[] namespaces = devDir.listFiles(java.io.File::isDirectory);
+                File[] namespaces = devDir.listFiles(File::isDirectory);
                 if (namespaces != null) {
-                    for (java.io.File namespaceDir : namespaces) {
+                    for (File namespaceDir : namespaces) {
                         String namespace = namespaceDir.getName();
-                        java.io.File categoryDir = new java.io.File(namespaceDir, folder);
+                        File categoryDir = new File(namespaceDir, folder);
                         if (categoryDir.exists() && categoryDir.isDirectory()) {
                             // Clear this namespace's entries first so dev-path deletions aren't masked by stale packaged files.
                             map.keySet().removeIf(id -> id.getNamespace().equals(namespace));
@@ -99,34 +116,28 @@ public class GsonHelper {
         return map;
     }
 
-    private static void scanDevDirectory(java.io.File dir, String namespace, String prefix,
+    private static void scanDevDirectory(File dir, String namespace, String prefix,
             Map<ResourceLocation, JsonElement> map) {
-        java.io.File[] files = dir.listFiles();
+        File[] files = dir.listFiles();
         if (files == null)
             return;
 
-        for (java.io.File file : files) {
+        for (File file : files) {
             if (file.isDirectory()) {
                 scanDevDirectory(file, namespace, prefix + file.getName() + "/", map);
             } else if (file.getName().endsWith(".json")) {
-                try (java.io.FileReader reader = new java.io.FileReader(file)) {
-                    JsonElement json = com.google.gson.JsonParser.parseReader(reader);
+                try (FileReader reader = new FileReader(file, StandardCharsets.UTF_8)) {
+                    JsonElement json = JsonParser.parseReader(reader);
                     String name = prefix + file.getName().substring(0, file.getName().length() - 5);
                     ResourceLocation registryId = ResourceLocation.fromNamespaceAndPath(namespace, name);
                     map.put(registryId, json);
-                    mc.sayda.creraces.CreRaces.LOGGER.info("Discovered DEV JSON file: {} -> {}", file.getAbsolutePath(),
+                    CreRaces.LOGGER.info("Discovered DEV JSON file: {} -> {}", file.getAbsolutePath(),
                             registryId);
                 } catch (Exception e) {
-                    mc.sayda.creraces.CreRaces.LOGGER.error("Failed to parse DEV JSON file {}: {}",
+                    CreRaces.LOGGER.error("Failed to parse DEV JSON file {}: {}",
                             file.getAbsolutePath(), e.getMessage());
                 }
             }
         }
     }
 }
-
-
-
-
-
-

@@ -2,13 +2,24 @@ package mc.sayda.creraces.network;
 
 import dev.architectury.networking.NetworkManager;
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.ability.Ability;
+import mc.sayda.creraces.ability.AbilityRegistry;
 import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.engine.ActionRegistry;
+import mc.sayda.creraces.race.AttributeIncidents;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
 
+import java.util.Objects;
 import java.util.function.Supplier;
 
+/**
+ * C2S: equips an ability into a slot. A null ability, or the ability already in that slot,
+ * unequips it instead.
+ */
 public class EquipAbilityPacket {
     public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "equip_ability");
 
@@ -42,50 +53,40 @@ public class EquipAbilityPacket {
     public void handle(Supplier<NetworkManager.PacketContext> contextSupplier) {
         NetworkManager.PacketContext context = contextSupplier.get();
         context.queue(() -> {
-            DataUtils.getVariables(context.getPlayer()).ifPresent(vars -> {
-                // Ownership check: null = unequip (always allowed); non-null must be unlocked
+            Player player = context.getPlayer();
+            DataUtils.getVariables(player).ifPresent(vars -> {
                 if (abilityId != null) {
                     if (!vars.isAbilityUnlocked(abilityId)) {
                         CreRaces.LOGGER.warn("Player {} tried to equip unowned ability: {}",
-                                context.getPlayer().getName().getString(), abilityId);
+                                player.getName().getString(), abilityId);
                         return;
                     }
-                    if (mc.sayda.creraces.ability.AbilityRegistry.get(abilityId) == null) {
+                    if (AbilityRegistry.get(abilityId) == null) {
                         CreRaces.LOGGER.warn("Player {} tried to equip invalid/unregistered ability: {}",
-                                context.getPlayer().getName().getString(), abilityId);
+                                player.getName().getString(), abilityId);
                         return;
                     }
                 }
 
-                // Execute onDeactivate actions for the currently equipped ability before
-                // removing it
                 ResourceLocation currentAbilityId = vars.getAbilityInSlot(slot);
-                ResourceLocation abilityToEquip = abilityId;
+                ResourceLocation abilityToEquip = Objects.equals(currentAbilityId, abilityId) ? null : abilityId;
 
-                // Toggle logic: if already equipped in this slot, unequip
-                if (java.util.Objects.equals(currentAbilityId, abilityId)) {
-                    abilityToEquip = null;
-                }
-
+                // Whatever leaves the slot gets its onDeactivate actions first
                 if (currentAbilityId != null) {
-                    mc.sayda.creraces.ability.Ability currentAbility = mc.sayda.creraces.ability.AbilityRegistry
-                            .get(currentAbilityId);
+                    Ability currentAbility = AbilityRegistry.get(currentAbilityId);
                     if (currentAbility != null && currentAbility.onDeactivate() != null) {
-                        for (mc.sayda.creraces.engine.ActionRegistry.RaceAction action : currentAbility
-                                .onDeactivate()) {
-                            action.execute(context.getPlayer(), null, slot, null);
+                        for (ActionRegistry.RaceAction action : currentAbility.onDeactivate()) {
+                            action.execute(player, null, slot, null);
                         }
                     }
                 }
 
                 vars.equipAbility(slot, abilityToEquip);
-                // Force an immediate attribute refresh to handle passive modifier changes
-                if (context.getPlayer() instanceof net.minecraft.server.level.ServerPlayer sp) {
-                    mc.sayda.creraces.race.AttributeIncidents.eikiJudgment(sp);
+                // Passive modifiers may have changed with the slot
+                if (player instanceof ServerPlayer sp) {
+                    AttributeIncidents.eikiJudgment(sp);
                 }
-
-                // Sync back to the acting player.
-                BoundaryHandler.resyncVariables(context.getPlayer(), context.getPlayer());
+                BoundaryHandler.resyncVariables(player, player);
             });
         });
     }

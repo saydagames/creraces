@@ -1,13 +1,17 @@
 package mc.sayda.creraces.config;
 
+import java.util.List;
 import java.util.function.Supplier;
 
+/**
+ * Loader-neutral view of the mod config. Every value starts at its default and is re-pointed at
+ * the real config entry by the Forge/NeoForge/Fabric config class during init.
+ */
 public class CreRacesConfig {
     // [SECTION: COMMON]
     public static Supplier<Boolean> MINI_BUILD_ENABLED = () -> true;
     public static Supplier<Boolean> MINI_BUILD_REQUIRES_LEARNED = () -> true;
-    public static Supplier<java.util.List<String>> MINI_BUILD_DIMENSION_BLACKLIST = () -> java.util.List
-            .of("creraces:fairy_realm");
+    public static Supplier<List<String>> MINI_BUILD_DIMENSION_BLACKLIST = () -> List.of("creraces:fairy_realm");
     public static Supplier<Boolean> MINI_FURNACE_ENABLED = () -> true;
     public static Supplier<Boolean> MINI_CAMPFIRE_ENABLED = () -> true;
     public static Supplier<Boolean> MINI_BREWING_STAND_ENABLED = () -> true;
@@ -46,7 +50,7 @@ public class CreRacesConfig {
     public static Supplier<Double> POCKET_EXPANSION_COST = () -> 200.0;
     public static Supplier<Integer> POCKET_INVITE_MAX = () -> -1;
 
-    // [SECTION: ENTITY & OTHER]
+    // [SECTION: ENTITIES]
     public static Supplier<Double> ENTITY_FEATHER_DAMAGE = () -> 2.0;
     public static Supplier<Double> ENTITY_FEATHER_GRAVITY = () -> 0.05;
     public static Supplier<Double> ENTITY_POISON_EMITTER_HEALTH = () -> 16.0;
@@ -57,12 +61,6 @@ public class CreRacesConfig {
     public static Supplier<Double> ENTITY_POISON_EMITTER_MOBILE_MOVEMENT_SPEED = () -> 0.35;
     public static Supplier<Double> ENTITY_POISON_EMITTER_RADIUS = () -> 5.5;
     public static Supplier<Integer> ENTITY_POISON_EMITTER_LIFETIME_TICKS = () -> 2400; // 2 minutes
-
-    // [SECTION: POTION EFFECTS]
-    public static Supplier<Double> RAT_VENOM_SCALING = () -> 0.05;
-    public static Supplier<Double> BOILING_SCALING = () -> 5.0 / 300.0;
-    public static Supplier<Double> BLEEDING_SCALING = () -> 3.0 / 300.0;
-
     public static Supplier<Double> ENTITY_TORNADO_HEALTH = () -> 20.0;
     public static Supplier<Double> ENTITY_TORNADO_ARMOR = () -> 5.0;
     public static Supplier<Double> ENTITY_TORNADO_ATTACK_DAMAGE = () -> 3.0;
@@ -81,6 +79,15 @@ public class CreRacesConfig {
     public static Supplier<Integer> ENTITY_TROLL_PILLAR_PULSE_INTERVAL = () -> 20;
     public static Supplier<Integer> ENTITY_TROLL_PILLAR_CURSE_DURATION = () -> 100;
     public static Supplier<Integer> ENTITY_TROLL_PILLAR_LIFETIME_TICKS = () -> 600;
+    public static Supplier<Double> REMAINS_HEALTH = () -> 10.0;
+    public static Supplier<Integer> REMAINS_DECAY_TIME = () -> 1200;
+
+    // [SECTION: POTION EFFECTS]
+    public static Supplier<Double> RAT_VENOM_SCALING = () -> 0.05;
+    public static Supplier<Double> BOILING_SCALING = () -> 5.0 / 300.0;
+    public static Supplier<Double> BLEEDING_SCALING = () -> 3.0 / 300.0;
+
+    // [SECTION: GAMEPLAY, SAFETY LIMITS AND MISC]
     public static Supplier<Double> ABILITY_HASTE_CAP = () -> 40.0;
     public static Supplier<Integer> MAX_RAT_TUNNELS = () -> 1;
     public static Supplier<Integer> BREAK_BLOCKS_MAX_RADIUS = () -> -1;
@@ -155,15 +162,13 @@ public class CreRacesConfig {
     public static void saveHudConfig() {
         HUD_CONFIG_SAVE.run();
     }
-    public static Supplier<Double> REMAINS_HEALTH = () -> 10.0;
-    public static Supplier<Integer> REMAINS_DECAY_TIME = () -> 1200;
-    public static Supplier<Double> MAX_SOUL = () -> 9.0;
 
     // [SECTION: RESOURCE DEFAULTS]
     public static Supplier<Double> DEFAULT_MAX_MANA = () -> 500.0;
     public static Supplier<Double> DEFAULT_MAX_ENERGY = () -> 200.0;
     public static Supplier<Double> DEFAULT_MAX_RAGE = () -> 100.0;
     public static Supplier<Double> DEFAULT_MAX_GRIT = () -> 100.0;
+    public static Supplier<Double> MAX_SOUL = () -> 9.0;
     /** Path to look for race/ability JSONs on the local filesystem (dev only). */
     public static Supplier<String> DEVELOPER_RESOURCE_PATH = () -> "";
 
@@ -173,7 +178,7 @@ public class CreRacesConfig {
     public static Supplier<Boolean> TERRITORY_INTER_RACE_BLOCKING    = () -> true;
     /** Max chunk-distance a player may be from a chunk when claiming via the territory map. -1 disables the check. */
     public static Supplier<Integer> TERRITORY_MAP_CLAIM_MAX_DISTANCE = () -> 256;
-    /** Coins deducted per chunk when claiming territory via the map. 0 = free. Default: 200 */
+    /** Coins deducted per chunk when claiming territory via the map. 0 = free. */
     public static Supplier<Integer> TERRITORY_CLAIM_COST_PER_CHUNK   = () -> 200;
     public static Supplier<Boolean> TERRITORY_ENTRY_MESSAGES         = () -> true;
 

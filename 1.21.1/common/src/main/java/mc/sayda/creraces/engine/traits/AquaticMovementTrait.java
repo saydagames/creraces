@@ -1,24 +1,16 @@
 package mc.sayda.creraces.engine.traits;
 
-import com.google.gson.JsonObject;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.engine.TraitRegistry;
-import mc.sayda.creraces.engine.ScalingValue;
 import mc.sayda.creraces.util.GsonHelper;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.player.Player;
 
+/** Water movement settings read by AquaticMovementHandler. */
 public class AquaticMovementTrait implements TraitRegistry.RaceTrait {
-    private final ScalingValue speed;
     private final boolean neutralBuoyancy;
 
-    public AquaticMovementTrait(ScalingValue speed, boolean neutralBuoyancy) {
-        this.speed = speed;
+    public AquaticMovementTrait(boolean neutralBuoyancy) {
         this.neutralBuoyancy = neutralBuoyancy;
-    }
-
-    public ScalingValue getSpeed() {
-        return speed;
     }
 
     public boolean isNeutralBuoyancy() {
@@ -27,9 +19,8 @@ public class AquaticMovementTrait implements TraitRegistry.RaceTrait {
 
     public static void register() {
         TraitRegistry.register(ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "aquatic_movement"), json -> {
-            ScalingValue speed = ScalingValue.fromJson(json, "speed", 0.05);
             boolean buoyancy = GsonHelper.getAsBoolean(json, "neutral_buoyancy", false);
-            return new AquaticMovementTrait(speed, buoyancy);
+            return new AquaticMovementTrait(buoyancy);
         });
     }
 }

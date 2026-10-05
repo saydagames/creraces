@@ -54,7 +54,7 @@
                 "type": "creraces:and",
                 "conditions": [
                     {
-                        "type": "creraces:spirit",
+                        "type": "creraces:in_spirit_realm",
                         "value": false
                     },
                     {

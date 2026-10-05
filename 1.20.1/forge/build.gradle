@@ -31,11 +31,17 @@ dependencies {
     forge "net.minecraftforge:forge:${rootProject.property('1_20_1_minecraft_version')}-${rootProject.property('1_20_1_forge_version')}"
     modImplementation "curse.maven:terrablender-563928:6290448"
     modImplementation "curse.maven:curios-309927:6418456"
+    modImplementation "curse.maven:journeymap-32274:8923662"
+    // JourneyMap ships these three jar-in-jar, which dev runs do not extract: its API, the
+    // commonnetworking mod it requires, and the image library it writes maps with.
+    modRuntimeOnly "info.journeymap:journeymap-api-forge:1.20.1-2.0.0"
+    modRuntimeOnly "mysticdrew:common-networking-forge:1.0.6-1.20.1"
+    runtimeOnly "ar.com.hjg:pngj:2.1.0"
     modApi "dev.architectury:architectury-forge:${rootProject.property('1_20_1_architectury_version')}"
 
     common(project(path: ":1.20.1:common", configuration: "namedElements")) { transitive = false }
     shadowCommon(project(path: ":1.20.1:common", configuration: "transformProductionForge")) { transitive = false }
-    
+
     // Twilight Lib - Direct File Dependency
     modImplementation files("${rootProject.projectDir.parentFile}/twilight-lib/1.20.1/forge/build/libs/twilight_lib-1.20.1-forge-${rootProject.twilight_lib_version}.jar")
     modImplementation "curse.maven:pehkui-319596:5393101"

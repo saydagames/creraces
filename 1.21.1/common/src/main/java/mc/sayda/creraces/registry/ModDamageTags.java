@@ -9,6 +9,4 @@ public class ModDamageTags {
     public static final TagKey<DamageType> IS_PHYSICAL = TagKey.create(Registries.DAMAGE_TYPE, ResourceLocation.fromNamespaceAndPath("creraces", "is_physical"));
     public static final TagKey<DamageType> IS_MAGIC = TagKey.create(Registries.DAMAGE_TYPE, ResourceLocation.fromNamespaceAndPath("creraces", "is_magic"));
     public static final TagKey<DamageType> IS_TRUE = TagKey.create(Registries.DAMAGE_TYPE, ResourceLocation.fromNamespaceAndPath("creraces", "is_true"));
-    public static final TagKey<DamageType> NO_KNOCKBACK = TagKey.create(Registries.DAMAGE_TYPE, ResourceLocation.fromNamespaceAndPath("minecraft", "no_knockback"));
-
 }

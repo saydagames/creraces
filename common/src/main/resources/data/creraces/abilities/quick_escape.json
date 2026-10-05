@@ -41,13 +41,21 @@
             "if_true": [
                 {
                     "type": "creraces:teleport",
-                    "x": "state:node_x",
+                    "x": {
+                        "base": 0.5,
+                        "scales_with": "state:node_x",
+                        "factor": 1.0
+                    },
                     "y": {
                         "base": 1.0,
                         "scales_with": "state:node_y",
                         "factor": 1.0
                     },
-                    "z": "state:node_z",
+                    "z": {
+                        "base": -0.5,
+                        "scales_with": "state:node_z",
+                        "factor": 1.0
+                    },
                     "dimension": "minecraft:overworld"
                 },
                 {
@@ -69,7 +77,3 @@
     ],
     "creraces:wiki_page": "Ability:Quick_Escape"
 }
-
-
-
-

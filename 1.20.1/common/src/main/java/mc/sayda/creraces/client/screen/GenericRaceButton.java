@@ -1,6 +1,5 @@
 package mc.sayda.creraces.client.screen;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.ImageButton;
@@ -9,6 +8,7 @@ import net.minecraft.resources.ResourceLocation;
 
 import javax.annotation.Nonnull;
 
+/** Race menu button: the shared three-frame button texture with a centred text label. */
 public class GenericRaceButton extends ImageButton {
     private static final ResourceLocation BUTTON_TEX = new ResourceLocation("creraces",
             "textures/screens/atlas/button.png");

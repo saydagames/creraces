@@ -1,6 +1,6 @@
 package mc.sayda.creraces.client;
 
-import net.minecraft.client.Minecraft;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -29,8 +29,7 @@ public final class AbilityIconRenderer {
      *                 {@link mc.sayda.creraces.ability.Ability} record
      * @param x        left pixel of the icon slot
      * @param y        top pixel of the icon slot
-     * @param size     width/height in pixels (typically 16 or 18 for item-render,
-     *                 any for blit)
+     * @param size     width and height in pixels
      */
     public static void render(GuiGraphics graphics, ResourceLocation icon, int x, int y, int size) {
         if (icon == null)
@@ -57,14 +56,29 @@ public final class AbilityIconRenderer {
         }
     }
 
+    /**
+     * Same as {@link #render(GuiGraphics, ResourceLocation, int, int, int)}, tinted with an RGB
+     * colour. Covers both render paths: the texture-blit path reads the shader colour the same
+     * way GuiGraphics.blit always has, and the item path's entity/item shaders multiply their
+     * output by the same ColorModulator uniform, so both end up tinted the same way.
+     *
+     * @param color 0xRRGGBB tint; the alpha byte, if any, is ignored
+     */
+    public static void render(GuiGraphics graphics, ResourceLocation icon, int x, int y, int size, int color) {
+        float r = ((color >> 16) & 0xFF) / 255f;
+        float g = ((color >> 8) & 0xFF) / 255f;
+        float b = (color & 0xFF) / 255f;
+        RenderSystem.setShaderColor(r, g, b, 1f);
+        render(graphics, icon, x, y, size);
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+    }
+
     public static boolean isTexturePath(ResourceLocation icon) {
         String path = icon.getPath();
         return path.contains("textures/") || path.endsWith(".png");
     }
 
-    /**
-     * Render a level overlay on top of an icon.
-     */
+    /** Draws the upgrade-level badge (levels 1 to 5) over an icon. */
     public static void renderLevel(GuiGraphics graphics, int level, int x, int y, int size) {
         if (level < 1 || level > 5)
             return;

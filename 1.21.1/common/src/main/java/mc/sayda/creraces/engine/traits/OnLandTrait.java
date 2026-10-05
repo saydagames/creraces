@@ -5,24 +5,25 @@ import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.engine.TraitRegistry;
 import mc.sayda.creraces.engine.condition.Condition;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.core.BlockPos;
 
-import java.util.ArrayList;
+import javax.annotation.Nullable;
 import java.util.List;
 
-/**
- * Trait that executes actions when a player lands on the ground.
- */
+/** Runs actions when the player lands after being airborne, with the landing block as the interact position. */
 public class OnLandTrait implements TraitRegistry.RaceTrait {
 
     private final ResourceLocation traitId;
+    private final ResourceLocation wasOnGroundStateId;
     private final List<ActionRegistry.RaceAction> actions;
+    @Nullable
     private final Condition condition;
 
-    public OnLandTrait(ResourceLocation traitId, List<ActionRegistry.RaceAction> actions, Condition condition) {
+    public OnLandTrait(ResourceLocation traitId, List<ActionRegistry.RaceAction> actions, @Nullable Condition condition) {
         this.traitId = traitId;
+        this.wasOnGroundStateId = traitId.withSuffix("_was_on_ground");
         this.actions = actions;
         this.condition = condition;
     }
@@ -32,28 +33,22 @@ public class OnLandTrait implements TraitRegistry.RaceTrait {
         if (player.level().isClientSide()) return;
         DataUtils.getVariables(player).ifPresent(vars -> {
             boolean onGround = player.onGround();
-            ResourceLocation stateId = ResourceLocation.fromNamespaceAndPath(traitId.getNamespace(),
-                    traitId.getPath() + "_was_on_ground");
 
-            // wasOnGround will be true if we haven't tracked this player yet (to avoid
-            // firing on first spawn)
-            boolean wasOnGround = vars.getPersistentState(stateId) > 0.5 || !vars.getTraitTimers().containsKey(traitId);
+            // A player not tracked yet counts as grounded, so nothing fires on the first tick after spawning.
+            boolean wasOnGround = vars.getPersistentState(wasOnGroundStateId) > 0.5
+                    || !vars.getTraitTimers().containsKey(traitId);
 
             if (onGround && !wasOnGround) {
                 BlockPos pos = player.blockPosition();
                 if (condition == null || condition.evaluate(player, null, null, pos)) {
                     CreRaces.LOGGER.debug("OnLandTrait: Firing {} actions for player {}", actions.size(),
                             player.getName().getString());
-                    for (ActionRegistry.RaceAction action : actions) {
-                        if (!action.execute(player, null, null, pos)) {
-                            break;
-                        }
-                    }
+                    ActionRegistry.runChain(actions, player, null, null, pos);
                 }
             }
 
-            vars.setPersistentState(stateId, onGround ? 1.0 : 0.0);
-            // Mark that we've seen this player
+            vars.setPersistentState(wasOnGroundStateId, onGround ? 1.0 : 0.0);
+            // The trait timer only marks this player as tracked.
             vars.setTraitTimer(traitId, 1);
         });
     }
@@ -61,24 +56,8 @@ public class OnLandTrait implements TraitRegistry.RaceTrait {
     public static void register() {
         TraitRegistry.register(ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "on_land"), json -> {
             Condition condition = json.has("condition") ? Condition.fromJson(json.getAsJsonObject("condition")) : null;
-
-            List<ActionRegistry.RaceAction> actions = new ArrayList<>();
-            if (json.has("actions") && json.get("actions").isJsonArray()) {
-                for (var actionElem : json.getAsJsonArray("actions")) {
-                    if (actionElem.isJsonObject()) {
-                        ActionRegistry.RaceAction action = ActionRegistry.fromJson(actionElem.getAsJsonObject());
-                        if (action != null) {
-                            actions.add(action);
-                        }
-                    }
-                }
-            }
-
-            String traitName = json.has("name") ? json.get("name").getAsString()
-                    : "on_land_" + Math.abs(json.toString().hashCode());
-            ResourceLocation traitId = ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, traitName);
-
-            return new OnLandTrait(traitId, actions, condition);
+            return new OnLandTrait(TraitIds.fromJson(json, "on_land_"), ActionRegistry.listFromJson(json, "actions"),
+                    condition);
         });
     }
 }

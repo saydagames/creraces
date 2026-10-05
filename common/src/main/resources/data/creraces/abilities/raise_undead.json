@@ -1,0 +1,60 @@
+{
+    "creraces:name": "ability.creraces.raise_undead.name",
+    "creraces:description": "ability.creraces.raise_undead.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:wither_skeleton_skull",
+    "creraces:cooldown": 200,
+    "creraces:cost": 15,
+    "creraces:race": [
+        "creraces:undead"
+    ],
+    "creraces:actions": [
+        {
+            "type": "creraces:aoe",
+            "radius": 8.0,
+            "targets": ["all"],
+            "actions": [
+                {
+                    "type": "creraces:conditional",
+                    "condition": {
+                        "type": "creraces:entity",
+                        "entity_type": "creraces:remains_undead",
+                        "use_target": true
+                    },
+                    "if_true": [
+                        {
+                            "type": "creraces:conditional",
+                            "condition": {
+                                "type": "creraces:entity_data",
+                                "key": "creraces:servant_of",
+                                "use_target": true,
+                                "operator": "==",
+                                "value": { "type": "uuid", "property": "uuid", "entity": "self" }
+                            },
+                            "if_true": [
+                                {
+                                    "type": "creraces:summon_entity",
+                                    "entity": { "type": "string", "key": "creraces:stored_entity", "entity": "target" },
+                                    "use_target": true,
+                                    "tag_data": [
+                                        { "key": "creraces:servant_of", "value": { "type": "uuid", "property": "uuid", "entity": "self" } }
+                                    ]
+                                },
+                                {
+                                    "type": "creraces:remove_entity"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:entity.zombie.ambient",
+            "volume": 1.0,
+            "pitch": 0.6
+        }
+    ],
+    "creraces:wiki_page": "Ability:Raise_Undead"
+}

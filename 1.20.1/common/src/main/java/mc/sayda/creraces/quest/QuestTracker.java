@@ -1,5 +1,6 @@
 package mc.sayda.creraces.quest;
 
+import mc.sayda.creraces.config.CreRacesConfig;
 import mc.sayda.creraces.item.QuestScrollItem;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -9,6 +10,8 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
+
+import java.util.function.Consumer;
 
 /**
  * Drives quest objective progress and expiration. Each hook scans the player's inventory
@@ -66,7 +69,7 @@ public class QuestTracker {
         if (delta <= 0) return;
 
         progress(player, stack, quest, delta);
-        if (!mc.sayda.creraces.config.CreRacesConfig.KEEP_QUEST_ITEMS.get()) {
+        if (!CreRacesConfig.KEEP_QUEST_ITEMS.get()) {
             // The items just credited are consumed instead of kept, so the peak must be
             // rebaselined to the post-removal total - otherwise it would sit above the
             // player's actual held count and silently block all future progress.
@@ -77,7 +80,7 @@ public class QuestTracker {
 
     public static void tickQuests(ServerPlayer player) {
         for (ItemStack stack : player.getInventory().items) {
-            if (stack.getItem() instanceof mc.sayda.creraces.item.QuestScrollItem) {
+            if (stack.getItem() instanceof QuestScrollItem) {
                 QuestScrollItem.tick(player, stack);
             }
         }
@@ -102,9 +105,9 @@ public class QuestTracker {
         }
     }
 
-    private static void forEachActiveScroll(ServerPlayer player, java.util.function.Consumer<ItemStack> action) {
+    private static void forEachActiveScroll(ServerPlayer player, Consumer<ItemStack> action) {
         for (ItemStack stack : player.getInventory().items) {
-            if (stack.getItem() instanceof mc.sayda.creraces.item.QuestScrollItem
+            if (stack.getItem() instanceof QuestScrollItem
                     && QuestScrollItem.getState(stack) == QuestScrollItem.State.ACTIVE) {
                 action.accept(stack);
             }

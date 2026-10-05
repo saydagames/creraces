@@ -17,6 +17,7 @@ import javax.annotation.Nullable;
  */
 public class UnbindAbilityAction implements ActionRegistry.RaceAction {
     private final AbilitySlot slot;
+    @Nullable
     private final String restoreFrom;
 
     public UnbindAbilityAction(AbilitySlot slot, @Nullable String restoreFrom) {
@@ -25,15 +26,16 @@ public class UnbindAbilityAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot triggerSlot, @Nullable BlockPos interact_pos) {
+    public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot triggerSlot,
+            @Nullable BlockPos interactPos) {
         DataUtils.getVariables(player).ifPresent(vars -> {
             ResourceLocation toRestore = null;
             if (restoreFrom != null && !restoreFrom.isEmpty()) {
-                String val = vars.getCustomization(restoreFrom);
-                if (val != null && !val.isEmpty()) {
-                    toRestore = ResourceLocation.tryParse(val);
+                String saved = vars.getCustomization(restoreFrom);
+                if (saved != null && !saved.isEmpty()) {
+                    toRestore = ResourceLocation.tryParse(saved);
                 }
-                // Clear the restore key after use to prevent double restoration
+                // Consume the saved id so a second unbind can't restore it again.
                 vars.setCustomization(restoreFrom, null);
             }
             vars.equipAbility(slot, toRestore);
@@ -43,17 +45,8 @@ public class UnbindAbilityAction implements ActionRegistry.RaceAction {
     }
 
     public static void register() {
-        ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "unbind"), json -> {
-            AbilitySlot slot = AbilitySlot.A1;
-            if (json.has("slot")) {
-                try {
-                    slot = AbilitySlot.valueOf(json.get("slot").getAsString().toUpperCase());
-                } catch (Exception e) {
-                    CreRaces.LOGGER.warn("Invalid slot in unbind action: {}", json.get("slot").getAsString());
-                }
-            }
-            String restoreFrom = GsonHelper.getNullableString(json, "restore_from", null);
-            return new UnbindAbilityAction(slot, restoreFrom);
-        });
+        ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "unbind"), json -> new UnbindAbilityAction(
+                BindAbilityAction.parseSlot(json, "unbind"),
+                GsonHelper.getNullableString(json, "restore_from", null)));
     }
 }

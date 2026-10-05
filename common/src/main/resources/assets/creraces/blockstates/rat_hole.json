@@ -1,7 +1,7 @@
 {
-    "variants": {
-        "": {
-            "model": "creraces:block/rat_hole"
-        }
+  "variants": {
+    "": {
+      "model": "creraces:block/rat_hole"
     }
+  }
 }

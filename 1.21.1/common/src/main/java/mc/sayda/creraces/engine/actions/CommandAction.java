@@ -1,18 +1,25 @@
 package mc.sayda.creraces.engine.actions;
 
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.util.GsonHelper;
-
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+
+import javax.annotation.Nullable;
 
 /**
- * Executes a server-side command as if the player (or server) ran it.
+ * Runs a server command as the caster. "@s" and "@t" in the template are replaced with the UUIDs
+ * of the caster and the target.
  */
 public class CommandAction implements ActionRegistry.RaceAction {
     public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "command");
+
+    private static final int OPERATOR_PERMISSION_LEVEL = 4;
 
     private final String commandTemplate;
     private final boolean runAsOp;
@@ -25,23 +32,20 @@ public class CommandAction implements ActionRegistry.RaceAction {
     }
 
     public static void register() {
-        ActionRegistry.register(ID, data -> {
-            String command = GsonHelper.getAsString(data, "command", "");
-            boolean asOp = GsonHelper.getAsBoolean(data, "as_op", false);
-            boolean atEntity = GsonHelper.getAsBoolean(data, "at_entity", false);
-            return new CommandAction(command, asOp, atEntity);
-        });
+        ActionRegistry.register(ID, json -> new CommandAction(
+                GsonHelper.getAsString(json, "command", ""),
+                GsonHelper.getAsBoolean(json, "as_op", false),
+                GsonHelper.getAsBoolean(json, "at_entity", false)));
     }
 
     @Override
-    public boolean execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
-            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
-        if (player.level().isClientSide() || commandTemplate.isEmpty())
+    public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
+            @Nullable BlockPos interactPos) {
+        if (player.level().isClientSide() || commandTemplate.isEmpty()) {
             return true;
+        }
 
-        // Use UUID strings instead of player name to prevent selector injection
-        // (a player named "@a" or "@e[...]" could manipulate the command otherwise)
+        // UUIDs rather than names, so a player named "@a" or "@e[...]" can't inject a selector.
         String command = commandTemplate.replace("@s", player.getUUID().toString());
         if (target != null) {
             command = command.replace("@t", target.getUUID().toString());
@@ -49,15 +53,12 @@ public class CommandAction implements ActionRegistry.RaceAction {
 
         CommandSourceStack source = player.createCommandSourceStack();
         if (runAsOp) {
-            // Only escalate to level 4 if the player is already an operator.
-            // Non-OP players get no permission escalation from run_as_op.
-            int grantedLevel = source.hasPermission(4) ? 4 : 0;
+            // as_op never escalates: operators keep level 4, everyone else drops to 0.
+            int grantedLevel = source.hasPermission(OPERATOR_PERMISSION_LEVEL) ? OPERATOR_PERMISSION_LEVEL : 0;
             source = source.withPermission(grantedLevel);
         }
-
         if (runAtEntity) {
-            source = source.withPosition(player.position())
-                    .withRotation(player.getRotationVector());
+            source = source.withPosition(player.position()).withRotation(player.getRotationVector());
         }
 
         player.getServer().getCommands().performPrefixedCommand(source, command);

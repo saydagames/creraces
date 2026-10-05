@@ -1,46 +1,58 @@
 package mc.sayda.creraces.engine.actions;
 
+import com.google.gson.JsonObject;
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.capability.IPlayerVariables;
 import mc.sayda.creraces.config.CreRacesConfig;
 import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.engine.ScalingValue;
 import mc.sayda.creraces.engine.TargetFilter;
+import mc.sayda.creraces.network.BoundaryHandler;
+import mc.sayda.creraces.race.AttributeIncidents;
 import mc.sayda.creraces.util.GsonHelper;
 import mc.sayda.creraces.util.IFoodDataAccessor;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 
 import javax.annotation.Nullable;
+import java.util.Set;
 
 /**
- * Unified value-modification action merging the old set_state and modify_resource.
- *
- * resource field:
- *   "self"           – current ability slot's persistent state
- *   "state:<key>"    – named persistent state (e.g. "state:creraces:stored_material")
- *   "mana" / "energy" / "grit" / "rage" / "soul" / "karma" / "coins" /
- *   "ap" / "ad" / "ah" / "cr" / "passive_cd"  – named race resources
- *   "health" / "food" / "saturation" / "air"  – vanilla entity resources
- *   "custom:<key>"   – customization string variable (parsed as double)
+ * Sets, adds to or multiplies a numeric value. The "resource" field picks which one:
+ * <ul>
+ * <li>"self": the casting ability's persistent state</li>
+ * <li>"state:&lt;key&gt;": a named persistent state, e.g. "state:creraces:stored_material"</li>
+ * <li>"mana", "energy", "grit", "rage", "soul", "karma", "coins", "ap", "ad", "ah", "cr", "passive_cd": race resources</li>
+ * <li>"health", "food", "saturation", "air": vanilla entity resources</li>
+ * <li>"custom:&lt;key&gt;": a customization variable, parsed as a number</li>
+ * </ul>
+ * For states, "mode" can capture a coordinate instead of "value": POS_*, BLOCK_*, TARGET_* or TARGET_BLOCK_*.
  */
 public class ModifyValueAction implements ActionRegistry.RaceAction {
+    private static final String STATE_PREFIX = "state:";
+    private static final String CUSTOM_PREFIX = "custom:";
 
     private final String resource;
     private final ScalingValue value;
-    private final String operation;   // "set", "add", "multiply"
-    private final String mode;        // coordinate capture: STATIC | POS_X/Y/Z | BLOCK_X/Y/Z | TARGET_X/Y/Z | TARGET_BLOCK_X/Y/Z
-    private final ScalingValue offsetX, offsetY, offsetZ;
+    private final String operation;
+    private final String mode;
+    private final ScalingValue offsetX;
+    private final ScalingValue offsetY;
+    private final ScalingValue offsetZ;
     private final boolean persistent;
     private final boolean failIfInsufficient;
     private final boolean useTarget;
     private final TargetFilter targets;
 
     public ModifyValueAction(String resource, ScalingValue value, String operation, String mode,
-            ScalingValue offsetX, ScalingValue offsetY, ScalingValue offsetZ,
-            boolean persistent, boolean failIfInsufficient,
-            boolean useTarget, TargetFilter targets) {
+            ScalingValue offsetX, ScalingValue offsetY, ScalingValue offsetZ, boolean persistent,
+            boolean failIfInsufficient, boolean useTarget, TargetFilter targets) {
         this.resource = resource;
         this.value = value;
         this.operation = operation;
@@ -55,190 +67,216 @@ public class ModifyValueAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public boolean execute(Player player, @Nullable LivingEntity target,
-            @Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @Nullable net.minecraft.core.BlockPos interact_pos) {
-
+    public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
+            @Nullable BlockPos interactPos) {
         String res = resource.toLowerCase();
-
-        // State / ability persistent values
-        if (res.equals("self") || res.startsWith("state:")) {
-            return DataUtils.getVariables(player).map(vars -> {
-                ResourceLocation stateId;
-                if (res.equals("self")) {
-                    stateId = slot != null ? vars.getAbilityInSlot(slot) : null;
-                } else {
-                    String subKey = res.substring(6); // strip "state:" (already lowercased)
-                    if (!subKey.contains(":")) subKey = "creraces:" + subKey;
-                    stateId = ResourceLocation.tryParse(subKey);
-                }
-                if (stateId == null) return true;
-
-                double current = vars.getPersistentState(stateId);
-                double ox = offsetX.evaluate(player, target, slot);
-                double oy = offsetY.evaluate(player, target, slot);
-                double oz = offsetZ.evaluate(player, target, slot);
-                double contextual = value.evaluate(player, target, slot);
-
-                switch (mode.toUpperCase()) {
-                    case "POS_X"          -> contextual = player.getX() + ox;
-                    case "POS_Y"          -> contextual = player.getY() + oy;
-                    case "POS_Z"          -> contextual = player.getZ() + oz;
-                    case "BLOCK_X"        -> contextual = player.blockPosition().getX() + (int) ox;
-                    case "BLOCK_Y"        -> contextual = player.blockPosition().getY() + (int) oy;
-                    case "BLOCK_Z"        -> contextual = player.blockPosition().getZ() + (int) oz;
-                    case "TARGET_X"       -> { if (target != null) contextual = target.getX() + ox; }
-                    case "TARGET_Y"       -> { if (target != null) contextual = target.getY() + oy; }
-                    case "TARGET_Z"       -> { if (target != null) contextual = target.getZ() + oz; }
-                    case "TARGET_BLOCK_X" -> contextual = resolveBlockX(player, interact_pos, ox);
-                    case "TARGET_BLOCK_Y" -> contextual = resolveBlockY(player, interact_pos, oy);
-                    case "TARGET_BLOCK_Z" -> contextual = resolveBlockZ(player, interact_pos, oz);
-                }
-
-                double next = applyOp(current, contextual);
-                if (failIfInsufficient && next < 0) return false;
-
-                vars.setPersistentState(stateId, next);
-                if (persistent) vars.setStatePersistent(stateId, true);
-                mc.sayda.creraces.network.BoundaryHandler.resyncVariables(player, player);
-                return true;
-            }).orElse(true);
+        if (res.equals("self") || res.startsWith(STATE_PREFIX)) {
+            return DataUtils.getVariables(player)
+                    .map(vars -> modifyState(res, vars, player, target, slot, interactPos))
+                    .orElse(true);
         }
 
-        // Targeting resolution for non-state resources
         LivingEntity entity = useTarget ? target : player;
-        if (entity == null || !targets.isValid(entity, player)) return true;
-
+        if (entity == null || !targets.isValid(entity, player)) {
+            return true;
+        }
         double evaluated = value.evaluate(player, target, slot);
 
-        // Vanilla entity resources
         if (res.equals("air") || res.equals("health") || res.equals("food") || res.equals("saturation")) {
-            double current = switch (res) {
-                case "air"        -> entity.getAirSupply();
-                case "health"     -> entity.getHealth();
-                case "food"       -> entity instanceof Player p ? ((IFoodDataAccessor) p.getFoodData()).creraces$getFoodLevel() : 0;
-                case "saturation" -> entity instanceof Player p ? ((IFoodDataAccessor) p.getFoodData()).creraces$getSaturation() : 0;
-                default -> 0;
-            };
-            double next = applyOp(current, evaluated);
-            if (failIfInsufficient && next < 0) return false;
-            switch (res) {
-                case "air"        -> entity.setAirSupply((int) Math.max(0, Math.min(next, entity.getMaxAirSupply())));
-                case "health"     -> entity.setHealth((float) Math.max(0, Math.min(next, entity.getMaxHealth())));
-                case "food"       -> { if (entity instanceof Player p) ((IFoodDataAccessor) p.getFoodData()).creraces$setFoodLevel((int) Math.max(0, Math.min(next, CreRacesConfig.PASSIVE_DEFAULT_MAX_FOOD.get()))); }
-                case "saturation" -> { if (entity instanceof Player p) ((IFoodDataAccessor) p.getFoodData()).creraces$setSaturation((float) Math.max(0, next)); }
+            return modifyVanillaResource(res, entity, evaluated);
+        }
+        if (!(entity instanceof Player subject)) {
+            return true;
+        }
+        return DataUtils.getVariables(subject)
+                .map(vars -> res.startsWith(CUSTOM_PREFIX)
+                        ? modifyCustomization(vars, subject, evaluated)
+                        : modifyRaceResource(res, vars, subject, evaluated))
+                .orElse(true);
+    }
+
+    private boolean modifyState(String res, IPlayerVariables vars, Player player, @Nullable LivingEntity target,
+            @Nullable AbilitySlot slot, @Nullable BlockPos interactPos) {
+        ResourceLocation stateId;
+        if (res.equals("self")) {
+            stateId = slot != null ? vars.getAbilityInSlot(slot) : null;
+        } else {
+            String subKey = res.substring(STATE_PREFIX.length());
+            if (!subKey.contains(":")) {
+                subKey = CreRaces.MODID + ":" + subKey;
             }
+            stateId = ResourceLocation.tryParse(subKey);
+        }
+        if (stateId == null) {
             return true;
         }
 
-        // Player-only resources
-        if (!(entity instanceof Player p)) return true;
-
-        return DataUtils.getVariables(p).map(vars -> {
-            // Custom string variable
-            if (res.startsWith("custom:")) {
-                String key = resource.substring(7);
-                String valStr = vars.getCustomization(key);
-                double current = 0;
-                try { if (valStr != null && !valStr.isEmpty()) current = Double.parseDouble(valStr); } catch (NumberFormatException ignored) {}
-                double next = applyOp(current, evaluated);
-                if (failIfInsufficient && next < 0) return false;
-                vars.setCustomization(key, String.valueOf(next));
-                mc.sayda.creraces.network.BoundaryHandler.resyncVariables(p, p);
-                return true;
+        double ox = offsetX.evaluate(player, target, slot);
+        double oy = offsetY.evaluate(player, target, slot);
+        double oz = offsetZ.evaluate(player, target, slot);
+        double contextual = value.evaluate(player, target, slot);
+        switch (mode.toUpperCase()) {
+            case "POS_X" -> contextual = player.getX() + ox;
+            case "POS_Y" -> contextual = player.getY() + oy;
+            case "POS_Z" -> contextual = player.getZ() + oz;
+            case "BLOCK_X" -> contextual = player.blockPosition().getX() + (int) ox;
+            case "BLOCK_Y" -> contextual = player.blockPosition().getY() + (int) oy;
+            case "BLOCK_Z" -> contextual = player.blockPosition().getZ() + (int) oz;
+            case "TARGET_X" -> { if (target != null) contextual = target.getX() + ox; }
+            case "TARGET_Y" -> { if (target != null) contextual = target.getY() + oy; }
+            case "TARGET_Z" -> { if (target != null) contextual = target.getZ() + oz; }
+            case "TARGET_BLOCK_X" -> contextual = targetBlockCoordinate(player, interactPos, Direction.Axis.X, ox);
+            case "TARGET_BLOCK_Y" -> contextual = targetBlockCoordinate(player, interactPos, Direction.Axis.Y, oy);
+            case "TARGET_BLOCK_Z" -> contextual = targetBlockCoordinate(player, interactPos, Direction.Axis.Z, oz);
+            default -> {
             }
+        }
 
-            // Named race resources
-            double current = switch (res) {
-                case "mana"       -> vars.getMana();
-                case "energy"     -> vars.getEnergy();
-                case "grit"       -> vars.getGrit();
-                case "rage"       -> vars.getRage();
-                case "soul"       -> vars.getSoul();
-                case "karma"      -> vars.getKarma();
-                case "coins"      -> vars.getCoins();
-                case "ap"         -> vars.getAp();
-                case "ad"         -> vars.getAd();
-                case "ah"         -> vars.getAh();
-                case "cr"         -> vars.getCr();
-                case "passive_cd" -> vars.getPassiveCooldown();
-                default -> 0;
-            };
+        double next = applyOp(vars.getPersistentState(stateId), contextual);
+        if (failIfInsufficient && next < 0) {
+            return false;
+        }
+        vars.setPersistentState(stateId, next);
+        if (persistent) {
+            vars.setStatePersistent(stateId, true);
+        }
+        BoundaryHandler.resyncVariables(player, player);
+        return true;
+    }
 
-            double next = applyOp(current, evaluated);
-            if (failIfInsufficient && next < 0) return false;
+    /** The interacted or looked-at block's coordinate plus the offset, or the caster's own when there is none. */
+    private static double targetBlockCoordinate(Player player, @Nullable BlockPos interactPos, Direction.Axis axis,
+            double offset) {
+        BlockPos block = BlockTargeting.interactedOrLookedAt(player, interactPos);
+        return block != null ? block.get(axis) + (int) offset : player.position().get(axis) + offset;
+    }
 
-            switch (res) {
-                case "mana"       -> vars.setMana(next);
-                case "energy"     -> vars.setEnergy(next);
-                case "grit"       -> vars.setGrit(next);
-                case "rage"       -> vars.setRage(next);
-                case "soul"       -> {
-                    vars.setSoul(Math.max(0, Math.min(next, CreRacesConfig.MAX_SOUL.get())));
-                    if (p instanceof net.minecraft.server.level.ServerPlayer sp)
-                        mc.sayda.creraces.race.AttributeIncidents.eikiJudgment(sp);
+    private boolean modifyVanillaResource(String res, LivingEntity entity, double evaluated) {
+        double current = switch (res) {
+            case "air" -> entity.getAirSupply();
+            case "health" -> entity.getHealth();
+            case "food" -> entity instanceof Player p ? foodData(p).creraces$getFoodLevel() : 0;
+            case "saturation" -> entity instanceof Player p ? foodData(p).creraces$getSaturation() : 0;
+            default -> 0;
+        };
+        double next = applyOp(current, evaluated);
+        if (failIfInsufficient && next < 0) {
+            return false;
+        }
+        switch (res) {
+            case "air" -> entity.setAirSupply((int) Math.max(0, Math.min(next, entity.getMaxAirSupply())));
+            case "health" -> entity.setHealth((float) Math.max(0, Math.min(next, entity.getMaxHealth())));
+            case "food" -> {
+                if (entity instanceof Player p) {
+                    foodData(p).creraces$setFoodLevel(
+                            (int) Math.max(0, Math.min(next, CreRacesConfig.PASSIVE_DEFAULT_MAX_FOOD.get())));
                 }
-                case "karma"      -> vars.setKarma(next);
-                case "coins"      -> vars.setCoins(next);
-                case "ap"         -> vars.setAp(next);
-                case "ad"         -> vars.setAd(next);
-                case "ah"         -> vars.setAh(next);
-                case "cr"         -> vars.setCr(next);
-                case "passive_cd" -> vars.setPassiveCooldown(next);
             }
-            mc.sayda.creraces.network.BoundaryHandler.resyncVariables(p, p);
-            return true;
-        }).orElse(true);
+            case "saturation" -> {
+                if (entity instanceof Player p) {
+                    foodData(p).creraces$setSaturation((float) Math.max(0, next));
+                }
+            }
+            default -> {
+            }
+        }
+        return true;
+    }
+
+    private static IFoodDataAccessor foodData(Player player) {
+        return (IFoodDataAccessor) player.getFoodData();
+    }
+
+    private boolean modifyCustomization(IPlayerVariables vars, Player player, double evaluated) {
+        String key = resource.substring(CUSTOM_PREFIX.length());
+        String stored = vars.getCustomization(key);
+        double current = 0;
+        if (stored != null && !stored.isEmpty()) {
+            try {
+                current = Double.parseDouble(stored);
+            } catch (NumberFormatException e) {
+                // A non-numeric customization counts as 0.
+            }
+        }
+        double next = applyOp(current, evaluated);
+        if (failIfInsufficient && next < 0) {
+            return false;
+        }
+        vars.setCustomization(key, String.valueOf(next));
+        BoundaryHandler.resyncVariables(player, player);
+        return true;
+    }
+
+    private boolean modifyRaceResource(String res, IPlayerVariables vars, Player player, double evaluated) {
+        double current = switch (res) {
+            case "mana" -> vars.getMana();
+            case "energy" -> vars.getEnergy();
+            case "grit" -> vars.getGrit();
+            case "rage" -> vars.getRage();
+            case "soul" -> vars.getSoul();
+            case "karma" -> vars.getKarma();
+            case "coins" -> vars.getCoins();
+            case "ap" -> vars.getAp();
+            case "ad" -> vars.getAd();
+            case "ah" -> vars.getAh();
+            case "cr" -> vars.getCr();
+            case "passive_cd" -> vars.getPassiveCooldown();
+            default -> 0;
+        };
+        double next = applyOp(current, evaluated);
+        if (failIfInsufficient && next < 0) {
+            return false;
+        }
+        switch (res) {
+            case "mana" -> vars.setMana(next);
+            case "energy" -> vars.setEnergy(next);
+            case "grit" -> vars.setGrit(next);
+            case "rage" -> vars.setRage(next);
+            case "soul" -> {
+                vars.setSoul(Math.max(0, Math.min(next, CreRacesConfig.MAX_SOUL.get())));
+                // Attribute modifiers can scale with soul, so they are re-applied straight away.
+                if (player instanceof ServerPlayer serverPlayer) {
+                    AttributeIncidents.eikiJudgment(serverPlayer);
+                }
+            }
+            case "karma" -> vars.setKarma(next);
+            case "coins" -> vars.setCoins(next);
+            case "ap" -> vars.setAp(next);
+            case "ad" -> vars.setAd(next);
+            case "ah" -> vars.setAh(next);
+            case "cr" -> vars.setCr(next);
+            case "passive_cd" -> vars.setPassiveCooldown(next);
+            default -> {
+            }
+        }
+        BoundaryHandler.resyncVariables(player, player);
+        return true;
     }
 
     private double applyOp(double current, double incoming) {
         return switch (operation.toLowerCase()) {
-            case "add"      -> current + incoming;
+            case "add" -> current + incoming;
             case "multiply" -> current * incoming;
-            default         -> incoming; // "set"
+            default -> incoming;
         };
     }
 
-    private double resolveBlockX(Player player, @Nullable net.minecraft.core.BlockPos pos, double ox) {
-        if (pos != null) return pos.getX() + (int) ox;
-        var hit = player.pick(5.0, 0f, false);
-        if (hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK)
-            return ((net.minecraft.world.phys.BlockHitResult) hit).getBlockPos().getX() + (int) ox;
-        return player.getX() + ox;
-    }
-
-    private double resolveBlockY(Player player, @Nullable net.minecraft.core.BlockPos pos, double oy) {
-        if (pos != null) return pos.getY() + (int) oy;
-        var hit = player.pick(5.0, 0f, false);
-        if (hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK)
-            return ((net.minecraft.world.phys.BlockHitResult) hit).getBlockPos().getY() + (int) oy;
-        return player.getY() + oy;
-    }
-
-    private double resolveBlockZ(Player player, @Nullable net.minecraft.core.BlockPos pos, double oz) {
-        if (pos != null) return pos.getZ() + (int) oz;
-        var hit = player.pick(5.0, 0f, false);
-        if (hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK)
-            return ((net.minecraft.world.phys.BlockHitResult) hit).getBlockPos().getZ() + (int) oz;
-        return player.getZ() + oz;
-    }
-
     public static void register() {
-        ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "modify_value"), json -> parse(json));
+        ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "modify_value"), ModifyValueAction::parse);
     }
 
-    private static ModifyValueAction parse(com.google.gson.JsonObject json) {
-        String resource = GsonHelper.getAsString(json, "resource", "mana");
-        ScalingValue value = ScalingValue.fromJson(json, "value", 0.0);
-        String operation = GsonHelper.getAsString(json, "operation", "set");
-        String mode = GsonHelper.getAsString(json, "mode", "STATIC");
-        ScalingValue ox = ScalingValue.fromJson(json, "offset_x", 0.0);
-        ScalingValue oy = ScalingValue.fromJson(json, "offset_y", 0.0);
-        ScalingValue oz = ScalingValue.fromJson(json, "offset_z", 0.0);
-        boolean persistent = GsonHelper.getAsBoolean(json, "persistent", false);
-        boolean failIfInsufficient = GsonHelper.getAsBoolean(json, "fail_if_insufficient", false);
-        boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
-        TargetFilter targets = TargetFilter.fromJson(json, "targets", java.util.Set.of("enemies", "self"));
-        return new ModifyValueAction(resource, value, operation, mode, ox, oy, oz, persistent, failIfInsufficient, useTarget, targets);
+    private static ModifyValueAction parse(JsonObject json) {
+        return new ModifyValueAction(
+                GsonHelper.getAsString(json, "resource", "mana"),
+                ScalingValue.fromJson(json, "value", 0.0),
+                GsonHelper.getAsString(json, "operation", "set"),
+                GsonHelper.getAsString(json, "mode", "STATIC"),
+                ScalingValue.fromJson(json, "offset_x", 0.0),
+                ScalingValue.fromJson(json, "offset_y", 0.0),
+                ScalingValue.fromJson(json, "offset_z", 0.0),
+                GsonHelper.getAsBoolean(json, "persistent", false),
+                GsonHelper.getAsBoolean(json, "fail_if_insufficient", false),
+                GsonHelper.getAsBoolean(json, "use_target", false),
+                TargetFilter.fromJson(json, "targets", Set.of("enemies", "self")));
     }
 }

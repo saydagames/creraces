@@ -39,7 +39,7 @@
             "type": "creraces:on_hurt",
             "condition": {
                 "type": "creraces:holding_item",
-                "tag": "#minecraft:iron_tools"
+                "tag": "#creraces:iron_tools"
             },
             "actions": [
                 {

@@ -1,9 +1,12 @@
 package mc.sayda.creraces.world.inventory;
 
+import mc.sayda.creraces.ability.EssenceType;
 import mc.sayda.creraces.item.InkAndQuillItem;
 import mc.sayda.creraces.item.ScrollItem;
 import mc.sayda.creraces.registry.ModMenuTypes;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
@@ -14,9 +17,14 @@ import net.minecraft.world.item.ItemStack;
 
 public class ResearchTableMenu extends AbstractContainerMenu {
 
+    // Menu slot ranges: the two table slots, then the player's main inventory, then the hotbar
+    private static final int TABLE_SLOTS = 2;
+    private static final int INVENTORY_END = TABLE_SLOTS + 27;
+    private static final int HOTBAR_END = INVENTORY_END + 9;
+
     private final Container tableInventory;
     private final BlockPos tablePos;
-    private final int[] storageEssenceCounts = new int[mc.sayda.creraces.ability.EssenceType.values().length];
+    private final int[] storageEssenceCounts = new int[EssenceType.values().length];
 
     public ResearchTableMenu(int syncId, Inventory playerInv, Container tableInventory, BlockPos pos) {
         super(ModMenuTypes.RESEARCH_TABLE.get(), syncId);
@@ -53,15 +61,15 @@ public class ResearchTableMenu extends AbstractContainerMenu {
         }
     }
 
-    public ResearchTableMenu(int syncId, Inventory playerInv, net.minecraft.network.FriendlyByteBuf buf) {
+    public ResearchTableMenu(int syncId, Inventory playerInv, FriendlyByteBuf buf) {
         this(syncId, playerInv, new SimpleContainer(2), buf.readBlockPos());
-        mc.sayda.creraces.ability.EssenceType[] types = mc.sayda.creraces.ability.EssenceType.values();
+        EssenceType[] types = EssenceType.values();
         for (int i = 0; i < types.length; i++) {
             storageEssenceCounts[i] = buf.readVarInt();
         }
     }
 
-    public int getStorageCount(mc.sayda.creraces.ability.EssenceType type) {
+    public int getStorageCount(EssenceType type) {
         return storageEssenceCounts[type.ordinal()];
     }
 
@@ -74,7 +82,7 @@ public class ResearchTableMenu extends AbstractContainerMenu {
     }
 
     public boolean isScrollCrafted() {
-        net.minecraft.nbt.CompoundTag tag = tableInventory.getItem(1).getTag();
+        CompoundTag tag = tableInventory.getItem(1).getTag();
         return tag != null && tag.contains("Ability");
     }
 
@@ -92,19 +100,19 @@ public class ResearchTableMenu extends AbstractContainerMenu {
         ItemStack stack = slot.getItem();
         result = stack.copy();
 
-        if (index < 2) {
+        if (index < TABLE_SLOTS) {
             // Table slot -> move to inventory/hotbar
-            if (!this.moveItemStackTo(stack, 2, 38, true)) return ItemStack.EMPTY;
+            if (!this.moveItemStackTo(stack, TABLE_SLOTS, HOTBAR_END, true)) return ItemStack.EMPTY;
         } else {
             // Inventory/hotbar -> try quill slot first, then scroll slot
             if (!this.moveItemStackTo(stack, 0, 1, false)) {
                 if (!this.moveItemStackTo(stack, 1, 2, false)) {
-                    if (index < 29) {
+                    if (index < INVENTORY_END) {
                         // Inv row -> hotbar
-                        if (!this.moveItemStackTo(stack, 29, 38, false)) return ItemStack.EMPTY;
+                        if (!this.moveItemStackTo(stack, INVENTORY_END, HOTBAR_END, false)) return ItemStack.EMPTY;
                     } else {
                         // Hotbar -> inv rows
-                        if (!this.moveItemStackTo(stack, 2, 29, false)) return ItemStack.EMPTY;
+                        if (!this.moveItemStackTo(stack, TABLE_SLOTS, INVENTORY_END, false)) return ItemStack.EMPTY;
                     }
                 }
             }

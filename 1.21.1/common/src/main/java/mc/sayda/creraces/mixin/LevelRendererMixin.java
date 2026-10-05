@@ -1,22 +1,38 @@
 package mc.sayda.creraces.mixin;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import mc.sayda.creraces.client.render.SpiritRealmRenderer;
-import mc.sayda.creraces.capability.DataUtils;
-import net.minecraft.client.Camera;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.LevelRenderer;
-import net.minecraft.resources.ResourceLocation;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.BufferUploader;
+import com.mojang.blaze3d.vertex.MeshData;
+import com.mojang.blaze3d.vertex.PoseStack;
+import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.client.render.BeamRenderer;
+import mc.sayda.creraces.client.render.SpiritRealmRenderer;
+import mc.sayda.creraces.client.render.TetherRenderer;
+import mc.sayda.creraces.client.render.WaypointRenderer;
+import mc.sayda.creraces.engine.WorldState;
+import net.minecraft.client.Camera;
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+/**
+ * Spirit realm sky (black sky, permanent stars, SpiritRealmRenderer's moons in place of the vanilla
+ * sun and moon), the overworld spirit moon texture, and the world-space overlay renderers.
+ */
 @Mixin(LevelRenderer.class)
 public class LevelRendererMixin {
 
@@ -24,24 +40,24 @@ public class LevelRendererMixin {
     @Final
     private Minecraft minecraft;
 
+    @Unique
     private PoseStack creraces$currentPoseStack;
-    private Matrix4f creraces$currentMatrix;
+    @Unique
     private float creraces$currentDelta;
-    private boolean creraces$moonPass = false;
-    private boolean creraces$sunPass = false;
-
-    private static final ResourceLocation SUN_LOCATION = ResourceLocation.parse("textures/environment/sun.png");
-    private static final ResourceLocation MOON_LOCATION = ResourceLocation.parse("textures/environment/moon_phases.png");
+    // Set when the texture redirect swallows the sun/moon texture, so the next draw is replaced too.
+    @Unique
+    private boolean creraces$moonPass;
+    @Unique
+    private boolean creraces$sunPass;
 
     @Inject(method = "renderSky", at = @At("HEAD"))
     private void creraces$storeLocals(Matrix4f frustumMatrix, Matrix4f projectionMatrix, float partialTick,
             Camera camera, boolean isFoggy, Runnable skyFogSetup, CallbackInfo ci) {
         // 1.21 stopped handing renderSky a PoseStack and builds one from the frustum matrix itself.
-        // Mirror that here so the celestial redirects below draw against the same transform as vanilla.
+        // Mirror that so the celestial redirects below draw against the same transform as vanilla.
         PoseStack poseStack = new PoseStack();
         poseStack.mulPose(frustumMatrix);
         this.creraces$currentPoseStack = poseStack;
-        this.creraces$currentMatrix = projectionMatrix;
         this.creraces$currentDelta = partialTick;
         this.creraces$moonPass = false;
         this.creraces$sunPass = false;
@@ -49,12 +65,8 @@ public class LevelRendererMixin {
 
     @Redirect(method = "renderSky", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderTexture(ILnet/minecraft/resources/ResourceLocation;)V"))
     private void creraces$overrideCelestialTexture(int unit, ResourceLocation location) {
-        boolean inSpirit = this.minecraft.player != null
-                && DataUtils.getVariables(this.minecraft.player).map(v -> v.isInSpiritRealm()).orElse(false);
-
-        if (inSpirit) {
-            // Suppress vanilla celestial rendering in spirit realm; custom draw handled by
-            // hijackCelestialDraw
+        if (creraces$viewerInSpiritRealm()) {
+            // Skip vanilla's sun and moon; creraces$hijackCelestialDraw draws ours instead.
             if (location.getPath().contains("moon")) {
                 this.creraces$moonPass = true;
                 return;
@@ -63,64 +75,50 @@ public class LevelRendererMixin {
                 this.creraces$sunPass = true;
                 return;
             }
-        } else {
-            // In the overworld: replace moon texture when a spirit moon is active
-            if (location.getPath().contains("moon")
-                    && mc.sayda.creraces.engine.WorldState.isSpiritMoon(this.minecraft.level)) {
-                com.mojang.blaze3d.systems.RenderSystem.setShaderTexture(unit, SpiritRealmRenderer.SPIRIT_MOON_ATLAS);
-                return;
-            }
+        } else if (location.getPath().contains("moon") && WorldState.isSpiritMoon(this.minecraft.level)) {
+            RenderSystem.setShaderTexture(unit, SpiritRealmRenderer.SPIRIT_MOON_ATLAS);
+            return;
         }
-        com.mojang.blaze3d.systems.RenderSystem.setShaderTexture(unit, location);
+        RenderSystem.setShaderTexture(unit, location);
     }
 
     @Redirect(method = "renderSky", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/BufferUploader;drawWithShader(Lcom/mojang/blaze3d/vertex/MeshData;)V"))
-    private void creraces$hijackCelestialDraw(com.mojang.blaze3d.vertex.MeshData buffer) {
+    private void creraces$hijackCelestialDraw(MeshData buffer) {
         if (this.creraces$moonPass) {
             this.creraces$moonPass = false;
             buffer.close();
-            SpiritRealmRenderer.renderSecondMoon(this.creraces$currentPoseStack, this.creraces$currentMatrix,
-                    this.creraces$currentDelta, false);
+            SpiritRealmRenderer.renderSecondMoon(this.creraces$currentPoseStack, this.creraces$currentDelta, false);
             return;
         }
         if (this.creraces$sunPass) {
             this.creraces$sunPass = false;
             buffer.close();
-            SpiritRealmRenderer.renderSecondMoon(this.creraces$currentPoseStack, this.creraces$currentMatrix,
-                    this.creraces$currentDelta, true);
+            SpiritRealmRenderer.renderSecondMoon(this.creraces$currentPoseStack, this.creraces$currentDelta, true);
             return;
         }
-        com.mojang.blaze3d.vertex.BufferUploader.drawWithShader(buffer);
+        BufferUploader.drawWithShader(buffer);
     }
 
-    /**
-     * Force Absolute Night color in Spirit Realm.
-     */
     @Redirect(method = "renderSky", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/ClientLevel;getSkyColor(Lnet/minecraft/world/phys/Vec3;F)Lnet/minecraft/world/phys/Vec3;"))
-    private net.minecraft.world.phys.Vec3 creraces$spiritSkyColor(net.minecraft.client.multiplayer.ClientLevel level,
-            net.minecraft.world.phys.Vec3 pos, float f) {
-        if (this.minecraft.player != null
-                && DataUtils.getVariables(this.minecraft.player).map(v -> v.isInSpiritRealm()).orElse(false)) {
-            return new net.minecraft.world.phys.Vec3(0, 0, 0);
-        }
-        return level.getSkyColor(pos, f);
+    private Vec3 creraces$spiritSkyColor(ClientLevel level, Vec3 pos, float partialTick) {
+        return creraces$viewerInSpiritRealm() ? Vec3.ZERO : level.getSkyColor(pos, partialTick);
     }
 
     @Redirect(method = "renderSky", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/ClientLevel;getStarBrightness(F)F"))
-    private float creraces$spiritStarBrightness(net.minecraft.client.multiplayer.ClientLevel level, float f) {
-        if (this.minecraft.player != null
-                && DataUtils.getVariables(this.minecraft.player).map(v -> v.isInSpiritRealm()).orElse(false)) {
-            return 1.0f; // Stars visible at all times
-        }
-        return level.getStarBrightness(f);
+    private float creraces$spiritStarBrightness(ClientLevel level, float partialTick) {
+        return creraces$viewerInSpiritRealm() ? 1.0f : level.getStarBrightness(partialTick);
+    }
+
+    @Unique
+    private boolean creraces$viewerInSpiritRealm() {
+        return this.minecraft.player != null
+                && DataUtils.getVariables(this.minecraft.player).map(vars -> vars.isInSpiritRealm()).orElse(false);
     }
 
     @Inject(method = "renderLevel", at = @At("TAIL"))
-    private void creraces$renderBeams(net.minecraft.client.DeltaTracker deltaTracker, boolean renderBlockOutline,
-            net.minecraft.client.Camera camera,
-            net.minecraft.client.renderer.GameRenderer gameRenderer,
-            net.minecraft.client.renderer.LightTexture lightTexture, org.joml.Matrix4f frustumMatrix,
-            org.joml.Matrix4f projectionMatrix, CallbackInfo ci) {
+    private void creraces$renderBeams(DeltaTracker deltaTracker, boolean renderBlockOutline, Camera camera,
+            GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f frustumMatrix,
+            Matrix4f projectionMatrix, CallbackInfo ci) {
         if (this.minecraft.level == null) {
             return;
         }
@@ -130,9 +128,9 @@ public class LevelRendererMixin {
         // world-space transform from the frustum matrix the way the sky path does.
         PoseStack poseStack = new PoseStack();
         poseStack.mulPose(frustumMatrix);
-        mc.sayda.creraces.client.render.BeamRenderer.render(poseStack, projectionMatrix, partialTick, gameTime,
-                this.minecraft);
-        mc.sayda.creraces.client.render.TetherRenderer.render(poseStack, projectionMatrix, partialTick, gameTime,
-                this.minecraft);
+        BeamRenderer.render(poseStack, projectionMatrix, partialTick, gameTime, this.minecraft);
+        TetherRenderer.render(poseStack, projectionMatrix, partialTick, gameTime, this.minecraft);
+        // frustumMatrix is the world-to-view transform here; stash it for this frame's waypoint HUD pass.
+        WaypointRenderer.captureMatrices(frustumMatrix, projectionMatrix);
     }
 }

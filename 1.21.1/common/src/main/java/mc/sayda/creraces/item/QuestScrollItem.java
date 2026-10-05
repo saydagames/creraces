@@ -1,9 +1,13 @@
 package mc.sayda.creraces.item;
 
+import mc.sayda.creraces.client.ClientAccess;
 import mc.sayda.creraces.engine.WorldState;
 import mc.sayda.creraces.quest.Quest;
 import mc.sayda.creraces.quest.QuestRegistry;
 import mc.sayda.creraces.quest.QuestSessionRegistry;
+import mc.sayda.creraces.registry.ModDataComponents;
+import mc.sayda.creraces.registry.ModItems;
+import mc.sayda.creraces.util.ItemNbt;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -14,7 +18,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Optional;
@@ -28,6 +31,17 @@ public class QuestScrollItem extends Item {
         ACTIVE, COMPLETED
     }
 
+    private static final String TAG_QUEST_ID = "QuestId";
+    private static final String TAG_TIER = "Tier";
+    private static final String TAG_OWNER_UUID = "OwnerUUID";
+    private static final String TAG_OWNER_NAME = "OwnerName";
+    private static final String TAG_PROGRESS = "Progress";
+    private static final String TAG_DAY_OBTAINED = "DayObtained";
+    private static final String TAG_TARGET_DAY = "TargetDay";
+    private static final String TAG_DURATION_DAYS = "DurationDays";
+    private static final String TAG_STATE = "State";
+    private static final String TAG_COLLECT_PEAK = "CollectPeak";
+
     public QuestScrollItem(Properties properties) {
         super(properties);
     }
@@ -37,34 +51,32 @@ public class QuestScrollItem extends Item {
         return getState(stack) == State.COMPLETED;
     }
 
-    // ── Creation ──────────────────────────────────────────────────────────────
-
     public static ItemStack create(Quest quest, ServerPlayer owner) {
         // A re-taken quest must not be immediately self-removed by a stale abandoned flag
         // left over from a previous instance of the same quest.
         QuestSessionRegistry.clearAbandoned(owner.getUUID(), quest.id());
 
-        ItemStack stack = new ItemStack(mc.sayda.creraces.registry.ModItems.QUEST_SCROLL.get());
+        ItemStack stack = new ItemStack(ModItems.QUEST_SCROLL.get());
         CompoundTag tag = new CompoundTag();
         long dayObtained = WorldState.currentDay(owner.level());
-        tag.putString("QuestId", quest.id().toString());
-        tag.putInt("Tier", quest.tier());
-        tag.putUUID("OwnerUUID", owner.getUUID());
-        tag.putString("OwnerName", owner.getName().getString());
-        tag.putInt("Progress", 0);
-        tag.putLong("DayObtained", dayObtained);
-        tag.putLong("TargetDay", dayObtained + quest.durationDays());
-        tag.putInt("DurationDays", quest.durationDays());
-        tag.putString("State", State.ACTIVE.name());
+        tag.putString(TAG_QUEST_ID, quest.id().toString());
+        tag.putInt(TAG_TIER, quest.tier());
+        tag.putUUID(TAG_OWNER_UUID, owner.getUUID());
+        tag.putString(TAG_OWNER_NAME, owner.getName().getString());
+        tag.putInt(TAG_PROGRESS, 0);
+        tag.putLong(TAG_DAY_OBTAINED, dayObtained);
+        tag.putLong(TAG_TARGET_DAY, dayObtained + quest.durationDays());
+        tag.putInt(TAG_DURATION_DAYS, quest.durationDays());
+        tag.putString(TAG_STATE, State.ACTIVE.name());
         // Collect-item quests track progress by the player's highest-ever held count of the
         // target since accepting the quest, not by raw pickup events - otherwise dropping an
         // already-owned item and picking it back up would farm free progress. Seeding this to
         // whatever they already own means only genuinely new items above that count, and above
         // any later peak, ever grant progress. See QuestTracker.onItemPickup.
         if (quest.objective() instanceof Quest.CollectItemObjective objective) {
-            tag.putInt("CollectPeak", countMatching(owner, objective));
+            tag.putInt(TAG_COLLECT_PEAK, countMatching(owner, objective));
         }
-        mc.sayda.creraces.util.ItemNbt.set(stack, tag);
+        ItemNbt.set(stack, tag);
         return stack;
     }
 
@@ -90,55 +102,51 @@ public class QuestScrollItem extends Item {
 
     /** A minimal stack carrying only Tier/State tags, used as a villager trade cost template. */
     public static ItemStack createTemplate(int tier, State state) {
-        ItemStack stack = new ItemStack(mc.sayda.creraces.registry.ModItems.QUEST_SCROLL.get());
+        ItemStack stack = new ItemStack(ModItems.QUEST_SCROLL.get());
         CompoundTag tag = new CompoundTag();
-        tag.putInt("Tier", tier);
-        tag.putString("State", state.name());
-        mc.sayda.creraces.util.ItemNbt.set(stack, tag);
+        tag.putInt(TAG_TIER, tier);
+        tag.putString(TAG_STATE, state.name());
+        ItemNbt.set(stack, tag);
         if (state == State.COMPLETED) {
             // Villager trade costs match on this component; see GuildReceptionistTrades.
-            stack.set(mc.sayda.creraces.registry.ModDataComponents.QUEST_GRADE.get(), tier);
+            stack.set(ModDataComponents.QUEST_GRADE.get(), tier);
         }
         return stack;
     }
 
-    // ── Readers ───────────────────────────────────────────────────────────────
-
     public static Optional<Quest> getQuest(ItemStack stack) {
-        CompoundTag tag = mc.sayda.creraces.util.ItemNbt.get(stack);
-        if (tag == null || !tag.contains("QuestId")) return Optional.empty();
-        ResourceLocation id = ResourceLocation.tryParse(tag.getString("QuestId"));
+        CompoundTag tag = ItemNbt.get(stack);
+        if (!tag.contains(TAG_QUEST_ID)) return Optional.empty();
+        ResourceLocation id = ResourceLocation.tryParse(tag.getString(TAG_QUEST_ID));
         return id == null ? Optional.empty() : Optional.ofNullable(QuestRegistry.get(id));
     }
 
     public static int getProgress(ItemStack stack) {
-        CompoundTag tag = mc.sayda.creraces.util.ItemNbt.get(stack);
-        return tag != null ? tag.getInt("Progress") : 0;
+        return ItemNbt.get(stack).getInt(TAG_PROGRESS);
     }
 
     /** The highest total count of the target item this scroll's owner has held since accepting it. */
     public static int getCollectPeak(ItemStack stack) {
-        CompoundTag tag = mc.sayda.creraces.util.ItemNbt.get(stack);
-        return tag != null ? tag.getInt("CollectPeak") : 0;
+        return ItemNbt.get(stack).getInt(TAG_COLLECT_PEAK);
     }
 
     public static void setCollectPeak(ItemStack stack, int value) {
-        mc.sayda.creraces.util.ItemNbt.mutate(stack, t -> t.putInt("CollectPeak", value));
+        ItemNbt.mutate(stack, t -> t.putInt(TAG_COLLECT_PEAK, value));
     }
 
     public static State getState(ItemStack stack) {
-        CompoundTag tag = mc.sayda.creraces.util.ItemNbt.get(stack);
-        if (tag == null || !tag.contains("State")) {
+        CompoundTag tag = ItemNbt.get(stack);
+        if (!tag.contains(TAG_STATE)) {
             // A villager trade cost reaches the client, and comes back out of villager save data,
             // with no CUSTOM_DATA at all: ItemCost only stores its item, count and component
             // predicate, and rebuilds the displayed stack from those. QUEST_GRADE is only ever
             // stamped on a completed scroll, so it is what identifies one of those rebuilt costs.
-            return stack.has(mc.sayda.creraces.registry.ModDataComponents.QUEST_GRADE.get())
+            return stack.has(ModDataComponents.QUEST_GRADE.get())
                     ? State.COMPLETED
                     : State.ACTIVE;
         }
         try {
-            return State.valueOf(tag.getString("State"));
+            return State.valueOf(tag.getString(TAG_STATE));
         } catch (IllegalArgumentException e) {
             return State.ACTIVE;
         }
@@ -151,14 +159,12 @@ public class QuestScrollItem extends Item {
      * fallback is what puts the tier back on a receptionist's trade costs.
      */
     public static int getTier(ItemStack stack) {
-        CompoundTag tag = mc.sayda.creraces.util.ItemNbt.get(stack);
-        if (tag != null && tag.contains("Tier")) return tag.getInt("Tier");
-        Integer grade = stack.get(mc.sayda.creraces.registry.ModDataComponents.QUEST_GRADE.get());
+        CompoundTag tag = ItemNbt.get(stack);
+        if (tag.contains(TAG_TIER)) return tag.getInt(TAG_TIER);
+        Integer grade = stack.get(ModDataComponents.QUEST_GRADE.get());
         if (grade != null) return grade;
         return getQuest(stack).map(Quest::tier).orElse(0);
     }
-
-    // ── Inventory-wide helpers ────────────────────────────────────────────────
 
     public static boolean hasActiveScroll(Player player, ResourceLocation questId) {
         for (ItemStack stack : player.getInventory().items) {
@@ -176,43 +182,37 @@ public class QuestScrollItem extends Item {
     private static boolean matchesActive(ItemStack stack, ResourceLocation questId) {
         if (!(stack.getItem() instanceof QuestScrollItem)) return false;
         if (getState(stack) != State.ACTIVE) return false;
-        CompoundTag tag = mc.sayda.creraces.util.ItemNbt.get(stack);
-        if (tag == null || !tag.contains("QuestId")) return false;
-        return questId.toString().equals(tag.getString("QuestId"));
+        CompoundTag tag = ItemNbt.get(stack);
+        if (!tag.contains(TAG_QUEST_ID)) return false;
+        return questId.toString().equals(tag.getString(TAG_QUEST_ID));
     }
 
-    // ── Progress / completion / abandon ──────────────────────────────────────
-
-    /** Mutates the stack's tag in place. Returns true if this increment completed the quest. */
+    /** Writes the new progress back to the stack. Returns true if this increment completed the quest. */
     public static boolean incrementProgress(ItemStack stack, int amount) {
         Optional<Quest> questOpt = getQuest(stack);
         if (questOpt.isEmpty()) return false;
-        CompoundTag tag = mc.sayda.creraces.util.ItemNbt.get(stack);
-        int newProgress = tag.getInt("Progress") + amount;
+        int newProgress = ItemNbt.get(stack).getInt(TAG_PROGRESS) + amount;
         boolean completed = newProgress >= questOpt.get().objective().count();
-        mc.sayda.creraces.util.ItemNbt.mutate(stack, t -> {
-            t.putInt("Progress", newProgress);
+        ItemNbt.mutate(stack, t -> {
+            t.putInt(TAG_PROGRESS, newProgress);
             if (completed) {
-                t.putString("State", State.COMPLETED.name());
+                t.putString(TAG_STATE, State.COMPLETED.name());
             }
         });
         if (completed) {
             // Villager trade costs match on this component, not on CUSTOM_DATA, which also carries
             // per-quest data that differs on every scroll. See GuildReceptionistTrades.
-            stack.set(mc.sayda.creraces.registry.ModDataComponents.QUEST_GRADE.get(), getTier(stack));
+            stack.set(ModDataComponents.QUEST_GRADE.get(), getTier(stack));
         }
         return completed;
     }
 
     /**
-     * The single shared abandon path for the board's Abandon button and the expiration tick.
-     * Rather than hunting down and destroying one specific ItemStack, this marks the
-     * (player, quest) pair as abandoned in the session registry and sweeps every matching
-     * ACTIVE scroll out of the player's inventory immediately; the periodic tick sweep
-     * (see sweepAbandoned) then catches any copy that wasn't in the inventory at this exact
-     * moment (e.g. one pulled out of storage afterward). Also starts a cooldown on that
-     * (player, quest) pair equal in length to the quest's own duration, so giving up on (or
-     * running out of time for) a quest doesn't let it be immediately re-taken.
+     * The single abandon path for both the board's Abandon button and expiry. Marks the
+     * (player, quest) pair abandoned in the session registry and sweeps every matching ACTIVE
+     * scroll out of the inventory now; the periodic sweep (see sweepAbandoned) catches copies
+     * that were elsewhere at the time, e.g. in a chest. Also starts a re-take cooldown as long
+     * as the quest's own duration.
      */
     public static void abandonQuest(ServerPlayer player, ResourceLocation questId) {
         Quest quest = QuestRegistry.get(questId);
@@ -228,7 +228,10 @@ public class QuestScrollItem extends Item {
         sweepAbandoned(player);
     }
 
-    /** Removes every ACTIVE scroll in the player's inventory whose quest is flagged abandoned. Silent - the message is sent once, at the point abandonQuest() decides, not per copy removed. */
+    /**
+     * Removes every ACTIVE scroll in the player's inventory whose quest is flagged abandoned.
+     * Silent: abandonQuest sends the message once, not once per removed copy.
+     */
     public static void sweepAbandoned(ServerPlayer player) {
         var items = player.getInventory().items;
         for (int i = 0; i < items.size(); i++) {
@@ -244,30 +247,28 @@ public class QuestScrollItem extends Item {
     /** Checks tamper-corrected expiration for a single active scroll stack; abandons it if expired. */
     public static void tick(ServerPlayer player, ItemStack stack) {
         if (getState(stack) != State.ACTIVE) return;
-        CompoundTag tag = mc.sayda.creraces.util.ItemNbt.get(stack);
-        if (!tag.contains("TargetDay") || !tag.contains("QuestId")) return;
+        CompoundTag tag = ItemNbt.get(stack);
+        if (!tag.contains(TAG_TARGET_DAY) || !tag.contains(TAG_QUEST_ID)) return;
 
         long currentDay = WorldState.currentDay(player.level());
-        long targetDay = tag.getLong("TargetDay");
-        int durationDays = tag.getInt("DurationDays");
+        long targetDay = tag.getLong(TAG_TARGET_DAY);
+        int durationDays = tag.getInt(TAG_DURATION_DAYS);
 
         // Tamper check: an admin rewinding time (e.g. /time set 0) must not grant free time.
         if (targetDay - currentDay > durationDays) {
-            targetDay = currentDay + durationDays;
-            final long correctedDay = targetDay;
-            mc.sayda.creraces.util.ItemNbt.mutate(stack, t -> t.putLong("TargetDay", correctedDay));
+            long correctedDay = currentDay + durationDays;
+            ItemNbt.mutate(stack, t -> t.putLong(TAG_TARGET_DAY, correctedDay));
+            targetDay = correctedDay;
         }
 
         if (currentDay >= targetDay) {
-            ResourceLocation questId = ResourceLocation.tryParse(tag.getString("QuestId"));
+            ResourceLocation questId = ResourceLocation.tryParse(tag.getString(TAG_QUEST_ID));
             if (questId != null) abandonQuest(player, questId);
         }
     }
 
-    // ── Tooltip ───────────────────────────────────────────────────────────────
-
     @Override
-    public void appendHoverText(ItemStack stack, net.minecraft.world.item.Item.TooltipContext level, List<Component> tooltip, TooltipFlag flag) {
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         Optional<Quest> questOpt = getQuest(stack);
         if (questOpt.isPresent()) {
             Quest quest = questOpt.get();
@@ -280,28 +281,25 @@ public class QuestScrollItem extends Item {
             tooltip.add(Component.translatable("tooltip.creraces.quest_progress", progress, count)
                     .withStyle(ChatFormatting.GRAY));
 
-            CompoundTag tag = mc.sayda.creraces.util.ItemNbt.get(stack);
-            if (tag != null && tag.contains("OwnerName")) {
-                tooltip.add(Component.translatable("tooltip.creraces.quest_owner", tag.getString("OwnerName"))
+            CompoundTag tag = ItemNbt.get(stack);
+            if (tag.contains(TAG_OWNER_NAME)) {
+                tooltip.add(Component.translatable("tooltip.creraces.quest_owner", tag.getString(TAG_OWNER_NAME))
                         .withStyle(ChatFormatting.DARK_GRAY));
             }
 
+            // TooltipContext carries no level, so the day count comes from the client level.
+            Level clientLevel = ClientAccess.getLevel();
             if (getState(stack) == State.COMPLETED) {
                 tooltip.add(Component.translatable("tooltip.creraces.quest_completed")
                         .withStyle(ChatFormatting.GREEN));
-            } else {
-                // TooltipContext no longer carries a Level, so the day count comes from the
-                // client level the tooltip is being drawn for.
-                Level clientLevel = mc.sayda.creraces.client.ClientAccess.getLevel();
-                if (clientLevel != null) {
-                    long currentDay = WorldState.currentDay(clientLevel);
-                    long targetDay = tag.getLong("TargetDay");
-                    long daysLeft = Math.max(0, targetDay - currentDay);
-                    ChatFormatting color = daysLeft <= 1 ? ChatFormatting.RED : ChatFormatting.YELLOW;
-                    tooltip.add(Component.translatable("tooltip.creraces.quest_days_left", daysLeft).withStyle(color));
-                }
+            } else if (clientLevel != null) {
+                long currentDay = WorldState.currentDay(clientLevel);
+                long targetDay = tag.getLong(TAG_TARGET_DAY);
+                long daysLeft = Math.max(0, targetDay - currentDay);
+                ChatFormatting color = daysLeft <= 1 ? ChatFormatting.RED : ChatFormatting.YELLOW;
+                tooltip.add(Component.translatable("tooltip.creraces.quest_days_left", daysLeft).withStyle(color));
             }
         }
-        super.appendHoverText(stack, level, tooltip, flag);
+        super.appendHoverText(stack, context, tooltip, flag);
     }
 }

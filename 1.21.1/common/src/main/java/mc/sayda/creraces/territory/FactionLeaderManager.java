@@ -23,14 +23,14 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class FactionLeaderManager {
 
-    private static final Map<String, UUID> groupLeaders = new ConcurrentHashMap<>();
+    private static final Map<String, UUID> GROUP_LEADERS = new ConcurrentHashMap<>();
 
     public static @Nullable String getFactionGroup(Player player) {
         return DataUtils.getVariables(player)
                 .map(IPlayerVariables::getRace)
                 .map(raceId -> {
                     Race race = RaceRegistry.get(raceId);
-                    return race != null ? race.effectiveFactionGroup() : null;
+                    return race != null ? race.factionGroup() : null;
                 })
                 .orElse(null);
     }
@@ -38,12 +38,8 @@ public class FactionLeaderManager {
     public static boolean isLeader(Player player) {
         String group = getFactionGroup(player);
         if (group == null) return false;
-        UUID leader = groupLeaders.get(group);
+        UUID leader = GROUP_LEADERS.get(group);
         return player.getUUID().equals(leader);
-    }
-
-    public static @Nullable UUID getLeader(String group) {
-        return groupLeaders.get(group);
     }
 
     /**
@@ -54,9 +50,9 @@ public class FactionLeaderManager {
     public static void onPlayerJoin(ServerPlayer player) {
         String group = getFactionGroup(player);
         if (group == null) return;
-        UUID before = groupLeaders.get(group);
-        groupLeaders.computeIfAbsent(group, g -> player.getUUID());
-        UUID after = groupLeaders.get(group);
+        UUID before = GROUP_LEADERS.get(group);
+        GROUP_LEADERS.computeIfAbsent(group, g -> player.getUUID());
+        UUID after = GROUP_LEADERS.get(group);
         if (!player.getUUID().equals(after)) return;
         if (before != null) return;
         MinecraftServer server = player.getServer();
@@ -76,14 +72,28 @@ public class FactionLeaderManager {
     public static void onPlayerLeave(ServerPlayer player, MinecraftServer server) {
         String group = getFactionGroup(player);
         if (group == null) return;
-        UUID current = groupLeaders.get(group);
+        UUID current = GROUP_LEADERS.get(group);
         if (!player.getUUID().equals(current)) return;
+        passLeadership(player, group, server);
+    }
 
-        groupLeaders.remove(group);
+    /**
+     * Called while the player still has their old race. A leader whose new race takes them out of
+     * the faction group (or who is reset to no race) hands leadership on as if they had left.
+     */
+    public static void onRaceChange(ServerPlayer player, @Nullable Race newRace) {
+        String group = getFactionGroup(player);
+        if (group == null || !player.getUUID().equals(GROUP_LEADERS.get(group))) return;
+        if (newRace != null && group.equals(newRace.factionGroup())) return;
+        passLeadership(player, group, player.server);
+    }
+
+    private static void passLeadership(ServerPlayer leader, String group, MinecraftServer server) {
+        GROUP_LEADERS.remove(group);
         for (ServerPlayer online : server.getPlayerList().getPlayers()) {
-            if (online.getUUID().equals(player.getUUID())) continue;
+            if (online.getUUID().equals(leader.getUUID())) continue;
             if (group.equals(getFactionGroup(online))) {
-                groupLeaders.put(group, online.getUUID());
+                GROUP_LEADERS.put(group, online.getUUID());
                 online.displayClientMessage(
                         Component.translatable("msg.creraces.faction.leader_assigned"), false);
                 break;
@@ -99,12 +109,12 @@ public class FactionLeaderManager {
     public static void electIfAbsent(ServerPlayer player) {
         String group = getFactionGroup(player);
         if (group == null) return;
-        if (!groupLeaders.containsKey(group)) {
+        if (!GROUP_LEADERS.containsKey(group)) {
             onPlayerJoin(player);
         }
     }
 
     public static void clear() {
-        groupLeaders.clear();
+        GROUP_LEADERS.clear();
     }
 }

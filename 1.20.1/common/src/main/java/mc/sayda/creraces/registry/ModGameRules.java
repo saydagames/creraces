@@ -1,5 +1,6 @@
 package mc.sayda.creraces.registry;
 
+import mc.sayda.creraces.network.BoundaryHandler;
 import net.minecraft.world.level.GameRules;
 
 public class ModGameRules {
@@ -15,7 +16,7 @@ public class ModGameRules {
             "spiritFlameVisible",
             GameRules.Category.MISC,
             GameRules.BooleanValue.create(true, (server, rule) ->
-                mc.sayda.creraces.network.BoundaryHandler.broadcastSpiritFlameGamerule(rule.get()))
+                BoundaryHandler.broadcastSpiritFlameGamerule(rule.get()))
     );
     public static void init() {
         // Forces class loading

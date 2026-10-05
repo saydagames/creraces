@@ -1,5 +1,7 @@
 package mc.sayda.creraces.engine.condition;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.engine.ScalingValue;
@@ -7,8 +9,11 @@ import mc.sayda.creraces.engine.TargetFilter;
 import mc.sayda.creraces.util.GsonHelper;
 import net.minecraft.resources.ResourceLocation;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Registry for condition types. All built-in conditions are registered under the
@@ -25,31 +30,35 @@ public class ConditionRegistry {
 
     private static final Map<ResourceLocation, ConditionFactory> REGISTRY = new HashMap<>();
 
+    // An absent condition passes; a broken one fails, so a typo never unlocks an effect.
+    private static final Condition ALWAYS_TRUE = (player, target, slot, interactPos) -> true;
+    private static final Condition ALWAYS_FALSE = (player, target, slot, interactPos) -> false;
+
     public static void register(ResourceLocation id, ConditionFactory factory) {
         REGISTRY.put(id, factory);
     }
 
     private static ResourceLocation id(String path) {
-        return new ResourceLocation("creraces", path);
+        return new ResourceLocation(CreRaces.MODID, path);
     }
 
     public static Condition fromJson(JsonObject json) {
         if (json == null || json.size() == 0 || !json.has("type")) {
-            return (player, target, slot, interact_pos) -> true;
+            return ALWAYS_TRUE;
         }
         String typeStr = json.get("type").getAsString();
         @SuppressWarnings("null")
         ResourceLocation typeLoc = ResourceLocation.tryParse(typeStr);
         if (typeLoc == null) {
             CreRaces.LOGGER.error("Malformed condition type '{}' - skipping.", typeStr);
-            return (player, target, slot, interact_pos) -> false;
+            return ALWAYS_FALSE;
         }
         ConditionFactory factory = REGISTRY.get(typeLoc);
         if (factory == null) {
             CreRaces.LOGGER.error("Unknown condition type '{}' - condition will always return false. "
                     + "Did you forget the namespace prefix (e.g. 'creraces:{}') or register it?",
                     typeStr, typeLoc.getPath());
-            return (player, target, slot, interact_pos) -> false;
+            return ALWAYS_FALSE;
         }
         try {
             return factory.create(json);
@@ -57,24 +66,40 @@ public class ConditionRegistry {
             CreRaces.LOGGER.error(
                     "Failed to parse condition '{}': {} - condition will always return false. JSON: {}",
                     typeStr, e.getMessage(), json);
-            return (player, target, slot, interact_pos) -> false;
+            return ALWAYS_FALSE;
+        }
+    }
+
+    private static Condition[] parseConditionArray(JsonObject json) {
+        JsonArray array = json.getAsJsonArray("conditions");
+        Condition[] conditions = new Condition[array.size()];
+        for (int i = 0; i < array.size(); i++)
+            conditions[i] = fromJson(array.get(i).getAsJsonObject());
+        return conditions;
+    }
+
+    private static ScalingValue.MathOp parseMath(JsonObject json, ScalingValue.MathOp fallback, String conditionName) {
+        if (!json.has("math")) {
+            return fallback;
+        }
+        try {
+            return ScalingValue.MathOp.valueOf(json.get("math").getAsString().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            CreRaces.LOGGER.warn("Invalid math mode in {}: {}", conditionName, json.get("math").getAsString());
+            return fallback;
         }
     }
 
     @SuppressWarnings("null")
     public static void init() {
-        register(id("state"), json -> {
+        ConditionFactory state = json -> {
             String stateKey = GsonHelper.getAsString(json, "state");
             ScalingValue value = ScalingValue.fromJson(json, "value", 1.0);
             String operator = GsonHelper.getAsString(json, "operator", "==");
             return new StateCondition(stateKey, value, operator);
-        });
-        register(id("state_equals"), json -> {
-            String stateKey = GsonHelper.getAsString(json, "state");
-            ScalingValue value = ScalingValue.fromJson(json, "value", 1.0);
-            String operator = GsonHelper.getAsString(json, "operator", "==");
-            return new StateCondition(stateKey, value, operator);
-        });
+        };
+        register(id("state"), state);
+        register(id("state_equals"), state);
         register(id("morphed"), json -> {
             boolean expected = GsonHelper.getAsBoolean(json, "value", true);
             return new MorphedCondition(expected);
@@ -112,20 +137,8 @@ public class ConditionRegistry {
             String item = GsonHelper.getAsString(json, "item", "minecraft:air");
             return new ItemInteractionCondition(item);
         });
-        register(id("and"), json -> {
-            com.google.gson.JsonArray array = json.getAsJsonArray("conditions");
-            Condition[] conditions = new Condition[array.size()];
-            for (int i = 0; i < array.size(); i++)
-                conditions[i] = fromJson(array.get(i).getAsJsonObject());
-            return new AndCondition(conditions);
-        });
-        register(id("or"), json -> {
-            com.google.gson.JsonArray array = json.getAsJsonArray("conditions");
-            Condition[] conditions = new Condition[array.size()];
-            for (int i = 0; i < array.size(); i++)
-                conditions[i] = fromJson(array.get(i).getAsJsonObject());
-            return new OrCondition(conditions);
-        });
+        register(id("and"), json -> new AndCondition(parseConditionArray(json)));
+        register(id("or"), json -> new OrCondition(parseConditionArray(json)));
         register(id("not"), json -> {
             Condition condition = fromJson(json.getAsJsonObject("condition"));
             return new NotCondition(condition);
@@ -161,7 +174,7 @@ public class ConditionRegistry {
         register(id("biome_temperature"), json -> {
             ScalingValue min = ScalingValue.fromJson(json, "min", (double) -Float.MAX_VALUE);
             ScalingValue max = ScalingValue.fromJson(json, "max", (double) Float.MAX_VALUE);
-            return (player, target, slot, interact_pos) -> {
+            return (player, target, slot, interactPos) -> {
                 float temp = player.level().getBiome(player.blockPosition()).value().getBaseTemperature();
                 return temp >= (float) min.evaluate(player, target)
                         && temp < (float) max.evaluate(player, target);
@@ -189,7 +202,7 @@ public class ConditionRegistry {
             ResourceLocation effectId = ResourceLocation.tryParse(effectIdStr);
             if (effectId == null) {
                 CreRaces.LOGGER.error("has_effect condition has malformed effect ID: '{}'", effectIdStr);
-                return (player, target, slot, interact_pos) -> false;
+                return ALWAYS_FALSE;
             }
             ScalingValue amp = ScalingValue.fromJson(json, "amplifier", 0);
             boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
@@ -217,15 +230,7 @@ public class ConditionRegistry {
             boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
             boolean useTargetBlock = GsonHelper.getAsBoolean(json, "use_target_block", false);
             boolean absolute = GsonHelper.getAsBoolean(json, "absolute", false);
-            ScalingValue.MathOp math = ScalingValue.MathOp.ROUND;
-            if (json.has("math")) {
-                try {
-                    math = ScalingValue.MathOp.valueOf(json.get("math").getAsString().toUpperCase());
-                } catch (Exception e) {
-                    CreRaces.LOGGER.warn("Invalid math mode in CanPlaceBlockCondition: {}",
-                            json.get("math").getAsString());
-                }
-            }
+            ScalingValue.MathOp math = parseMath(json, ScalingValue.MathOp.ROUND, "CanPlaceBlockCondition");
             return new CanPlaceBlockCondition(ox, oy, oz, useTarget, useTargetBlock, absolute, math);
         });
         register(id("has_enchantment"), json -> {
@@ -241,7 +246,7 @@ public class ConditionRegistry {
             boolean expected = GsonHelper.getAsBoolean(json, "value", true);
             return new ExposedToRainCondition(expected);
         });
-        register(id("spirit"), json -> {
+        register(id("in_spirit_realm"), json -> {
             boolean expected = GsonHelper.getAsBoolean(json, "value", true);
             return new SpiritCondition(expected);
         });
@@ -259,8 +264,8 @@ public class ConditionRegistry {
             boolean useInteractPos = GsonHelper.getAsBoolean(json, "use_interact_pos", true);
             return new BlockDataCondition(ox, oy, oz, key, value, operator, useInteractPos);
         });
-        register(id("entity_data"), json -> EntityDataCondition.fromJson(json));
-        register(id("entity"), json -> EntityCondition.fromJson(json));
+        register(id("entity_data"), EntityDataCondition::fromJson);
+        register(id("entity"), EntityCondition::fromJson);
         register(id("distance"), json -> {
             ScalingValue max = json.has("range")
                     ? ScalingValue.fromJson(json, "range", 5.0)
@@ -281,15 +286,7 @@ public class ConditionRegistry {
             boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
             boolean useTargetBlock = GsonHelper.getAsBoolean(json, "use_target_block", false);
             boolean absolute = GsonHelper.getAsBoolean(json, "absolute", true);
-            ScalingValue.MathOp math = ScalingValue.MathOp.FLOOR;
-            if (json.has("math")) {
-                try {
-                    math = ScalingValue.MathOp.valueOf(json.get("math").getAsString().toUpperCase());
-                } catch (Exception e) {
-                    CreRaces.LOGGER.warn("Invalid math mode in IsPositionCondition: {}",
-                            json.get("math").getAsString());
-                }
-            }
+            ScalingValue.MathOp math = parseMath(json, ScalingValue.MathOp.FLOOR, "IsPositionCondition");
             return new IsPositionCondition(x, y, z, useTarget, useTargetBlock, absolute, math);
         });
         register(id("dimension"), json -> {
@@ -298,9 +295,9 @@ public class ConditionRegistry {
         });
         register(id("customization_equals"), json -> {
             String condId = GsonHelper.getAsString(json, "id");
-            java.util.List<String> validVals = new java.util.ArrayList<>();
+            List<String> validVals = new ArrayList<>();
             if (json.has("values") && json.get("values").isJsonArray()) {
-                for (com.google.gson.JsonElement e : json.getAsJsonArray("values"))
+                for (JsonElement e : json.getAsJsonArray("values"))
                     validVals.add(e.getAsString());
             } else {
                 CreRaces.LOGGER.error("customization_equals condition missing 'values' array");
@@ -308,10 +305,10 @@ public class ConditionRegistry {
             return new CustomizationEqualsCondition(condId, validVals.toArray(new String[0]));
         });
         register(id("race_equals"), json -> {
-            java.util.List<String> validRaces = new java.util.ArrayList<>();
+            List<String> validRaces = new ArrayList<>();
             if (json.has("race")) validRaces.add(GsonHelper.getAsString(json, "race"));
             if (json.has("races")) {
-                for (com.google.gson.JsonElement e : json.getAsJsonArray("races"))
+                for (JsonElement e : json.getAsJsonArray("races"))
                     validRaces.add(e.getAsString());
             }
             if (validRaces.isEmpty()) {
@@ -325,7 +322,7 @@ public class ConditionRegistry {
         });
         register(id("has_entities"), json -> {
             ScalingValue radius = ScalingValue.fromJson(json, "radius", 5.0);
-            TargetFilter targets = TargetFilter.fromJson(json, "targets", java.util.Set.of("enemies"));
+            TargetFilter targets = TargetFilter.fromJson(json, "targets", Set.of("enemies"));
             return new HasEntitiesCondition(radius, targets);
         });
         register(id("is_block"), json -> {
@@ -337,15 +334,7 @@ public class ConditionRegistry {
             boolean absolute = GsonHelper.getAsBoolean(json, "absolute", false);
             boolean useRaycast = GsonHelper.getAsBoolean(json, "use_raycast", false);
             ScalingValue rayRange = ScalingValue.fromJson(json, "ray_range", 10.0);
-            ScalingValue.MathOp math = ScalingValue.MathOp.FLOOR;
-            if (json.has("math")) {
-                try {
-                    math = ScalingValue.MathOp.valueOf(json.get("math").getAsString().toUpperCase());
-                } catch (Exception e) {
-                    CreRaces.LOGGER.warn("Invalid math mode in IsBlockCondition: {}",
-                            json.get("math").getAsString());
-                }
-            }
+            ScalingValue.MathOp math = parseMath(json, ScalingValue.MathOp.FLOOR, "IsBlockCondition");
             return new IsBlockCondition(blockStr, ox, oy, oz, useInteractPos, absolute, math, useRaycast, rayRange);
         });
         register(id("cooldown"), json -> {
@@ -365,7 +354,6 @@ public class ConditionRegistry {
         register(id("in_habitable_biome"), json -> new InHabitableBiomeCondition());
         register(id("has_faction"), json -> new HasFactionCondition());
         register(id("is_faction_leader"), json -> new IsFactionLeaderCondition());
-        register(id("has_faction_group"), json -> new HasFactionGroupCondition());
         register(id("in_claimed_territory"), json -> {
             String scope = GsonHelper.getAsString(json, "scope", "own");
             return new InClaimedTerritoryCondition(scope);

@@ -1,7 +1,9 @@
 package mc.sayda.creraces.neoforge.compat;
 
+import mc.sayda.creraces.registry.ModItems;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import top.theillusivec4.curios.api.CuriosApi;
 
 import java.util.Optional;
 
@@ -14,10 +16,10 @@ import java.util.Optional;
  */
 public class CuriosBeltCompat {
     public static Optional<ItemStack> findBelt(Player player) {
-        return top.theillusivec4.curios.api.CuriosApi
+        return CuriosApi
                 .getCuriosInventory(player)
                 .flatMap(inv -> inv.findFirstCurio(
-                        mc.sayda.creraces.registry.ModItems.ESSENCE_BELT.get()))
+                        ModItems.ESSENCE_BELT.get()))
                 .map(slotResult -> slotResult.stack());
     }
 }

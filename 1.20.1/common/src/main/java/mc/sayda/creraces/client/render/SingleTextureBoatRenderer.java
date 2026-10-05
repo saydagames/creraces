@@ -2,6 +2,7 @@ package mc.sayda.creraces.client.render;
 
 import com.google.common.collect.ImmutableMap;
 import com.mojang.datafixers.util.Pair;
+import mc.sayda.creraces.mixin.BoatRendererAccessor;
 import net.minecraft.client.model.ListModel;
 import net.minecraft.client.renderer.entity.BoatRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
@@ -19,7 +20,7 @@ public abstract class SingleTextureBoatRenderer extends BoatRenderer {
         super(context, hasChest);
         this.activeTexture = hasChest ? chestTexture : texture;
         ImmutableMap.Builder<Boat.Type, Pair<ResourceLocation, ListModel<Boat>>> builder = ImmutableMap.builder();
-        var accessor = (mc.sayda.creraces.mixin.BoatRendererAccessor) this;
+        var accessor = (BoatRendererAccessor) this;
         accessor.creraces$getBoatResources().forEach((type, pair) -> {
             if (type == Boat.Type.OAK) {
                 builder.put(type, Pair.of(activeTexture, pair.getSecond()));

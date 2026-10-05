@@ -1,11 +1,14 @@
 package mc.sayda.creraces.block;
 
+import com.mojang.serialization.MapCodec;
 import mc.sayda.creraces.block.entity.ElysianVeilBloomBlockEntity;
 import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.capability.IPlayerVariables;
 import mc.sayda.creraces.engine.WorldState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.stats.Stats;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.player.Player;
@@ -25,10 +28,12 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
+import javax.annotation.Nullable;
+
 @SuppressWarnings("null")
 public class ElysianVeilBloomBlock extends BaseEntityBlock {
 
-    public static final com.mojang.serialization.MapCodec<ElysianVeilBloomBlock> CODEC = simpleCodec(ElysianVeilBloomBlock::new);
+    public static final MapCodec<ElysianVeilBloomBlock> CODEC = simpleCodec(ElysianVeilBloomBlock::new);
     public static final BooleanProperty BLOOMING = BooleanProperty.create("blooming");
     private static final VoxelShape SHAPE = Block.box(5.0, 0.0, 5.0, 11.0, 10.0, 11.0);
 
@@ -38,7 +43,7 @@ public class ElysianVeilBloomBlock extends BaseEntityBlock {
     }
 
     @Override
-    protected com.mojang.serialization.MapCodec<? extends ElysianVeilBloomBlock> codec() {
+    protected MapCodec<? extends ElysianVeilBloomBlock> codec() {
         return CODEC;
     }
 
@@ -47,7 +52,7 @@ public class ElysianVeilBloomBlock extends BaseEntityBlock {
         builder.add(BLOOMING);
     }
 
-    protected boolean mayPlaceOn(BlockState groundState, BlockGetter world, BlockPos pos) {
+    protected boolean mayPlaceOn(BlockState groundState, BlockGetter level, BlockPos pos) {
         return groundState.is(BlockTags.DIRT) || groundState.is(Blocks.FARMLAND);
     }
 
@@ -84,12 +89,13 @@ public class ElysianVeilBloomBlock extends BaseEntityBlock {
         }
     }
 
+    /** Bypasses the loot table: the bloom only drops in the Spirit Realm or under a spirit moon. */
     @Override
     public void playerDestroy(Level level, Player player, BlockPos pos, BlockState state,
-            @javax.annotation.Nullable BlockEntity blockEntity, ItemStack tool) {
-        player.awardStat(net.minecraft.stats.Stats.BLOCK_MINED.get(this));
+            @Nullable BlockEntity blockEntity, ItemStack tool) {
+        player.awardStat(Stats.BLOCK_MINED.get(this));
         player.causeFoodExhaustion(0.005F);
-        boolean canHarvest = DataUtils.getVariables(player).map(v -> v.isInSpiritRealm()).orElse(false)
+        boolean canHarvest = DataUtils.getVariables(player).map(IPlayerVariables::isInSpiritRealm).orElse(false)
                 || WorldState.isSpiritMoon(level);
         if (canHarvest) {
             popResource(level, pos, new ItemStack(this.asItem()));

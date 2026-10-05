@@ -2,8 +2,11 @@ package mc.sayda.creraces.mixin;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import mc.sayda.creraces.block.entity.MicroBlockEntity;
 import mc.sayda.creraces.registry.ModBlocks;
+import mc.sayda.creraces.util.ISleepSlotTracker;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.Blocks;
@@ -14,8 +17,11 @@ import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import net.minecraft.core.Direction;
+
+import javax.annotation.Nullable;
 
 @SuppressWarnings("null")
 @Mixin(ServerPlayer.class)
@@ -39,14 +45,14 @@ public abstract class ServerPlayerMixin {
 
         BlockState state = original.call(level, pos);
         if (state.is(ModBlocks.MICRO_BLOCK.get())) {
-            if (level.getBlockEntity(pos) instanceof mc.sayda.creraces.block.entity.MicroBlockEntity micro) {
+            if (level.getBlockEntity(pos) instanceof MicroBlockEntity micro) {
                 int slotIdx = -1;
-                if ((Object) this instanceof mc.sayda.creraces.util.ISleepSlotTracker tracker) {
+                if ((Object) this instanceof ISleepSlotTracker tracker) {
                     slotIdx = tracker.creraces$getSleepSlot();
                 }
 
                 if (slotIdx < 0) {
-                    slotIdx = mc.sayda.creraces.block.entity.MicroBlockEntity.findBedSlot(micro);
+                    slotIdx = MicroBlockEntity.findBedSlot(micro);
                 }
 
                 if (slotIdx >= 0) {
@@ -74,9 +80,9 @@ public abstract class ServerPlayerMixin {
     }
 
     @Inject(method = "setRespawnPosition", at = @At("HEAD"), cancellable = true)
-    private void creraces$cancelForcedSleepRespawn(net.minecraft.resources.ResourceKey<Level> dimension,
-            @javax.annotation.Nullable BlockPos pos, float angle, boolean forced, boolean sendMessage,
-            org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
+    private void creraces$cancelForcedSleepRespawn(ResourceKey<Level> dimension,
+            @Nullable BlockPos pos, float angle, boolean forced, boolean sendMessage,
+            CallbackInfo ci) {
         ServerPlayer player = (ServerPlayer) (Object) this;
         if (player.getTags().contains("creraces_force_sleep")) {
             ci.cancel();

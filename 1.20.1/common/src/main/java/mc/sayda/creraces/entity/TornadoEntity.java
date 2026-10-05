@@ -1,11 +1,13 @@
 package mc.sayda.creraces.entity;
 
+import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.config.CreRacesConfig;
-
 import mc.sayda.creraces.registry.ModMobEffects;
 import mc.sayda.creraces.team.RaceTeamManager;
+import mc.sayda.creraces.util.RaceUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -15,10 +17,10 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.AgeableMob;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.MobType;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -26,8 +28,8 @@ import net.minecraft.world.entity.ai.control.FlyingMoveControl;
 import net.minecraft.world.entity.ai.navigation.FlyingPathNavigation;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
@@ -36,8 +38,14 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
+/**
+ * A flying vortex that deflects hostile projectiles and pulls in and dizzies enemies within its
+ * radius until its lifetime runs out.
+ */
 @SuppressWarnings("null")
 public class TornadoEntity extends TamableAnimal {
+    private static final ResourceLocation DIZZINESS_ID = new ResourceLocation(CreRaces.MODID, "dizziness");
+
     private int ticksAlive = 0;
 
     public TornadoEntity(EntityType<? extends TornadoEntity> type, Level level) {
@@ -64,22 +72,17 @@ public class TornadoEntity extends TamableAnimal {
     }
 
     @Override
-    public MobType getMobType() {
-        return MobType.UNDEFINED;
-    }
-
-    @Override
     public boolean causeFallDamage(float fallDistance, float multiplier, DamageSource source) {
         return false;
     }
 
     @Override
     public boolean hurt(DamageSource source, float amount) {
-        if (source.is(DamageTypes.IN_FIRE) || source.is(DamageTypes.ON_FIRE) || source.is(DamageTypes.FALL) ||
-                source.is(DamageTypes.CACTUS) || source.is(DamageTypes.DROWN) || source.is(DamageTypes.LIGHTNING_BOLT)
-                ||
-                source.is(DamageTypes.EXPLOSION) || source.is(DamageTypes.PLAYER_EXPLOSION) ||
-                source.is(DamageTypes.DRAGON_BREATH) || source.is(DamageTypes.WITHER)) {
+        if (source.is(DamageTypes.IN_FIRE) || source.is(DamageTypes.ON_FIRE) || source.is(DamageTypes.FALL)
+                || source.is(DamageTypes.CACTUS) || source.is(DamageTypes.DROWN)
+                || source.is(DamageTypes.LIGHTNING_BOLT)
+                || source.is(DamageTypes.EXPLOSION) || source.is(DamageTypes.PLAYER_EXPLOSION)
+                || source.is(DamageTypes.DRAGON_BREATH) || source.is(DamageTypes.WITHER)) {
             return false;
         }
         if (source.getDirectEntity() instanceof Player) {
@@ -98,6 +101,7 @@ public class TornadoEntity extends TamableAnimal {
         return true;
     }
 
+    // Returning PASS keeps Animal's feeding/breeding interaction off the tornado entirely.
     @Override
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
         return InteractionResult.PASS;
@@ -110,8 +114,6 @@ public class TornadoEntity extends TamableAnimal {
             return;
 
         ticksAlive++;
-
-        // Hurricane logic: pull and dizzy
         applyHurricaneEffects();
 
         if (ticksAlive > CreRacesConfig.ENTITY_TORNADO_LIFETIME_TICKS.get()) {
@@ -124,22 +126,18 @@ public class TornadoEntity extends TamableAnimal {
         Vec3 center = this.position();
         float radius = CreRacesConfig.ENTITY_TORNADO_RADIUS.get();
         LivingEntity owner = this.getOwner();
-        net.minecraft.resources.ResourceLocation dizzinessId = new net.minecraft.resources.ResourceLocation("creraces",
-                "dizziness");
-
         AABB area = new AABB(center, center).inflate(radius);
 
-        // Reflect Projectiles
-        List<net.minecraft.world.entity.projectile.Projectile> projectiles = this.level().getEntitiesOfClass(
-                net.minecraft.world.entity.projectile.Projectile.class, area,
+        // Deflect moving projectiles that aren't from the owner's side.
+        List<Projectile> projectiles = this.level().getEntitiesOfClass(Projectile.class, area,
                 p -> {
                     if (p.getDeltaMovement().lengthSqr() <= 0)
                         return false;
-                    net.minecraft.world.entity.Entity pOwner = p.getOwner();
-                    return owner == null || (pOwner instanceof LivingEntity le && RaceTeamManager.canHurt(le, owner))
-                            || pOwner == null;
+                    Entity shooter = p.getOwner();
+                    return owner == null || (shooter instanceof LivingEntity le && RaceTeamManager.canHurt(le, owner))
+                            || shooter == null;
                 });
-        for (net.minecraft.world.entity.projectile.Projectile p : projectiles) {
+        for (Projectile p : projectiles) {
             Vec3 away = p.position().subtract(center).normalize().scale(1.2);
             p.setDeltaMovement(away);
             p.hasImpulse = true;
@@ -147,14 +145,13 @@ public class TornadoEntity extends TamableAnimal {
 
         List<LivingEntity> targets = level().getEntitiesOfClass(LivingEntity.class, area,
                 entity -> entity != this && entity != owner && (owner == null || RaceTeamManager.canHurt(entity, owner))
-                        && !mc.sayda.creraces.util.RaceUtils.isImmuneToEffect(entity, dizzinessId));
+                        && !RaceUtils.isImmuneToEffect(entity, DIZZINESS_ID));
 
         for (LivingEntity target : targets) {
-            // Apply Dizziness
             target.addEffect(new MobEffectInstance(ModMobEffects.DIZZINESS.get(),
                     CreRacesConfig.ENTITY_TORNADO_DIZZINESS_DURATION.get(), 0, false, false));
 
-            // Subtle pull towards center
+            // Subtle pull towards the center
             Vec3 delta = center.subtract(target.position());
             if (delta.length() > 0.5) {
                 target.setDeltaMovement(target.getDeltaMovement()
@@ -183,7 +180,7 @@ public class TornadoEntity extends TamableAnimal {
 
     @Override
     public boolean isFood(ItemStack stack) {
-        return Ingredient.of().test(stack);
+        return false;
     }
 
     @Override
@@ -197,17 +194,16 @@ public class TornadoEntity extends TamableAnimal {
     }
 
     @Override
-    public boolean canCollideWith(net.minecraft.world.entity.Entity entity) {
+    public boolean canCollideWith(Entity entity) {
         return false;
     }
 
     @Override
-    protected void doPush(net.minecraft.world.entity.Entity entity) {
+    protected void doPush(Entity entity) {
     }
 
     @Override
     protected void pushEntities() {
-        // Do not push entities
     }
 
     @Override

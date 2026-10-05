@@ -28,8 +28,14 @@ public class BadAppleScreen extends Screen {
     // bottom for the exit hint and credits, so the panel doesn't touch the screen edges
     // and the game world stays visible around it.
     private static final int SIDE_MARGIN = 20;
-    private static final int TOP_MARGIN = 10;
+    private static final int TOP_MARGIN = 12;
     private static final int BOTTOM_TEXT_HEIGHT = 86;
+    private static final String[] CREDIT_KEYS = {
+            "screen.creraces.badapple.credit_touhou",
+            "screen.creraces.badapple.credit_remix",
+            "screen.creraces.badapple.credit_cover",
+            "screen.creraces.badapple.credit_cover_author",
+    };
 
     private final Screen parent;
     private BadAppleVideoData video;
@@ -100,12 +106,8 @@ public class BadAppleScreen extends Screen {
         int offsetX = (this.width - drawWidth) / 2;
         int offsetY = TOP_MARGIN + (availableHeight - drawHeight) / 2;
 
-        // Wood-frame border matching TerritoryMapScreen, so the video panel reads as a
-        // clearly bounded frame against the surrounding black instead of bleeding into it.
-        graphics.fill(offsetX - 4, offsetY - 4, offsetX + drawWidth + 4, offsetY + drawHeight + 4, 0xFF3D2008);
-        graphics.fill(offsetX - 3, offsetY - 3, offsetX + drawWidth + 3, offsetY + drawHeight + 3, 0xFF7A4A1E);
-        graphics.fill(offsetX - 2, offsetY - 2, offsetX + drawWidth + 2, offsetY + drawHeight + 2, 0xFF3D2008);
-        graphics.fill(offsetX - 1, offsetY - 1, offsetX + drawWidth + 1, offsetY + drawHeight + 1, 0xFF7A4A1E);
+        // The territory map's wood frame, so the video reads as a bounded panel over the world.
+        TerritoryMapScreen.drawWoodFrame(graphics, offsetX, offsetY, drawWidth, drawHeight);
 
         RenderSystem.setShaderColor(1, 1, 1, 1);
         RenderSystem.enableBlend();
@@ -119,23 +121,14 @@ public class BadAppleScreen extends Screen {
 
         RenderSystem.disableBlend();
 
-        // Exit hint and source credits, below the framed panel.
-        int textY = offsetY + drawHeight + 4 + 6;
+        // Exit hint and source credits, just below the 4px frame.
+        int textY = offsetY + drawHeight + 10;
         graphics.drawCenteredString(this.font, Component.translatable("screen.creraces.badapple.exit_hint"),
                 this.width / 2, textY, 0xAAAAAA);
-        textY += 10;
-        graphics.drawCenteredString(this.font, Component.translatable("screen.creraces.badapple.credit_touhou"),
-                this.width / 2, textY, 0x808080);
-        textY += 10;
-        graphics.drawCenteredString(this.font, Component.translatable("screen.creraces.badapple.credit_remix"),
-                this.width / 2, textY, 0x808080);
-        textY += 10;
-        graphics.drawCenteredString(this.font, Component.translatable("screen.creraces.badapple.credit_cover"),
-                this.width / 2, textY, 0x808080);
-        textY += 10;
-        graphics.drawCenteredString(this.font,
-                Component.translatable("screen.creraces.badapple.credit_cover_author"), this.width / 2, textY,
-                0x808080);
+        for (String creditKey : CREDIT_KEYS) {
+            textY += 10;
+            graphics.drawCenteredString(this.font, Component.translatable(creditKey), this.width / 2, textY, 0x808080);
+        }
     }
 
     @Override

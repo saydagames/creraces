@@ -22,7 +22,9 @@
                     "operation": "set"
                 },
                 {
-                    "type": "creraces:enter_spirit_realm"
+                    "type": "creraces:set_flag",
+                    "flag": "is_in_spirit_realm",
+                    "operation": "toggle"
                 },
                 {
                     "type": "creraces:play_sound",
@@ -41,7 +43,9 @@
                     ],
                     "on_complete": [
                         {
-                            "type": "creraces:enter_spirit_realm"
+                            "type": "creraces:set_flag",
+                            "flag": "is_in_spirit_realm",
+                            "operation": "toggle"
                         },
                         {
                             "type": "creraces:play_sound",

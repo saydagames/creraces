@@ -16,6 +16,7 @@ loom {
 }
 
 dependencies {
+    // We depend on fabric loader here to use the fabric @Environment annotations and get the mixin json properties
     modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
     modApi "dev.architectury:architectury:${rootProject.property('1_21_1_architectury_version')}"
     implementation "com.google.code.findbugs:jsr305:3.0.2"
@@ -24,6 +25,10 @@ dependencies {
     modApi "curse.maven:pehkui-319596:5419266"
     modCompileOnly "com.github.glitchfiend:TerraBlender-neoforge:${rootProject.property('1_21_1_terrablender_version')}"
     modCompileOnly("curse.maven:curios-309927:6529130") { transitive = false }
+    // The CurseForge mod jar (used at runtime by the loader modules below) only exposes its API
+    // classes as a jar-in-jar bundle Loom can't see at compile time, so compile against the
+    // standalone API artifact instead - same version, plain Mojang-mapped classes, no remapping.
+    compileOnly "info.journeymap:journeymap-api-common:2.0.0-1.21.1"
 }
 
 // 1.21 renamed a number of datapack directories to singular. The shared pool under common/ is

@@ -47,6 +47,7 @@ public class EssenceBucketItem extends Item {
         try {
             return EssenceType.byId(tag.getString(TAG_ESSENCE));
         } catch (IllegalArgumentException ignored) {
+            // Unrecognised essence id; getName falls back to the plain bucket name.
             return null;
         }
     }

@@ -1,12 +1,16 @@
 package mc.sayda.creraces.util;
 
+import mc.sayda.creraces.CreRaces;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class Scheduler {
     private static final List<DelayedTask> TASKS = new ArrayList<>();
-    private static final java.util.Queue<DelayedTask> PENDING = new java.util.concurrent.ConcurrentLinkedQueue<>();
+    private static final Queue<DelayedTask> PENDING = new ConcurrentLinkedQueue<>();
 
     public static void delay(int ticks, Runnable task) {
         PENDING.add(new DelayedTask(ticks, task));
@@ -30,7 +34,7 @@ public class Scheduler {
                 try {
                     task.runnable.run();
                 } catch (Exception e) {
-                    mc.sayda.creraces.CreRaces.LOGGER.error("Error executing delayed task", e);
+                    CreRaces.LOGGER.error("Error executing delayed task", e);
                 }
                 iterator.remove();
             }

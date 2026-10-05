@@ -1,7 +1,9 @@
 package mc.sayda.creraces.forge.compat;
 
+import mc.sayda.creraces.registry.ModItems;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import top.theillusivec4.curios.api.CuriosApi;
 
 import java.util.Optional;
 
@@ -13,8 +15,8 @@ import java.util.Optional;
  */
 public class CuriosBeltCompat {
     public static Optional<ItemStack> findBelt(Player player) {
-        return top.theillusivec4.curios.api.CuriosApi.getCuriosHelper()
-                .findFirstCurio(player, mc.sayda.creraces.registry.ModItems.ESSENCE_BELT.get())
+        return CuriosApi.getCuriosHelper()
+                .findFirstCurio(player, ModItems.ESSENCE_BELT.get())
                 .map(slotResult -> slotResult.stack());
     }
 }

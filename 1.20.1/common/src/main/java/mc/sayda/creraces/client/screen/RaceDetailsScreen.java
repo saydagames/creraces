@@ -1,387 +1,276 @@
 package mc.sayda.creraces.client.screen;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import mc.sayda.creraces.race.Race;
+import mc.sayda.creraces.ability.Ability;
+import mc.sayda.creraces.ability.AbilityRegistry;
+import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.client.ClientAccess;
+import mc.sayda.creraces.config.CreRacesConfig;
+import mc.sayda.creraces.engine.GState;
 import mc.sayda.creraces.network.BoundaryHandler;
 import mc.sayda.creraces.network.SetRacePacket;
+import mc.sayda.creraces.race.Race;
+import mc.sayda.creraces.race.RaceRegistry;
+import mc.sayda.creraces.util.DocCache;
+import mc.sayda.creraces.util.RemoteDocFetcher;
+import mc.sayda.creraces.util.WikiUtils;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.ImageButton;
+import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 
 import javax.annotation.Nonnull;
-import java.util.Calendar;
+import javax.annotation.Nullable;
+import java.util.List;
 
 /**
- * Race details screen matching legacy RaceUndeadGUIScreen precisely.
+ * One race's page: its art and difficulty, a Select button while the player has no race yet, and
+ * a paged info panel covering the description, the passive and each starting ability.
  */
+@SuppressWarnings("null")
 public class RaceDetailsScreen extends Screen {
-        @Nonnull
-        private static final ResourceLocation SELECTION_BORDER = new ResourceLocation("creraces",
-                        "textures/screens/selection_border.png");
-        @Nonnull
-        private static final ResourceLocation SELECTION_TITLE = new ResourceLocation("creraces",
-                        "textures/screens/selection_title.png");
+    @Nonnull
+    private static final ResourceLocation SELECTION_TITLE = new ResourceLocation("creraces",
+            "textures/screens/selection_title.png");
+    @Nonnull
+    private static final ResourceLocation INFO_ICON = new ResourceLocation("creraces", "textures/screens/info.png");
+    @Nonnull
+    private static final ResourceLocation REFRESH_ICON = new ResourceLocation("creraces",
+            "textures/screens/refresh.png");
+    @Nonnull
+    private static final ResourceLocation BOTH_GENDERS_ICON = new ResourceLocation("creraces",
+            "textures/screens/mf.png");
 
-        // Atlas buttons
-        @Nonnull
-        private static final ResourceLocation ARROW_LEFT = new ResourceLocation("creraces",
-                        "textures/screens/atlas/arrow_left.png");
-        @Nonnull
-        private static final ResourceLocation ARROW_RIGHT = new ResourceLocation("creraces",
-                        "textures/screens/atlas/arrow_right.png");
+    // Info panel pages: the description, the passive, then one page per starting ability.
+    private static final int DESCRIPTION_PAGE = 0;
+    private static final int PASSIVE_PAGE = 1;
+    private static final int FIRST_ABILITY_PAGE = 2;
+    private static final int INFO_PANEL_WIDTH = 110;
+    private static final int INFO_PANEL_HEIGHT = 170;
+    private static final int SCROLL_SPEED = 12;
 
-        @Nonnull
-        private static final ResourceLocation INFO_ICON = new ResourceLocation("creraces", "textures/screens/info.png");
+    private final Screen parent;
+    private final Race race;
+    private int leftPos;
+    private int topPos;
+    private int infoPage = 0;
+    private int infoPageCount = 1;
+    private double scrollAmount = 0;
 
-        @Nonnull
-        private static final ResourceLocation REFRESH_ICON = new ResourceLocation("creraces",
-                        "textures/screens/refresh.png");
+    public RaceDetailsScreen(Screen parent, Race race) {
+        super(race != null ? race.name() : Component.translatable("gui.creraces.race_info.unknown_race"));
+        this.parent = parent;
+        this.race = race;
+    }
 
-        @Nonnull
-        private static final ResourceLocation DECO_CHRISTMAS = new ResourceLocation("creraces",
-                        "textures/screens/christmas_decoration.png");
-        @Nonnull
-        private static final ResourceLocation DECO_HALLOWEEN = new ResourceLocation("creraces",
-                        "textures/screens/halloween_decoration.png");
-        @Nonnull
-        private static final ResourceLocation DECO_MIDSUMMER = new ResourceLocation("creraces",
-                        "textures/screens/midsummer_decoration.png");
+    @Override
+    protected void init() {
+        this.leftPos = RaceMenuArt.panelLeft(this.width);
+        this.topPos = RaceMenuArt.panelTop(this.height);
+        int abilityPages = race != null && race.startingAbilities() != null ? race.startingAbilities().size() : 0;
+        this.infoPageCount = FIRST_ABILITY_PAGE + abilityPages;
 
-        @Nonnull
-        private static final ResourceLocation M_ICON = new ResourceLocation("creraces", "textures/screens/m.png");
-        @Nonnull
-        private static final ResourceLocation F_ICON = new ResourceLocation("creraces", "textures/screens/f.png");
-        @Nonnull
-        private static final ResourceLocation MF_ICON = new ResourceLocation("creraces", "textures/screens/mf.png");
+        this.addRenderableWidget(RaceMenuArt.backArrow(this.leftPos, this.topPos, btn -> {
+            if (this.minecraft != null) {
+                this.minecraft.setScreen(parent);
+            }
+        }));
 
-        private final Screen parent;
-        private final Race race;
-        private int leftPos, topPos;
+        DataUtils.getVariables(this.minecraft.player).ifPresent(vars -> {
+            if (!vars.hasChosenRace()) {
+                this.addRenderableWidget(new GenericRaceButton(this.leftPos - 41, this.topPos - 35, 48, 20,
+                        Component.translatable("gui.creraces.button.select"), btn -> {
+                            ClientAccess.isWaitingForRaceSelection = true;
+                            vars.setHasChosenRace(true); // Optimistic update
+                            BoundaryHandler.sendSetRace(new SetRacePacket(race.id()));
+                            if (this.minecraft != null && this.minecraft.player != null) {
+                                this.minecraft.player.closeContainer();
+                                this.minecraft.setScreen(null);
+                            }
+                        }));
+            }
+        });
 
-        public RaceDetailsScreen(Screen parent, Race race) {
-                super(race != null ? race.name() : Component.literal("Unknown Race"));
-                this.parent = parent;
-                this.race = race;
+        int pagerX = this.leftPos - 110;
+        int pagerY = this.topPos + 175;
+        this.addRenderableWidget(RaceMenuArt.textureButton(pagerX - 40, pagerY, 40, 20, 0, 0, 20,
+                RaceMenuArt.ARROW_LEFT, 40, 60, btn -> turnInfoPage(-1)));
+        this.addRenderableWidget(RaceMenuArt.textureButton(pagerX + 40, pagerY, 40, 20, 0, 0, 20,
+                RaceMenuArt.ARROW_RIGHT, 40, 60, btn -> turnInfoPage(1)));
+
+        // The wiki and refresh buttons only make sense for races with a linked wiki page.
+        if (race != null && RaceRegistry.getRemoteDoc(race.id()) != null) {
+            this.addRenderableWidget(RaceMenuArt.textureButton(this.leftPos + 2, this.topPos - 2, 16, 16, 0, 0, 16,
+                    INFO_ICON, 16, 32, btn -> ConfirmLinkScreen.confirmLinkNow(currentPageWikiUrl(), this, true)));
+            this.addRenderableWidget(RaceMenuArt.textureButton(this.leftPos + 2, this.topPos + 16, 16, 16, 16, 0, 16,
+                    REFRESH_ICON, 16, 32, btn -> {
+                        DocCache.clear();
+                        RemoteDocFetcher.clearCache();
+                    }));
+        }
+    }
+
+    private void turnInfoPage(int delta) {
+        int next = infoPage + delta;
+        if (next >= 0 && next < infoPageCount) {
+            infoPage = next;
+            scrollAmount = 0;
+        }
+    }
+
+    /** The wiki page for whatever the info panel shows: the race itself, or the current ability. */
+    private String currentPageWikiUrl() {
+        if (infoPage < FIRST_ABILITY_PAGE) {
+            return WikiUtils.getRaceUrl(race.name());
+        }
+        Ability ability = AbilityRegistry.get(race.startingAbilities().get(infoPage - FIRST_ABILITY_PAGE));
+        return ability != null ? WikiUtils.getAbilityUrl(ability.name()) : WikiUtils.getBaseWikiUrl();
+    }
+
+    @Override
+    public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        this.renderBackground(graphics);
+        if (this.race == null) {
+            graphics.drawCenteredString(this.font, Component.translatable("gui.creraces.race_info.missing"),
+                    this.width / 2, this.height / 2, 0xFF0000);
+            super.render(graphics, mouseX, mouseY, partialTick);
+            return;
         }
 
-        private int infoPage = 0;
-        private int maxInfoPages = 1;
-        private double scrollAmount = 0;
-        private int maxScroll = 0;
+        RenderSystem.setShaderColor(1, 1, 1, 1);
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
 
-        @Override
-        @SuppressWarnings("null")
-        protected void init() {
-                this.leftPos = (this.width - 176) / 2;
-                this.topPos = (this.height - 166) / 2;
+        renderRaceArt(graphics);
+        RaceMenuArt.drawSeasonalDecoration(graphics, this.leftPos + 11, this.topPos - 65);
+        if (CreRacesConfig.GSTATE_ENABLED.get()) {
+            renderGenderIndicator(graphics, mouseX, mouseY);
+        }
+        renderInfoPanel(graphics);
 
-                updateMaxInfoPages();
+        super.render(graphics, mouseX, mouseY, partialTick);
+        RenderSystem.disableBlend();
+    }
 
-                // Big Arrow Left (Back)
-                this.addRenderableWidget(new ImageButton(
-                                this.leftPos + -24, this.topPos + 184, 86, 48,
-                                0, 0, 48, ARROW_LEFT, 86, 144,
-                                btn -> {
-                                        if (this.minecraft != null) {
-                                                this.minecraft.setScreen(parent);
-                                        }
-                                }));
+    private void renderRaceArt(GuiGraphics graphics) {
+        if (race.bgTexture() != null) {
+            RaceMenuArt.drawBackdrop(graphics, race.bgTexture(), this.leftPos, this.topPos);
+        }
+        RaceMenuArt.drawBorder(graphics, this.leftPos, this.topPos);
 
-                // Select Button (GenericRaceButton) - Left Position
-                mc.sayda.creraces.capability.DataUtils.getVariables(this.minecraft.player).ifPresent(vars -> {
-                        if (!vars.hasChosenRace()) {
-                                this.addRenderableWidget(new GenericRaceButton(
-                                                this.leftPos + -41, this.topPos + -35, 48, 20,
-                                                Component.translatable("gui.creraces.button.select"),
-                                                btn -> {
-                                                        mc.sayda.creraces.client.ClientAccess.isWaitingForRaceSelection = true;
-                                                        vars.setHasChosenRace(true); // Optimistic update
-                                                        BoundaryHandler.sendSetRace(new SetRacePacket(race.id()));
-                                                        if (this.minecraft != null && this.minecraft.player != null) {
-                                                                this.minecraft.player.closeContainer();
-                                                                this.minecraft.setScreen(null);
-                                                        }
-                                                }));
-                        }
-                });
-
-                // Info Panel Navigation Arrows
-                // Positioned on the left side where the info panel is
-                int infoX = this.leftPos - 110;
-                int infoY = this.topPos + 175;
-
-                this.addRenderableWidget(new ImageButton(
-                                infoX - 40, infoY, 40, 20,
-                                0, 0, 20, ARROW_LEFT, 40, 60,
-                                btn -> {
-                                        if (infoPage > 0) {
-                                                infoPage--;
-                                                scrollAmount = 0;
-                                        }
-                                }));
-
-                this.addRenderableWidget(new ImageButton(
-                                infoX + 40, infoY, 40, 20,
-                                0, 0, 20, ARROW_RIGHT, 40, 60,
-                                btn -> {
-                                        if (infoPage < maxInfoPages - 1) {
-                                                infoPage++;
-                                                scrollAmount = 0;
-                                        }
-                                }));
-
-                // Dynamic Wiki and Refresh Buttons- Visible only if WikiPage is linked
-                if (race != null && mc.sayda.creraces.race.RaceRegistry.getRemoteDoc(race.id()) != null) {
-                        // Dynamic Wiki Button
-                        this.addRenderableWidget(new ImageButton(
-                                        this.leftPos + 2, this.topPos - 2, 16, 16,
-                                        0, 0, 16, INFO_ICON, 16, 32,
-                                        btn -> {
-                                                String url;
-                                                if (infoPage < 2) {
-                                                        url = mc.sayda.creraces.util.WikiUtils.getRaceUrl(race.name());
-                                                } else {
-                                                        int abilityIdx = infoPage - 2;
-                                                        ResourceLocation abilityId = race.startingAbilities()
-                                                                        .get(abilityIdx);
-                                                        mc.sayda.creraces.ability.Ability ability = mc.sayda.creraces.ability.AbilityRegistry
-                                                                        .get(abilityId);
-                                                        if (ability != null) {
-                                                                url = mc.sayda.creraces.util.WikiUtils
-                                                                                .getAbilityUrl(ability.name());
-                                                        } else {
-                                                                url = mc.sayda.creraces.util.WikiUtils.getBaseWikiUrl();
-                                                        }
-                                                }
-                                                if (this.minecraft != null) {
-                                                        this.minecraft.setScreen(
-                                                                        new net.minecraft.client.gui.screens.ConfirmLinkScreen(
-                                                                                        confirmed -> {
-                                                                                                if (confirmed) {
-                                                                                                        net.minecraft.Util
-                                                                                                                        .getPlatform()
-                                                                                                                        .openUri(url);
-                                                                                                }
-                                                                                                this.minecraft.setScreen(
-                                                                                                                this);
-                                                                                        }, url, true));
-                                                }
-                                        }));
-
-                        // Doc Refresh Button
-                        this.addRenderableWidget(new ImageButton(
-                                        this.leftPos + 2, this.topPos + 16, 16, 16,
-                                        16, 0, 16, REFRESH_ICON, 16, 32,
-                                        btn -> {
-                                                mc.sayda.creraces.util.DocCache.clear();
-                                                mc.sayda.creraces.util.RemoteDocFetcher.clearCache();
-                                        }));
-                }
+        if (race.splash() != null) {
+            graphics.blit(race.splash(), this.leftPos + race.splashX(), this.topPos + race.splashY(), 0, 0,
+                    race.splashW(), race.splashH(), race.splashW(), race.splashH());
         }
 
-        private void updateMaxInfoPages() {
-                // Page 0: Description
-                // Page 1: Passives
-                // Page 2+: Abilities (one per page)
-                int abilityPages = 0;
-                if (race != null && race.startingAbilities() != null) {
-                        abilityPages = race.startingAbilities().size();
-                }
-                this.maxInfoPages = 2 + abilityPages;
+        graphics.blit(SELECTION_TITLE, this.leftPos - 7, this.topPos - 54, 0, 0, 188, 60, 188, 60);
+        if (race.nameTexture() != null) {
+            graphics.blit(race.nameTexture(), this.leftPos + race.nameTexX(), this.topPos + race.nameTexY(), 0, 0,
+                    race.nameTexW(), race.nameTexH(), race.nameTexW(), race.nameTexH());
+        } else {
+            graphics.drawCenteredString(this.font, race.name(), this.leftPos + 88, this.topPos - 30, 0xFFFFFF);
         }
 
-        @Override
-        @SuppressWarnings("null")
-        public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-                this.renderBackground(graphics);
-                if (this.race == null) {
-                        graphics.drawCenteredString(this.font, "Error: Race Data Missing", this.width / 2,
-                                        this.height / 2, 0xFF0000);
-                        super.render(graphics, mouseX, mouseY, partialTick);
-                        return;
-                }
+        ResourceLocation difficulty = new ResourceLocation("creraces",
+                "textures/screens/difficulty_" + race.difficulty() + ".png");
+        graphics.blit(difficulty, this.leftPos + 41, this.topPos + 179, 0, 0, 93, 12, 93, 12);
+    }
 
-                RenderSystem.setShaderColor(1, 1, 1, 1);
-                RenderSystem.enableBlend();
-                RenderSystem.defaultBlendFunc();
+    private void renderGenderIndicator(GuiGraphics graphics, int mouseX, int mouseY) {
+        int x = this.leftPos - 142;
+        int y = this.topPos - 35;
+        ResourceLocation icon = race.getGState() == GState.MALE ? RaceMenuArt.MALE_ICON
+                : race.getGState() == GState.FEMALE ? RaceMenuArt.FEMALE_ICON
+                : BOTH_GENDERS_ICON;
+        graphics.blit(icon, x, y, 0, 0, 16, 16, 16, 16);
 
-                // 1. BG and Border
-                if (race.bgTexture() != null) {
-                        graphics.blit(race.bgTexture(), this.leftPos + -4, this.topPos + -26, 0, 0, 181, 220, 181, 220);
-                }
-                graphics.blit(SELECTION_BORDER, this.leftPos + -25, this.topPos + -47, 0, 0, 225, 264, 225, 264);
+        if (mouseX > x && mouseX < x + 16 && mouseY > y && mouseY < y + 16) {
+            graphics.renderComponentTooltip(this.font, List.of(
+                    Component.translatable("gui.creraces.menu_gui.tooltip_gender_star1"),
+                    Component.translatable("gui.creraces.menu_gui.tooltip_gender_star2")), mouseX, mouseY);
+        }
+    }
 
-                // 2. Splash Art
-                if (race.splash() != null) {
-                        graphics.blit(race.splash(), this.leftPos + race.splashX(), this.topPos + race.splashY(), 0, 0,
-                                        race.splashW(),
-                                        race.splashH(), race.splashW(), race.splashH());
-                }
+    private void renderInfoPanel(GuiGraphics graphics) {
+        int x = this.leftPos - 140;
+        int y = this.topPos;
 
-                // 3. Selection Title and Name Texture
-                graphics.blit(SELECTION_TITLE, this.leftPos + -7, this.topPos + -54, 0, 0, 188, 60, 188, 60);
-                if (race.nameTexture() != null) {
-                        graphics.blit(race.nameTexture(), this.leftPos + race.nameTexX(), this.topPos + race.nameTexY(),
-                                        0, 0,
-                                        race.nameTexW(), race.nameTexH(), race.nameTexW(), race.nameTexH());
+        Component title;
+        Component body = null;
+        if (infoPage == DESCRIPTION_PAGE) {
+            title = Component.translatable("gui.creraces.race_info.description");
+            body = RemoteDocFetcher.getRemoteDescription(race.id(), RaceRegistry.getRemoteDoc(race.id()),
+                    race.description());
+        } else if (infoPage == PASSIVE_PAGE) {
+            title = Component.translatable("gui.creraces.race_info.passive");
+            body = RemoteDocFetcher.getRemotePassive(race.id(), RaceRegistry.getRemotePassive(race.id()),
+                    Component.translatable("gui.creraces.race_info.no_passive"));
+        } else {
+            int abilityIndex = infoPage - FIRST_ABILITY_PAGE;
+            List<ResourceLocation> abilities = race.startingAbilities();
+            if (abilities == null || abilityIndex >= abilities.size()) {
+                title = Component.translatable("gui.creraces.race_info.end");
+            } else {
+                ResourceLocation abilityId = abilities.get(abilityIndex);
+                Ability ability = AbilityRegistry.get(abilityId);
+                if (ability != null) {
+                    title = ability.name();
+                    body = abilityDescription(abilityId, ability);
                 } else {
-                        graphics.drawCenteredString(this.font, race.name(), this.leftPos + 88, this.topPos + -30,
-                                        0xFFFFFF);
+                    title = Component.translatable("gui.creraces.race_info.unknown_ability");
                 }
-
-                // 4. Difficulty
-                ResourceLocation diffTex = new ResourceLocation("creraces",
-                                "textures/screens/difficulty_" + race.difficulty() + ".png");
-
-                graphics.blit(diffTex, this.leftPos + 41, this.topPos + 179, 0, 0, 93, 12, 93, 12);
-
-                // 5. Decorations
-                Calendar now = Calendar.getInstance();
-                int month = now.get(Calendar.MONTH);
-                int day = now.get(Calendar.DAY_OF_MONTH);
-                if (month == Calendar.DECEMBER) {
-                        graphics.blit(DECO_CHRISTMAS, this.leftPos + 11, this.topPos + -65, 0, 0, 151, 42, 151, 42);
-                } else if (month == Calendar.OCTOBER) {
-                        graphics.blit(DECO_HALLOWEEN, this.leftPos + 11, this.topPos + -65, 0, 0, 151, 42, 151, 42);
-                } else if (month == Calendar.JUNE && day >= 19 && day <= 26) {
-                        // Midsummer week: traditional Nordic celebration around the summer solstice, not the whole summer.
-                        graphics.blit(DECO_MIDSUMMER, this.leftPos + 11, this.topPos + -65, 0, 0, 151, 42, 151, 42);
-                }
-
-                // 6. Gender Indicator
-                if (mc.sayda.creraces.config.CreRacesConfig.GSTATE_ENABLED.get()) {
-                        if (race.getGState() == mc.sayda.creraces.engine.GState.MALE) {
-                                graphics.blit(M_ICON, this.leftPos - 142, this.topPos - 35, 0, 0, 16, 16, 16, 16);
-                        } else if (race.getGState() == mc.sayda.creraces.engine.GState.FEMALE) {
-                                graphics.blit(F_ICON, this.leftPos - 142, this.topPos - 35, 0, 0, 16, 16, 16, 16);
-                        } else {
-                                graphics.blit(MF_ICON, this.leftPos - 142, this.topPos - 35, 0, 0, 16, 16, 16, 16);
-                        }
-
-                        if (mouseX > this.leftPos - 142 && mouseX < this.leftPos - 126 &&
-                                        mouseY > this.topPos - 35 && mouseY < this.topPos - 19) {
-                                java.util.List<Component> tooltip = new java.util.ArrayList<>();
-                                tooltip.add(Component.translatable("gui.creraces.menu_gui.tooltip_gender_star1"));
-                                tooltip.add(Component.translatable("gui.creraces.menu_gui.tooltip_gender_star2"));
-                                graphics.renderComponentTooltip(this.font, tooltip, mouseX, mouseY);
-                        }
-                }
-
-                renderInfoPanel(graphics);
-
-                super.render(graphics, mouseX, mouseY, partialTick);
-                RenderSystem.disableBlend();
+            }
         }
 
-        @SuppressWarnings("null")
-        private void renderInfoPanel(GuiGraphics graphics) {
-                if (race == null)
-                        return;
+        graphics.drawString(this.font, title, x, y - 15, 0xFFFFFF, true);
+        renderScrollingBody(graphics, body, x, y);
 
-                // Position on the left side
-                int x = this.leftPos - 140;
-                int y = this.topPos;
-                int width = 110;
+        String counter = (infoPage + 1) + "/" + infoPageCount;
+        graphics.drawCenteredString(this.font, counter, this.leftPos - 110, this.topPos + 180, 0xFFFFFF);
+    }
 
-                Component title;
-                java.util.List<Component> content = new java.util.ArrayList<>();
+    /** The full remote write-up when there is one, otherwise the short remote description. */
+    private static Component abilityDescription(ResourceLocation abilityId, Ability ability) {
+        var fullDoc = AbilityRegistry.getRemoteFullDoc(abilityId);
+        if (fullDoc != null) {
+            return RemoteDocFetcher.getRemoteFullDescription(abilityId, fullDoc, ability.description());
+        }
+        return RemoteDocFetcher.getRemoteDescription(abilityId, AbilityRegistry.getRemoteDoc(abilityId),
+                ability.description());
+    }
 
-                if (infoPage == 0) {
-                        title = Component.translatable("gui.creraces.race_info.description");
-                        var config = mc.sayda.creraces.race.RaceRegistry.getRemoteDoc(race.id());
-                        content.add(getRemoteDescription(race.id(), config, race.description()));
-                } else if (infoPage == 1) {
-                        title = Component.translatable("gui.creraces.race_info.passive");
-                        var config = mc.sayda.creraces.race.RaceRegistry.getRemotePassive(race.id());
-                        content.add(getRemotePassive(race.id(), config,
-                                        Component.literal("No passive information available.")));
-                } else {
-                        int abilityIdx = infoPage - 2;
-                        if (race.startingAbilities() != null && abilityIdx < race.startingAbilities().size()) {
-                                ResourceLocation abilityId = race.startingAbilities().get(abilityIdx);
-                                mc.sayda.creraces.ability.Ability ability = mc.sayda.creraces.ability.AbilityRegistry
-                                                .get(abilityId);
-                                if (ability != null) {
-                                        title = ability.name();
-                                        var fullConfig = mc.sayda.creraces.ability.AbilityRegistry
-                                                        .getRemoteFullDoc(abilityId);
-                                        if (fullConfig != null) {
-                                                content.add(mc.sayda.creraces.util.RemoteDocFetcher
-                                                                .getRemoteFullDescription(abilityId, fullConfig,
-                                                                                ability.description()));
-                                        } else {
-                                                var config = mc.sayda.creraces.ability.AbilityRegistry
-                                                                .getRemoteDoc(abilityId);
-                                                content.add(getRemoteDescription(abilityId, config,
-                                                                ability.description()));
-                                        }
-                                } else {
-                                        title = Component.literal("Unknown Ability");
-                                }
-                        } else {
-                                title = Component.literal("End of Info");
-                        }
-                }
+    private void renderScrollingBody(GuiGraphics graphics, @Nullable Component body, int x, int y) {
+        int contentHeight = body != null ? this.font.wordWrapHeight(body, INFO_PANEL_WIDTH) + 5 : 0;
+        int maxScroll = Math.max(0, contentHeight - INFO_PANEL_HEIGHT);
+        this.scrollAmount = Mth.clamp(this.scrollAmount, 0, maxScroll);
 
-                // Draw Panel Content
-                graphics.drawString(this.font, title, x, y - 15, 0xFFFFFF, true);
-
-                int panelHeight = 170;
-                int totalContentHeight = 0;
-                for (Component comp : content) {
-                        totalContentHeight += this.font.wordWrapHeight(comp, width) + 5;
-                }
-
-                this.maxScroll = Math.max(0, totalContentHeight - panelHeight);
-                this.scrollAmount = net.minecraft.util.Mth.clamp(this.scrollAmount, 0, this.maxScroll);
-
-                graphics.enableScissor(x, y, x + width, y + panelHeight);
-                com.mojang.blaze3d.vertex.PoseStack pose = graphics.pose();
-                pose.pushPose();
-                pose.translate(0, -this.scrollAmount, 0);
-
-                int lineY = y;
-                for (Component comp : content) {
-                        graphics.drawWordWrap(this.font, comp, x, lineY, width, 0xCCCCCC);
-                        lineY += this.font.wordWrapHeight(comp, width) + 5;
-                }
-
-                pose.popPose();
-                graphics.disableScissor();
-
-                // Draw Scrollbar
-                if (maxScroll > 0) {
-                        int scrollbarX = x + width + 2;
-                        int barHeight = Math.max(10, panelHeight * panelHeight / totalContentHeight);
-                        int barTop = y + (int) ((panelHeight - barHeight) * (this.scrollAmount / maxScroll));
-                        graphics.fill(scrollbarX, barTop, scrollbarX + 2, barTop + barHeight, 0xAAFFFFFF);
-                }
-
-                // Draw Pagination Counter
-                String counter = (infoPage + 1) + "/" + maxInfoPages;
-                graphics.drawCenteredString(this.font, counter, this.leftPos - 110, this.topPos + 180, 0xFFFFFF);
+        if (body != null) {
+            graphics.enableScissor(x, y, x + INFO_PANEL_WIDTH, y + INFO_PANEL_HEIGHT);
+            graphics.pose().pushPose();
+            graphics.pose().translate(0, -this.scrollAmount, 0);
+            graphics.drawWordWrap(this.font, body, x, y, INFO_PANEL_WIDTH, 0xCCCCCC);
+            graphics.pose().popPose();
+            graphics.disableScissor();
         }
 
-        @Override
-        public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-                this.scrollAmount -= delta * 12;
-                return true;
+        if (maxScroll > 0) {
+            int scrollbarX = x + INFO_PANEL_WIDTH + 2;
+            int barHeight = Math.max(10, INFO_PANEL_HEIGHT * INFO_PANEL_HEIGHT / contentHeight);
+            int barTop = y + (int) ((INFO_PANEL_HEIGHT - barHeight) * (this.scrollAmount / maxScroll));
+            graphics.fill(scrollbarX, barTop, scrollbarX + 2, barTop + barHeight, 0xAAFFFFFF);
         }
+    }
 
-        private Component getRemoteDescription(ResourceLocation id, mc.sayda.creraces.util.RemoteDocConfig config,
-                        Component fallback) {
-                return mc.sayda.creraces.util.RemoteDocFetcher.getRemoteDescription(id, config, fallback);
-        }
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+        this.scrollAmount -= delta * SCROLL_SPEED;
+        return true;
+    }
 
-        private Component getRemotePassive(ResourceLocation id, mc.sayda.creraces.util.RemoteDocConfig config,
-                        Component fallback) {
-                return mc.sayda.creraces.util.RemoteDocFetcher.getRemotePassive(id, config, fallback);
-        }
-
-        @Override
-        public boolean isPauseScreen() {
-                return false;
-        }
+    @Override
+    public boolean isPauseScreen() {
+        return false;
+    }
 }

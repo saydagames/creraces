@@ -10,15 +10,12 @@ import net.minecraft.world.entity.Entity;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 
-/**
- * Poison Emitter Mobile Model - ported from legacy Modelpoison_emitter_wheel2.
- * Features a rotating wheel animation.
- */
+/** Wheeled poison emitter, ported from the legacy Modelpoison_emitter_wheel2. */
 @SuppressWarnings("null")
 public class PoisonEmitterMobileModel<T extends Entity> extends EntityModel<T> {
     public static final ModelLayerLocation LAYER_LOCATION = new ModelLayerLocation(
             new ResourceLocation("creraces", "poison_emitter_mobile"), "main");
-    
+
     private final ModelPart base;
     private final ModelPart wheel;
 
@@ -97,7 +94,8 @@ public class PoisonEmitterMobileModel<T extends Entity> extends EntityModel<T> {
 
     @Override
     public void setupAnim(T entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch) {
-        this.wheel.xRot = limbSwing; // Rotate based on movement distance
+        // limbSwing is the distance walked, so the wheel rolls along with the movement
+        this.wheel.xRot = limbSwing;
     }
 
     @Override

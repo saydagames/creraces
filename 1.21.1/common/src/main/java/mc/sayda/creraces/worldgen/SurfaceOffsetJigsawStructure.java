@@ -9,8 +9,11 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureType;
+import net.minecraft.world.level.levelgen.structure.pools.DimensionPadding;
 import net.minecraft.world.level.levelgen.structure.pools.JigsawPlacement;
 import net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool;
+import net.minecraft.world.level.levelgen.structure.pools.alias.PoolAliasLookup;
+import net.minecraft.world.level.levelgen.structure.templatesystem.LiquidSettings;
 
 import java.util.Optional;
 
@@ -64,9 +67,9 @@ public class SurfaceOffsetJigsawStructure extends Structure {
             false,
             Optional.empty(),
             maxDistanceFromCenter,
-            net.minecraft.world.level.levelgen.structure.pools.alias.PoolAliasLookup.EMPTY,
-            net.minecraft.world.level.levelgen.structure.pools.DimensionPadding.ZERO,
-            net.minecraft.world.level.levelgen.structure.templatesystem.LiquidSettings.APPLY_WATERLOGGING
+            PoolAliasLookup.EMPTY,
+            DimensionPadding.ZERO,
+            LiquidSettings.APPLY_WATERLOGGING
         );
     }
 

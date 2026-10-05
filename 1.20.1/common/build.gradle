@@ -18,14 +18,10 @@ loom {
     accessWidenerPath = file('src/main/resources/creraces.accesswidener')
 }
 
-
-
 dependencies {
     // We depend on fabric loader here to use the fabric @Environment annotations and get the mixin json properties
     modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
-    // Architectury API
     modApi "dev.architectury:architectury:${rootProject.property('1_20_1_architectury_version')}"
-    // Utilities
     implementation "com.google.code.findbugs:jsr305:3.0.2"
     api "com.google.code.findbugs:jsr305:3.0.2"
     modImplementation files("${rootProject.projectDir.parentFile}/twilight-lib/1.20.1/common/build/libs/twilight_lib-1.20.1-common-${rootProject.twilight_lib_version}.jar")
@@ -33,4 +29,8 @@ dependencies {
     modCompileOnly "mezz.jei:jei-1.20.1-common-api:15.2.0.27"
     modCompileOnly("curse.maven:terrablender-563928:6290448") { transitive = false }
     modCompileOnly("curse.maven:curios-309927:6418456") { transitive = false }
+    // The CurseForge mod jar (used at runtime by the loader modules below) only exposes its API
+    // classes as a jar-in-jar bundle Loom can't see at compile time, so compile against the
+    // standalone API artifact instead - same version, plain Mojang-mapped classes, no remapping.
+    compileOnly "info.journeymap:journeymap-api-common:1.20.1-2.0.0"
 }

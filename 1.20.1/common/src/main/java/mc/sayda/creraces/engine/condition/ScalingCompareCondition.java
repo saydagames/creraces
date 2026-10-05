@@ -1,14 +1,20 @@
 package mc.sayda.creraces.engine.condition;
 
+import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.engine.ScalingValue;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 
+import javax.annotation.Nullable;
+
 /**
- * Compares two ScalingValues using a specific operator.
- * Allows for complex logic like comparing state variables against multiplied
- * config values.
+ * Compares two ScalingValues, e.g. a state variable against a scaled config value. Every operator
+ * allows a 0.001 tolerance; "%" is true when the first value is a multiple of the second.
  */
 public class ScalingCompareCondition implements Condition {
+    private static final double EPSILON = 0.001;
+
     private final ScalingValue first;
     private final ScalingValue second;
     private final String operator;
@@ -20,31 +26,23 @@ public class ScalingCompareCondition implements Condition {
     }
 
     @Override
-    public boolean evaluate(Player player,
-            @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
-            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
+    public boolean evaluate(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
+            @Nullable BlockPos interactPos) {
+        double val1 = first.evaluate(player, target, slot, interactPos);
+        double val2 = second.evaluate(player, target, slot, interactPos);
 
-        double val1 = first.evaluate(player, target, slot, interact_pos);
-        double val2 = second.evaluate(player, target, slot, interact_pos);
-
-        // Standard epsilon for robust floating point comparisons
-        final double epsilon = 0.001;
-
-        boolean result = switch (operator) {
-            case "!=" -> Math.abs(val1 - val2) >= epsilon;
-            case ">" -> val1 > val2 + epsilon;
-            case ">=" -> val1 >= val2 - epsilon;
-            case "<" -> val1 < val2 - epsilon;
-            case "<=" -> val1 <= val2 + epsilon;
+        return switch (operator) {
+            case "!=" -> Math.abs(val1 - val2) >= EPSILON;
+            case ">" -> val1 > val2 + EPSILON;
+            case ">=" -> val1 >= val2 - EPSILON;
+            case "<" -> val1 < val2 - EPSILON;
+            case "<=" -> val1 <= val2 + EPSILON;
             case "%" -> {
-                if (Math.abs(val2) < epsilon)
+                if (Math.abs(val2) < EPSILON)
                     yield false;
-                yield Math.abs((val1 % val2)) < epsilon;
+                yield Math.abs((val1 % val2)) < EPSILON;
             }
-            default -> Math.abs(val1 - val2) < epsilon;
+            default -> Math.abs(val1 - val2) < EPSILON;
         };
-
-        return result;
     }
 }

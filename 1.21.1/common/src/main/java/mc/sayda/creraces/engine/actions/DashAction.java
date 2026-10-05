@@ -1,19 +1,31 @@
 package mc.sayda.creraces.engine.actions;
 
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.engine.ScalingValue;
 import mc.sayda.creraces.util.GsonHelper;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
+import javax.annotation.Nullable;
+
+/**
+ * Launches the caster in a direction: "forward"/"look" (default), "backward", "up", "down",
+ * "toward_target" or "away_from_target". The target directions fall back to the look direction
+ * when there is no target.
+ */
 public class DashAction implements ActionRegistry.RaceAction {
 
     private final ScalingValue power;
-    private final String direction; // "forward", "backward", "look", "up", "down"
-    private final ScalingValue yMultiplier; // Multiplier for Y component in horizontal dashes
-    private final ScalingValue yBoost; // Additive Y boost
+    private final String direction;
+    /** Scales the vertical part of look-based dashes; 0 keeps them flat. */
+    private final ScalingValue yMultiplier;
+    /** Flat vertical boost added on top of any dash. */
+    private final ScalingValue yBoost;
     private final boolean resetFall;
 
     public DashAction(ScalingValue power, String direction, ScalingValue yMultiplier, ScalingValue yBoost,
@@ -26,15 +38,14 @@ public class DashAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public boolean execute(Player player, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
-            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
+    public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
+            @Nullable BlockPos interactPos) {
         double p = power.evaluate(player, target, slot);
         double ym = yMultiplier.evaluate(player, target, slot);
         double yb = yBoost.evaluate(player, target, slot);
         Vec3 look = player.getLookAngle();
-        Vec3 motion = player.getDeltaMovement();
 
+        boolean vertical = "up".equalsIgnoreCase(direction) || "down".equalsIgnoreCase(direction);
         Vec3 dashVec;
         if ("backward".equalsIgnoreCase(direction)) {
             dashVec = look.reverse();
@@ -43,39 +54,33 @@ public class DashAction implements ActionRegistry.RaceAction {
         } else if ("down".equalsIgnoreCase(direction)) {
             dashVec = new Vec3(0, -1, 0);
         } else if ("toward_target".equalsIgnoreCase(direction) && target != null) {
-            dashVec = target.position().add(0, target.getBbHeight() * 0.5, 0)
-                    .subtract(player.getEyePosition()).normalize();
+            dashVec = bodyCenter(target).subtract(player.getEyePosition()).normalize();
         } else if ("away_from_target".equalsIgnoreCase(direction) && target != null) {
-            dashVec = player.getEyePosition()
-                    .subtract(target.position().add(0, target.getBbHeight() * 0.5, 0)).normalize();
+            dashVec = player.getEyePosition().subtract(bodyCenter(target)).normalize();
         } else {
-            // "forward", "look", toward/away_from_target with no target (default)
             dashVec = look;
         }
 
-        // Apply dash with configurable Y scaling
-        double yScale = "up".equalsIgnoreCase(direction) || "down".equalsIgnoreCase(direction)
-                ? 1.0
-                : ym;
-        player.setDeltaMovement(motion.add(dashVec.x * p, dashVec.y * p * yScale + yb, dashVec.z * p));
+        double yScale = vertical ? 1.0 : ym;
+        player.setDeltaMovement(player.getDeltaMovement().add(dashVec.x * p, dashVec.y * p * yScale + yb,
+                dashVec.z * p));
         player.hurtMarked = true;
-
         if (resetFall) {
             player.fallDistance = 0;
         }
-
         return true;
     }
 
-    public static void register() {
-        ActionRegistry.register(ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "dash"), json -> {
-            ScalingValue power = ScalingValue.fromJson(json, "power", 1.0);
-            String direction = GsonHelper.getAsString(json, "direction", "forward");
-            boolean resetFall = GsonHelper.getAsBoolean(json, "reset_fall", false);
-            ScalingValue yMultiplier = ScalingValue.fromJson(json, "y_multiplier", 0.0);
-            ScalingValue yBoost = ScalingValue.fromJson(json, "y_boost", 0.0);
+    private static Vec3 bodyCenter(LivingEntity entity) {
+        return entity.position().add(0, entity.getBbHeight() * 0.5, 0);
+    }
 
-            return new DashAction(power, direction, yMultiplier, yBoost, resetFall);
-        });
+    public static void register() {
+        ActionRegistry.register(ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "dash"), json -> new DashAction(
+                ScalingValue.fromJson(json, "power", 1.0),
+                GsonHelper.getAsString(json, "direction", "forward"),
+                ScalingValue.fromJson(json, "y_multiplier", 0.0),
+                ScalingValue.fromJson(json, "y_boost", 0.0),
+                GsonHelper.getAsBoolean(json, "reset_fall", false)));
     }
 }

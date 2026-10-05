@@ -10,18 +10,23 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
-import java.util.ArrayList;
+import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * One action list shared by several events, picked with "triggers": on_respawn, on_select,
+ * on_death and on_item_pickup. The actions never get a target.
+ */
 public class OnEventsTrait implements TraitRegistry.RaceTrait {
 
     private final Set<String> triggers;
     private final List<ActionRegistry.RaceAction> actions;
+    @Nullable
     private final Condition condition;
 
-    public OnEventsTrait(Set<String> triggers, List<ActionRegistry.RaceAction> actions, Condition condition) {
+    public OnEventsTrait(Set<String> triggers, List<ActionRegistry.RaceAction> actions, @Nullable Condition condition) {
         this.triggers = triggers;
         this.actions = actions;
         this.condition = condition;
@@ -29,9 +34,7 @@ public class OnEventsTrait implements TraitRegistry.RaceTrait {
 
     private void fire(Player player) {
         if (condition == null || condition.evaluate(player, null, null, null)) {
-            for (ActionRegistry.RaceAction action : actions) {
-                if (!action.execute(player, null, null, null)) break;
-            }
+            ActionRegistry.runChain(actions, player, null, null, null);
         }
     }
 
@@ -64,18 +67,8 @@ public class OnEventsTrait implements TraitRegistry.RaceTrait {
                     triggers.add(array.get(i).getAsString());
                 }
             }
-            List<ActionRegistry.RaceAction> actions = new ArrayList<>();
-            if (json.has("actions")) {
-                JsonArray array = json.getAsJsonArray("actions");
-                for (int i = 0; i < array.size(); i++) {
-                    actions.add(ActionRegistry.fromJson(array.get(i).getAsJsonObject()));
-                }
-            }
-            Condition condition = null;
-            if (json.has("condition")) {
-                condition = Condition.fromJson(json.getAsJsonObject("condition"));
-            }
-            return new OnEventsTrait(triggers, actions, condition);
+            Condition condition = json.has("condition") ? Condition.fromJson(json.getAsJsonObject("condition")) : null;
+            return new OnEventsTrait(triggers, ActionRegistry.listFromJson(json, "actions"), condition);
         });
     }
 }

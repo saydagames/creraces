@@ -15,17 +15,12 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.InventoryMenu;
-import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 
 public class EssenceVortexRenderer implements BlockEntityRenderer<EssenceVortexBlockEntity> {
 
     private static final ResourceLocation SPRITE_ID =
             new ResourceLocation("creraces", "block/essence_vortex");
-    // Identity normal matrix so the world-up (0,1,0) normal is stored unmodified in the vertex buffer.
-    // minecraft_mix_light uses the raw stored normal; (0,1,0) saturates both directional lights
-    // regardless of camera angle, giving full brightness on all sides.
-    private static final Matrix3f IDENTITY_NORM = new Matrix3f();
 
     public EssenceVortexRenderer(BlockEntityRendererProvider.Context ctx) {}
 
@@ -73,7 +68,10 @@ public class EssenceVortexRenderer implements BlockEntityRenderer<EssenceVortexB
                 .uv(u, v)
                 .overlayCoords(OverlayTexture.NO_OVERLAY)
                 .uv2(LightTexture.FULL_BRIGHT)
-                .normal(IDENTITY_NORM, 0f, 1f, 0f)
+                // A raw world-up normal, deliberately not transformed by the pose: minecraft_mix_light
+                // reads the stored normal as-is, and (0,1,0) saturates both directional lights at any
+                // camera angle, so the billboard stays fully lit from every side.
+                .normal(0f, 1f, 0f)
                 .endVertex();
     }
 

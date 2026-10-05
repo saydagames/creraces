@@ -4,8 +4,8 @@ import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 
 /**
- * A simple mob effect that can be used as a marker or for basic attribute
- * modification.
+ * Effect with no per-tick behaviour: a marker that other code checks with hasEffect(), optionally
+ * carrying attribute modifiers.
  */
 public class SimpleEffect extends MobEffect {
     public SimpleEffect(MobEffectCategory category, int color) {

@@ -1,17 +1,16 @@
 package mc.sayda.creraces.world.inventory.micro;
 
+import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.BrewingStandMenu;
+import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.ContainerLevelAccess;
-import net.minecraft.world.inventory.SimpleContainerData;
 
 public class MicroBrewingMenu extends BrewingStandMenu {
     private final ContainerLevelAccess access;
 
-    public MicroBrewingMenu(int syncId, Inventory playerInventory,
-            net.minecraft.world.Container container,
-            net.minecraft.world.inventory.ContainerData data,
+    public MicroBrewingMenu(int syncId, Inventory playerInventory, Container container, ContainerData data,
             ContainerLevelAccess access) {
         super(syncId, playerInventory, container, data);
         this.access = access;
@@ -19,6 +18,6 @@ public class MicroBrewingMenu extends BrewingStandMenu {
 
     @Override
     public boolean stillValid(Player player) {
-        return this.access.evaluate((level, pos) -> MicroMenuUtils.isValidMicroBlockAccess(level, pos, player), true);
+        return MicroMenuUtils.stillValid(access, player);
     }
 }

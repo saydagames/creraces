@@ -11,6 +11,7 @@ import mc.sayda.creraces.network.MiniPlacePacket;
 import mc.sayda.creraces.network.MiniRemovePacket;
 import mc.sayda.creraces.network.MiniUsePacket;
 import mc.sayda.creraces.registry.ModBlocks;
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
 import net.minecraft.client.player.LocalPlayer;
@@ -23,6 +24,9 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.JukeboxBlock;
+import net.minecraft.world.level.block.LevelEvent;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -47,7 +51,7 @@ public class MiniBlockPlaceMixin {
             return;
 
         if (!DataUtils.canInteractWithMiniBuild(player)) {
-            // Cancel with SUCCESS if looking at a MicroBlock to prevent vanilla logic
+            // Still swallow clicks on a micro block so vanilla doesn't interact with its host block.
             BlockPos targeted = hitResult.getBlockPos();
             if (targeted != null && player.level().getBlockState(targeted).is(ModBlocks.MICRO_BLOCK.get())) {
                 cir.setReturnValue(InteractionResult.SUCCESS);
@@ -60,14 +64,14 @@ public class MiniBlockPlaceMixin {
             return;
         }
 
-        ResourceLocation creraces$dim = player.level().dimension().location();
-        if (CreRacesConfig.MINI_BUILD_DIMENSION_BLACKLIST.get().contains(creraces$dim.toString())) {
+        ResourceLocation dimension = player.level().dimension().location();
+        if (CreRacesConfig.MINI_BUILD_DIMENSION_BLACKLIST.get().contains(dimension.toString())) {
             return;
         }
 
         ItemStack held = player.getItemInHand(hand);
         BlockPos hitPos = hitResult.getBlockPos();
-        net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
+        Minecraft minecraft = Minecraft.getInstance();
 
         if (hitPos != null && minecraft.level != null &&
                 minecraft.level.getBlockState(hitPos).is(ModBlocks.MICRO_BLOCK.get())) {
@@ -95,7 +99,7 @@ public class MiniBlockPlaceMixin {
                 if (holdingBlock && isSlotReplaceable) {
                     Block heldBlock = ((BlockItem) held.getItem()).getBlock();
                     if (!CreRacesConfig.MINI_PLACE_WHITELIST_ENABLED.get()
-                            || mc.sayda.creraces.engine.MicroBlockWhitelist.isAllowed(heldBlock)) {
+                            || MicroBlockWhitelist.isAllowed(heldBlock)) {
                         BoundaryHandler.sendMiniPlace(new MiniPlacePacket(
                                 hitPos, slotX, slotY, slotZ, hitResult.getDirection(),
                                 hitResult.getLocation(),
@@ -148,9 +152,9 @@ public class MiniBlockPlaceMixin {
 
         BlockPos hostPos = BlockPos.containing(newCenter.x, newCenter.y, newCenter.z);
 
-        int slotX = mc.sayda.creraces.block.entity.MicroBlockEntity.clampSlot(newCenter.x);
-        int slotY = mc.sayda.creraces.block.entity.MicroBlockEntity.clampSlot(newCenter.y);
-        int slotZ = mc.sayda.creraces.block.entity.MicroBlockEntity.clampSlot(newCenter.z);
+        int slotX = MicroBlockEntity.clampSlot(newCenter.x);
+        int slotY = MicroBlockEntity.clampSlot(newCenter.y);
+        int slotZ = MicroBlockEntity.clampSlot(newCenter.z);
 
         BlockState hostState = minecraft.level.getBlockState(hostPos);
         if (hostState.is(ModBlocks.MICRO_BLOCK.get())) {
@@ -165,7 +169,7 @@ public class MiniBlockPlaceMixin {
             return;
         }
 
-        long now = net.minecraft.Util.getMillis();
+        long now = Util.getMillis();
         creraces$lastMiniInteractionTime = now;
 
         ResourceLocation blockKey = BuiltInRegistries.BLOCK.getKey(heldBlock);
@@ -231,7 +235,7 @@ public class MiniBlockPlaceMixin {
             return false;
 
         if (isStart) {
-            long now = net.minecraft.Util.getMillis();
+            long now = Util.getMillis();
             if (now - creraces$lastMiniInteractionTime < CreRacesConfig.MINI_PLACEMENT_SPAM_THRESHOLD_MS.get()) {
                 return true;
             }
@@ -240,16 +244,16 @@ public class MiniBlockPlaceMixin {
             Vec3 normal = Vec3.atLowerCornerOf(bhr.getDirection().getNormal());
             Vec3 hitCenter = bhr.getLocation().subtract(normal.scale(0.005));
 
-            int slotX = mc.sayda.creraces.block.entity.MicroBlockEntity.clampSlot(hitCenter.x);
-            int slotY = mc.sayda.creraces.block.entity.MicroBlockEntity.clampSlot(hitCenter.y);
-            int slotZ = mc.sayda.creraces.block.entity.MicroBlockEntity.clampSlot(hitCenter.z);
+            int slotX = MicroBlockEntity.clampSlot(hitCenter.x);
+            int slotY = MicroBlockEntity.clampSlot(hitCenter.y);
+            int slotZ = MicroBlockEntity.clampSlot(hitCenter.z);
 
             if (minecraft.level.getBlockEntity(pos) instanceof MicroBlockEntity micro) {
                 BlockState slotState = micro.getSlot(slotX, slotY, slotZ);
-                if (slotState.getBlock() instanceof net.minecraft.world.level.block.JukeboxBlock) {
-                    minecraft.level.levelEvent(minecraft.player, 1010, pos, 0);
+                if (slotState.getBlock() instanceof JukeboxBlock) {
+                    minecraft.level.levelEvent(minecraft.player, LevelEvent.SOUND_STOP_JUKEBOX_SONG, pos, 0);
                 }
-                micro.setSlot(slotX, slotY, slotZ, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+                micro.setSlot(slotX, slotY, slotZ, Blocks.AIR.defaultBlockState());
             }
 
             BoundaryHandler.sendMiniRemove(new MiniRemovePacket(pos, slotX, slotY, slotZ));

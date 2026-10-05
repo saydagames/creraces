@@ -1,6 +1,8 @@
 package mc.sayda.creraces.ability;
 
+import mc.sayda.creraces.util.RemoteDocConfig;
 import net.minecraft.resources.ResourceLocation;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -12,8 +14,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class AbilityRegistry {
     private static final Map<ResourceLocation, Ability> ABILITIES = new ConcurrentHashMap<>();
-    private static final Map<ResourceLocation, mc.sayda.creraces.util.RemoteDocConfig> REMOTE_DOCS = new ConcurrentHashMap<>();
-    private static final Map<ResourceLocation, mc.sayda.creraces.util.RemoteDocConfig> REMOTE_FULL_DOCS = new ConcurrentHashMap<>();
+    private static final Map<ResourceLocation, RemoteDocConfig> REMOTE_DOCS = new ConcurrentHashMap<>();
+    private static final Map<ResourceLocation, RemoteDocConfig> REMOTE_FULL_DOCS = new ConcurrentHashMap<>();
 
     public static void register(Ability ability) {
         ABILITIES.put(ability.id(), ability);
@@ -33,23 +35,19 @@ public class AbilityRegistry {
         REMOTE_FULL_DOCS.clear();
     }
 
-    public static void registerRemoteDoc(ResourceLocation id, mc.sayda.creraces.util.RemoteDocConfig config) {
+    public static void registerRemoteDoc(ResourceLocation id, RemoteDocConfig config) {
         REMOTE_DOCS.put(id, config);
     }
 
-    public static mc.sayda.creraces.util.RemoteDocConfig getRemoteDoc(ResourceLocation id) {
+    public static RemoteDocConfig getRemoteDoc(ResourceLocation id) {
         return REMOTE_DOCS.get(id);
     }
 
-    public static void registerRemoteFullDoc(ResourceLocation id, mc.sayda.creraces.util.RemoteDocConfig config) {
+    public static void registerRemoteFullDoc(ResourceLocation id, RemoteDocConfig config) {
         REMOTE_FULL_DOCS.put(id, config);
     }
 
-    public static mc.sayda.creraces.util.RemoteDocConfig getRemoteFullDoc(ResourceLocation id) {
+    public static RemoteDocConfig getRemoteFullDoc(ResourceLocation id) {
         return REMOTE_FULL_DOCS.get(id);
-    }
-
-    public static boolean isEmpty() {
-        return ABILITIES.isEmpty();
     }
 }

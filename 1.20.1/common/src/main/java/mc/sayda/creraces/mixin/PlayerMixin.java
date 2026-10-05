@@ -1,11 +1,28 @@
 package mc.sayda.creraces.mixin;
 
+import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.ability.AbilitySlot;
+import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.capability.IPlayerVariables;
 import mc.sayda.creraces.capability.PlayerVariables;
+import mc.sayda.creraces.engine.ActionRegistry;
+import mc.sayda.creraces.engine.ManagedModifier;
+import mc.sayda.creraces.network.BoundaryHandler;
+import mc.sayda.creraces.race.Race;
+import mc.sayda.creraces.race.RaceRegistry;
+import mc.sayda.creraces.race.ResourceTicker;
 import mc.sayda.creraces.registry.ModAttributes;
+import mc.sayda.creraces.registry.ModMobEffects;
+import mc.sayda.creraces.util.RaceUtils;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
@@ -23,8 +40,11 @@ import net.minecraft.network.chat.MutableComponent;
 import mc.sayda.creraces.item.CommandingStaffItem;
 import net.minecraft.server.level.ServerLevel;
 
+import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 @SuppressWarnings("null")
 @Mixin(Player.class)
@@ -35,31 +55,28 @@ public class PlayerMixin implements IPlayerVariables {
     @Inject(method = "tick", at = @At("TAIL"))
     private void creraces$tick(CallbackInfo ci) {
         Player player = (Player) (Object) this;
-        // ResourceTicker is called server-side exclusively by
-        // IncidentResolver.onGensokyoTick.
-        // Calling it here caused double-ticking of cooldowns/resources every server
-        // tick.
-        // On the client, ticking is handled by CreRacesClient via ClientTickEvent.
+        // On the server IncidentResolver.onIncidentTick drives ResourceTicker; ticking it here as well
+        // would double-tick cooldowns and resources, so this only covers the client.
         if (!player.level().isClientSide()) {
             creraces$handleStaffPreselection(player);
             return;
         }
-        mc.sayda.creraces.race.ResourceTicker.tick(player);
+        ResourceTicker.tick(player);
     }
 
     @Inject(method = "die", at = @At("HEAD"))
-    private void creraces$onDeath(net.minecraft.world.damagesource.DamageSource source, CallbackInfo ci) {
+    private void creraces$onDeath(DamageSource source, CallbackInfo ci) {
         Player player = (Player)(Object)this;
         if (player.level().isClientSide()) return;
         this.resetOnDeath();
     }
 
     @Inject(method = "attack", at = @At("HEAD"), cancellable = true)
-    private void creraces$cancelAttack(net.minecraft.world.entity.Entity target, CallbackInfo ci) {
+    private void creraces$cancelAttack(Entity target, CallbackInfo ci) {
         Player player = (Player) (Object) this;
-        var stunned = mc.sayda.creraces.registry.ModMobEffects.STUNNED.get();
-        var disarmed = mc.sayda.creraces.registry.ModMobEffects.DISARMED.get();
-        var frozen = mc.sayda.creraces.registry.ModMobEffects.FROZEN.get();
+        var stunned = ModMobEffects.STUNNED.get();
+        var disarmed = ModMobEffects.DISARMED.get();
+        var frozen = ModMobEffects.FROZEN.get();
         if ((stunned != null && player.hasEffect(stunned)) ||
                 (disarmed != null && player.hasEffect(disarmed)) ||
                 (frozen != null && player.hasEffect(frozen))) {
@@ -70,23 +87,23 @@ public class PlayerMixin implements IPlayerVariables {
     @Inject(method = "canEat", at = @At("HEAD"), cancellable = true)
     private void creraces$canEatWhenFull(boolean ignoreHunger, CallbackInfoReturnable<Boolean> cir) {
         Player player = (Player) (Object) this;
-        mc.sayda.creraces.capability.DataUtils.getVariables(player).ifPresent(vars -> {
-            mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
+        DataUtils.getVariables(player).ifPresent(vars -> {
+            Race race = RaceRegistry.get(vars.getRace());
             if (race != null && race.passives() != null) {
                 // Food restriction check
-                net.minecraft.world.item.ItemStack stack = player.getUseItem();
+                ItemStack stack = player.getUseItem();
                 if (stack.isEmpty()) {
                     stack = player.getMainHandItem();
                     if (!stack.isEdible())
                         stack = player.getOffhandItem();
                 }
 
-                if (mc.sayda.creraces.util.RaceUtils.isFoodBlocked(player, stack)) {
+                if (RaceUtils.isFoodBlocked(player, stack)) {
                     cir.setReturnValue(false);
                     return;
                 }
 
-                mc.sayda.creraces.race.Race.Passives passives = race.passives();
+                Race.Passives passives = race.passives();
                 if (passives != null && passives.canEatWhenFull()) {
                     cir.setReturnValue(true);
                 }
@@ -95,91 +112,54 @@ public class PlayerMixin implements IPlayerVariables {
     }
 
     @Inject(method = "interactOn", at = @At("HEAD"), cancellable = true)
-    private void creraces$cancelInteraction(net.minecraft.world.entity.Entity target,
-            net.minecraft.world.InteractionHand hand,
-            CallbackInfoReturnable<net.minecraft.world.InteractionResult> cir) {
+    private void creraces$cancelInteraction(Entity target,
+            InteractionHand hand,
+            CallbackInfoReturnable<InteractionResult> cir) {
         Player player = (Player) (Object) this;
-        var stunned = mc.sayda.creraces.registry.ModMobEffects.STUNNED.get();
-        var disarmed = mc.sayda.creraces.registry.ModMobEffects.DISARMED.get();
-        var frozen = mc.sayda.creraces.registry.ModMobEffects.FROZEN.get();
+        var stunned = ModMobEffects.STUNNED.get();
+        var disarmed = ModMobEffects.DISARMED.get();
+        var frozen = ModMobEffects.FROZEN.get();
         if ((stunned != null && player.hasEffect(stunned)) ||
                 (disarmed != null && player.hasEffect(disarmed)) ||
                 (frozen != null && player.hasEffect(frozen))) {
-            cir.setReturnValue(net.minecraft.world.InteractionResult.FAIL);
+            cir.setReturnValue(InteractionResult.FAIL);
         }
     }
 
     @Inject(method = "createAttributes", at = @At("RETURN"))
     private static void creraces$createAttributes(CallbackInfoReturnable<AttributeSupplier.Builder> cir) {
-        // This mixin allows attributes to be registered on both Fabric and Forge
-        // without platform-specific code.
-        // On Fabric, we must ensure ModAttributes are registered BEFORE the Player
-        // class loads to avoid a race condition.
+        // Added here instead of through a loader attribute event so one code path covers every loader.
         try {
-            var maxMana = ModAttributes.MAX_MANA.get();
-            if (maxMana != null)
-                cir.getReturnValue().add(maxMana);
-            var maxRage = ModAttributes.MAX_RAGE.get();
-            if (maxRage != null)
-                cir.getReturnValue().add(maxRage);
-            var maxEnergy = ModAttributes.MAX_ENERGY.get();
-            if (maxEnergy != null)
-                cir.getReturnValue().add(maxEnergy);
-            var maxGrit = ModAttributes.MAX_GRIT.get();
-            if (maxGrit != null)
-                cir.getReturnValue().add(maxGrit);
-            var abilityPower = ModAttributes.ABILITY_POWER.get();
-            if (abilityPower != null)
-                cir.getReturnValue().add(abilityPower);
-            var attackDamage = ModAttributes.ATTACK_DAMAGE.get();
-            if (attackDamage != null)
-                cir.getReturnValue().add(attackDamage);
-            var critRate = ModAttributes.CRIT_RATE.get();
-            if (critRate != null)
-                cir.getReturnValue().add(critRate);
-            var abilityHaste = ModAttributes.ABILITY_HASTE.get();
-            if (abilityHaste != null)
-                cir.getReturnValue().add(abilityHaste);
-            var manaRegen = ModAttributes.MANA_REGEN.get();
-            if (manaRegen != null)
-                cir.getReturnValue().add(manaRegen);
-            var energyRegen = ModAttributes.ENERGY_REGEN.get();
-            if (energyRegen != null)
-                cir.getReturnValue().add(energyRegen);
-            var gritDecay = ModAttributes.GRIT_DECAY.get();
-            if (gritDecay != null)
-                cir.getReturnValue().add(gritDecay);
-            var rageDecay = ModAttributes.RAGE_DECAY.get();
-            if (rageDecay != null)
-                cir.getReturnValue().add(rageDecay);
-            var doubleJump = ModAttributes.DOUBLE_JUMP.get();
-            if (doubleJump != null)
-                cir.getReturnValue().add(doubleJump);
-
-            // Advanced Combat Attributes
-            var healRec = ModAttributes.HEALING_RECEIVED.get();
-            if (healRec != null)
-                cir.getReturnValue().add(healRec);
-            var armP = ModAttributes.ARMOR_PIERCE.get();
-            if (armP != null)
-                cir.getReturnValue().add(armP);
-            var armS = ModAttributes.ARMOR_SHRED.get();
-            if (armS != null)
-                cir.getReturnValue().add(armS);
-            var magR = ModAttributes.MAGIC_RESIST.get();
-            if (magR != null)
-                cir.getReturnValue().add(magR);
-            var magP = ModAttributes.MAGIC_PIERCE.get();
-            if (magP != null)
-                cir.getReturnValue().add(magP);
-            var magS = ModAttributes.MAGIC_SHRED.get();
-            if (magS != null)
-                cir.getReturnValue().add(magS);
+            AttributeSupplier.Builder builder = cir.getReturnValue();
+            Attribute[] attributes = {
+                    ModAttributes.MAX_MANA.get(),
+                    ModAttributes.MAX_RAGE.get(),
+                    ModAttributes.MAX_ENERGY.get(),
+                    ModAttributes.MAX_GRIT.get(),
+                    ModAttributes.ABILITY_POWER.get(),
+                    ModAttributes.ATTACK_DAMAGE.get(),
+                    ModAttributes.CRIT_RATE.get(),
+                    ModAttributes.ABILITY_HASTE.get(),
+                    ModAttributes.MANA_REGEN.get(),
+                    ModAttributes.ENERGY_REGEN.get(),
+                    ModAttributes.GRIT_DECAY.get(),
+                    ModAttributes.RAGE_DECAY.get(),
+                    ModAttributes.DOUBLE_JUMP.get(),
+                    ModAttributes.HEALING_RECEIVED.get(),
+                    ModAttributes.ARMOR_PIERCE.get(),
+                    ModAttributes.ARMOR_SHRED.get(),
+                    ModAttributes.MAGIC_RESIST.get(),
+                    ModAttributes.MAGIC_PIERCE.get(),
+                    ModAttributes.MAGIC_SHRED.get()
+            };
+            for (Attribute attribute : attributes) {
+                if (attribute != null)
+                    builder.add(attribute);
+            }
         } catch (Exception e) {
-            // Attribute registration failed - this usually means ModAttributes.init()
-            // hasn't run yet (a Fabric bootstrap ordering issue). BootstrapMixin should
-            // prevent this, but log it so it's visible if it ever happens.
-            com.mojang.logging.LogUtils.getLogger().error(
+            // Usually means ModAttributes wasn't registered before Player loaded. BootstrapMixin
+            // orders that on Fabric, so this should never fire, but it must be visible if it does.
+            CreRaces.LOGGER.error(
                     "Failed to add custom attributes to Player.createAttributes: {}", e.getMessage());
         }
     }
@@ -492,12 +472,12 @@ public class PlayerMixin implements IPlayerVariables {
     }
 
     @Override
-    public java.util.UUID getTeamId() {
+    public UUID getTeamId() {
         return creraces$variables.getTeamId();
     }
 
     @Override
-    public void setTeamId(java.util.UUID teamId) {
+    public void setTeamId(UUID teamId) {
         creraces$variables.setTeamId(teamId);
     }
 
@@ -552,17 +532,17 @@ public class PlayerMixin implements IPlayerVariables {
     }
 
     @Override
-    public java.util.Set<java.util.UUID> getPocketInvitations() {
+    public Set<UUID> getPocketInvitations() {
         return creraces$variables.getPocketInvitations();
     }
 
     @Override
-    public void inviteToPocket(java.util.UUID uuid) {
+    public void inviteToPocket(UUID uuid) {
         creraces$variables.inviteToPocket(uuid);
     }
 
     @Override
-    public void revokePocketInvitation(java.util.UUID uuid) {
+    public void revokePocketInvitation(UUID uuid) {
         creraces$variables.revokePocketInvitation(uuid);
     }
 
@@ -799,16 +779,16 @@ public class PlayerMixin implements IPlayerVariables {
     @Override
     public void resetOnDeath() {
         creraces$variables.resetOnDeath();
-        mc.sayda.creraces.engine.ActionRegistry.cleanup((Player) (Object) this);
+        ActionRegistry.cleanup((Player) (Object) this);
     }
 
     @Override
     public void sync(Player player) {
-        mc.sayda.creraces.network.BoundaryHandler.resyncVariables((Player) (Object) this, player);
+        BoundaryHandler.resyncVariables((Player) (Object) this, player);
     }
 
     @Override
-    public java.util.Collection<mc.sayda.creraces.engine.ManagedModifier> getManagedModifiers() {
+    public Collection<ManagedModifier> getManagedModifiers() {
         return creraces$variables.getManagedModifiers();
     }
 
@@ -823,17 +803,17 @@ public class PlayerMixin implements IPlayerVariables {
     }
 
     @Override
-    public java.util.Optional<mc.sayda.creraces.engine.ManagedModifier> getManagedModifier(java.util.UUID uuid) {
+    public Optional<ManagedModifier> getManagedModifier(UUID uuid) {
         return creraces$variables.getManagedModifier(uuid);
     }
 
     @Override
-    public void addManagedModifier(mc.sayda.creraces.engine.ManagedModifier mod) {
+    public void addManagedModifier(ManagedModifier mod) {
         creraces$variables.addManagedModifier(mod);
     }
 
     @Override
-    public void removeManagedModifier(java.util.UUID uuid) {
+    public void removeManagedModifier(UUID uuid) {
         creraces$variables.removeManagedModifier(uuid);
     }
 
@@ -876,12 +856,12 @@ public class PlayerMixin implements IPlayerVariables {
                     SoundEvents.ARROW_HIT_PLAYER, SoundSource.PLAYERS, 0.5f, 0.5f);
 
             if (player.level() instanceof ServerLevel serverLevel) {
-                net.minecraft.core.particles.SimpleParticleType pt = switch (activatedMode) {
-                    case "follow" -> net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER;
-                    case "move" -> net.minecraft.core.particles.ParticleTypes.SOUL;
-                    case "attack" -> net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME;
-                    case "free" -> net.minecraft.core.particles.ParticleTypes.GLOW;
-                    default -> net.minecraft.core.particles.ParticleTypes.SOUL;
+                SimpleParticleType pt = switch (activatedMode) {
+                    case "follow" -> ParticleTypes.HAPPY_VILLAGER;
+                    case "move" -> ParticleTypes.SOUL;
+                    case "attack" -> ParticleTypes.SOUL_FIRE_FLAME;
+                    case "free" -> ParticleTypes.GLOW;
+                    default -> ParticleTypes.SOUL;
                 };
                 serverLevel.sendParticles(pt, player.getX(), player.getY() + 2.5, player.getZ(), 10, 0.4, 0.4, 0.4,
                         0.05);

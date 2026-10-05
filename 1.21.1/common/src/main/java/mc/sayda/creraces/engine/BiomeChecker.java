@@ -30,7 +30,7 @@ public final class BiomeChecker {
     }
 
     /**
-     * Samples a 4×4 grid across the chunk (one sample per 4-block cell, matching
+     * Samples a 4x4 grid across the chunk (one sample per 4-block cell, matching
      * Minecraft's biome storage resolution) and returns true if the fraction of
      * matching samples meets or exceeds {@code threshold}.
      */
@@ -49,14 +49,10 @@ public final class BiomeChecker {
     }
 
     @SuppressWarnings("null")
-    public static boolean matchesEntry(Holder<Biome> holder, String entry) {
+    private static boolean matchesEntry(Holder<Biome> holder, String entry) {
         if (entry.startsWith("#")) {
-            try {
-                TagKey<Biome> tag = TagKey.create(Registries.BIOME, ResourceLocation.parse(entry.substring(1)));
-                return holder.is(tag);
-            } catch (Exception ignored) {
-                return false;
-            }
+            ResourceLocation tagId = ResourceLocation.tryParse(entry.substring(1));
+            return tagId != null && holder.is(TagKey.create(Registries.BIOME, tagId));
         }
         if (entry.startsWith("temp")) {
             float temp = holder.value().getBaseTemperature();
@@ -66,7 +62,9 @@ public final class BiomeChecker {
                 if (entry.startsWith("temp>"))  return temp >  Float.parseFloat(entry.substring(5));
                 if (entry.startsWith("temp<"))  return temp <  Float.parseFloat(entry.substring(5));
                 if (entry.startsWith("temp==")) return temp == Float.parseFloat(entry.substring(6));
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ignored) {
+                // A malformed threshold simply never matches; this runs per sample, so no log spam.
+            }
             return false;
         }
         return holder.unwrapKey().map(k -> k.location().toString().equals(entry)).orElse(false);

@@ -3,27 +3,35 @@ package mc.sayda.creraces.client.screen;
 import com.mojang.blaze3d.systems.RenderSystem;
 import mc.sayda.creraces.ability.EssenceType;
 import mc.sayda.creraces.ability.HexPos;
+import mc.sayda.creraces.ability.HexRecipe;
+import mc.sayda.creraces.ability.HexRecipeManager;
 import mc.sayda.creraces.network.BoundaryHandler;
 import mc.sayda.creraces.network.CraftScrollPacket;
 import mc.sayda.creraces.network.PlaceEssencePacket;
 import mc.sayda.creraces.network.RemoveEssencePacket;
+import mc.sayda.creraces.util.EssenceBeltHelper;
 import mc.sayda.creraces.world.inventory.ResearchTableMenu;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nullable;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Hex-grid editor for drawing a scroll's essence pattern. Essences are dragged or painted from the
+ * sidebar onto the grid; a crafted scroll, or a table without ink, shows its pattern read-only.
+ */
 public class ResearchTableScreen extends AbstractContainerScreen<ResearchTableMenu> {
 
     private static final ResourceLocation BG =
@@ -32,14 +40,19 @@ public class ResearchTableScreen extends AbstractContainerScreen<ResearchTableMe
             new ResourceLocation("creraces", "textures/screens/gui_research_scroll.png");
     private static final ResourceLocation SLOT_BORDER_TEX =
             new ResourceLocation("creraces", "textures/essence/slot_border.png");
-    private static final Map<EssenceType, ResourceLocation> ESSENCE_TEXTURES;
+    private static final Map<EssenceType, ResourceLocation> ESSENCE_TEXTURES = new EnumMap<>(EssenceType.class);
+
     static {
-        ESSENCE_TEXTURES = new EnumMap<>(EssenceType.class);
         for (EssenceType e : EssenceType.values()) {
             ESSENCE_TEXTURES.put(e, new ResourceLocation("creraces",
                     "textures/essence/" + e.getSerializedName() + ".png"));
         }
     }
+
+    private static final int INK_SLOT = 0;
+    private static final int SCROLL_SLOT = 1;
+    /** NBT key a crafted scroll stores its ability id under. */
+    private static final String SCROLL_ABILITY_TAG = "Ability";
 
     // Hex grid geometry (pointy-top hexagons)
     private static final int HEX_SIZE = 14;   // center-to-tip (pixels)
@@ -62,9 +75,10 @@ public class ResearchTableScreen extends AbstractContainerScreen<ResearchTableMe
     private static final int CRAFT_BTN_W = 226;
     private static final int CRAFT_BTN_H = 18;
 
-    // State
     private final Map<HexPos, EssenceType> localGrid = new HashMap<>();
+    /** Essence being dragged; dropping it on a cell places it. */
     @Nullable private EssenceType heldEssence = null;
+    /** Essence in draw mode: clicking or dragging over cells paints it. */
     @Nullable private EssenceType selectedEssence = null;
     @Nullable private HexPos hoveredHex = null;
     private BlockPos tablePos = BlockPos.ZERO;
@@ -81,8 +95,6 @@ public class ResearchTableScreen extends AbstractContainerScreen<ResearchTableMe
         super.init();
         this.leftPos += 2;
         this.topPos += 35;
-        this.titleLabelX = Integer.MIN_VALUE;
-        this.inventoryLabelX = Integer.MIN_VALUE;
         this.tablePos = this.menu.getTablePos();
         craftButton = addRenderableWidget(Button.builder(
                 Component.translatable("gui.creraces.research"),
@@ -96,29 +108,28 @@ public class ResearchTableScreen extends AbstractContainerScreen<ResearchTableMe
         localGrid.putAll(grid);
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
+    /** A crafted scroll is shown read-only, and so is everything while the table has no ink. */
     private boolean isViewOnly() {
-        ItemStack scroll = menu.getSlot(1).getItem();
-        CompoundTag tag = scroll.getTag();
-        if (tag != null && tag.contains("Ability")) return true;
-        return menu.getSlot(0).getItem().isEmpty();
+        return menu.isScrollCrafted() || menu.getSlot(INK_SLOT).getItem().isEmpty();
     }
 
+    /** The crafted scroll's recipe pattern, centred on the grid, or empty for a blank scroll. */
     private Map<HexPos, EssenceType> getScrollPattern() {
-        ItemStack scroll = menu.getSlot(1).getItem();
-        CompoundTag tag = scroll.getTag();
-        if (tag == null || !tag.contains("Ability")) return Map.of();
-        net.minecraft.resources.ResourceLocation abilityId =
-                net.minecraft.resources.ResourceLocation.tryParse(tag.getString("Ability"));
-        return mc.sayda.creraces.ability.HexRecipeManager.findByAbility(abilityId)
-                .map(mc.sayda.creraces.ability.HexRecipe::pattern)
+        CompoundTag tag = menu.getSlot(SCROLL_SLOT).getItem().getTag();
+        if (tag == null || !tag.contains(SCROLL_ABILITY_TAG)) {
+            return Map.of();
+        }
+        ResourceLocation abilityId = ResourceLocation.tryParse(tag.getString(SCROLL_ABILITY_TAG));
+        return HexRecipeManager.findByAbility(abilityId)
+                .map(HexRecipe::pattern)
                 .map(this::centerPattern)
                 .orElse(Map.of());
     }
 
     private Map<HexPos, EssenceType> centerPattern(Map<HexPos, EssenceType> pattern) {
-        if (pattern.isEmpty()) return pattern;
+        if (pattern.isEmpty()) {
+            return pattern;
+        }
         int minQ = Integer.MAX_VALUE, maxQ = Integer.MIN_VALUE;
         int minR = Integer.MAX_VALUE, maxR = Integer.MIN_VALUE;
         for (HexPos pos : pattern.keySet()) {
@@ -128,31 +139,27 @@ public class ResearchTableScreen extends AbstractContainerScreen<ResearchTableMe
         int baseOffQ = Math.round((minQ + maxQ) / 2.0f);
         int baseOffR = Math.round((minR + maxR) / 2.0f);
 
-        // Try the computed center, then nearby offsets, until all cells fit inHexBounds
+        // Try the computed center, then nearby offsets, until every cell fits on the grid.
         int[] deltas = {0, -1, 1, -2, 2};
         for (int dq : deltas) {
             for (int dr : deltas) {
-                int offQ = baseOffQ + dq;
-                int offR = baseOffR + dr;
-                Map<HexPos, EssenceType> candidate = new HashMap<>();
-                boolean allInBounds = true;
-                for (Map.Entry<HexPos, EssenceType> entry : pattern.entrySet()) {
-                    HexPos shifted = new HexPos(entry.getKey().q() - offQ, entry.getKey().r() - offR);
-                    if (!inHexBounds(shifted.q(), shifted.r())) { allInBounds = false; break; }
-                    candidate.put(shifted, entry.getValue());
+                Map<HexPos, EssenceType> candidate = shiftPattern(pattern, baseOffQ + dq, baseOffR + dr);
+                if (candidate.keySet().stream().allMatch(pos -> inHexBounds(pos.q(), pos.r()))) {
+                    return candidate;
                 }
-                if (allInBounds) return candidate;
             }
         }
         // Pattern is larger than the grid; center as best we can
-        Map<HexPos, EssenceType> best = new HashMap<>();
-        for (Map.Entry<HexPos, EssenceType> entry : pattern.entrySet()) {
-            best.put(new HexPos(entry.getKey().q() - baseOffQ, entry.getKey().r() - baseOffR), entry.getValue());
-        }
-        return best;
+        return shiftPattern(pattern, baseOffQ, baseOffR);
     }
 
-    // ── Coordinate helpers ────────────────────────────────────────────────────
+    private static Map<HexPos, EssenceType> shiftPattern(Map<HexPos, EssenceType> pattern, int offQ, int offR) {
+        Map<HexPos, EssenceType> shifted = new HashMap<>();
+        for (Map.Entry<HexPos, EssenceType> entry : pattern.entrySet()) {
+            shifted.put(new HexPos(entry.getKey().q() - offQ, entry.getKey().r() - offR), entry.getValue());
+        }
+        return shifted;
+    }
 
     private double hexScreenX(int q, int r) {
         return leftPos + GRID_CX + HEX_SIZE * (Math.sqrt(3) * q + Math.sqrt(3) / 2.0 * r);
@@ -172,10 +179,10 @@ public class ResearchTableScreen extends AbstractContainerScreen<ResearchTableMe
         double bestDist = HEX_SIZE * 0.95;
         for (int q = -GRID_RADIUS; q <= GRID_RADIUS; q++) {
             for (int r = -GRID_RADIUS; r <= GRID_RADIUS; r++) {
-                if (!inHexBounds(q, r)) continue;
-                double cx = hexScreenX(q, r);
-                double cy = hexScreenY(q, r);
-                double dist = Math.hypot(mx - cx, my - cy);
+                if (!inHexBounds(q, r)) {
+                    continue;
+                }
+                double dist = Math.hypot(mx - hexScreenX(q, r), my - hexScreenY(q, r));
                 if (dist < bestDist) {
                     bestDist = dist;
                     best = new HexPos(q, r);
@@ -206,28 +213,21 @@ public class ResearchTableScreen extends AbstractContainerScreen<ResearchTableMe
         return null;
     }
 
-    // ── Rendering ─────────────────────────────────────────────────────────────
-
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         this.renderBackground(g);
-        boolean hasScroll = menu.hasScroll();
-        boolean viewOnly = isViewOnly();
-        hoveredHex = (hasScroll && !viewOnly) ? hexAtMouse(mouseX, mouseY) : null;
+        boolean editable = menu.hasScroll() && !isViewOnly();
+        hoveredHex = editable ? hexAtMouse(mouseX, mouseY) : null;
         if (craftButton != null) {
-            craftButton.visible = true;
-            craftButton.active = hasScroll && !viewOnly;
+            craftButton.active = editable;
         }
         super.render(g, mouseX, mouseY, partialTick);
         this.renderTooltip(g, mouseX, mouseY);
 
-        // Draw held essence following mouse
         if (heldEssence != null) {
-            drawEssenceIcon(g, heldEssence, mouseX - ESSENCE_ICON_SIZE / 2, mouseY - ESSENCE_ICON_SIZE / 2, ESSENCE_ICON_SIZE);
-        }
-
-        // Essence sidebar tooltips
-        if (heldEssence == null) {
+            drawEssenceIcon(g, heldEssence, mouseX - ESSENCE_ICON_SIZE / 2, mouseY - ESSENCE_ICON_SIZE / 2,
+                    ESSENCE_ICON_SIZE);
+        } else {
             EssenceType hover = essenceAtMouse(mouseX, mouseY);
             if (hover != null) {
                 g.renderTooltip(this.font,
@@ -247,7 +247,14 @@ public class ResearchTableScreen extends AbstractContainerScreen<ResearchTableMe
         }
         RenderSystem.disableBlend();
 
-        // Draw essence sidebar
+        renderEssenceSidebar(g);
+        // The grid only appears once a scroll is in the table.
+        if (menu.hasScroll()) {
+            renderHexGrid(g);
+        }
+    }
+
+    private void renderEssenceSidebar(GuiGraphics g) {
         EssenceType[] types = EssenceType.values();
         for (int i = 0; i < types.length; i++) {
             EssenceType essenceType = types[i];
@@ -255,17 +262,16 @@ public class ResearchTableScreen extends AbstractContainerScreen<ResearchTableMe
             int ey = sidebarEssenceY(i);
             int totalCount = getEssenceCount(essenceType);
             int effectiveCount = getEffectiveCount(essenceType);
-            boolean depleted = effectiveCount == 0 && totalCount >= 0;
+            boolean depleted = effectiveCount == 0;
 
-            // Draw icon, dimmed when depleted
             RenderSystem.enableBlend();
-            float dim = depleted ? 0.35f : 1.0f;
-            RenderSystem.setShaderColor(dim, dim, dim, depleted ? 0.6f : 1.0f);
+            float shade = depleted ? 0.35f : 1.0f;
+            RenderSystem.setShaderColor(shade, shade, shade, depleted ? 0.6f : 1.0f);
             blitScaled(g, ESSENCE_TEXTURES.get(essenceType), ex, ey, ESSENCE_ICON_SIZE);
             RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
             RenderSystem.disableBlend();
 
-            // Gold border on selected essence in draw mode
+            // Gold border on the essence selected for draw mode
             if (essenceType == selectedEssence) {
                 RenderSystem.enableBlend();
                 RenderSystem.setShaderColor(1.0f, 0.82f, 0.15f, 1f);
@@ -274,51 +280,56 @@ public class ResearchTableScreen extends AbstractContainerScreen<ResearchTableMe
                 RenderSystem.disableBlend();
             }
 
-            // Count badge: shows remaining after grid usage (∞ for creative)
-            // White when nothing placed, bright red while decreasing, dark red when empty
-            String countStr = (effectiveCount < 0) ? "∞" : String.valueOf(effectiveCount);
-            int textColor;
-            if (depleted) {
-                textColor = 0xAA4444; // dark red: fully used up
-            } else if (totalCount >= 0 && effectiveCount < totalCount) {
-                textColor = 0xFF6060; // bright red: count going down due to grid placements
-            } else {
-                textColor = 0xFFFFFF; // white: nothing spent yet
-            }
-            g.pose().pushPose();
-            g.pose().translate(ex + ESSENCE_ICON_SIZE - 1, ey + ESSENCE_ICON_SIZE - 5, 0);
-            g.pose().scale(0.6f, 0.6f, 1f);
-            int tw = this.font.width(countStr);
-            g.drawString(this.font, countStr, -tw, 0, textColor, true);
-            g.pose().popPose();
+            drawCountBadge(g, ex, ey, effectiveCount, totalCount);
         }
+    }
 
-        // Hex grid only visible with a scroll inserted
-        if (menu.hasScroll()) {
-            boolean viewOnly = isViewOnly();
-            boolean debug = !viewOnly && Screen.hasControlDown();
-            Map<HexPos, EssenceType> displayGrid = viewOnly ? getScrollPattern() : localGrid;
-            for (int q = -GRID_RADIUS; q <= GRID_RADIUS; q++) {
-                for (int r = -GRID_RADIUS; r <= GRID_RADIUS; r++) {
-                    if (!inHexBounds(q, r)) continue;
-                    HexPos pos = new HexPos(q, r);
-                    int cx = (int) hexScreenX(q, r);
-                    int cy = (int) hexScreenY(q, r);
-                    boolean isHovered = !viewOnly && pos.equals(hoveredHex);
-                    EssenceType placed = displayGrid.get(pos);
-                    drawHex(g, q, r, cx, cy, placed, isHovered, debug, viewOnly);
+    /**
+     * What is left after the cells already drawn (∞ in creative), in the icon's corner: white while
+     * nothing is placed, bright red once the count is going down, dark red when it runs out.
+     */
+    private void drawCountBadge(GuiGraphics g, int x, int y, int effectiveCount, int totalCount) {
+        String countStr = effectiveCount < 0 ? "∞" : String.valueOf(effectiveCount);
+        int textColor;
+        if (effectiveCount == 0) {
+            textColor = 0xAA4444;
+        } else if (totalCount >= 0 && effectiveCount < totalCount) {
+            textColor = 0xFF6060;
+        } else {
+            textColor = 0xFFFFFF;
+        }
+        g.pose().pushPose();
+        g.pose().translate(x + ESSENCE_ICON_SIZE - 1, y + ESSENCE_ICON_SIZE - 5, 0);
+        g.pose().scale(0.6f, 0.6f, 1f);
+        g.drawString(this.font, countStr, -this.font.width(countStr), 0, textColor, true);
+        g.pose().popPose();
+    }
+
+    private void renderHexGrid(GuiGraphics g) {
+        boolean viewOnly = isViewOnly();
+        // Holding Ctrl while editing labels every cell with its axial coordinates.
+        boolean debug = !viewOnly && Screen.hasControlDown();
+        Map<HexPos, EssenceType> displayGrid = viewOnly ? getScrollPattern() : localGrid;
+        for (int q = -GRID_RADIUS; q <= GRID_RADIUS; q++) {
+            for (int r = -GRID_RADIUS; r <= GRID_RADIUS; r++) {
+                if (!inHexBounds(q, r)) {
+                    continue;
                 }
+                HexPos pos = new HexPos(q, r);
+                boolean isHovered = !viewOnly && pos.equals(hoveredHex);
+                drawHex(g, q, r, (int) hexScreenX(q, r), (int) hexScreenY(q, r), displayGrid.get(pos), isHovered,
+                        debug, viewOnly);
             }
         }
-
     }
 
     @Override
     protected void renderLabels(GuiGraphics g, int mouseX, int mouseY) {
-        // no labels
+        // The title and inventory labels are not drawn on this screen.
     }
 
-    private void drawHex(GuiGraphics g, int q, int r, int cx, int cy, @Nullable EssenceType placed, boolean hovered, boolean debug, boolean viewOnly) {
+    private void drawHex(GuiGraphics g, int q, int r, int cx, int cy, @Nullable EssenceType placed, boolean hovered,
+            boolean debug, boolean viewOnly) {
         int cellSize = HEX_SIZE * 2;
         int cellX = cx - HEX_SIZE;
         int cellY = cy - HEX_SIZE;
@@ -344,8 +355,7 @@ public class ResearchTableScreen extends AbstractContainerScreen<ResearchTableMe
             g.pose().pushPose();
             g.pose().translate(cx, cy - 3, 0f);
             g.pose().scale(0.55f, 0.55f, 1f);
-            int tw = this.font.width(label);
-            g.drawString(this.font, label, -tw / 2, 0, 0xFFFFFFFF, false);
+            g.drawString(this.font, label, -this.font.width(label) / 2, 0, 0xFFFFFFFF, false);
             g.pose().popPose();
         }
     }
@@ -359,29 +369,39 @@ public class ResearchTableScreen extends AbstractContainerScreen<ResearchTableMe
 
     /** Returns combined essence count from adjacent storage (snapshotted at open) + belt, or -1 for creative/infinite. */
     private int getEssenceCount(EssenceType type) {
-        net.minecraft.client.player.LocalPlayer player = net.minecraft.client.Minecraft.getInstance().player;
-        if (player == null) return 0;
-        if (player.isCreative()) return -1;
-        return menu.getStorageCount(type) + mc.sayda.creraces.util.EssenceBeltHelper.getEssenceCount(player, type);
+        LocalPlayer player = Minecraft.getInstance().player;
+        if (player == null) {
+            return 0;
+        }
+        if (player.isCreative()) {
+            return -1;
+        }
+        return menu.getStorageCount(type) + EssenceBeltHelper.getEssenceCount(player, type);
     }
 
     /** Returns how many cells of this type are currently placed on the grid. */
     private int getGridUsed(EssenceType type) {
         int count = 0;
         for (EssenceType t : localGrid.values()) {
-            if (t == type) count++;
+            if (t == type) {
+                count++;
+            }
         }
         return count;
     }
 
-    /**
-     * Returns the essence count adjusted for grid usage (belt total minus cells already drawn).
-     * Creative returns -1. Result is floor-clamped to 0.
-     */
+    /** The count left after the cells already drawn, never below 0; -1 in creative. */
     private int getEffectiveCount(EssenceType type) {
         int total = getEssenceCount(type);
-        if (total < 0) return -1;
+        if (total < 0) {
+            return -1;
+        }
         return Math.max(0, total - getGridUsed(type));
+    }
+
+    /** Creative counts as unlimited (-1), hence != 0 rather than > 0. */
+    private boolean hasEssenceLeft(EssenceType type) {
+        return getEffectiveCount(type) != 0;
     }
 
     private static void blitScaled(GuiGraphics g, ResourceLocation loc, int x, int y, int size) {
@@ -393,17 +413,25 @@ public class ResearchTableScreen extends AbstractContainerScreen<ResearchTableMe
         g.pose().popPose();
     }
 
-    // ── Input ─────────────────────────────────────────────────────────────────
+    private void placeEssence(HexPos pos, EssenceType essence) {
+        localGrid.put(pos, essence);
+        BoundaryHandler.sendPlaceEssence(new PlaceEssencePacket(tablePos, pos, essence));
+    }
+
+    private void removeEssence(HexPos pos) {
+        localGrid.remove(pos);
+        BoundaryHandler.sendRemoveEssence(new RemoveEssencePacket(tablePos, pos));
+    }
 
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
         boolean viewOnly = isViewOnly();
 
         if (button == 0) {
-            // Sidebar click: pick up essence (drag or draw decided on release)
+            // Picking an essence from the sidebar: whether it becomes a drag or draw mode is decided on release.
             EssenceType picked = essenceAtMouse(mx, my);
             if (picked != null) {
-                if (!viewOnly && getEffectiveCount(picked) != 0) {
+                if (!viewOnly && hasEssenceLeft(picked)) {
                     heldEssence = picked;
                 }
                 return true;
@@ -413,20 +441,17 @@ public class ResearchTableScreen extends AbstractContainerScreen<ResearchTableMe
                 HexPos hexUnder = hexAtMouse(mx, my);
                 if (hexUnder != null) {
                     if (selectedEssence != null) {
-                        // Draw mode: stamp selected essence only if the cell differs and we have remaining.
-                        // getEffectiveCount returns -1 for creative (unlimited), so compare with != 0, not > 0.
-                        boolean cellAlreadyThis = localGrid.get(hexUnder) == selectedEssence;
-                        if (cellAlreadyThis || getEffectiveCount(selectedEssence) != 0) {
-                            localGrid.put(hexUnder, selectedEssence);
-                            BoundaryHandler.sendPlaceEssence(new PlaceEssencePacket(tablePos, hexUnder, selectedEssence));
+                        // Draw mode: repainting the same essence is free, anything else needs some left.
+                        if (localGrid.get(hexUnder) == selectedEssence || hasEssenceLeft(selectedEssence)) {
+                            placeEssence(hexUnder, selectedEssence);
                         }
                         return true;
                     }
                     if (heldEssence == null && localGrid.containsKey(hexUnder)) {
-                        // Drag from hex: pick up, exit draw mode
+                        // Picking a placed essence back up also leaves draw mode.
                         selectedEssence = null;
-                        heldEssence = localGrid.remove(hexUnder);
-                        BoundaryHandler.sendRemoveEssence(new RemoveEssencePacket(tablePos, hexUnder));
+                        heldEssence = localGrid.get(hexUnder);
+                        removeEssence(hexUnder);
                         return true;
                     }
                 }
@@ -436,8 +461,7 @@ public class ResearchTableScreen extends AbstractContainerScreen<ResearchTableMe
         if (button == 1 && !viewOnly) {
             HexPos hex = hexAtMouse(mx, my);
             if (hex != null && localGrid.containsKey(hex)) {
-                localGrid.remove(hex);
-                BoundaryHandler.sendRemoveEssence(new RemoveEssencePacket(tablePos, hex));
+                removeEssence(hex);
                 return true;
             }
         }
@@ -450,20 +474,15 @@ public class ResearchTableScreen extends AbstractContainerScreen<ResearchTableMe
         if (!isViewOnly()) {
             if (button == 0 && selectedEssence != null && heldEssence == null) {
                 HexPos hex = hexAtMouse(mx, my);
-                if (hex != null && localGrid.get(hex) != selectedEssence) {
-                    // getEffectiveCount returns -1 for creative (unlimited), so compare with != 0, not > 0.
-                    if (getEffectiveCount(selectedEssence) != 0) {
-                        localGrid.put(hex, selectedEssence);
-                        BoundaryHandler.sendPlaceEssence(new PlaceEssencePacket(tablePos, hex, selectedEssence));
-                    }
+                if (hex != null && localGrid.get(hex) != selectedEssence && hasEssenceLeft(selectedEssence)) {
+                    placeEssence(hex, selectedEssence);
                 }
                 return true;
             }
             if (button == 1) {
                 HexPos hex = hexAtMouse(mx, my);
                 if (hex != null && localGrid.containsKey(hex)) {
-                    localGrid.remove(hex);
-                    BoundaryHandler.sendRemoveEssence(new RemoveEssencePacket(tablePos, hex));
+                    removeEssence(hex);
                 }
                 return true;
             }
@@ -476,17 +495,15 @@ public class ResearchTableScreen extends AbstractContainerScreen<ResearchTableMe
         if (button == 0 && heldEssence != null) {
             HexPos hex = hexAtMouse(mx, my);
             if (hex != null) {
-                // Dragged to a hex: place it, exit draw mode
+                // Dropped on a cell: place it and leave draw mode.
                 selectedEssence = null;
-                localGrid.put(hex, heldEssence);
-                BoundaryHandler.sendPlaceEssence(new PlaceEssencePacket(tablePos, hex, heldEssence));
+                placeEssence(hex, heldEssence);
             } else {
-                // Released without reaching a hex: treat as a sidebar click for draw mode
+                // Released off the grid: back on its sidebar icon it toggles draw mode, anywhere else it cancels.
                 EssenceType released = essenceAtMouse(mx, my);
                 if (released != null) {
                     selectedEssence = (released == selectedEssence) ? null : released;
                 }
-                // else: cancelled drag (dropped on nothing)
             }
             heldEssence = null;
             return true;

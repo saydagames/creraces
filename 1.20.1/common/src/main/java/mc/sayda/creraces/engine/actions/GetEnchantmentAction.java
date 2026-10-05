@@ -1,8 +1,12 @@
 package mc.sayda.creraces.engine.actions;
 
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.ability.AbilitySlot;
+import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.capability.IPlayerVariables;
 import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.util.GsonHelper;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
@@ -15,17 +19,25 @@ import javax.annotation.Nullable;
 import java.util.Map;
 
 /**
- * Action that finds an enchantment on an item and saves its ID and Level to variables.
+ * Reads an enchantment from the item in a slot (a given one, or else the first it has) and stores
+ * its id in a customization variable and its level in a persistent state.
  */
 @SuppressWarnings("null")
 public class GetEnchantmentAction implements ActionRegistry.RaceAction {
-    private final String enchantmentId; // Optional: specify which one to grab
+    private static final String STATE_PREFIX = "state:";
+    private static final String SELF_PREFIX = "self:";
+
+    /** Enchantment to look for; empty takes the first one on the item. */
+    private final String enchantmentId;
     private final String slot;
-    private final String saveIdTo;     // customization key
-    private final String saveLevelTo;  // state key (ResourceLocation string)
+    /** Customization key that receives the enchantment id. */
+    private final String saveIdTo;
+    /** State key that receives the level: "state:self" (the casting ability), "state:&lt;id&gt;" or a plain id. */
+    private final String saveLevelTo;
     private final boolean useTarget;
 
-    public GetEnchantmentAction(String enchantmentId, String slot, String saveIdTo, String saveLevelTo, boolean useTarget) {
+    public GetEnchantmentAction(String enchantmentId, String slot, String saveIdTo, String saveLevelTo,
+            boolean useTarget) {
         this.enchantmentId = enchantmentId;
         this.slot = slot;
         this.saveIdTo = saveIdTo;
@@ -34,95 +46,79 @@ public class GetEnchantmentAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public boolean execute(Player player, @Nullable LivingEntity target,
-            @Nullable mc.sayda.creraces.ability.AbilitySlot abilitySlot,
-            @Nullable net.minecraft.core.BlockPos interact_pos) {
-        
-        LivingEntity actor = (useTarget && target != null) ? target : player;
-        ItemStack stack = ItemSlotResolver.getItemInSlot(actor, slot);
-
-        if (stack.isEmpty()) return true;
+    public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot abilitySlot,
+            @Nullable BlockPos interactPos) {
+        LivingEntity holder = (useTarget && target != null) ? target : player;
+        ItemStack stack = ItemSlotResolver.getItemInSlot(holder, slot);
+        if (stack.isEmpty()) {
+            return true;
+        }
 
         Map<Enchantment, Integer> enchants = EnchantmentHelper.getEnchantments(stack);
-        Enchantment resultEnch = null;
+        Enchantment found = null;
         int level = 0;
-
-        if (enchantmentId != null && !enchantmentId.isEmpty()) {
-            ResourceLocation targetId = ResourceLocation.tryParse(enchantmentId);
-            if (targetId != null) {
-                @SuppressWarnings("null")
-                Enchantment targetEnch = BuiltInRegistries.ENCHANTMENT.get(targetId);
-                if (targetEnch != null && enchants.containsKey(targetEnch)) {
-                    resultEnch = targetEnch;
-                    level = enchants.get(targetEnch);
-                }
+        if (!enchantmentId.isEmpty()) {
+            ResourceLocation wantedId = ResourceLocation.tryParse(enchantmentId);
+            Enchantment wanted = wantedId != null ? BuiltInRegistries.ENCHANTMENT.get(wantedId) : null;
+            if (wanted != null && enchants.containsKey(wanted)) {
+                found = wanted;
+                level = enchants.get(wanted);
             }
-        } else {
-            // Grab the first one
-            for (Map.Entry<Enchantment, Integer> entry : enchants.entrySet()) {
-                resultEnch = entry.getKey();
-                level = entry.getValue();
-                break;
-            }
+        } else if (!enchants.isEmpty()) {
+            Map.Entry<Enchantment, Integer> first = enchants.entrySet().iterator().next();
+            found = first.getKey();
+            level = first.getValue();
+        }
+        if (found == null) {
+            return true;
         }
 
-        if (resultEnch != null) {
-            ResourceLocation id = BuiltInRegistries.ENCHANTMENT.getKey(resultEnch);
-            if (id != null) {
-                @SuppressWarnings("null")
-                final String idStr = id.toString();
-                final int finalLevel = level;
-                
-                mc.sayda.creraces.capability.DataUtils.getVariables(player).ifPresent(vars -> {
-                    if (saveIdTo != null && !saveIdTo.isEmpty()) {
-                        vars.setCustomization(saveIdTo, idStr);
-                    }
-                    if (saveLevelTo != null && !saveLevelTo.isEmpty()) {
-                        ResourceLocation levelLoc = resolveStateKey(saveLevelTo, player, vars, abilitySlot);
-                        if (levelLoc != null) {
-                            vars.setPersistentState(levelLoc, (double) finalLevel);
-                        }
-                    }
-                    vars.sync(player);
-                });
-            }
+        ResourceLocation foundId = BuiltInRegistries.ENCHANTMENT.getKey(found);
+        if (foundId != null) {
+            store(player, foundId, level, abilitySlot);
         }
-
         return true;
     }
 
-    private ResourceLocation resolveStateKey(String key, Player player, mc.sayda.creraces.capability.IPlayerVariables vars, @Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
-        if (key.startsWith("state:")) {
-            String sub = key.substring(6);
-            if (sub.startsWith("self:") && slot != null) {
-                ResourceLocation abilityId = vars.getAbilityInSlot(slot);
-                if (abilityId != null) {
-                    return abilityId;
-                }
-                sub = sub.substring(5);
-            } else if (sub.startsWith("self")) {
-                ResourceLocation abilityId = vars.getAbilityInSlot(slot);
-                if (abilityId != null) {
-                    return abilityId;
-                }
-                sub = "current"; // fallback
+    private void store(Player player, ResourceLocation enchantment, int level, @Nullable AbilitySlot abilitySlot) {
+        DataUtils.getVariables(player).ifPresent(vars -> {
+            if (!saveIdTo.isEmpty()) {
+                vars.setCustomization(saveIdTo, enchantment.toString());
             }
-            if (!sub.contains(":")) sub = "creraces:" + sub;
-            return ResourceLocation.tryParse(sub);
-        }
-        if (!key.contains(":")) key = "creraces:" + key;
-        return ResourceLocation.tryParse(key);
+            if (!saveLevelTo.isEmpty()) {
+                ResourceLocation stateId = resolveStateKey(saveLevelTo, vars, abilitySlot);
+                if (stateId != null) {
+                    vars.setPersistentState(stateId, (double) level);
+                }
+            }
+            vars.sync(player);
+        });
     }
 
+    @Nullable
+    private static ResourceLocation resolveStateKey(String key, IPlayerVariables vars, @Nullable AbilitySlot slot) {
+        String sub = key.startsWith(STATE_PREFIX) ? key.substring(STATE_PREFIX.length()) : key;
+        if (key.startsWith(STATE_PREFIX) && sub.startsWith("self")) {
+            ResourceLocation abilityId = slot != null ? vars.getAbilityInSlot(slot) : null;
+            if (abilityId != null) {
+                return abilityId;
+            }
+            // No ability to use: "self:<id>" falls back to <id> when a slot was given, anything else to "current".
+            sub = sub.startsWith(SELF_PREFIX) && slot != null ? sub.substring(SELF_PREFIX.length()) : "current";
+        }
+        if (!sub.contains(":")) {
+            sub = CreRaces.MODID + ":" + sub;
+        }
+        return ResourceLocation.tryParse(sub);
+    }
 
     public static void register() {
-        ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "get_enchantment"), json -> {
-            String enchantmentId = GsonHelper.getAsString(json, "enchantment", "");
-            String slot = GsonHelper.getAsString(json, "slot", "mainhand");
-            String saveIdTo = GsonHelper.getAsString(json, "save_id_to", "");
-            String saveLevelTo = GsonHelper.getAsString(json, "save_level_to", "");
-            boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
-            return new GetEnchantmentAction(enchantmentId, slot, saveIdTo, saveLevelTo, useTarget);
-        });
+        ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "get_enchantment"),
+                json -> new GetEnchantmentAction(
+                        GsonHelper.getAsString(json, "enchantment", ""),
+                        GsonHelper.getAsString(json, "slot", "mainhand"),
+                        GsonHelper.getAsString(json, "save_id_to", ""),
+                        GsonHelper.getAsString(json, "save_level_to", ""),
+                        GsonHelper.getAsBoolean(json, "use_target", false)));
     }
 }

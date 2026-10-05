@@ -4,6 +4,8 @@ import dev.architectury.networking.NetworkManager;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.ability.EssenceType;
 import mc.sayda.creraces.ability.HexPos;
+import mc.sayda.creraces.client.screen.ResearchTableScreen;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 
@@ -11,6 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
+/** S2C: the research table's essence grid, pushed to an open research table screen. */
 public class SyncHexGridPacket {
     public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "sync_hex_grid");
 
@@ -40,9 +43,8 @@ public class SyncHexGridPacket {
 
     public void handle(Supplier<NetworkManager.PacketContext> ctx) {
         ctx.get().queue(() -> {
-            var screen = net.minecraft.client.Minecraft.getInstance().screen;
-            if (screen instanceof mc.sayda.creraces.client.screen.ResearchTableScreen rts) {
-                rts.receiveGridSync(grid);
+            if (Minecraft.getInstance().screen instanceof ResearchTableScreen screen) {
+                screen.receiveGridSync(grid);
             }
         });
     }

@@ -56,7 +56,7 @@
             "condition": {
                 "type": "creraces:resource_level",
                 "resource": "grit",
-                "operator": "\u003e",
+                "operator": ">",
                 "value": 0
             },
             "actions": [

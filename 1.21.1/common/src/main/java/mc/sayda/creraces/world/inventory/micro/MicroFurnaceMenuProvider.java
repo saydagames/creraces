@@ -1,20 +1,19 @@
 package mc.sayda.creraces.world.inventory.micro;
 
 import mc.sayda.creraces.block.entity.MicroBlockEntity;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.Container;
-import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.*;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.RecipeType;
-import net.minecraft.world.level.block.AbstractFurnaceBlock;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.BlastFurnaceMenu;
+import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.inventory.FurnaceMenu;
+import net.minecraft.world.inventory.SmokerMenu;
 import net.minecraft.world.level.block.BlastFurnaceBlock;
 import net.minecraft.world.level.block.SmokerBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.MenuProvider;
 
 import javax.annotation.Nullable;
 
@@ -47,27 +46,9 @@ public class MicroFurnaceMenuProvider implements MenuProvider {
     @Nullable
     @Override
     public AbstractContainerMenu createMenu(int syncId, Inventory playerInventory, Player player) {
-        // Use the direct wrapper from the MicroBlockEntity for live syncing
-        net.minecraft.world.Container container = micro.getInventory(slotIdx, 3);
-
-        // ContainerData wrapping our furnace state array
-        int[] state = micro.getOrCreateFurnaceState(slotIdx);
-        ContainerData containerData = new ContainerData() {
-            @Override
-            public int get(int index) {
-                return state[index];
-            }
-
-            @Override
-            public void set(int index, int value) {
-                state[index] = value;
-            }
-
-            @Override
-            public int getCount() {
-                return 4;
-            }
-        };
+        // Both views are live, so the menu and the block entity's tick see the same items and timers
+        Container container = micro.getInventory(slotIdx, 3);
+        ContainerData containerData = MicroMenuUtils.dataView(micro.getOrCreateFurnaceState(slotIdx));
 
         if (slotState.getBlock() instanceof BlastFurnaceBlock) {
             return new BlastFurnaceMenu(syncId, playerInventory, container, containerData);

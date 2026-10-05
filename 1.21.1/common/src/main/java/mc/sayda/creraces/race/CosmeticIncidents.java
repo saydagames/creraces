@@ -2,24 +2,41 @@ package mc.sayda.creraces.race;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.capability.IPlayerVariables;
+import mc.sayda.creraces.config.CreRacesConfig;
+import mc.sayda.creraces.engine.GState;
+import mc.sayda.creraces.engine.TraitDispatch;
+import mc.sayda.creraces.engine.condition.Condition;
+import mc.sayda.creraces.engine.traits.AddonTrait;
+import mc.sayda.twilight_lib.TwilightConstants;
 import mc.sayda.twilight_lib.capabilities.DataUtils;
 import mc.sayda.twilight_lib.capabilities.IAddons;
+import mc.sayda.twilight_lib.network.NetworkHandler;
+import mc.sayda.twilight_lib.network.SyncAddonsPacket;
+import mc.sayda.twilight_lib.network.SyncModelVariantPacket;
 import net.minecraft.nbt.CompoundTag;
-import java.util.Set;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
+
+import javax.annotation.Nullable;
+import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Map;
-import java.lang.reflect.Method;
-import mc.sayda.creraces.engine.traits.AddonTrait;
-import mc.sayda.creraces.engine.GState;
-import net.minecraft.resources.ResourceLocation;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * Bridges CreRaces racial customizations with Twilight Lib's cosmetic system.
+ * The reflective calls keep older Twilight Lib builds working, which lack some of the
+ * addon methods and the four-argument sync packet.
  */
 public class CosmeticIncidents {
+    // IPlayerVariables stores gState as 0 (male) or 1 (female).
+    private static final int GSTATE_FEMALE = 1;
 
-    public static void applyCustomizations(net.minecraft.world.entity.player.Player player, Map<String, String> custMap,
-            Race race) {
+    public static void applyCustomizations(Player player, Map<String, String> custMap, Race race) {
         if (race == null)
             return;
 
@@ -27,73 +44,56 @@ public class CosmeticIncidents {
         if (addons == null)
             return;
 
-        // 1. Clear ALL existing racial addons (Respects ownership/customizations)
-        clearRacialAddons(player, addons);
+        // Owned addons (supporter/admin grants) survive this.
+        clearRacialAddons(addons);
 
-        // If master toggle is off, stop here after clearing
-        if (!mc.sayda.creraces.config.CreRacesConfig.RACE_ADDONS_ENABLED.get()) {
-            if (player instanceof net.minecraft.server.level.ServerPlayer) {
-                var pkt = createSyncPacket(player.getUUID(), addons.getActiveAddons(),
-                        getExternalGrantsRobust(addons), addons.getAllAddonTints());
-                if (pkt != null) mc.sayda.twilight_lib.network.NetworkHandler.sendAddonsToAll(pkt);
-            }
+        if (!CreRacesConfig.RACE_ADDONS_ENABLED.get()) {
+            syncAddons(player);
             return;
         }
 
-        // 2. Integrated Application (Auto-apply from Customization definitions)
         for (RaceCustomization cust : race.customization()) {
             String value = custMap.getOrDefault(cust.id(), cust.defaultValue());
 
-            // Handle addon mapping (Integrated Cosmetics)
             if (cust.addonData() != null) {
                 applyAddonData(player, cust.addonData(), value, custMap, addons);
             }
 
-            // Handle simple addonId (legacy/fixed)
+            // A fixed addonId is always shown; a "tint" customization colours it.
             if (cust.addonId() != null) {
                 setAddonActiveRobust(addons, cust.addonId(), true, true);
-
-                // If the type is 'tint', apply it as a color to this fixed addon
                 if (cust.type().equals("tint")) {
                     addons.setAddonTint(cust.addonId(), parseHex(value, 0xFFFFFF));
                 }
             }
         }
 
-        // 3. Trait Application (Still used for fixed/complex logic)
-        for (var trait : race.traits()) {
-            if (trait instanceof AddonTrait addonTrait) {
-                if (!addonTrait.isEnabled()) {
-                    continue;
-                }
+        for (var trait : TraitDispatch.forPlayer(player)) {
+            if (!(trait instanceof AddonTrait addonTrait) || !addonTrait.isEnabled())
+                continue;
 
-                var condition = addonTrait.getCondition();
-                if (condition != null && !condition.evaluate(player, null, null, null)) {
-                    continue;
-                }
+            var condition = addonTrait.getCondition();
+            if (condition != null && !condition.evaluate(player, null, null, null))
+                continue;
 
-                String addonId = resolvePlaceholders(addonTrait.getAddonId(), custMap, race);
-                setAddonActiveRobust(addons, addonId, true, true);
+            String addonId = resolvePlaceholders(addonTrait.getAddonId(), custMap, race);
+            setAddonActiveRobust(addons, addonId, true, true);
 
-                if (addonTrait.getTint() != null && !addonTrait.getTint().isEmpty()) {
-                    int tintColor = resolveColor(addonTrait.getTint(), custMap);
-                    addons.setAddonTint(addonId, tintColor);
-                }
+            if (addonTrait.getTint() != null && !addonTrait.getTint().isEmpty()) {
+                addons.setAddonTint(addonId, resolveColor(addonTrait.getTint(), custMap));
             }
         }
 
-        // 4. Final re-application of lore aesthetics (Ensure chest addon isn't
-        // stripped)
-        if (player instanceof net.minecraft.server.level.ServerPlayer) {
-            applyGStateAddons((net.minecraft.server.level.ServerPlayer) player, false);
+        // Clearing above also removed the gState chest addon, so put it back.
+        if (player instanceof ServerPlayer serverPlayer) {
+            applyGStateAddons(serverPlayer, false);
         }
 
-        // 5. Sync to all
         syncAddons(player);
     }
 
-    public static void syncAddons(net.minecraft.world.entity.player.Player player) {
-        if (!(player instanceof net.minecraft.server.level.ServerPlayer))
+    public static void syncAddons(Player player) {
+        if (!(player instanceof ServerPlayer))
             return;
 
         IAddons addons = DataUtils.getAddonsData(player);
@@ -102,82 +102,81 @@ public class CosmeticIncidents {
 
         var pkt = createSyncPacket(player.getUUID(), addons.getActiveAddons(),
                 getExternalGrantsRobust(addons), addons.getAllAddonTints());
-        if (pkt != null) mc.sayda.twilight_lib.network.NetworkHandler.sendAddonsToAll(pkt);
+        if (pkt != null)
+            NetworkHandler.sendAddonsToAll(pkt);
     }
 
-    private static void applyAddonData(net.minecraft.world.entity.player.Player player, JsonObject data,
-            String value, Map<String, String> custMap, IAddons addons) {
+    private static void applyAddonData(Player player, JsonObject data, String value, Map<String, String> custMap,
+            IAddons addons) {
         if (data == null || addons == null)
             return;
 
         if (data.has(value)) {
             JsonElement element = data.get(value);
             if (element.isJsonArray()) {
+                // Every unconditional entry applies; the first conditional entry that passes ends the list.
                 for (JsonElement e : element.getAsJsonArray()) {
                     boolean hasCondition = e.isJsonObject() && e.getAsJsonObject().has("condition");
-                    if (applyComplexAddon(player, e, value, custMap, addons) && hasCondition) {
+                    if (applyComplexAddon(player, e, custMap, addons) && hasCondition) {
                         break;
                     }
                 }
             } else {
-                applyComplexAddon(player, element, value, custMap, addons);
+                applyComplexAddon(player, element, custMap, addons);
             }
         }
 
         if (data.has("pattern")) {
-            String pattern = data.get("pattern").getAsString();
-            String addonId = pattern.replace("{self}", value);
-            addonId = resolvePlaceholders(addonId, custMap, null);
-            setAddonActiveRobust(addons, addonId, true, true);
+            String addonId = data.get("pattern").getAsString().replace("{self}", value);
+            setAddonActiveRobust(addons, resolvePlaceholders(addonId, custMap, null), true, true);
         }
     }
 
-    private static boolean applyComplexAddon(net.minecraft.world.entity.player.Player player,
-            JsonElement element, String value, Map<String, String> custMap, IAddons addons) {
+    /** Returns true if an addon was activated. */
+    private static boolean applyComplexAddon(Player player, JsonElement element, Map<String, String> custMap,
+            IAddons addons) {
         if (element.isJsonPrimitive()) {
             setAddonActiveRobust(addons, resolvePlaceholders(element.getAsString(), custMap, null), true, true);
             return true;
-        } else if (element.isJsonObject()) {
-            JsonObject obj = element.getAsJsonObject();
+        }
+        if (!element.isJsonObject())
+            return false;
 
-            if (obj.has("condition") && player != null) {
-                mc.sayda.creraces.engine.condition.Condition cond =
-                        mc.sayda.creraces.engine.condition.Condition.fromJson(obj.getAsJsonObject("condition"));
-                if (!cond.evaluate(player, null, null, null)) {
-                    return false;
-                }
-            }
-
-            if (obj.has("id")) {
-                String id = resolvePlaceholders(obj.get("id").getAsString(), custMap, null);
-                setAddonActiveRobust(addons, id, true, true);
-                if (obj.has("tint")) {
-                    int tint = resolveColor(obj.get("tint").getAsString(), custMap);
-                    addons.setAddonTint(id, tint);
-                }
-                return true;
+        JsonObject obj = element.getAsJsonObject();
+        if (obj.has("condition") && player != null) {
+            Condition cond = Condition.fromJson(obj.getAsJsonObject("condition"));
+            if (!cond.evaluate(player, null, null, null)) {
+                return false;
             }
         }
-        return false;
+
+        if (!obj.has("id"))
+            return false;
+        String id = resolvePlaceholders(obj.get("id").getAsString(), custMap, null);
+        setAddonActiveRobust(addons, id, true, true);
+        if (obj.has("tint")) {
+            addons.setAddonTint(id, resolveColor(obj.get("tint").getAsString(), custMap));
+        }
+        return true;
     }
 
-    public static void clearAllRacialAddons(net.minecraft.world.entity.player.Player player) {
+    public static void clearAllRacialAddons(Player player) {
         IAddons addons = DataUtils.getAddonsData(player);
         if (addons != null) {
-            clearRacialAddons(player, addons);
+            clearRacialAddons(addons);
             syncAddons(player);
         }
     }
 
-    private static void clearRacialAddons(net.minecraft.world.entity.player.Player player, IAddons addons) {
+    /**
+     * Deactivates every addon the player does not permanently own (supporter/admin grants),
+     * which covers both racial addons and Mirror selections.
+     */
+    private static void clearRacialAddons(IAddons addons) {
         Set<String> owned = addons.getAddons();
-
         for (String id : new HashSet<>(addons.getActiveAddons())) {
-            // If the player doesn't permanently own the addon (supporter/admin grant),
-            // we wipe it upon race reset. This covers both racial traits and Mirror
-            // selections.
             if (!owned.contains(id)) {
-                mc.sayda.creraces.CreRaces.LOGGER.debug("Deactivating non-owned addon on reset: {}", id);
+                CreRaces.LOGGER.debug("Deactivating non-owned addon on reset: {}", id);
                 setAddonActiveRobust(addons, id, false, true);
             }
         }
@@ -187,14 +186,12 @@ public class CosmeticIncidents {
         return resolvePlaceholders(template, custMap, null);
     }
 
-    public static String resolvePlaceholders(String template, Map<String, String> custMap,
-            @javax.annotation.Nullable Race race) {
+    public static String resolvePlaceholders(String template, Map<String, String> custMap, @Nullable Race race) {
         String result = template;
         for (Map.Entry<String, String> entry : custMap.entrySet()) {
             result = result.replace("{" + entry.getKey() + "}", entry.getValue());
         }
 
-        // Handle Race placeholder
         if (race != null) {
             result = result.replace("{race}", race.id().toString());
             if (race.getGState() != GState.BOTH) {
@@ -202,29 +199,27 @@ public class CosmeticIncidents {
             }
 
             for (RaceCustomization cust : race.customization()) {
-                String placeholder = "{" + cust.id() + "}";
-                if (result.contains(placeholder)) {
-                    result = result.replace(placeholder, cust.defaultValue());
-                }
+                result = result.replace("{" + cust.id() + "}", cust.defaultValue());
             }
         }
 
+        // Anything still unresolved falls back to variant 0.
         if (result.contains("{")) {
             result = result.replaceAll("\\{[^}]*\\}", "0");
         }
         return result;
     }
 
-    public static String resolvePlaceholders(net.minecraft.world.entity.player.Player player, String template) {
+    public static String resolvePlaceholders(Player player, String template) {
         return mc.sayda.creraces.capability.DataUtils.getVariables(player).map(vars -> {
             ResourceLocation raceId = vars.getRace();
             Race race = RaceRegistry.get(raceId);
             String result = resolvePlaceholders(template, vars.getCustomizations(), race);
 
-            // Special field injections for fields not in custMap
+            // These are not customizations, so the custMap pass above never fills them.
             result = result.replace("{race}", raceId.toString());
             result = result.replace("{gstate}", String.valueOf(vars.getGState()));
-            result = result.replace("{gender}", vars.getGState() == 1 ? "female" : "male");
+            result = result.replace("{gender}", vars.getGState() == GSTATE_FEMALE ? "female" : "male");
 
             return result;
         }).orElse(template);
@@ -250,14 +245,13 @@ public class CosmeticIncidents {
         }
     }
 
-    public static void applyGStateCosmetics(net.minecraft.server.level.ServerPlayer player, Race race,
-            mc.sayda.creraces.capability.IPlayerVariables vars) {
-        if (!mc.sayda.creraces.config.CreRacesConfig.GSTATE_ENABLED.get())
+    public static void applyGStateCosmetics(ServerPlayer player, Race race, IPlayerVariables vars) {
+        if (!CreRacesConfig.GSTATE_ENABLED.get())
             return;
 
-        if (race.getGState() == mc.sayda.creraces.engine.GState.FEMALE) {
-            vars.setGState(1);
-        } else if (race.getGState() == mc.sayda.creraces.engine.GState.MALE) {
+        if (race.getGState() == GState.FEMALE) {
+            vars.setGState(GSTATE_FEMALE);
+        } else if (race.getGState() == GState.MALE) {
             vars.setGState(0);
         }
 
@@ -265,44 +259,33 @@ public class CosmeticIncidents {
         vars.sync(player);
     }
 
-    public static void applyGStateAddons(net.minecraft.server.level.ServerPlayer player) {
+    public static void applyGStateAddons(ServerPlayer player) {
         applyGStateAddons(player, true);
     }
 
-    public static void applyGStateAddons(net.minecraft.server.level.ServerPlayer player, boolean sync) {
-        if (!mc.sayda.creraces.config.CreRacesConfig.GSTATE_ENABLED.get())
+    public static void applyGStateAddons(ServerPlayer player, boolean sync) {
+        if (!CreRacesConfig.GSTATE_ENABLED.get() || !CreRacesConfig.RACE_ADDONS_ENABLED.get()
+                || !CreRacesConfig.LORE_ADDONS_ENABLED.get())
             return;
 
-        if (!mc.sayda.creraces.config.CreRacesConfig.RACE_ADDONS_ENABLED.get())
-            return;
+        boolean female = mc.sayda.creraces.capability.DataUtils.getVariables(player)
+                .map(IPlayerVariables::getGState).orElse(0) == GSTATE_FEMALE;
 
-        int effectiveState = mc.sayda.creraces.capability.DataUtils.getVariables(player)
-                .map(mc.sayda.creraces.capability.IPlayerVariables::getGState).orElse(0);
-
-        if (mc.sayda.creraces.config.CreRacesConfig.LORE_ADDONS_ENABLED.get()) {
-            var modelVariant = mc.sayda.twilight_lib.capabilities.DataUtils.getModelVariantData(player);
-            if (modelVariant != null) {
-                modelVariant.setModelVariant(effectiveState == 1 ? "alex" : "default");
-                CompoundTag serialized = modelVariant.serialize();
-                if (serialized != null) {
-                    mc.sayda.twilight_lib.capabilities.DataUtils.getPersistentData(player)
-                            .put(mc.sayda.twilight_lib.TwilightConstants.NBT_MODEL_VARIANT, serialized);
-                }
-                mc.sayda.twilight_lib.network.NetworkHandler.sendModelVariantToAll(
-                        mc.sayda.twilight_lib.network.SyncModelVariantPacket.of(player.getUUID(), modelVariant));
+        var modelVariant = DataUtils.getModelVariantData(player);
+        if (modelVariant != null) {
+            modelVariant.setModelVariant(female ? "alex" : "default");
+            CompoundTag serialized = modelVariant.serialize();
+            if (serialized != null) {
+                DataUtils.getPersistentData(player).put(TwilightConstants.NBT_MODEL_VARIANT, serialized);
             }
+            NetworkHandler.sendModelVariantToAll(SyncModelVariantPacket.of(player.getUUID(), modelVariant));
+        }
 
-            IAddons addons = DataUtils.getAddonsData(player);
-            if (addons != null) {
-                if (effectiveState == 1) {
-                    setAddonActiveRobust(addons, "chest", true, true);
-                } else {
-                    // Forcefully deactivate if they are now MALE
-                    setAddonActiveRobust(addons, "chest", false, true);
-                }
-                if (sync) {
-                    syncAddons(player);
-                }
+        IAddons addons = DataUtils.getAddonsData(player);
+        if (addons != null) {
+            setAddonActiveRobust(addons, "chest", female, true);
+            if (sync) {
+                syncAddons(player);
             }
         }
     }
@@ -311,67 +294,67 @@ public class CosmeticIncidents {
         if (addons == null || id == null || id.isEmpty())
             return;
 
-        mc.sayda.creraces.CreRaces.LOGGER.debug("setAddonActiveRobust: id={}, active={}, persistent={}", id,
-                active, persistent);
+        CreRaces.LOGGER.debug("setAddonActiveRobust: id={}, active={}, persistent={}", id, active, persistent);
 
-        // Try standard 3-arg method if available (Twilight Lib 2.0.0+)
         try {
             Method m = addons.getClass().getMethod("setActiveAddon", String.class, boolean.class, boolean.class);
             m.invoke(addons, id, active, persistent);
             return;
-        } catch (Exception ignored) {
+        } catch (ReflectiveOperationException ignored) {
+            // No persistent overload in this Twilight Lib build; emulate it below.
         }
 
         if (active) {
-            // Fallback for older/different versions
             if (persistent && !addons.hasAddon(id)) {
                 addons.addAddon(id);
             }
             addons.setActiveAddon(id, true);
-        } else {
-            addons.setActiveAddon(id, false);
-            if (persistent) {
-                try {
-                    Method m = addons.getClass().getMethod("removeAddon", String.class);
-                    m.invoke(addons, id);
-                } catch (Exception ignored) {
-                    try {
-                        Method m = addons.getClass().getMethod("revokeAddon", String.class);
-                        m.invoke(addons, id);
-                    } catch (Exception ignored2) {
-                    }
-                }
-            }
+            return;
+        }
+
+        addons.setActiveAddon(id, false);
+        if (persistent && !invokeIfPresent(addons, "removeAddon", id)) {
+            invokeIfPresent(addons, "revokeAddon", id);
         }
     }
 
-    public static Set<String> getExternalGrantsRobust(mc.sayda.twilight_lib.capabilities.IAddons addons) {
+    /** Calls a single-String method by name, returning false if it does not exist or fails. */
+    private static boolean invokeIfPresent(IAddons addons, String methodName, String arg) {
+        try {
+            addons.getClass().getMethod(methodName, String.class).invoke(addons, arg);
+            return true;
+        } catch (ReflectiveOperationException e) {
+            return false;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Set<String> getExternalGrantsRobust(IAddons addons) {
         try {
             Method m = addons.getClass().getMethod("getExternalGrants");
             Object result = m.invoke(addons);
             if (result instanceof Set) {
                 return (Set<String>) result;
             }
-        } catch (Exception e) {
+        } catch (ReflectiveOperationException ignored) {
+            // Builds without external grants simply report none.
         }
         return new HashSet<>();
     }
 
-    public static mc.sayda.twilight_lib.network.SyncAddonsPacket createSyncPacket(java.util.UUID playerUUID,
-            Set<String> active, Set<String> external, Map<String, Integer> tints) {
+    /** Returns null if neither known packet constructor exists. */
+    @Nullable
+    public static SyncAddonsPacket createSyncPacket(UUID playerUUID, Set<String> active, Set<String> external,
+            Map<String, Integer> tints) {
         try {
-            // Try 4-arg constructor (UUID, Set, Set, Map)
-            var c4 = mc.sayda.twilight_lib.network.SyncAddonsPacket.class.getConstructor(java.util.UUID.class,
-                    Set.class, Set.class, Map.class);
-            return (mc.sayda.twilight_lib.network.SyncAddonsPacket) c4.newInstance(playerUUID, active, external, tints);
-        } catch (Exception e) {
+            return SyncAddonsPacket.class.getConstructor(UUID.class, Set.class, Set.class, Map.class)
+                    .newInstance(playerUUID, active, external, tints);
+        } catch (ReflectiveOperationException e) {
             try {
-                // Fallback to legacy 3-arg constructor (UUID, Set, Map)
-                var c3 = mc.sayda.twilight_lib.network.SyncAddonsPacket.class.getConstructor(java.util.UUID.class,
-                        Set.class, Map.class);
-                return (mc.sayda.twilight_lib.network.SyncAddonsPacket) c3.newInstance(playerUUID, active, tints);
-            } catch (Exception e2) {
-                // Give up; caller checks for null.
+                // Builds from before external grants existed.
+                return SyncAddonsPacket.class.getConstructor(UUID.class, Set.class, Map.class)
+                        .newInstance(playerUUID, active, tints);
+            } catch (ReflectiveOperationException e2) {
                 return null;
             }
         }

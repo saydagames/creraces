@@ -48,8 +48,7 @@ public class VeilDrapeDecorator extends TreeDecorator {
         BlockState drapeState = ModBlocks.VEIL_WILLOW_DRAPE.get().defaultBlockState();
         int range = Math.max(1, maxLength - minLength + 1);
 
-        // Build a map from each (x, z) column to the lowest leaf Y in that column.
-        // Packing x and z into a long avoids boxing overhead.
+        // Lowest leaf Y of each (x, z) column, keyed by the column packed into a long
         Map<Long, Integer> columnLowest = new HashMap<>();
         for (BlockPos leaf : leaves) {
             long key = pack(leaf.getX(), leaf.getZ());
@@ -59,9 +58,8 @@ public class VeilDrapeDecorator extends TreeDecorator {
             }
         }
 
-        // A column is on the outer perimeter when at least one of its four orthogonal
-        // neighbours has no leaves at all. This is the exact silhouette of the canopy
-        // footprint. No radius maths, no centre coordinates - works for any canopy shape.
+        // A column is on the canopy's outer edge when one of its four neighbours has no leaves,
+        // which traces the silhouette of any canopy shape.
         for (Map.Entry<Long, Integer> entry : columnLowest.entrySet()) {
             long key = entry.getKey();
             int x = xOf(key);

@@ -15,24 +15,23 @@ import net.minecraft.world.level.block.entity.BellBlockEntity;
 
 public class ToriiBellRenderer extends BellRenderer {
 
-    private static final ResourceLocation TEX = new ResourceLocation("creraces", "textures/entity/bell/torii_bell.png");
-    private static final ResourceLocation W_TEX = new ResourceLocation("creraces", "textures/entity/bell/weathered_torii_bell.png");
-    // Shadow the parent's private bellBody so we own a reference.
+    private static final ResourceLocation TEXTURE = new ResourceLocation("creraces", "textures/entity/bell/torii_bell.png");
+    private static final ResourceLocation WEATHERED_TEXTURE = new ResourceLocation("creraces", "textures/entity/bell/weathered_torii_bell.png");
+    // BellRenderer keeps its bellBody private, so bake our own copy of the same vanilla part
     private final ModelPart bellBody;
 
     public ToriiBellRenderer(BlockEntityRendererProvider.Context context) {
         super(context);
-        // Re-bake the same vanilla layer: correct geometry and UV guaranteed.
         this.bellBody = context.bakeLayer(ModelLayers.BELL).getChild("bell_body");
     }
 
     @Override
     public void render(BellBlockEntity entity, float partialTick, PoseStack poseStack,
             MultiBufferSource buffer, int light, int overlay) {
-        float f = entity.ticks + partialTick;
+        float ticks = entity.ticks + partialTick;
         float xRot = 0f, zRot = 0f;
         if (entity.shaking) {
-            float swing = (float) Math.sin(f / Math.PI) / (4.0F + f / 3.0F);
+            float swing = (float) Math.sin(ticks / Math.PI) / (4.0F + ticks / 3.0F);
             if (entity.clickDirection == Direction.NORTH)
                 xRot = -swing;
             else if (entity.clickDirection == Direction.SOUTH)
@@ -46,9 +45,9 @@ public class ToriiBellRenderer extends BellRenderer {
         this.bellBody.zRot = zRot;
 
         boolean weathered = entity.getBlockState().is(ModBlocks.WEATHERED_TORII_BELL.get());
-        VertexConsumer vc = buffer.getBuffer(RenderType.entitySolid(weathered ? W_TEX : TEX));
+        VertexConsumer consumer = buffer.getBuffer(RenderType.entitySolid(weathered ? WEATHERED_TEXTURE : TEXTURE));
         poseStack.pushPose();
-        this.bellBody.render(poseStack, vc, light, overlay);
+        this.bellBody.render(poseStack, consumer, light, overlay);
         poseStack.popPose();
     }
 }

@@ -59,6 +59,7 @@
                 "factor": -0.1
             },
             "force_fly": true,
+            "blocked_by_effects": ["creraces:broken_wings"],
             "condition": {
                 "type": "creraces:state",
                 "state": "foxfire",

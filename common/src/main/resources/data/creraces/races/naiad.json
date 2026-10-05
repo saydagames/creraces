@@ -13,6 +13,8 @@
     "creraces:name_texture": "creraces:textures/screens/naiad_text.png",
     "creraces:resource_type": "MANA",
     "creraces:gstate": "FEMALE",
+    "creraces:difficulty": 2,
+    "creraces:can_breathe_on_land": true,
     "creraces:starting_abilities": [
         "creraces:tidal_wave",
         "creraces:whirlpool",
@@ -40,11 +42,6 @@
                     "effect": "minecraft:conduit_power",
                     "duration": 200,
                     "amplifier": 0
-                },
-                {
-                    "type": "creraces:apply_velocity",
-                    "y": 0.05,
-                    "relative": false
                 }
             ]
         }

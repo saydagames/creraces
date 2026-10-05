@@ -1,0 +1,22 @@
+{
+    "trigger": "on_entity_death",
+    "actor": ["victim_owner", "killer", "nearest_player"],
+    "condition": {
+        "type": "creraces:and",
+        "conditions": [
+            { "type": "creraces:entity_data", "key": "creraces:servant_of", "use_target": true },
+            { "type": "creraces:entity", "mob_type": "undead", "use_target": true }
+        ]
+    },
+    "actions": [
+        {
+            "type": "creraces:summon_entity",
+            "entity": "creraces:remains_undead",
+            "use_target": true,
+            "tag_data": [
+                { "key": "creraces:servant_of", "value": { "type": "uuid", "property": "owner", "entity": "target" } },
+                { "key": "creraces:stored_entity", "value": { "type": "string", "property": "entity_type", "entity": "target" } }
+            ]
+        }
+    ]
+}

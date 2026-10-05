@@ -1,13 +1,20 @@
 package mc.sayda.creraces.ability;
 
+import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.capability.IPlayerVariables;
 import mc.sayda.creraces.config.CreRacesConfig;
+import mc.sayda.creraces.engine.ActionRegistry.RaceAction;
+import mc.sayda.creraces.engine.TraitDispatch;
 import mc.sayda.creraces.race.Race;
 import mc.sayda.creraces.race.RaceRegistry;
 import mc.sayda.creraces.network.BoundaryHandler;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 
 import java.util.Objects;
 
@@ -15,6 +22,7 @@ import java.util.Objects;
  * Handles the casting flow for abilities on the server.
  */
 public class AbilityIncidents {
+    private static final double DEFAULT_PICK_RANGE = 5.0;
 
     public static void tryCast(ServerPlayer player, AbilitySlot slot) {
         Objects.requireNonNull(player, "Player cannot be null for ability casting.");
@@ -26,34 +34,26 @@ public class AbilityIncidents {
                 return;
 
             Ability ability = AbilityRegistry.get(abilityId);
-
             if (ability == null)
                 return;
 
-            // 1. Check Cooldown
-            ResourceLocation cooldownId = ability.id();
-            if (vars.getCooldown(cooldownId) > 0) {
+            if (vars.getCooldown(ability.id()) > 0) {
                 var name = ability.name();
                 if (name != null) {
-                    player.displayClientMessage(java.util.Objects.requireNonNull(Component.translatable("msg.creraces.cooldown", (Object) name)), true);
+                    player.displayClientMessage(Objects.requireNonNull(Component.translatable("msg.creraces.cooldown", (Object) name)), true);
                 }
                 return;
             }
 
-            // 2. Check Resource Cost
             Race race = RaceRegistry.get(vars.getRace());
             if (race == null)
                 return;
 
             if (!canAfford(vars, race, ability.cost())) {
-                player.displayClientMessage(java.util.Objects.requireNonNull(Component.translatable("msg.creraces.no_resource")), true);
+                player.displayClientMessage(Objects.requireNonNull(Component.translatable("msg.creraces.no_resource")), true);
                 return;
             }
 
-            // 3. Find Executor
-            AbilityExecutor executor = AbilityExecutionRegistry.get(abilityId);
-
-            // 4. Evaluate Condition
             if (ability.condition() != null && !ability.condition().evaluate(player, null, slot, null)) {
                 String failKey = ability.conditionFailMessage() != null
                         ? ability.conditionFailMessage()
@@ -62,39 +62,53 @@ public class AbilityIncidents {
                 return;
             }
 
-            // 5. Execute Logic
             try {
-                if (executor.execute(player, ability, slot)) {
-                    // 6. Post-Cast (Consume cost and set cooldown)
+                if (runJsonActions(player, ability, slot)) {
                     consumeResource(vars, race, ability.cost());
 
-                    var hasteAttr = mc.sayda.creraces.registry.ModAttributes.ABILITY_HASTE.get();
-                    double haste = hasteAttr != null ? player.getAttributeValue(hasteAttr) : 0.0;
-                    double effectiveHaste = Math.min(haste, CreRacesConfig.ABILITY_HASTE_CAP.get());
-                    double multiplier = 1.0 - (effectiveHaste / 100.0);
-                    int cooledTicks = (int) (ability.cooldown() * multiplier);
+                    // getAh() reads Apothic's cooldown_reduction instead when that mod is installed.
+                    double effectiveHaste = Math.min(vars.getAh(), CreRacesConfig.ABILITY_HASTE_CAP.get());
+                    int cooledTicks = (int) (ability.cooldown() * (1.0 - effectiveHaste / 100.0));
 
+                    // An action may have set its own cooldown during execution; keep that one.
                     if (vars.getCooldown(abilityId) <= 0) {
                         vars.setCooldown(abilityId, Math.max(0, cooledTicks));
                     }
 
-                    // Sync to client
                     BoundaryHandler.resyncVariables(player, player);
 
-                    // 7. Trigger traits
-                    if (race.traits() != null) {
-                        for (mc.sayda.creraces.engine.TraitRegistry.RaceTrait trait : race.traits()) {
-                            trait.onAbilityUse(player, ability);
-                        }
-                    }
+                    TraitDispatch.runVoid("AbilityIncidents", player, trait -> trait.onAbilityUse(player, ability));
                 }
             } catch (Exception e) {
-                mc.sayda.creraces.CreRaces.LOGGER.error("Failed to execute ability: {}", abilityId, e);
+                CreRaces.LOGGER.error("Failed to execute ability: {}", abilityId, e);
             }
         });
     }
 
-    private static boolean canAfford(mc.sayda.creraces.capability.IPlayerVariables vars, Race race, int cost) {
+    /** Runs the on_activate actions in order, stopping at the first one that fails. */
+    private static boolean runJsonActions(ServerPlayer player, Ability ability, AbilitySlot slot) {
+        if (ability.onActivate() == null || ability.onActivate().isEmpty())
+            return false;
+
+        // Actions using use_target_block target the space in front of the block face being looked at.
+        BlockPos lookTarget = null;
+        HitResult hit = player.pick(DEFAULT_PICK_RANGE, 0f, false);
+        if (hit instanceof BlockHitResult bhr && bhr.getType() == HitResult.Type.BLOCK) {
+            lookTarget = bhr.getBlockPos().relative(bhr.getDirection());
+        }
+
+        CreRaces.LOGGER.debug("AbilityIncidents: Executing {} actions for ability {}",
+                ability.onActivate().size(), ability.id());
+        for (RaceAction action : ability.onActivate()) {
+            if (!action.execute(player, null, slot, lookTarget)) {
+                CreRaces.LOGGER.debug("AbilityIncidents: Action failed, stopping execution for ability {}", ability.id());
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean canAfford(IPlayerVariables vars, Race race, int cost) {
         if (cost <= 0)
             return true;
         return switch (race.resourceType()) {
@@ -107,7 +121,7 @@ public class AbilityIncidents {
         };
     }
 
-    private static void consumeResource(mc.sayda.creraces.capability.IPlayerVariables vars, Race race, int cost) {
+    private static void consumeResource(IPlayerVariables vars, Race race, int cost) {
         if (cost <= 0)
             return;
         switch (race.resourceType()) {

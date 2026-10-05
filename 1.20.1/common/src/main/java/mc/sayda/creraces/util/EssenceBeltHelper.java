@@ -14,10 +14,13 @@ import net.minecraft.world.level.Level;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * Essence bookkeeping for the research table: counts and drains essence bottles from the
+ * containers touching the table and from the player's essence belt.
+ */
 public class EssenceBeltHelper {
 
     /** Belt-only count, used by screens that don't have level access. */
@@ -28,32 +31,12 @@ public class EssenceBeltHelper {
                 .orElse(0);
     }
 
-    /** Combined count: adjacent storage + belt. Scans neighbors of one table-part position. */
-    public static int getEssenceCount(Player player, EssenceType type, Level level, BlockPos tablePos) {
-        return getEssenceCount(player, type, level, List.of(tablePos));
-    }
-
     /**
      * Combined count scanning neighbors of all table-part positions (deduplicated).
      * Storage is counted separately from the belt; both contribute to the total.
      */
     public static int getEssenceCount(Player player, EssenceType type, Level level, Collection<BlockPos> tableParts) {
-        return storageCount(type, level, tableParts) + getEssenceCount(player, type);
-    }
-
-    /** Belt-only consume. */
-    public static boolean consumeEssence(ServerPlayer player, EssenceType type, int amount) {
-        Optional<ItemStack> belt = findBelt(player);
-        if (belt.isEmpty()) return false;
-        ItemStack stack = belt.get();
-        if (!(stack.getItem() instanceof EssenceBeltItem item)) return false;
-        if (item.getEssenceCount(stack, type) < amount) return false;
-        return item.consumeEssence(stack, type, amount);
-    }
-
-    /** Storage-first consume, belt handles the remainder. Scans neighbors of one table-part position. */
-    public static boolean consumeEssence(ServerPlayer player, EssenceType type, int amount, Level level, BlockPos tablePos) {
-        return consumeEssence(player, type, amount, level, List.of(tablePos));
+        return getStorageCount(type, level, tableParts) + getEssenceCount(player, type);
     }
 
     /**
@@ -73,14 +56,8 @@ public class EssenceBeltHelper {
         return true;
     }
 
-    // ── Storage scanning ──────────────────────────────────────────────────────
-
-    /** Public accessor used by the block entity to snapshot counts into the menu's extra data. */
+    /** Essence held in the containers around the table, without the belt. */
     public static int getStorageCount(EssenceType type, Level level, Collection<BlockPos> tableParts) {
-        return storageCount(type, level, tableParts);
-    }
-
-    private static int storageCount(EssenceType type, Level level, Collection<BlockPos> tableParts) {
         int count = 0;
         for (BlockPos neighborPos : neighborSet(tableParts)) {
             if (level.getBlockEntity(neighborPos) instanceof Container c) {
@@ -88,6 +65,40 @@ public class EssenceBeltHelper {
             }
         }
         return count;
+    }
+
+    /** Remaining charges of every bottle of {@code type} in the container. */
+    public static int countInContainer(Container container, EssenceType type) {
+        int count = 0;
+        for (int i = 0; i < container.getContainerSize(); i++) {
+            ItemStack stack = container.getItem(i);
+            if (stack.getItem() instanceof EssenceBottleItem b && b.getEssenceType() == type) {
+                count += stack.getMaxDamage() - stack.getDamageValue();
+            }
+        }
+        return count;
+    }
+
+    /**
+     * Drains up to {@code amount} charges from bottles of {@code type}, turning emptied ones into
+     * glass bottles. Returns how many charges could not be covered.
+     */
+    public static int drainFromContainer(Container container, EssenceType type, int amount) {
+        int remaining = amount;
+        for (int i = 0; i < container.getContainerSize() && remaining > 0; i++) {
+            ItemStack stack = container.getItem(i);
+            if (!(stack.getItem() instanceof EssenceBottleItem b) || b.getEssenceType() != type) continue;
+            int charges = stack.getMaxDamage() - stack.getDamageValue();
+            if (charges <= remaining) {
+                remaining -= charges;
+                container.setItem(i, new ItemStack(Items.GLASS_BOTTLE));
+            } else {
+                stack.setDamageValue(stack.getDamageValue() + remaining);
+                remaining = 0;
+            }
+        }
+        container.setChanged();
+        return remaining;
     }
 
     private static int drainFromStorage(EssenceType type, Level level, Collection<BlockPos> tableParts, int amount) {
@@ -113,35 +124,6 @@ public class EssenceBeltHelper {
             }
         }
         return neighbors;
-    }
-
-    private static int countInContainer(Container container, EssenceType type) {
-        int count = 0;
-        for (int i = 0; i < container.getContainerSize(); i++) {
-            ItemStack stack = container.getItem(i);
-            if (stack.getItem() instanceof EssenceBottleItem b && b.getEssenceType() == type) {
-                count += stack.getMaxDamage() - stack.getDamageValue();
-            }
-        }
-        return count;
-    }
-
-    private static int drainFromContainer(Container container, EssenceType type, int amount) {
-        int remaining = amount;
-        for (int i = 0; i < container.getContainerSize() && remaining > 0; i++) {
-            ItemStack stack = container.getItem(i);
-            if (!(stack.getItem() instanceof EssenceBottleItem b) || b.getEssenceType() != type) continue;
-            int charges = stack.getMaxDamage() - stack.getDamageValue();
-            if (charges <= remaining) {
-                remaining -= charges;
-                container.setItem(i, new ItemStack(Items.GLASS_BOTTLE));
-            } else {
-                stack.setDamageValue(stack.getDamageValue() + remaining);
-                remaining = 0;
-            }
-        }
-        container.setChanged();
-        return remaining;
     }
 
     private static Optional<ItemStack> findBelt(Player player) {

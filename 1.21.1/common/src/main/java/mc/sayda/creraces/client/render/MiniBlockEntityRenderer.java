@@ -3,6 +3,8 @@ package mc.sayda.creraces.client.render;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import mc.sayda.creraces.block.entity.MicroBlockEntity;
+import mc.sayda.creraces.config.CreRacesConfig;
+import mc.sayda.creraces.mixin.BlockEntityAccessor;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
@@ -12,7 +14,13 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.inventory.InventoryMenu;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -30,23 +38,34 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Renders the contents of a MicroBlockEntity using a vertex caching system.
- * Sub-blocks are baked into transformed quads with slot-specific lighting
- * and only re-baked when the geometry or host light changes.
+ * Renders the contents of a MicroBlockEntity from a per-position cache of transformed quads,
+ * lit with the host block's light and re-baked only when the geometry or that light changes.
  */
 public class MiniBlockEntityRenderer implements BlockEntityRenderer<MicroBlockEntity> {
+
+    // Vertex positions for each face of a unit cube, indexed by Direction.ordinal(). NORTH to EAST
+    // follow vanilla FaceInfo's outward (counter-clockwise) winding; DOWN and UP are listed in the
+    // reverse order, so the culling render types used for liquids hide those two faces from outside.
+    private static final float[][][] FACE_POSITIONS = {
+        {{0,0,0}, {0,0,1}, {1,0,1}, {1,0,0}}, // DOWN
+        {{0,1,1}, {0,1,0}, {1,1,0}, {1,1,1}}, // UP
+        {{1,0,0}, {0,0,0}, {0,1,0}, {1,1,0}}, // NORTH
+        {{0,0,1}, {1,0,1}, {1,1,1}, {0,1,1}}, // SOUTH
+        {{0,0,0}, {0,0,1}, {0,1,1}, {0,1,0}}, // WEST
+        {{1,0,1}, {1,0,0}, {1,1,0}, {1,1,1}}, // EAST
+    };
 
     private final Map<BlockPos, CachedMiniModel> modelCache = new LinkedHashMap<>(16, 0.75f, true) {
         @Override
         protected boolean removeEldestEntry(Map.Entry<BlockPos, CachedMiniModel> eldest) {
-            return size() > mc.sayda.creraces.config.CreRacesConfig.MINI_MODEL_CACHE_SIZE.get();
+            return size() > CreRacesConfig.MINI_MODEL_CACHE_SIZE.get();
         }
     };
 
     private final Map<BlockState, BlockEntity> dummyCache = new LinkedHashMap<>(16, 0.75f, true) {
         @Override
         protected boolean removeEldestEntry(Map.Entry<BlockState, BlockEntity> eldest) {
-            return size() > mc.sayda.creraces.config.CreRacesConfig.MINI_DUMMY_CACHE_SIZE.get();
+            return size() > CreRacesConfig.MINI_DUMMY_CACHE_SIZE.get();
         }
     };
 
@@ -65,18 +84,15 @@ public class MiniBlockEntityRenderer implements BlockEntityRenderer<MicroBlockEn
                 k -> new CachedMiniModel());
 
         if (cached.version != entity.getRenderVersion() || cached.lastPackedLight != packedLight) {
-            bakeModel(entity, cached, packedLight, packedOverlay);
+            bakeModel(entity, cached, packedLight);
         }
 
-        // Render the baked quads
         PoseStack.Pose lastPose = poseStack.last();
         for (var entry : cached.quadsByRenderType.entrySet()) {
-            RenderType rt = entry.getKey();
-            VertexConsumer consumer = bufferSource.getBuffer(rt);
+            VertexConsumer consumer = bufferSource.getBuffer(entry.getKey());
             for (BakedQuad quad : entry.getValue()) {
-                // readExistingColor=true: use the pre-baked vertex tint (biome color).
-                // The 3-float convenience overload uses readExistingColor=false which
-                // throws away the baked tint entirely.
+                // readExistingColor=true keeps the tint baked into the vertices; the shorter
+                // overload passes false and throws it away.
                 consumer.putBulkData(lastPose, quad,
                         new float[] { 1.0f, 1.0f, 1.0f, 1.0f }, // per-vertex AO brightness
                         1.0f, 1.0f, 1.0f, 1.0f, // RGBA multiplier (white = no extra tint)
@@ -85,7 +101,7 @@ public class MiniBlockEntityRenderer implements BlockEntityRenderer<MicroBlockEn
             }
         }
 
-        // Render advanced (ENTITYBLOCK_ANIMATED) blocks
+        // Animated blocks (chests, bells and the like) need their own block entity renderer
         entity.forEachOccupied((x, y, z, state) -> {
             if (state.getRenderShape() == RenderShape.ENTITYBLOCK_ANIMATED) {
                 renderAdvanced(entity, x, y, z, state, poseStack, bufferSource, packedLight, packedOverlay,
@@ -104,7 +120,7 @@ public class MiniBlockEntityRenderer implements BlockEntityRenderer<MicroBlockEn
 
         BlockEntity dummy = getDummyBE(host.getLevel(), state);
         if (dummy != null) {
-            ((mc.sayda.creraces.mixin.BlockEntityAccessor) dummy).setWorldPosition(host.getBlockPos());
+            ((BlockEntityAccessor) dummy).setWorldPosition(host.getBlockPos());
             var renderer = Minecraft.getInstance().getBlockEntityRenderDispatcher().getRenderer(dummy);
             if (renderer != null) {
                 renderer.render(dummy, partialTick, poseStack, bufferSource, packedLight, packedOverlay);
@@ -127,7 +143,7 @@ public class MiniBlockEntityRenderer implements BlockEntityRenderer<MicroBlockEn
         });
     }
 
-    private void bakeModel(MicroBlockEntity entity, CachedMiniModel cached, int packedLight, int packedOverlay) {
+    private void bakeModel(MicroBlockEntity entity, CachedMiniModel cached, int packedLight) {
         cached.quadsByRenderType.clear();
         cached.version = entity.getRenderVersion();
         cached.lastPackedLight = packedLight;
@@ -140,10 +156,10 @@ public class MiniBlockEntityRenderer implements BlockEntityRenderer<MicroBlockEn
 
         entity.forEachOccupied((x, y, z, state) -> {
             BlockPos pos = Objects.requireNonNull(entity.getBlockPos().immutable());
-            int slotLight = LevelRenderer.getLightColor(level, pos);
+            int hostLight = LevelRenderer.getLightColor(level, pos);
 
-            if (state.getBlock() instanceof net.minecraft.world.level.block.LiquidBlock) {
-                addLiquidFaces(cached.quadsByRenderType, level, pos, x, y, z, state, scale, slotLight);
+            if (state.getBlock() instanceof LiquidBlock) {
+                addLiquidFaces(cached.quadsByRenderType, level, pos, x, y, z, state, scale, hostLight);
                 return;
             }
 
@@ -152,19 +168,17 @@ public class MiniBlockEntityRenderer implements BlockEntityRenderer<MicroBlockEn
 
             BakedModel model = blockRenderer.getBlockModel(state);
             long seed = state.getSeed(pos) + MicroBlockEntity.toIndex(x, y, z);
-            net.minecraft.util.RandomSource random = net.minecraft.util.RandomSource.create(seed);
+            RandomSource random = RandomSource.create(seed);
 
-            // See getEntityCompatibleRenderType() below for why we can't use chunk render types here.
             RenderType rt = getEntityCompatibleRenderType(state);
             List<BakedQuad> quads = cached.quadsByRenderType.computeIfAbsent(rt, k -> new ArrayList<>());
 
             for (Direction dir : Direction.values()) {
                 addTransformedQuads(quads, model.getQuads(state, dir, random), x * scale, y * scale,
-                        z * scale, scale, slotLight, state, level, pos, -1);
+                        z * scale, scale, hostLight, state, level, pos, -1);
             }
             addTransformedQuads(quads, model.getQuads(state, null, random), x * scale, y * scale,
-                    z * scale,
-                    scale, slotLight, state, level, pos, -1);
+                    z * scale, scale, hostLight, state, level, pos, -1);
         });
     }
 
@@ -191,9 +205,8 @@ public class MiniBlockEntityRenderer implements BlockEntityRenderer<MicroBlockEn
                 vertices[offset + 2] = Float.floatToRawIntBits(z * scale + tz);
 
                 if (color != -1) {
-                    // blockColors.getColor() returns 0xRRGGBB.
-                    // Vertex buffer stores ABGR (R=byte0, G=byte1, B=byte2, A=byte3),
-                    // which as an int is 0xAABBGGRR. Must convert from ARGB→ABGR.
+                    // blockColors gives 0xRRGGBB, but the vertex data stores bytes in R, G, B, A
+                    // order, which reads back as 0xAABBGGRR, so swap red and blue.
                     int r = (color >> 16) & 0xFF;
                     int g = (color >> 8) & 0xFF;
                     int b = color & 0xFF;
@@ -202,89 +215,51 @@ public class MiniBlockEntityRenderer implements BlockEntityRenderer<MicroBlockEn
 
                 vertices[offset + 6] = light;
             }
-            // Use -1 for tint index because we've already applied the color to the vertices
+            // Tint index -1: the colour is already baked into the vertices
             out.add(new BakedQuad(
                     vertices, -1, quad.getDirection(), quad.getSprite(), quad.isShade()));
         }
     }
 
     /**
-     * Maps a block's chunk-pipeline render type to a render type that is safe to
-     * use
-     * with a block entity renderer's {@link MultiBufferSource}.
-     *
-     * <p>
-     * On Fabric/Indigo, chunk render types ({@code RenderType.solid()},
-     * {@code cutout()}, etc.) are tied to the chunk tessellator and cannot be used
-     * directly from a BER buffer source - they produce invisible geometry. Using
-     * the
-     * standard BER render types ({@code RenderType.solid()}, {@code cutout()},
-     * {@code translucent()}) works correctly on both Forge and Fabric.
-     *
-     * <p>
-     * We use {@link ItemBlockRenderTypes#getChunkRenderType} to detect the
-     * intent (opaque / cutout / translucent) and then return the matching type
-     * that the BER buffer source supports.
+     * Maps a block's chunk render layer to the entity render type a block entity renderer can use.
+     * The chunk types (solid, cutout, translucent) belong to the chunk pipeline and draw nothing
+     * from a BER buffer source on Fabric/Indigo, so {@link ItemBlockRenderTypes#getChunkRenderType}
+     * is only used to tell which of them the block wants.
      */
     private static RenderType getEntityCompatibleRenderType(BlockState state) {
         RenderType chunk = ItemBlockRenderTypes.getChunkRenderType(state);
         if (chunk == RenderType.translucent()) {
-            return RenderType.entityTranslucentCull(
-                    Objects.requireNonNull(net.minecraft.world.inventory.InventoryMenu.BLOCK_ATLAS));
-        } else if (chunk == RenderType.cutout() || chunk == RenderType.cutoutMipped()) {
-            return RenderType
-                    .entityCutout(Objects.requireNonNull(net.minecraft.world.inventory.InventoryMenu.BLOCK_ATLAS));
-        } else {
-            // solid → full-cube faces are never seen from behind, cull is fine
-            return RenderType
-                    .entityCutout(Objects.requireNonNull(net.minecraft.world.inventory.InventoryMenu.BLOCK_ATLAS));
+            return RenderType.entityTranslucentCull(Objects.requireNonNull(InventoryMenu.BLOCK_ATLAS));
         }
-    }
-
-    // Vertex positions for each face of a unit cube, CCW winding when viewed from outside.
-    // Index matches Direction.ordinal(): DOWN=0, UP=1, NORTH=2, SOUTH=3, WEST=4, EAST=5
-    private static final float[][][] FACE_POSITIONS = {
-        {{0,0,0}, {0,0,1}, {1,0,1}, {1,0,0}}, // DOWN
-        {{0,1,1}, {0,1,0}, {1,1,0}, {1,1,1}}, // UP
-        {{1,0,0}, {0,0,0}, {0,1,0}, {1,1,0}}, // NORTH
-        {{0,0,1}, {1,0,1}, {1,1,1}, {0,1,1}}, // SOUTH
-        {{0,0,0}, {0,0,1}, {0,1,1}, {0,1,0}}, // WEST
-        {{1,0,1}, {1,0,0}, {1,1,0}, {1,1,1}}, // EAST
-    };
-
-    private static class CachedMiniModel {
-        long version = -1;
-        int lastPackedLight = -1;
-        final Map<RenderType, List<BakedQuad>> quadsByRenderType = new HashMap<>();
+        // Cutout and solid both map to entityCutout; solid faces are never seen from behind, so
+        // culling is fine there too.
+        return RenderType.entityCutout(Objects.requireNonNull(InventoryMenu.BLOCK_ATLAS));
     }
 
     private void addLiquidFaces(Map<RenderType, List<BakedQuad>> quadsByRenderType,
             Level level, BlockPos pos,
-            int x, int y, int z, BlockState state, float scale, int slotLight) {
-        boolean isWater = state.getBlock() == net.minecraft.world.level.block.Blocks.WATER;
-        net.minecraft.resources.ResourceLocation texLoc = net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(
+            int x, int y, int z, BlockState state, float scale, int light) {
+        boolean isWater = state.getBlock() == Blocks.WATER;
+        ResourceLocation texLoc = ResourceLocation.fromNamespaceAndPath(
                 "minecraft", isWater ? "block/water_still" : "block/lava_still");
-        net.minecraft.client.renderer.texture.TextureAtlasSprite sprite =
-                Minecraft.getInstance().getModelManager()
-                        .getAtlas(net.minecraft.world.inventory.InventoryMenu.BLOCK_ATLAS)
-                        .getSprite(texLoc);
+        TextureAtlasSprite sprite = Minecraft.getInstance().getModelManager()
+                .getAtlas(InventoryMenu.BLOCK_ATLAS)
+                .getSprite(texLoc);
 
         RenderType rt = isWater
-                ? RenderType.entityTranslucentCull(
-                        Objects.requireNonNull(net.minecraft.world.inventory.InventoryMenu.BLOCK_ATLAS))
-                : RenderType.entityCutout(
-                        Objects.requireNonNull(net.minecraft.world.inventory.InventoryMenu.BLOCK_ATLAS));
+                ? RenderType.entityTranslucentCull(Objects.requireNonNull(InventoryMenu.BLOCK_ATLAS))
+                : RenderType.entityCutout(Objects.requireNonNull(InventoryMenu.BLOCK_ATLAS));
         List<BakedQuad> quads = quadsByRenderType.computeIfAbsent(rt, k -> new ArrayList<>());
 
         for (Direction dir : Direction.values()) {
             addTransformedQuads(quads, List.of(buildLiquidFaceQuad(dir, sprite)),
                     x * scale, y * scale, z * scale, scale,
-                    slotLight, state, level, pos, -1);
+                    light, state, level, pos, -1);
         }
     }
 
-    private static BakedQuad buildLiquidFaceQuad(Direction dir,
-            net.minecraft.client.renderer.texture.TextureAtlasSprite sprite) {
+    private static BakedQuad buildLiquidFaceQuad(Direction dir, TextureAtlasSprite sprite) {
         int[] vertices = new int[32];
         float u0 = sprite.getU0(), u1 = sprite.getU1();
         float v0 = sprite.getV0(), v1 = sprite.getV1();
@@ -313,5 +288,11 @@ public class MiniBlockEntityRenderer implements BlockEntityRenderer<MicroBlockEn
     @Override
     public boolean shouldRenderOffScreen(@Nonnull MicroBlockEntity blockEntity) {
         return true;
+    }
+
+    private static class CachedMiniModel {
+        long version = -1;
+        int lastPackedLight = -1;
+        final Map<RenderType, List<BakedQuad>> quadsByRenderType = new HashMap<>();
     }
 }

@@ -1,5 +1,6 @@
 package mc.sayda.creraces.block.entity;
 
+import dev.architectury.registry.menu.ExtendedMenuProvider;
 import mc.sayda.creraces.ability.EssenceType;
 import mc.sayda.creraces.ability.HexPos;
 import mc.sayda.creraces.ability.HexRecipe;
@@ -11,7 +12,6 @@ import mc.sayda.creraces.network.BoundaryHandler;
 import mc.sayda.creraces.network.ResearchResultPacket;
 import mc.sayda.creraces.registry.ModBlocks;
 import mc.sayda.creraces.util.EssenceBeltHelper;
-import dev.architectury.registry.menu.ExtendedMenuProvider;
 import mc.sayda.creraces.world.inventory.ResearchTableMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -80,13 +80,13 @@ public class ResearchTableBlockEntity extends BlockEntity implements ExtendedMen
         ItemStack scroll = inventory.getItem(1);
 
         if (!(quill.getItem() instanceof InkAndQuillItem) || !(scroll.getItem() instanceof ScrollItem)) {
-            BoundaryHandler.sendResearchResult(player, new ResearchResultPacket(false, null));
+            sendFailure(player);
             return;
         }
 
         Optional<HexRecipe> match = HexRecipeManager.match(hexGrid);
         if (match.isEmpty()) {
-            BoundaryHandler.sendResearchResult(player, new ResearchResultPacket(false, null));
+            sendFailure(player);
             return;
         }
 
@@ -94,17 +94,14 @@ public class ResearchTableBlockEntity extends BlockEntity implements ExtendedMen
 
         // Count essences required by the grid and consume from adjacent storage then belt (unless creative)
         if (!player.getAbilities().instabuild) {
-            Direction tableFacing = getBlockState().getValue(ResearchTableBlock.FACING);
-            List<BlockPos> tableParts = List.of(
-                    worldPosition,
-                    worldPosition.relative(tableFacing.getCounterClockWise()));
+            List<BlockPos> tableParts = tableParts();
             Map<EssenceType, Integer> needed = new HashMap<>();
             for (EssenceType t : hexGrid.values()) {
                 needed.merge(t, 1, Integer::sum);
             }
             for (var entry : needed.entrySet()) {
                 if (EssenceBeltHelper.getEssenceCount(player, entry.getKey(), level, tableParts) < entry.getValue()) {
-                    BoundaryHandler.sendResearchResult(player, new ResearchResultPacket(false, null));
+                    sendFailure(player);
                     return;
                 }
             }
@@ -125,15 +122,24 @@ public class ResearchTableBlockEntity extends BlockEntity implements ExtendedMen
 
         clearGrid();
         BoundaryHandler.syncHexGrid(player, this);
-        BoundaryHandler.sendResearchResult(player, new ResearchResultPacket(true, recipe.ability()));
+        BoundaryHandler.sendResearchResult(player, new ResearchResultPacket(true));
+    }
+
+    private static void sendFailure(ServerPlayer player) {
+        BoundaryHandler.sendResearchResult(player, new ResearchResultPacket(false));
+    }
+
+    /** Both halves of the table; essence storage next to either one counts. */
+    private List<BlockPos> tableParts() {
+        Direction facing = getBlockState().getValue(ResearchTableBlock.FACING);
+        return List.of(worldPosition, worldPosition.relative(facing.getCounterClockWise()));
     }
 
     @Override
     public void saveExtraData(FriendlyByteBuf buf) {
         buf.writeBlockPos(worldPosition);
         // Snapshot adjacent-storage essence counts so the client screen can display them
-        Direction facing = getBlockState().getValue(ResearchTableBlock.FACING);
-        List<BlockPos> tableParts = List.of(worldPosition, worldPosition.relative(facing.getCounterClockWise()));
+        List<BlockPos> tableParts = tableParts();
         for (EssenceType type : EssenceType.values()) {
             buf.writeVarInt(level != null ? EssenceBeltHelper.getStorageCount(type, level, tableParts) : 0);
         }
@@ -180,7 +186,9 @@ public class ResearchTableBlockEntity extends BlockEntity implements ExtendedMen
             try {
                 EssenceType essence = EssenceType.byId(cell.getString("essence"));
                 hexGrid.put(pos, essence);
-            } catch (IllegalArgumentException ignored) {}
+            } catch (IllegalArgumentException unknownId) {
+                // Drop cells whose essence type no longer exists
+            }
         }
     }
 }

@@ -15,16 +15,19 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
+/** Sets the local race's diplomatic stance (ally, enemy, neutral) towards every other race. */
 @SuppressWarnings("null")
 public class ClanManagementScreen extends Screen {
-
-    private static final int PW = 320;
-    private static final int PH = 240;
-    private static final int ROW_H = 20;
+    private static final int PANEL_WIDTH = 320;
+    private static final int PANEL_HEIGHT = 240;
+    private static final int ROW_HEIGHT = 20;
     private static final int LIST_TOP_OFFSET = 44; // from panel top to first row
     private static final int LIST_BOTTOM_MARGIN = 28; // space reserved below list
+    private static final int STATUS_BUTTON_WIDTH = 48;
 
     private static volatile ClanUpdatePacket lastUpdate;
 
@@ -46,59 +49,34 @@ public class ClanManagementScreen extends Screen {
         }
     }
 
-    // ── Init ───────────────────────────────────────────────────────────────────
-
     @Override
     protected void init() {
-        int cx = this.width / 2;
-        int cy = this.height / 2;
-        int pl = cx - PW / 2;
-        int pt = cy - PH / 2;
-
         List<Race> others = otherRaces();
-        int listTop = pt + LIST_TOP_OFFSET;
-        int listBottom = pt + PH - LIST_BOTTOM_MARGIN;
-        int maxVisible = Math.max(1, (listBottom - listTop) / ROW_H);
-        int maxOffset = Math.max(0, others.size() - maxVisible);
+        int maxOffset = Math.max(0, others.size() - visibleRows());
         scrollOffset = Math.min(scrollOffset, maxOffset);
 
-        int btnW = 48;
-        int btnX = pl + PW - 3 * btnW - 8;
-
-        int end = Math.min(others.size(), scrollOffset + maxVisible);
+        int end = Math.min(others.size(), scrollOffset + visibleRows());
         for (int i = scrollOffset; i < end; i++) {
-            Race race = others.get(i);
-            ResourceLocation rid = race.id();
-            int rowY = listTop + (i - scrollOffset) * ROW_H;
-            DiplomacyStatus current = relationFor(rid);
+            ResourceLocation raceId = others.get(i).id();
+            int rowY = listTop() + (i - scrollOffset) * ROW_HEIGHT;
+            DiplomacyStatus current = relationFor(raceId);
 
-            for (DiplomacyStatus s : DiplomacyStatus.values()) {
-                final DiplomacyStatus chosen = s;
-                boolean active = current == s;
-                Component label = Component.literal(s.name())
-                        .withStyle(active ? statusFormat(s) : ChatFormatting.DARK_GRAY);
-                addRenderableWidget(Button.builder(label, b ->
-                        BoundaryHandler.sendClanAction(
-                                new ClanActionPacket(ClanActionPacket.Action.SET_RELATION, rid, chosen)))
-                        .bounds(btnX + s.ordinal() * btnW, rowY + 2, btnW - 2, 14).build());
+            for (DiplomacyStatus status : DiplomacyStatus.values()) {
+                Component label = Component.translatable(statusKey(status))
+                        .withStyle(current == status ? statusFormat(status) : ChatFormatting.DARK_GRAY);
+                addRenderableWidget(Button.builder(label, b -> BoundaryHandler.sendClanAction(
+                                new ClanActionPacket(ClanActionPacket.Action.SET_RELATION, raceId, status)))
+                        .bounds(statusColumnX(status), rowY + 2, STATUS_BUTTON_WIDTH - 2, 14).build());
             }
         }
 
         addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> onClose())
-                .bounds(cx - 50, pt + PH - 22, 100, 16).build());
+                .bounds(this.width / 2 - 50, panelTop() + PANEL_HEIGHT - 22, 100, 16).build());
     }
-
-    // ── Input ──────────────────────────────────────────────────────────────────
 
     @Override
     public boolean mouseScrolled(double mx, double my, double scrollX, double delta) {
-        List<Race> others = otherRaces();
-        int cy = this.height / 2;
-        int pt = cy - PH / 2;
-        int listTop = pt + LIST_TOP_OFFSET;
-        int listBottom = pt + PH - LIST_BOTTOM_MARGIN;
-        int maxVisible = Math.max(1, (listBottom - listTop) / ROW_H);
-        int maxOffset = Math.max(0, others.size() - maxVisible);
+        int maxOffset = Math.max(0, otherRaces().size() - visibleRows());
         int newOffset = (int) Math.max(0, Math.min(maxOffset, scrollOffset - delta));
         if (newOffset != scrollOffset) {
             scrollOffset = newOffset;
@@ -108,25 +86,20 @@ public class ClanManagementScreen extends Screen {
         return super.mouseScrolled(mx, my, scrollX, delta);
     }
 
-    // ── Render ─────────────────────────────────────────────────────────────────
-
     @Override
     public void render(GuiGraphics g, int mx, int my, float dt) {
-        renderBackground(g, mx, my, dt);
+        renderTransparentBackground(g);
 
         int cx = this.width / 2;
-        int cy = this.height / 2;
-        int pl = cx - PW / 2;
-        int pt = cy - PH / 2;
+        int pl = panelLeft();
+        int pt = panelTop();
 
-        g.fill(pl, pt, pl + PW, pt + PH, 0xBB000000);
-        g.renderOutline(pl, pt, PW, PH, 0xFFAAAAAA);
+        g.fill(pl, pt, pl + PANEL_WIDTH, pt + PANEL_HEIGHT, 0xBB000000);
+        g.renderOutline(pl, pt, PANEL_WIDTH, PANEL_HEIGHT, 0xFFAAAAAA);
 
-        // Title
         g.drawCenteredString(font, Component.translatable("screen.creraces.clan_management")
                 .withStyle(ChatFormatting.GOLD), cx, pt + 6, 0xFFFFFF);
 
-        // Own race subtitle
         if (lastUpdate != null) {
             Race own = RaceRegistry.get(lastUpdate.raceId);
             String ownName = own != null ? own.name().getString() : lastUpdate.raceId.getPath();
@@ -134,43 +107,34 @@ public class ClanManagementScreen extends Screen {
                     cx, pt + 18, 0xAAAAAA);
         }
 
-        // Column headers
-        int btnW = 48;
-        int btnX = pl + PW - 3 * btnW - 8;
-        g.drawString(font, Component.literal("Race").withStyle(ChatFormatting.GRAY), pl + 6, pt + 32, -1, false);
-        for (DiplomacyStatus s : DiplomacyStatus.values()) {
-            g.drawCenteredString(font, Component.literal(s.name().charAt(0) + "")
-                            .withStyle(statusFormat(s)),
-                    btnX + s.ordinal() * btnW + btnW / 2, pt + 32, -1);
+        // Column headers: the race name, then each status button's initial.
+        g.drawString(font, Component.translatable("screen.creraces.clan_management.race")
+                .withStyle(ChatFormatting.GRAY), pl + 6, pt + 32, -1, false);
+        for (DiplomacyStatus status : DiplomacyStatus.values()) {
+            g.drawCenteredString(font, Component.translatable(statusKey(status) + ".initial")
+                    .withStyle(statusFormat(status)), statusColumnX(status) + STATUS_BUTTON_WIDTH / 2, pt + 32, -1);
         }
 
-        // Race rows (scissored to list area)
         List<Race> others = otherRaces();
-        int listTop = pt + LIST_TOP_OFFSET;
-        int listBottom = pt + PH - LIST_BOTTOM_MARGIN;
-        int maxVisible = Math.max(1, (listBottom - listTop) / ROW_H);
+        int listTop = listTop();
+        int listBottom = listBottom();
+        int visibleRows = visibleRows();
 
-        g.enableScissor(pl, listTop, pl + PW, listBottom);
-        int end = Math.min(others.size(), scrollOffset + maxVisible);
+        g.enableScissor(pl, listTop, pl + PANEL_WIDTH, listBottom);
+        int end = Math.min(others.size(), scrollOffset + visibleRows);
         for (int i = scrollOffset; i < end; i++) {
             Race race = others.get(i);
-            int rowY = listTop + (i - scrollOffset) * ROW_H;
-            DiplomacyStatus current = relationFor(race.id());
-            int color = switch (current) {
-                case ALLY    -> 0x5555FF;
-                case ENEMY   -> 0xFF5555;
-                case NEUTRAL -> 0xAAAAAA;
-            };
+            int rowY = listTop + (i - scrollOffset) * ROW_HEIGHT;
+            int color = statusFormat(relationFor(race.id())).getColor();
             g.drawString(font, race.name().getString(), pl + 6, rowY + 6, color, false);
         }
         g.disableScissor();
 
-        // Scrollbar
-        if (others.size() > maxVisible) {
-            int sbX = pl + PW - 5;
+        if (others.size() > visibleRows) {
+            int sbX = pl + PANEL_WIDTH - 5;
             int sbH = listBottom - listTop;
-            int thumbH = Math.max(10, sbH * maxVisible / others.size());
-            int maxOffset = Math.max(1, others.size() - maxVisible);
+            int thumbH = Math.max(10, sbH * visibleRows / others.size());
+            int maxOffset = Math.max(1, others.size() - visibleRows);
             int thumbY = listTop + (sbH - thumbH) * scrollOffset / maxOffset;
             g.fill(sbX, listTop, sbX + 4, listBottom, 0x44FFFFFF);
             g.fill(sbX, thumbY, sbX + 4, thumbY + thumbH, 0xCCFFFFFF);
@@ -180,38 +144,71 @@ public class ClanManagementScreen extends Screen {
     }
 
     @Override
-    public boolean isPauseScreen() { return false; }
+    public boolean isPauseScreen() {
+        return false;
+    }
 
-    // ── Helpers ────────────────────────────────────────────────────────────────
+    private int panelLeft() {
+        return this.width / 2 - PANEL_WIDTH / 2;
+    }
+
+    private int panelTop() {
+        return this.height / 2 - PANEL_HEIGHT / 2;
+    }
+
+    private int listTop() {
+        return panelTop() + LIST_TOP_OFFSET;
+    }
+
+    private int listBottom() {
+        return panelTop() + PANEL_HEIGHT - LIST_BOTTOM_MARGIN;
+    }
+
+    private int visibleRows() {
+        return Math.max(1, (listBottom() - listTop()) / ROW_HEIGHT);
+    }
+
+    /** Left edge of a status column; the three columns sit flush against the panel's right side. */
+    private int statusColumnX(DiplomacyStatus status) {
+        return panelLeft() + PANEL_WIDTH - 3 * STATUS_BUTTON_WIDTH - 8 + status.ordinal() * STATUS_BUTTON_WIDTH;
+    }
 
     private List<Race> otherRaces() {
-        if (lastUpdate == null) return java.util.Collections.emptyList();
+        if (lastUpdate == null) {
+            return Collections.emptyList();
+        }
         ResourceLocation myId = lastUpdate.raceId;
         List<Race> result = new ArrayList<>();
         for (Race r : RaceRegistry.getAll()) {
-            if (!r.id().equals(myId) && r.selectable()) result.add(r);
+            if (!r.id().equals(myId) && r.selectable()) {
+                result.add(r);
+            }
         }
         return result;
     }
 
     private DiplomacyStatus relationFor(ResourceLocation raceId) {
-        if (lastUpdate == null) return DiplomacyStatus.NEUTRAL;
+        if (lastUpdate == null) {
+            return DiplomacyStatus.NEUTRAL;
+        }
         return lastUpdate.relations.getOrDefault(raceId, DiplomacyStatus.NEUTRAL);
     }
 
-    private static ChatFormatting statusFormat(DiplomacyStatus s) {
-        return switch (s) {
-            case ALLY    -> ChatFormatting.BLUE;
-            case ENEMY   -> ChatFormatting.RED;
+    private static String statusKey(DiplomacyStatus status) {
+        return "screen.creraces.clan_management.status." + status.name().toLowerCase(Locale.ROOT);
+    }
+
+    private static ChatFormatting statusFormat(DiplomacyStatus status) {
+        return switch (status) {
+            case ALLY -> ChatFormatting.BLUE;
+            case ENEMY -> ChatFormatting.RED;
             case NEUTRAL -> ChatFormatting.GRAY;
         };
     }
 
-    /**
-     * This screen deliberately draws no backdrop. 1.21 Screen.render() calls renderBackground()
-     * on its own where 1.20.1 did not, so it is suppressed here to keep the view unobstructed.
-     */
+    // Screen.render() calls this after the panel is drawn and vanilla's version blurs, so the dark
+    // overlay is drawn at the top of render() instead.
     @Override
-    public void renderBackground(net.minecraft.client.gui.GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
     }
 }

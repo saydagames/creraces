@@ -26,8 +26,6 @@ loom {
     }
 }
 
-
-
 configurations {
     common
     shadowCommon
@@ -62,6 +60,10 @@ dependencies {
     implementation "com.electronwill.night-config:core:3.6.7"
     implementation "com.electronwill.night-config:toml:3.6.7"
     modImplementation "curse.maven:trinkets-341284:5173501"
+    // JourneyMap's Fabric build declares a Loom version this project's (outdated) Loom plugin
+    // refuses to process at configure time, so it is not pulled in here for local dev-testing the
+    // way it is on the NeoForge/Forge modules. The integration itself only needs the compile-time
+    // API dependency in common/build.gradle and works fully for any player with JourneyMap installed.
 }
 
 processResources {

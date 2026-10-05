@@ -21,7 +21,8 @@ public class EssenceBeltScreen extends AbstractContainerScreen<EssenceBeltMenu> 
         super(menu, playerInventory, title);
         this.imageWidth = X_SIZE;
         this.imageHeight = Y_SIZE;
-        this.inventoryLabelY = 39; // vanilla hopper formula: imageHeight - 94
+        // Vanilla derives this from the default image height before ours is set, so redo it.
+        this.inventoryLabelY = this.imageHeight - 94;
     }
 
     @Override
@@ -32,7 +33,7 @@ public class EssenceBeltScreen extends AbstractContainerScreen<EssenceBeltMenu> 
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
+        // Screen.render() draws the background (and renderBg) itself on 1.21.
         super.render(graphics, mouseX, mouseY, partialTick);
         renderTooltip(graphics, mouseX, mouseY);
     }

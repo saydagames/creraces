@@ -21,7 +21,8 @@ public class EssenceBeltScreen extends AbstractContainerScreen<EssenceBeltMenu> 
         super(menu, playerInventory, title);
         this.imageWidth = X_SIZE;
         this.imageHeight = Y_SIZE;
-        this.inventoryLabelY = 39; // vanilla hopper formula: imageHeight - 94
+        // Vanilla derives this from the default image height before ours is set, so redo it.
+        this.inventoryLabelY = this.imageHeight - 94;
     }
 
     @Override

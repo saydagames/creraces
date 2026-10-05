@@ -15,8 +15,7 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
                     .getMethod("init")
                     .invoke(null);
         } catch (Throwable e) {
-            // MixinExtras not found or already initialized, hopefully someone else handles
-            // it
+            // MixinExtras is missing or already initialised by another mod; nothing to do either way.
         }
     }
 

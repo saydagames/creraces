@@ -1,20 +1,33 @@
 package mc.sayda.creraces.fabric;
 
+import dev.architectury.platform.Platform;
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.config.fabric.FabricConfig;
+import mc.sayda.creraces.fabric.compat.TrinketsBeltCompat;
+import mc.sayda.creraces.registry.ModItems;
+import mc.sayda.creraces.registry.ModPotions;
+import mc.sayda.creraces.util.PlatformServices;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.biome.v1.BiomeModifications;
+import net.fabricmc.fabric.api.biome.v1.BiomeSelectors;
+import net.fabricmc.fabric.api.registry.FabricBrewingRecipeRegistry;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.alchemy.Potions;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
+import net.minecraft.world.level.levelgen.GenerationStep;
 
 public class CreRacesFabric implements ModInitializer {
     @Override
     public void onInitialize() {
-        mc.sayda.creraces.config.fabric.FabricConfig.load();
-        mc.sayda.creraces.util.PlatformServices.burnTimeHandler = stack -> net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity
-                .getFuel().getOrDefault(stack.getItem(), 0);
-        // Trinkets isn't a hard dependency (fabric.mod.json has no "depends" entry for it), so it can
-        // be absent. Only assign the Trinkets-backed lookup when it's actually loaded; the default
-        // beltFinder (Optional.empty()) otherwise avoids a NoClassDefFoundError on TrinketsApi the
-        // moment a player tries to use the belt.
-        if (dev.architectury.platform.Platform.isModLoaded("trinkets")) {
-                mc.sayda.creraces.util.PlatformServices.beltFinder = mc.sayda.creraces.fabric.compat.TrinketsBeltCompat::findBelt;
+        FabricConfig.load();
+        PlatformServices.burnTimeHandler = stack -> AbstractFurnaceBlockEntity.getFuel().getOrDefault(stack.getItem(), 0);
+        // Trinkets is not a hard dependency (fabric.mod.json has no "depends" entry for it), so only
+        // assign the Trinkets-backed lookup when it is actually loaded.
+        if (Platform.isModLoaded("trinkets")) {
+            PlatformServices.beltFinder = TrinketsBeltCompat::findBelt;
         }
         CreRaces.init();
         CreRacesFabricVillagerTrades.init();
@@ -24,16 +37,13 @@ public class CreRacesFabric implements ModInitializer {
         // Regions.register() here can race TerraBlender's own config loading and NPE. It's called
         // from CreRacesFabricClient/CreRacesFabricServer instead, since Fabric always runs every
         // "main" entrypoint to completion before any "client"/"server" entrypoint starts.
-        net.fabricmc.fabric.api.biome.v1.BiomeModifications.addFeature(
-                net.fabricmc.fabric.api.biome.v1.BiomeSelectors.foundInOverworld(),
-                net.minecraft.world.level.levelgen.GenerationStep.Decoration.VEGETAL_DECORATION,
-                net.minecraft.resources.ResourceKey.create(
-                        net.minecraft.core.registries.Registries.PLACED_FEATURE,
-                        new net.minecraft.resources.ResourceLocation("creraces", "essence_vortex")));
-        net.fabricmc.fabric.api.registry.FabricBrewingRecipeRegistry.registerPotionRecipe(
-            net.minecraft.world.item.alchemy.Potions.AWKWARD,
-            net.minecraft.world.item.crafting.Ingredient.of(
-                mc.sayda.creraces.registry.ModItems.VEIL_BLOOM_ITEM.get()),
-            mc.sayda.creraces.registry.ModPotions.REVEALING.get());
+        BiomeModifications.addFeature(
+                BiomeSelectors.foundInOverworld(),
+                GenerationStep.Decoration.VEGETAL_DECORATION,
+                ResourceKey.create(Registries.PLACED_FEATURE, new ResourceLocation("creraces", "essence_vortex")));
+        FabricBrewingRecipeRegistry.registerPotionRecipe(
+                Potions.AWKWARD,
+                Ingredient.of(ModItems.VEIL_BLOOM_ITEM.get()),
+                ModPotions.REVEALING.get());
     }
 }

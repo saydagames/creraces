@@ -1,11 +1,15 @@
 package mc.sayda.creraces.quest;
 
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
 import javax.annotation.Nullable;
@@ -108,9 +112,6 @@ public class Quest {
     public interface Objective {
         int count();
 
-        /** The dispatch key used in JSON (e.g. "kill_entity"), for display/debugging. */
-        String type();
-
         /** A short verb for GUI display, e.g. "Kill", "Mine", "Collect". */
         Component verb();
 
@@ -132,11 +133,11 @@ public class Quest {
 
     public static class KillEntityObjective implements Objective {
         @Nullable private final ResourceLocation targetId;
-        @Nullable private final TagKey<net.minecraft.world.entity.EntityType<?>> targetTag;
+        @Nullable private final TagKey<EntityType<?>> targetTag;
         private final int count;
 
         public KillEntityObjective(@Nullable ResourceLocation targetId,
-                @Nullable TagKey<net.minecraft.world.entity.EntityType<?>> targetTag, int count) {
+                @Nullable TagKey<EntityType<?>> targetTag, int count) {
             this.targetId = targetId;
             this.targetTag = targetTag;
             this.count = count;
@@ -149,14 +150,14 @@ public class Quest {
         }
 
         @Override public int count() { return count; }
-        @Override public String type() { return "kill_entity"; }
 
         @Override public Component verb() { return Component.translatable("quest.creraces.verb.kill"); }
 
         @Override public Component targetName() {
             if (targetId != null) {
-                var entityType = BuiltInRegistries.ENTITY_TYPE.get(targetId);
-                return entityType != null ? entityType.getDescription() : prettifyPath(targetId);
+                return BuiltInRegistries.ENTITY_TYPE.getOptional(targetId)
+                        .map(EntityType::getDescription)
+                        .orElseGet(() -> prettifyPath(targetId));
             }
             return targetTag != null ? prettifyPath(targetTag.location()) : Component.literal("?");
         }
@@ -164,11 +165,11 @@ public class Quest {
 
     public static class MineBlockObjective implements Objective {
         @Nullable private final ResourceLocation targetId;
-        @Nullable private final TagKey<net.minecraft.world.level.block.Block> targetTag;
+        @Nullable private final TagKey<Block> targetTag;
         private final int count;
 
         public MineBlockObjective(@Nullable ResourceLocation targetId,
-                @Nullable TagKey<net.minecraft.world.level.block.Block> targetTag, int count) {
+                @Nullable TagKey<Block> targetTag, int count) {
             this.targetId = targetId;
             this.targetTag = targetTag;
             this.count = count;
@@ -181,14 +182,14 @@ public class Quest {
         }
 
         @Override public int count() { return count; }
-        @Override public String type() { return "mine_block"; }
 
         @Override public Component verb() { return Component.translatable("quest.creraces.verb.mine"); }
 
         @Override public Component targetName() {
             if (targetId != null) {
-                var block = BuiltInRegistries.BLOCK.get(targetId);
-                return block != null ? block.getName() : prettifyPath(targetId);
+                return BuiltInRegistries.BLOCK.getOptional(targetId)
+                        .<Component>map(Block::getName)
+                        .orElseGet(() -> prettifyPath(targetId));
             }
             return targetTag != null ? prettifyPath(targetTag.location()) : Component.literal("?");
         }
@@ -196,11 +197,11 @@ public class Quest {
 
     public static class CollectItemObjective implements Objective {
         @Nullable private final ResourceLocation targetId;
-        @Nullable private final TagKey<net.minecraft.world.item.Item> targetTag;
+        @Nullable private final TagKey<Item> targetTag;
         private final int count;
 
         public CollectItemObjective(@Nullable ResourceLocation targetId,
-                @Nullable TagKey<net.minecraft.world.item.Item> targetTag, int count) {
+                @Nullable TagKey<Item> targetTag, int count) {
             this.targetId = targetId;
             this.targetTag = targetTag;
             this.count = count;
@@ -213,14 +214,14 @@ public class Quest {
         }
 
         @Override public int count() { return count; }
-        @Override public String type() { return "collect_item"; }
 
         @Override public Component verb() { return Component.translatable("quest.creraces.verb.collect"); }
 
         @Override public Component targetName() {
             if (targetId != null) {
-                var item = BuiltInRegistries.ITEM.get(targetId);
-                return item != null ? item.getDescription() : prettifyPath(targetId);
+                return BuiltInRegistries.ITEM.getOptional(targetId)
+                        .map(Item::getDescription)
+                        .orElseGet(() -> prettifyPath(targetId));
             }
             return targetTag != null ? prettifyPath(targetTag.location()) : Component.literal("?");
         }
@@ -245,15 +246,15 @@ public class Quest {
         }
     }
 
-    public static TagKey<net.minecraft.world.entity.EntityType<?>> entityTag(ResourceLocation id) {
-        return TagKey.create(net.minecraft.core.registries.Registries.ENTITY_TYPE, id);
+    public static TagKey<EntityType<?>> entityTag(ResourceLocation id) {
+        return TagKey.create(Registries.ENTITY_TYPE, id);
     }
 
-    public static TagKey<net.minecraft.world.level.block.Block> blockTag(ResourceLocation id) {
-        return TagKey.create(net.minecraft.core.registries.Registries.BLOCK, id);
+    public static TagKey<Block> blockTag(ResourceLocation id) {
+        return TagKey.create(Registries.BLOCK, id);
     }
 
-    public static TagKey<net.minecraft.world.item.Item> itemTag(ResourceLocation id) {
-        return TagKey.create(net.minecraft.core.registries.Registries.ITEM, id);
+    public static TagKey<Item> itemTag(ResourceLocation id) {
+        return TagKey.create(Registries.ITEM, id);
     }
 }

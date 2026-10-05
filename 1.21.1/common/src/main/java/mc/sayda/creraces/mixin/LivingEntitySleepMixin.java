@@ -4,6 +4,7 @@ import mc.sayda.creraces.block.entity.MicroBlockEntity;
 import mc.sayda.creraces.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BedBlock;
@@ -26,7 +27,7 @@ public abstract class LivingEntitySleepMixin extends Entity {
     @Shadow
     public abstract Optional<BlockPos> getSleepingPos();
 
-    public LivingEntitySleepMixin(net.minecraft.world.entity.EntityType<?> entityType, Level level) {
+    public LivingEntitySleepMixin(EntityType<?> entityType, Level level) {
         super(entityType, level);
     }
 
@@ -45,7 +46,7 @@ public abstract class LivingEntitySleepMixin extends Entity {
                     return;
                 }
 
-                // Fallback for respawn or older saves where slot isn't set
+                // No tracked slot (respawn, or a save from before slots were tracked): use the first bed.
                 if (this.level().getBlockEntity(pos) instanceof MicroBlockEntity micro) {
                     if (MicroBlockEntity.findBedSlot(micro) >= 0) {
                         cir.setReturnValue(true);

@@ -2,28 +2,26 @@ package mc.sayda.creraces.client.particle;
 
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.*;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.core.particles.SimpleParticleType;
 
 public class MarkerParticle extends TextureSheetParticle {
     private final SpriteSet spriteSet;
 
-    protected MarkerParticle(ClientLevel world, double x, double y, double z, double vx, double vy, double vz, SpriteSet spriteSet) {
-        super(world, x, y, z);
+    protected MarkerParticle(ClientLevel level, double x, double y, double z, SpriteSet spriteSet) {
+        super(level, x, y, z);
         this.spriteSet = spriteSet;
         this.setSize(0.2f, 0.2f);
         this.quadSize *= 4f;
         this.lifetime = 5;
         this.gravity = 0f;
         this.hasPhysics = true;
-        this.xd = vx * 0;
-        this.yd = vy * 0;
-        this.zd = vz * 0;
         this.setSpriteFromAge(spriteSet);
     }
 
     @Override
     public int getLightColor(float partialTick) {
-        return 15728880;
+        return LightTexture.FULL_BRIGHT;
     }
 
     @Override
@@ -35,7 +33,8 @@ public class MarkerParticle extends TextureSheetParticle {
     public void tick() {
         super.tick();
         if (!this.removed) {
-            this.setSprite(this.spriteSet.get((this.age / 1) % 6 + 1, 6));
+            // Loops through the six frames once per six ticks instead of spreading them over the lifetime
+            this.setSprite(this.spriteSet.get(this.age % 6 + 1, 6));
         }
     }
 
@@ -47,8 +46,9 @@ public class MarkerParticle extends TextureSheetParticle {
         }
 
         @Override
-        public Particle createParticle(SimpleParticleType type, ClientLevel world, double x, double y, double z, double vx, double vy, double vz) {
-            return new MarkerParticle(world, x, y, z, vx, vy, vz, this.spriteSet);
+        public Particle createParticle(SimpleParticleType type, ClientLevel level, double x, double y, double z,
+                double xSpeed, double ySpeed, double zSpeed) {
+            return new MarkerParticle(level, x, y, z, this.spriteSet);
         }
     }
 }

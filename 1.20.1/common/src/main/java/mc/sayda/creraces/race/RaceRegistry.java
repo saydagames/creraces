@@ -1,6 +1,8 @@
 package mc.sayda.creraces.race;
 
+import mc.sayda.creraces.util.RemoteDocConfig;
 import net.minecraft.resources.ResourceLocation;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -13,13 +15,11 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class RaceRegistry {
     private static final Map<ResourceLocation, Race> RACES = new ConcurrentHashMap<>();
-    private static final Map<ResourceLocation, mc.sayda.creraces.util.RemoteDocConfig> REMOTE_DOCS = new ConcurrentHashMap<>();
-    private static final Map<ResourceLocation, mc.sayda.creraces.util.RemoteDocConfig> REMOTE_PASSIVES = new ConcurrentHashMap<>();
+    private static final Map<ResourceLocation, RemoteDocConfig> REMOTE_DOCS = new ConcurrentHashMap<>();
+    private static final Map<ResourceLocation, RemoteDocConfig> REMOTE_PASSIVES = new ConcurrentHashMap<>();
 
     // Default race when none is selected.
     public static final ResourceLocation NONE = new ResourceLocation("creraces", "none");
-    // Lookup constant for harpy-specific checks elsewhere (e.g. FeatherProjectile).
-    public static final ResourceLocation HARPY = new ResourceLocation("creraces", "harpy");
 
     public static void register(Race race) {
         RACES.put(race.id(), race);
@@ -39,24 +39,20 @@ public class RaceRegistry {
         REMOTE_PASSIVES.clear();
     }
 
-    public static void registerRemoteDoc(ResourceLocation id, mc.sayda.creraces.util.RemoteDocConfig config) {
+    public static void registerRemoteDoc(ResourceLocation id, RemoteDocConfig config) {
         REMOTE_DOCS.put(id, config);
     }
 
-    public static mc.sayda.creraces.util.RemoteDocConfig getRemoteDoc(ResourceLocation id) {
+    public static RemoteDocConfig getRemoteDoc(ResourceLocation id) {
         return REMOTE_DOCS.get(id);
     }
 
-    public static void registerRemotePassive(ResourceLocation id, mc.sayda.creraces.util.RemoteDocConfig config) {
+    public static void registerRemotePassive(ResourceLocation id, RemoteDocConfig config) {
         REMOTE_PASSIVES.put(id, config);
     }
 
-    public static mc.sayda.creraces.util.RemoteDocConfig getRemotePassive(ResourceLocation id) {
+    public static RemoteDocConfig getRemotePassive(ResourceLocation id) {
         return REMOTE_PASSIVES.get(id);
-    }
-
-    public static Collection<Race> getRaces() {
-        return getAll();
     }
 
     public static List<Race> getSubRaces(ResourceLocation parentId) {
@@ -83,11 +79,5 @@ public class RaceRegistry {
 
     public static boolean exists(ResourceLocation id) {
         return RACES.containsKey(id);
-    }
-
-    public static java.util.Optional<Race> getRaceByIndex(double index) {
-        return RACES.values().stream()
-                .filter(r -> r.index() == index)
-                .findFirst();
     }
 }

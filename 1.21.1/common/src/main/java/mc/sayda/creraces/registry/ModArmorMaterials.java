@@ -3,8 +3,10 @@ package mc.sayda.creraces.registry;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
 import mc.sayda.creraces.CreRaces;
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ArmorMaterial;
@@ -53,7 +55,7 @@ public class ModArmorMaterials {
 
     /** Defense values are given boots/leggings/chestplate/helmet, matching the old slotProtections order. */
     private static ArmorMaterial build(int boots, int leggings, int chestplate, int helmet, int enchantmentValue,
-            net.minecraft.core.Holder<net.minecraft.sounds.SoundEvent> equipSound,
+            Holder<SoundEvent> equipSound,
             float toughness, float knockbackResistance, String layerName) {
         Map<ArmorItem.Type, Integer> defense = new EnumMap<>(ArmorItem.Type.class);
         defense.put(ArmorItem.Type.BOOTS, boots);

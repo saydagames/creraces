@@ -122,7 +122,8 @@
                     "dimension": "creraces:fairy_realm",
                     "x": "race:respawn_x",
                     "y": "race:respawn_y",
-                    "z": "race:respawn_z"
+                    "z": "race:respawn_z",
+                    "save_return_point": true
                 },
                 {
                     "type": "creraces:spawn_particles",

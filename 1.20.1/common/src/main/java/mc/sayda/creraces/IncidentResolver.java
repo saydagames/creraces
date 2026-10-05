@@ -1,340 +1,327 @@
 package mc.sayda.creraces;
 
+import com.mojang.logging.LogUtils;
+import dev.architectury.event.CompoundEventResult;
+import dev.architectury.event.EventResult;
+import dev.architectury.event.events.common.BlockEvent;
+import dev.architectury.event.events.common.EntityEvent;
+import dev.architectury.event.events.common.InteractionEvent;
+import dev.architectury.event.events.common.LifecycleEvent;
 import dev.architectury.event.events.common.PlayerEvent;
 import dev.architectury.event.events.common.TickEvent;
+import mc.sayda.creraces.ability.AbilityManager;
 import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.capability.IPlayerVariables;
+import mc.sayda.creraces.config.CreRacesConfig;
+import mc.sayda.creraces.engine.ActionRegistry;
+import mc.sayda.creraces.engine.ChannelingManager;
+import mc.sayda.creraces.engine.TraitDispatch;
+import mc.sayda.creraces.engine.TraitRegistry;
+import mc.sayda.creraces.global.GlobalDispatcher;
 import mc.sayda.creraces.network.BoundaryHandler;
+import mc.sayda.creraces.quest.QuestManager;
+import mc.sayda.creraces.quest.QuestSessionRegistry;
+import mc.sayda.creraces.quest.QuestTracker;
+import mc.sayda.creraces.race.AttributeIncidents;
+import mc.sayda.creraces.race.Race;
+import mc.sayda.creraces.race.RaceIncidents;
+import mc.sayda.creraces.race.RaceManager;
+import mc.sayda.creraces.race.RaceRegistry;
+import mc.sayda.creraces.race.ResourceTicker;
+import mc.sayda.creraces.race.SocialPassivesEvent;
+import mc.sayda.creraces.registry.ModAttributes;
+import mc.sayda.creraces.registry.ModEnchantments;
+import mc.sayda.creraces.registry.ModItems;
+import mc.sayda.creraces.registry.ModMobEffects;
+import mc.sayda.creraces.team.RaceTeamManager;
+import mc.sayda.creraces.territory.FactionLeaderManager;
+import mc.sayda.creraces.territory.TerritoryManager;
+import mc.sayda.creraces.util.CombatUtils;
+import mc.sayda.creraces.util.DamageGuard;
+import mc.sayda.creraces.util.PocketManager;
+import mc.sayda.creraces.util.ReturnPoint;
+import mc.sayda.creraces.util.Scheduler;
+import mc.sayda.creraces.villager.GuildReceptionistOfferSync;
+import mc.sayda.creraces.worldgen.ModWorldgen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.protocol.game.ClientboundInitializeBorderPacket;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.monster.AbstractIllager;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.border.WorldBorder;
+import org.slf4j.Logger;
 
 /**
  * Resolves incidents (events) within the world.
  * Manages data synchronization and the flow of time (cooldowns).
  */
 public class IncidentResolver {
-    private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
+    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ResourceKey<Level> FAIRY_REALM =
+            ResourceKey.create(Registries.DIMENSION, new ResourceLocation(CreRaces.MODID, "fairy_realm"));
 
-public static void init() {
-        // Player Events
-        PlayerEvent.PLAYER_JOIN.register(IncidentResolver::onIncidentBegin); // Login
-        PlayerEvent.PLAYER_CLONE.register((oldPlayer, newPlayer, wonGame) -> {
-            onIncidentClone(oldPlayer, newPlayer, !wonGame);
-        });
-        PlayerEvent.CHANGE_DIMENSION.register((player, oldLevel, newLevel) -> {
-            onIncidentTransition(player, oldLevel, newLevel);
-        });
-        PlayerEvent.PLAYER_RESPAWN.register((player, conqueredEnd) -> {
-            onRespawn(player);
-        });
+    public static void init() {
+        registerPlayerEvents();
+        registerLifecycleEvents();
+        SocialPassivesEvent.register();
+        registerWorldEvents();
+    }
 
-        // Registering pickup event via Architectury standard
+    private static void registerPlayerEvents() {
+        PlayerEvent.PLAYER_JOIN.register(IncidentResolver::onIncidentBegin);
+        PlayerEvent.PLAYER_CLONE.register((oldPlayer, newPlayer, wonGame) -> onIncidentClone(oldPlayer, newPlayer, !wonGame));
+        PlayerEvent.CHANGE_DIMENSION.register(IncidentResolver::onIncidentTransition);
+        PlayerEvent.PLAYER_RESPAWN.register((player, conqueredEnd) -> onRespawn(player));
         PlayerEvent.PICKUP_ITEM_POST.register((player, itemEntity, stack) -> {
             if (player instanceof ServerPlayer sp) {
                 onIncidentPickup(sp, stack);
             }
         });
 
-        // Tick Events
         TickEvent.SERVER_POST.register(IncidentResolver::onIncidentTick);
 
-        // Elect faction leader on join
-        PlayerEvent.PLAYER_JOIN.register(player -> {
-            mc.sayda.creraces.territory.FactionLeaderManager.onPlayerJoin((ServerPlayer) player);
-        });
+        PlayerEvent.PLAYER_JOIN.register(FactionLeaderManager::onPlayerJoin);
 
-        // Disconnect: clear transient engine states and reassign faction leadership
+        // Disconnect: clear transient engine state and hand faction leadership on
         PlayerEvent.PLAYER_QUIT.register(player -> {
-            mc.sayda.creraces.engine.ActionRegistry.cleanup(player);
-            mc.sayda.creraces.quest.QuestSessionRegistry.clearPlayer(player.getUUID());
-            mc.sayda.creraces.territory.TerritoryManager.get().clearPlayerTracking(player.getUUID());
-            var server = ((ServerPlayer) player).getServer();
+            ActionRegistry.cleanup(player);
+            QuestSessionRegistry.clearPlayer(player.getUUID());
+            TerritoryManager.get().clearPlayerTracking(player.getUUID());
+            MinecraftServer server = player.getServer();
             if (server != null) {
-                mc.sayda.creraces.territory.FactionLeaderManager.onPlayerLeave((ServerPlayer) player, server);
+                FactionLeaderManager.onPlayerLeave(player, server);
             }
         });
+    }
 
-        // Load persisted server state (teams, pockets, territory)
-        dev.architectury.event.events.common.LifecycleEvent.SERVER_STARTED.register(server -> {
-            mc.sayda.creraces.team.RaceTeamManager.load(server);
-            mc.sayda.creraces.util.PocketManager.load(server);
-            mc.sayda.creraces.territory.TerritoryManager.load(server);
+    private static void registerLifecycleEvents() {
+        LifecycleEvent.SERVER_STARTED.register(server -> {
+            RaceTeamManager.load(server);
+            PocketManager.load(server);
+            TerritoryManager.load(server);
         });
-        // Save persisted server state (teams, pockets, territory), then clean up transient state
-        dev.architectury.event.events.common.LifecycleEvent.SERVER_STOPPING.register(server -> {
-            mc.sayda.creraces.team.RaceTeamManager.save(server);
-            mc.sayda.creraces.util.PocketManager.save(server);
-            mc.sayda.creraces.territory.TerritoryManager.save(server);
-            mc.sayda.creraces.util.Scheduler.clear();
-            mc.sayda.creraces.territory.FactionLeaderManager.clear();
-            mc.sayda.creraces.util.PocketManager.onServerStop();
-            mc.sayda.creraces.worldgen.ModWorldgen.onServerStop();
+        // Save persisted state first, then drop everything transient
+        LifecycleEvent.SERVER_STOPPING.register(server -> {
+            RaceTeamManager.save(server);
+            PocketManager.save(server);
+            TerritoryManager.save(server);
+            Scheduler.clear();
+            FactionLeaderManager.clear();
+            PocketManager.onServerStop();
+            ModWorldgen.onServerStop();
         });
+    }
 
-        // Social Passives (defendedByEntities)
-        mc.sayda.creraces.race.SocialPassivesEvent.register();
-
-        // Entity Events
-
-        // Prevent hostile mobs from spawning in the fairy realm
-        dev.architectury.event.events.common.EntityEvent.ADD.register((entity, level) -> {
+    private static void registerWorldEvents() {
+        EntityEvent.ADD.register((entity, level) -> {
+            // No hostile mobs in the fairy realm
             if (!level.isClientSide()
-                    && entity instanceof net.minecraft.world.entity.monster.Monster
-                    && level instanceof net.minecraft.server.level.ServerLevel sl
-                    && sl.dimension().location().equals(
-                            new net.minecraft.resources.ResourceLocation(CreRaces.MODID, "fairy_realm"))) {
+                    && entity instanceof Monster
+                    && level instanceof ServerLevel sl
+                    && isFairyRealm(sl.dimension())) {
                 entity.discard();
-                return dev.architectury.event.EventResult.interruptFalse();
+                return EventResult.interruptFalse();
             }
-            return dev.architectury.event.EventResult.pass();
+            GlobalDispatcher.onEntitySpawn(entity);
+            return EventResult.pass();
         });
 
-        dev.architectury.event.events.common.EntityEvent.LIVING_DEATH.register((entity, source) -> {
-            net.minecraft.world.entity.player.Player killer = mc.sayda.creraces.util.CombatUtils
-                    .getRootOwner(source.getEntity());
+        EntityEvent.LIVING_DEATH.register((entity, source) -> {
+            Player killer = CombatUtils.getRootOwner(source.getEntity());
             if (killer instanceof ServerPlayer sp) {
                 onIncidentVictory(sp, entity);
             }
-            return dev.architectury.event.EventResult.pass();
+            GlobalDispatcher.onLivingDeath(entity, source);
+            return EventResult.pass();
         });
 
-        dev.architectury.event.events.common.InteractionEvent.RIGHT_CLICK_ITEM.register((player, hand) -> {
+        InteractionEvent.RIGHT_CLICK_ITEM.register((player, hand) -> {
             if (player instanceof ServerPlayer sp) {
                 return onIncidentInteraction(sp, hand);
             }
-            return dev.architectury.event.CompoundEventResult.<net.minecraft.world.item.ItemStack>pass();
+            return CompoundEventResult.<ItemStack>pass();
         });
 
-        dev.architectury.event.events.common.InteractionEvent.RIGHT_CLICK_BLOCK
-                .register((player, hand, pos, direction) -> {
-                    if (player instanceof ServerPlayer sp) {
-                        return onIncidentBlockInteraction(sp, hand, pos);
-                    }
-                    return dev.architectury.event.EventResult.pass();
-                });
+        InteractionEvent.RIGHT_CLICK_BLOCK.register((player, hand, pos, direction) -> {
+            if (player instanceof ServerPlayer sp) {
+                return onIncidentBlockInteraction(sp, hand, pos);
+            }
+            return EventResult.pass();
+        });
 
-        dev.architectury.event.events.common.BlockEvent.PLACE.register((level, pos, state, placer) -> {
+        BlockEvent.PLACE.register((level, pos, state, placer) -> {
             if (placer instanceof ServerPlayer sp && !level.isClientSide()) {
                 return onIncidentBlockPlace(sp, pos, state);
             }
-            return dev.architectury.event.EventResult.pass();
+            return EventResult.pass();
         });
 
-        dev.architectury.event.events.common.EntityEvent.LIVING_HURT.register((entity, source, amount) -> {
+        EntityEvent.LIVING_HURT.register((entity, source, amount) -> {
             if (source.getEntity() instanceof ServerPlayer player) {
                 onIncidentAttack(player, entity);
             }
-            return dev.architectury.event.EventResult.pass();
+            GlobalDispatcher.onLivingHurt(entity, source);
+            return EventResult.pass();
         });
 
-        dev.architectury.event.events.common.BlockEvent.BREAK.register((level, pos, state, player, xp) -> {
+        BlockEvent.BREAK.register((level, pos, state, player, xp) -> {
             if (!level.isClientSide() && player != null) {
-                mc.sayda.creraces.quest.QuestTracker.onBlockBroken(player, state);
+                QuestTracker.onBlockBroken(player, state);
             }
-            return dev.architectury.event.EventResult.pass();
+            return EventResult.pass();
         });
 
         // Guild Receptionist trade offers are injected here rather than in Villager's own
         // trade list registration, since vanilla only ever activates 2 trades per level -
         // syncing on interaction guarantees all 5 tiers are present the moment a player opens
         // the trade GUI, regardless of the villager's current level.
-        dev.architectury.event.events.common.InteractionEvent.INTERACT_ENTITY.register((player, entity, hand) -> {
-            if (player instanceof ServerPlayer && entity instanceof net.minecraft.world.entity.npc.Villager villager) {
-                mc.sayda.creraces.villager.GuildReceptionistOfferSync.sync(villager);
+        InteractionEvent.INTERACT_ENTITY.register((player, entity, hand) -> {
+            if (player instanceof ServerPlayer && entity instanceof Villager villager) {
+                GuildReceptionistOfferSync.sync(villager);
             }
-            return dev.architectury.event.EventResult.pass();
+            return EventResult.pass();
         });
     }
 
+    private static boolean isFairyRealm(ResourceKey<Level> dimension) {
+        return dimension.location().equals(FAIRY_REALM.location());
+    }
+
     private static boolean isPlayerLocked(ServerPlayer player) {
-        var stunned = mc.sayda.creraces.registry.ModMobEffects.STUNNED.get();
+        var stunned = ModMobEffects.STUNNED.get();
         if (stunned != null && player.hasEffect(stunned)) {
             return true;
         }
-        if (mc.sayda.creraces.config.CreRacesConfig.FORCED_SELECTION.get()) {
-            return !DataUtils.getVariables(player).map(mc.sayda.creraces.capability.IPlayerVariables::hasChosenRace)
-                    .orElse(true);
+        if (CreRacesConfig.FORCED_SELECTION.get()) {
+            return !DataUtils.getVariables(player).map(IPlayerVariables::hasChosenRace).orElse(true);
         }
         return false;
     }
 
-    private static dev.architectury.event.CompoundEventResult<net.minecraft.world.item.ItemStack> onIncidentInteraction(
-            ServerPlayer player, net.minecraft.world.InteractionHand hand) {
+    private static CompoundEventResult<ItemStack> onIncidentInteraction(ServerPlayer player, InteractionHand hand) {
         if (isPlayerLocked(player)) {
-            return dev.architectury.event.CompoundEventResult.interruptTrue(player.getItemInHand(hand));
+            return CompoundEventResult.interruptTrue(player.getItemInHand(hand));
         }
 
-        net.minecraft.world.item.ItemStack stack = player.getItemInHand(hand);
-        java.util.Optional<mc.sayda.creraces.capability.IPlayerVariables> varsOpt = DataUtils.getVariables(player);
-        if (varsOpt.isPresent()) {
-            mc.sayda.creraces.capability.IPlayerVariables vars = varsOpt.get();
-            mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
-            if (race != null && race.traits() != null) {
-                for (mc.sayda.creraces.engine.TraitRegistry.RaceTrait trait : race.traits()) {
-                    if (trait.onInteraction(player, stack)) {
-                        return dev.architectury.event.CompoundEventResult.interruptTrue(stack);
-                    }
-                }
-            }
+        ItemStack stack = player.getItemInHand(hand);
+        boolean handled = TraitDispatch.runUntilTrue("onIncidentInteraction", player,
+                trait -> trait.onInteraction(player, stack));
+        if (handled) {
+            return CompoundEventResult.interruptTrue(stack);
         }
-        return dev.architectury.event.CompoundEventResult.pass();
+        return CompoundEventResult.pass();
     }
 
-    private static dev.architectury.event.EventResult onIncidentBlockInteraction(ServerPlayer player,
-            net.minecraft.world.InteractionHand hand, net.minecraft.core.BlockPos pos) {
+    private static EventResult onIncidentBlockInteraction(ServerPlayer player, InteractionHand hand, BlockPos pos) {
         if (isPlayerLocked(player)) {
-            return dev.architectury.event.EventResult.interruptTrue();
+            return EventResult.interruptTrue();
         }
 
-        net.minecraft.world.level.block.state.BlockState state = player.level().getBlockState(pos);
-        java.util.Optional<mc.sayda.creraces.capability.IPlayerVariables> varsOpt = DataUtils.getVariables(player);
-        if (varsOpt.isPresent()) {
-            mc.sayda.creraces.capability.IPlayerVariables vars = varsOpt.get();
-            mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
-            if (race != null && race.traits() != null) {
-                for (mc.sayda.creraces.engine.TraitRegistry.RaceTrait trait : race.traits()) {
-                    if (trait.onBlockInteraction(player, pos, state)) {
-                        return dev.architectury.event.EventResult.interruptTrue();
-                    }
-                }
-            }
+        BlockState state = player.level().getBlockState(pos);
+        boolean handled = TraitDispatch.runUntilTrue("onIncidentBlockInteraction", player,
+                trait -> trait.onBlockInteraction(player, pos, state));
+        if (handled) {
+            return EventResult.interruptTrue();
         }
-        return dev.architectury.event.EventResult.pass();
+        return EventResult.pass();
     }
 
-    private static dev.architectury.event.EventResult onIncidentBlockPlace(ServerPlayer player,
-            net.minecraft.core.BlockPos pos, net.minecraft.world.level.block.state.BlockState state) {
+    private static EventResult onIncidentBlockPlace(ServerPlayer player, BlockPos pos, BlockState state) {
         if (isPlayerLocked(player)) {
-            return dev.architectury.event.EventResult.interruptTrue();
+            return EventResult.interruptTrue();
         }
 
-        java.util.Optional<mc.sayda.creraces.capability.IPlayerVariables> varsOpt = DataUtils.getVariables(player);
-        if (varsOpt.isPresent()) {
-            mc.sayda.creraces.capability.IPlayerVariables vars = varsOpt.get();
-            mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
-            if (race != null && race.traits() != null) {
-                for (mc.sayda.creraces.engine.TraitRegistry.RaceTrait trait : race.traits()) {
-                    if (trait.onBlockPlace(player, pos, state)) {
-                        return dev.architectury.event.EventResult.interruptTrue();
-                    }
-                }
-            }
+        boolean handled = TraitDispatch.runUntilTrue("onIncidentBlockPlace", player,
+                trait -> trait.onBlockPlace(player, pos, state));
+        if (handled) {
+            return EventResult.interruptTrue();
         }
-        return dev.architectury.event.EventResult.pass();
+        return EventResult.pass();
     }
 
-    private static void onIncidentAttack(ServerPlayer player, net.minecraft.world.entity.LivingEntity victim) {
-        if (mc.sayda.creraces.util.DamageGuard.isProcessing()) {
+    private static void onIncidentAttack(ServerPlayer player, LivingEntity victim) {
+        if (DamageGuard.isProcessing()) {
             return;
         }
 
-        // Attack cancellation is also in PlayerMixin, but double checking here
+        // PlayerMixin cancels attacks from locked players too; this is the second line of defence
         if (isPlayerLocked(player)) {
             return;
         }
 
-        mc.sayda.creraces.util.DamageGuard.setProcessing(true);
+        DamageGuard.setProcessing(true);
         try {
-            DataUtils.getVariables(player).ifPresent(vars -> {
-                mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
-                if (race != null && race.traits() != null) {
-                    for (mc.sayda.creraces.engine.TraitRegistry.RaceTrait trait : race.traits()) {
-                        trait.onHit(player, victim);
-                    }
-                }
-            });
+            TraitDispatch.runVoid("onIncidentAttack", player, trait -> trait.onHit(player, victim));
         } finally {
-            mc.sayda.creraces.util.DamageGuard.setProcessing(false);
+            DamageGuard.setProcessing(false);
         }
     }
 
-    private static void onIncidentVictory(ServerPlayer killer, net.minecraft.world.entity.LivingEntity victim) {
-        mc.sayda.creraces.quest.QuestTracker.onPlayerKill(killer, victim);
+    private static void onIncidentVictory(ServerPlayer killer, LivingEntity victim) {
+        QuestTracker.onPlayerKill(killer, victim);
+        TraitDispatch.runVoid("onIncidentVictory", killer, trait -> trait.onKill(killer, victim));
 
-        DataUtils.getVariables(killer).ifPresent(vars -> {
-            // Trigger data-driven on_kill traits
-            mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
-            if (race != null && race.traits() != null) {
-                for (mc.sayda.creraces.engine.TraitRegistry.RaceTrait trait : race.traits()) {
-                    trait.onKill(killer, victim);
-                }
-            }
-        });
-
-        // Coin drop logic
-        if (mc.sayda.creraces.config.CreRacesConfig.COIN_DROP_ENABLED.get()
-                && victim instanceof net.minecraft.world.entity.monster.AbstractIllager) {
-            var taxingEnchant = mc.sayda.creraces.registry.ModEnchantments.TAXING.get();
+        if (CreRacesConfig.COIN_DROP_ENABLED.get() && victim instanceof AbstractIllager) {
+            var taxingEnchant = ModEnchantments.TAXING.get();
             int taxingLevel = taxingEnchant != null
-                    ? net.minecraft.world.item.enchantment.EnchantmentHelper.getEnchantmentLevel(taxingEnchant, killer)
+                    ? EnchantmentHelper.getEnchantmentLevel(taxingEnchant, killer)
                     : 0;
 
             float chance = 0.2f + (0.2f * taxingLevel);
             if (killer.getRandom().nextFloat() < chance) {
                 // 20% chance for a Dime, 80% for a Penny (within the successful drop)
-                net.minecraft.world.item.Item coin = killer.getRandom().nextFloat() < 0.2f
-                        ? mc.sayda.creraces.registry.ModItems.DIME.get()
-                        : mc.sayda.creraces.registry.ModItems.PENNY.get();
+                Item coin = killer.getRandom().nextFloat() < 0.2f
+                        ? ModItems.DIME.get()
+                        : ModItems.PENNY.get();
 
-                victim.spawnAtLocation(new net.minecraft.world.item.ItemStack(coin));
+                victim.spawnAtLocation(new ItemStack(coin));
             }
         }
     }
 
-    private static void onIncidentPickup(ServerPlayer player, net.minecraft.world.item.ItemStack stack) {
-        mc.sayda.creraces.quest.QuestTracker.onItemPickup(player, stack);
-
-        DataUtils.getVariables(player).ifPresent(vars -> {
-            mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
-            if (race != null && race.traits() != null) {
-                for (mc.sayda.creraces.engine.TraitRegistry.RaceTrait trait : race.traits()) {
-                    trait.onItemPickup(player, stack);
-                }
-            }
-        });
+    private static void onIncidentPickup(ServerPlayer player, ItemStack stack) {
+        QuestTracker.onItemPickup(player, stack);
+        TraitDispatch.runVoid("onIncidentPickup", player, trait -> trait.onItemPickup(player, stack));
     }
 
     private static void onIncidentBegin(ServerPlayer player) {
-        mc.sayda.creraces.race.AttributeIncidents.eikiJudgment(player);
+        AttributeIncidents.eikiJudgment(player);
 
-        // Apply pending team removals for offline-kicked players (also called from onClientRequestedSync)
-        mc.sayda.creraces.team.RaceTeamManager.handlePlayerJoin(player);
+        // Applies team removals for players kicked while offline (onClientRequestedSync repeats this)
+        RaceTeamManager.handlePlayerJoin(player);
 
-        // Re-apply race elements on login (Persistence Fix)
-        mc.sayda.creraces.race.RaceIncidents.refreshPlayer(player);
+        // Race elements have to be re-applied on every login
+        RaceIncidents.refreshPlayer(player);
 
-        // If the player logged back in while inside the fairy realm, restore the full-scale override.
-        // refreshPlayer above would have re-applied the race's base tiny scale (0.25), undoing it.
-        net.minecraft.resources.ResourceLocation fairyRealmLoc =
-                new net.minecraft.resources.ResourceLocation(CreRaces.MODID, "fairy_realm");
-        if (player.level().dimension().location().equals(fairyRealmLoc)) {
-            net.minecraft.server.level.ServerLevel fairyLevel =
-                    (net.minecraft.server.level.ServerLevel) player.serverLevel();
-            // Ensure world border is set; CHANGE_DIMENSION doesn't fire on direct login
-            mc.sayda.creraces.worldgen.ModWorldgen.placeFairyTreeIfNeeded(fairyLevel);
-                mc.sayda.creraces.worldgen.ModWorldgen.placeSeasonalTreesIfNeeded(fairyLevel);
-
-            // Send border packet once the client has fully loaded in (20-tick delay on login)
-            net.minecraft.world.level.border.WorldBorder border = fairyLevel.getWorldBorder();
-            mc.sayda.creraces.util.Scheduler.delay(20, () -> {
-                    if (player.isRemoved() || player.connection == null) return;
-                    player.connection.send(
-                            new net.minecraft.network.protocol.game.ClientboundInitializeBorderPacket(border));
-            });
-
-            mc.sayda.creraces.capability.DataUtils.getVariables(player).ifPresent(vars -> {
-                mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
-                if (race != null) {
-                    mc.sayda.creraces.race.RaceIncidents.applyFairyRealmScale(player, race);
-                }
-            });
+        // refreshPlayer just re-applied the race's base scale, which would undo the fairy realm's
+        // full-scale override for a player logging back in there
+        if (isFairyRealm(player.level().dimension())) {
+            // CHANGE_DIMENSION doesn't fire on a direct login, and the client needs ~20 ticks to load in
+            prepareFairyRealm(player, player.serverLevel(), 20);
+            applyFairyRealmScale(player);
         }
 
-        // Sync the joining player's data to all currently online players,
-        // and sync all online players' data to the joining player.
-        // Iterates all online players but avoids an O(n²) full cross-sync:
-        // each existing player only needs to receive the new player's data once.
-        if (player.getServer() != null) {
-            player.getServer().getPlayerList().getPlayers().forEach(other -> {
+        // Existing players learn about the newcomer and the newcomer about each of them, once each
+        MinecraftServer server = player.getServer();
+        if (server != null) {
+            server.getPlayerList().getPlayers().forEach(other -> {
                 if (other != player) {
                     BoundaryHandler.resyncVariables(player, other);
                     BoundaryHandler.resyncVariables(other, player);
@@ -345,59 +332,56 @@ public static void init() {
 
     public static void onClientRequestedSync(ServerPlayer player) {
         LOGGER.debug("IncidentResolver: Client {} explicitly requested data sync.", player.getScoreboardName());
-        // Initial sync when a player joins and is ready
         BoundaryHandler.resyncVariables(player, player);
 
-        // Sync race, ability, and quest definitions
-        BoundaryHandler.syncRacesToPlayer(player, mc.sayda.creraces.race.RaceManager.createSyncPacket());
-        BoundaryHandler.syncAbilitiesToPlayer(player, mc.sayda.creraces.ability.AbilityManager.createSyncPacket());
-        BoundaryHandler.syncQuestsToPlayer(player, mc.sayda.creraces.quest.QuestManager.createSyncPacket());
-        
-        // Handle team logic (offline kicks, etc.)
-        mc.sayda.creraces.team.RaceTeamManager.handlePlayerJoin(player);
+        BoundaryHandler.syncRacesToPlayer(player, RaceManager.createSyncPacket());
+        BoundaryHandler.syncAbilitiesToPlayer(player, AbilityManager.createSyncPacket());
+        BoundaryHandler.syncQuestsToPlayer(player, QuestManager.createSyncPacket());
+
+        // Offline kicks and other pending team changes
+        RaceTeamManager.handlePlayerJoin(player);
     }
 
-    private static void onIncidentTransition(ServerPlayer player,
-            net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> oldLevel,
-            net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> newLevel) {
+    private static void onIncidentTransition(ServerPlayer player, ResourceKey<Level> oldLevel, ResourceKey<Level> newLevel) {
         BoundaryHandler.resyncVariables(player, player);
+        ReturnPoint.forgetUnlessIn(player, newLevel);
 
-        net.minecraft.resources.ResourceLocation fairyRealm =
-                new net.minecraft.resources.ResourceLocation(CreRaces.MODID, "fairy_realm");
-
-        if (newLevel.location().equals(fairyRealm)) {
-            // Place the island tree on first entry (level is loaded at this point)
-            net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> fairyKey =
-                    net.minecraft.resources.ResourceKey.create(
-                            net.minecraft.core.registries.Registries.DIMENSION, fairyRealm);
-            net.minecraft.server.level.ServerLevel fairyLevel = player.server.getLevel(fairyKey);
+        if (isFairyRealm(newLevel)) {
+            ServerLevel fairyLevel = player.server.getLevel(FAIRY_REALM);
             if (fairyLevel != null) {
-                mc.sayda.creraces.worldgen.ModWorldgen.placeFairyTreeIfNeeded(fairyLevel);
-                mc.sayda.creraces.worldgen.ModWorldgen.placeSeasonalTreesIfNeeded(fairyLevel);
-                // Explicitly sync the world border to this player 2 ticks later.
-                // CHANGE_DIMENSION fires before the client finishes loading the new level,
-                // so the broadcast from setSize() misses them; we must send it directly.
-                net.minecraft.world.level.border.WorldBorder border = fairyLevel.getWorldBorder();
-                mc.sayda.creraces.util.Scheduler.delay(2, () -> {
-                        if (player.isRemoved() || player.connection == null) return;
-                        player.connection.send(
-                                new net.minecraft.network.protocol.game.ClientboundInitializeBorderPacket(border));
-                });
+                // CHANGE_DIMENSION fires before the client finishes loading the new level, so the
+                // border broadcast from setSize() misses them; a short delay lets it land.
+                prepareFairyRealm(player, fairyLevel, 2);
             }
-
-            DataUtils.getVariables(player).ifPresent(vars -> {
-                mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
-                if (race != null) {
-                    mc.sayda.creraces.race.RaceIncidents.applyFairyRealmScale(player, race);
-                }
-            });
-        } else if (oldLevel.location().equals(fairyRealm)) {
-            mc.sayda.creraces.race.RaceIncidents.refreshPlayer(player);
+            applyFairyRealmScale(player);
+        } else if (isFairyRealm(oldLevel)) {
+            RaceIncidents.refreshPlayer(player);
         }
     }
 
+    /** Places the island trees on first entry and sends the realm's world border straight to the player. */
+    private static void prepareFairyRealm(ServerPlayer player, ServerLevel fairyLevel, int borderDelayTicks) {
+        ModWorldgen.placeFairyTreeIfNeeded(fairyLevel);
+        ModWorldgen.placeSeasonalTreesIfNeeded(fairyLevel);
+
+        WorldBorder border = fairyLevel.getWorldBorder();
+        Scheduler.delay(borderDelayTicks, () -> {
+            if (player.isRemoved() || player.connection == null) return;
+            player.connection.send(new ClientboundInitializeBorderPacket(border));
+        });
+    }
+
+    private static void applyFairyRealmScale(ServerPlayer player) {
+        DataUtils.getVariables(player).ifPresent(vars -> {
+            Race race = RaceRegistry.get(vars.getRace());
+            if (race != null) {
+                RaceIncidents.applyFairyRealmScale(player, race);
+            }
+        });
+    }
+
     private static void onIncidentClone(ServerPlayer oldPlayer, ServerPlayer newPlayer, boolean wasDeath) {
-        LOGGER.debug("IncidentResolver: onIncidentClone triggered! wasDeath: {}", wasDeath);
+        LOGGER.debug("IncidentResolver: onIncidentClone (wasDeath: {})", wasDeath);
         DataUtils.getVariables(oldPlayer).ifPresent(oldVars -> {
             LOGGER.debug("IncidentResolver: Found oldVars. Race: {}", oldVars.getRace());
             DataUtils.getVariables(newPlayer).ifPresent(newVars -> {
@@ -407,95 +391,88 @@ public static void init() {
                 if (wasDeath) {
                     newVars.resetOnDeath();
                 }
-                mc.sayda.creraces.race.RaceIncidents.refreshPlayer(newPlayer);
-
-                // After cloning, sync to the new player
+                RaceIncidents.refreshPlayer(newPlayer);
                 BoundaryHandler.resyncVariables(newPlayer, newPlayer);
             });
         });
     }
 
-    private static void onIncidentTick(net.minecraft.server.MinecraftServer server) {
-        if (mc.sayda.creraces.config.CreRacesConfig.FORCED_SELECTION.get()) { // FORCED_SELECTION default is true
+    private static void onIncidentTick(MinecraftServer server) {
+        GlobalDispatcher.onWorldTick(server);
+
+        if (CreRacesConfig.FORCED_SELECTION.get()) {
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                DataUtils.getVariables(player).ifPresent(vars -> {
-                    if (!vars.hasChosenRace()) {
-                        net.minecraft.world.effect.MobEffect res = net.minecraft.world.effect.MobEffects.DAMAGE_RESISTANCE;
-                        if (res != null) {
-                            player.addEffect(new net.minecraft.world.effect.MobEffectInstance(
-                                    res, 40, 255, false, false, false));
-                        }
-                        var stunned = mc.sayda.creraces.registry.ModMobEffects.STUNNED.get();
-                        if (stunned != null) {
-                            player.addEffect(new net.minecraft.world.effect.MobEffectInstance(
-                                    stunned, 40, 0, false, false, false));
-                        }
-                    }
-                });
+                holdUntilRaceChosen(player);
             }
         }
 
-        // Ticking down resources/cooldowns
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            mc.sayda.creraces.race.ResourceTicker.tick(player);
+            ResourceTicker.tick(player);
             if (player.tickCount % 300 == 0) {
-                mc.sayda.creraces.quest.QuestTracker.tickQuests(player);
+                QuestTracker.tickQuests(player);
             }
             if (player.tickCount % 20 == 0) {
-                mc.sayda.creraces.quest.QuestTracker.recheckCollectProgress(player);
+                QuestTracker.recheckCollectProgress(player);
             }
         }
 
-        mc.sayda.creraces.util.Scheduler.tick();
-        mc.sayda.creraces.team.RaceTeamManager.tick(server);
-        mc.sayda.creraces.territory.TerritoryManager.get().tick(server);
-        mc.sayda.creraces.engine.ChannelingManager.tick(server);
+        Scheduler.tick();
+        RaceTeamManager.tick(server);
+        TerritoryManager.get().tick(server);
+        ChannelingManager.tick(server);
     }
 
-public static void onTrackingBegin(ServerPlayer tracker, net.minecraft.world.entity.Entity target) {
-        if (target instanceof Player targetPlayer) {
-            BoundaryHandler.resyncVariables(targetPlayer, tracker);
-        }
+    /** Keeps a player who hasn't picked a race yet invulnerable and stunned, refreshed every tick. */
+    private static void holdUntilRaceChosen(ServerPlayer player) {
+        DataUtils.getVariables(player).ifPresent(vars -> {
+            if (vars.hasChosenRace()) {
+                return;
+            }
+            player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 40, 255, false, false, false));
+            var stunned = ModMobEffects.STUNNED.get();
+            if (stunned != null) {
+                player.addEffect(new MobEffectInstance(stunned, 40, 0, false, false, false));
+            }
+        });
     }
 
     public static void onRespawn(ServerPlayer player) {
         LOGGER.debug("IncidentResolver: onRespawn triggered for {}", player.getName().getString());
 
-        mc.sayda.creraces.race.RaceIncidents.refreshPlayer(player);
+        RaceIncidents.refreshPlayer(player);
 
-        // Set default respawn states for resources
         DataUtils.getVariables(player).ifPresent(vars -> {
-            net.minecraft.world.entity.ai.attributes.Attribute maxMana = mc.sayda.creraces.registry.ModAttributes.MAX_MANA.get();
-            net.minecraft.world.entity.ai.attributes.Attribute maxEnergy = mc.sayda.creraces.registry.ModAttributes.MAX_ENERGY.get();
+            Attribute maxMana = ModAttributes.MAX_MANA.get();
+            Attribute maxEnergy = ModAttributes.MAX_ENERGY.get();
             if (maxMana != null) vars.setMana(player.getAttributeValue(maxMana));
             if (maxEnergy != null) vars.setEnergy(player.getAttributeValue(maxEnergy));
             vars.setRage(0);
             vars.setGrit(0);
 
-            // Trigger on_respawn traits
-            mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
+            Race race = RaceRegistry.get(vars.getRace());
             if (race != null && race.traits() != null) {
-                for (mc.sayda.creraces.engine.TraitRegistry.RaceTrait trait : race.traits()) {
+                for (TraitRegistry.RaceTrait trait : race.traits()) {
                     trait.onRespawn(player);
                 }
             }
 
-            // Race-defined default respawn: used when the player has no bed/anchor spawn set
-            if (race != null && race.respawnPos() != null && player.getRespawnPosition() == null) {
-                double[] pos = race.respawnPos();
-                if (pos != null && pos.length >= 3) {
-                    net.minecraft.server.level.ServerLevel targetLevel = player.serverLevel();
-                    if (race.respawnDimension() != null) {
-                        net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimKey =
-                                net.minecraft.resources.ResourceKey.create(
-                                        net.minecraft.core.registries.Registries.DIMENSION,
-                                        race.respawnDimension());
-                        net.minecraft.server.level.ServerLevel dimLevel = player.server.getLevel(dimKey);
-                        if (dimLevel != null) targetLevel = dimLevel;
-                    }
-                    player.teleportTo(targetLevel, pos[0], pos[1], pos[2], player.getYRot(), player.getXRot());
-                }
+            if (race != null && player.getRespawnPosition() == null) {
+                teleportToRaceRespawn(player, race);
             }
         });
+    }
+
+    /** Races can define a default respawn point, used when the player has no bed or anchor spawn set. */
+    private static void teleportToRaceRespawn(ServerPlayer player, Race race) {
+        double[] pos = race.respawnPos();
+        if (pos == null || pos.length < 3) {
+            return;
+        }
+        ServerLevel targetLevel = player.serverLevel();
+        if (race.respawnDimension() != null) {
+            ServerLevel dimLevel = player.server.getLevel(ResourceKey.create(Registries.DIMENSION, race.respawnDimension()));
+            if (dimLevel != null) targetLevel = dimLevel;
+        }
+        player.teleportTo(targetLevel, pos[0], pos[1], pos[2], player.getYRot(), player.getXRot());
     }
 }

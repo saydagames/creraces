@@ -59,7 +59,10 @@ public final class QuestSessionRegistry {
         return set != null && set.contains(questId);
     }
 
-    /** Called when a fresh scroll is issued for this (player, quest) pair, so a re-taken quest isn't immediately self-removed by a stale flag from a previous instance. */
+    /**
+     * Called when a fresh scroll is issued for this (player, quest) pair, so a re-taken quest
+     * isn't immediately self-removed by a stale flag from a previous instance.
+     */
     public static void clearAbandoned(UUID player, ResourceLocation questId) {
         Set<ResourceLocation> set = ABANDONED.get(player);
         if (set != null) set.remove(questId);

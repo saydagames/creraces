@@ -1,13 +1,18 @@
 package mc.sayda.creraces.world.inventory;
 
 import mc.sayda.creraces.item.EssenceBeltItem;
+import mc.sayda.creraces.item.EssenceBottleItem;
 import mc.sayda.creraces.registry.ModMenuTypes;
+import mc.sayda.creraces.util.PlatformServices;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+
+import javax.annotation.Nullable;
+import java.util.Optional;
 
 public class EssenceBeltMenu extends AbstractContainerMenu {
 
@@ -17,7 +22,7 @@ public class EssenceBeltMenu extends AbstractContainerMenu {
         super(ModMenuTypes.ESSENCE_BELT.get(), syncId);
         this.beltInventory = beltInv;
 
-        // 8 belt slots: 4 left, 16px gap, 4 right
+        // 8 belt slots: 4 left, a gap, 4 right
         for (int i = 0; i < 4; i++) {
             addSlot(new BeltSlot(beltInv, i, 8 + i * 18, 19));
         }
@@ -53,8 +58,9 @@ public class EssenceBeltMenu extends AbstractContainerMenu {
     }
 
     /** Finds the belt stack from the curio/trinket slot, or the player's hands as a fallback. */
+    @Nullable
     public static ItemStack findBeltStack(Player player) {
-        java.util.Optional<net.minecraft.world.item.ItemStack> curio = mc.sayda.creraces.util.PlatformServices.findBelt(player);
+        Optional<ItemStack> curio = PlatformServices.findBelt(player);
         if (curio.isPresent()) return curio.get();
         if (player.getMainHandItem().getItem() instanceof EssenceBeltItem) return player.getMainHandItem();
         if (player.getOffhandItem().getItem() instanceof EssenceBeltItem) return player.getOffhandItem();
@@ -92,7 +98,7 @@ public class EssenceBeltMenu extends AbstractContainerMenu {
 
         @Override
         public boolean mayPlace(ItemStack stack) {
-            return stack.getItem() instanceof mc.sayda.creraces.item.EssenceBottleItem;
+            return stack.getItem() instanceof EssenceBottleItem;
         }
     }
 }

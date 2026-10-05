@@ -1,0 +1,61 @@
+{
+    "creraces:name": "ability.creraces.undead_recall.name",
+    "creraces:description": "ability.creraces.undead_recall.description",
+    "creraces:type": "ACTIVE",
+    "creraces:icon": "minecraft:textures/item/soul_lantern.png",
+    "creraces:cooldown": 600,
+    "creraces:cost": 20,
+    "creraces:race": [
+        "creraces:undead"
+    ],
+    "creraces:actions": [
+        {
+            "type": "creraces:aoe",
+            "radius": 64.0,
+            "targets": ["all"],
+            "actions": [
+                {
+                    "type": "creraces:conditional",
+                    "condition": {
+                        "type": "creraces:entity_data",
+                        "key": "creraces:servant_of",
+                        "use_target": true,
+                        "operator": "==",
+                        "value": { "type": "uuid", "property": "uuid", "entity": "self" }
+                    },
+                    "if_true": [
+                        {
+                            "type": "creraces:conditional",
+                            "condition": {
+                                "type": "creraces:entity",
+                                "mob_type": "undead",
+                                "use_target": true
+                            },
+                            "if_true": [
+                                {
+                                    "type": "creraces:summon_entity",
+                                    "entity": "creraces:remains_undead",
+                                    "use_target": true,
+                                    "tag_data": [
+                                        { "key": "creraces:servant_of", "value": { "type": "uuid", "property": "uuid", "entity": "self" } },
+                                        { "key": "creraces:stored_entity", "value": { "type": "string", "property": "entity_type", "entity": "target" } }
+                                    ]
+                                },
+                                {
+                                    "type": "creraces:remove_entity"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "creraces:play_sound",
+            "sound": "minecraft:entity.wither.ambient",
+            "volume": 1.0,
+            "pitch": 0.5
+        }
+    ],
+    "creraces:wiki_page": "Ability:Undead_Recall"
+}

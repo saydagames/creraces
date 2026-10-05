@@ -1,6 +1,5 @@
 package mc.sayda.creraces.engine.traits;
 
-import com.google.gson.JsonArray;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.engine.TraitRegistry;
@@ -9,15 +8,16 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
-import java.util.ArrayList;
+import javax.annotation.Nullable;
 import java.util.List;
 
+/** Runs actions when the player picks up an item. */
 public class OnItemPickupTrait implements TraitRegistry.RaceTrait {
-
     private final List<ActionRegistry.RaceAction> actions;
+    @Nullable
     private final Condition condition;
 
-    public OnItemPickupTrait(List<ActionRegistry.RaceAction> actions, Condition condition) {
+    public OnItemPickupTrait(List<ActionRegistry.RaceAction> actions, @Nullable Condition condition) {
         this.actions = actions;
         this.condition = condition;
     }
@@ -25,28 +25,14 @@ public class OnItemPickupTrait implements TraitRegistry.RaceTrait {
     @Override
     public void onItemPickup(Player player, ItemStack stack) {
         if (condition == null || condition.evaluate(player, null, null, null)) {
-            for (ActionRegistry.RaceAction action : actions) {
-                if (!action.execute(player, null, null, null)) {
-                    break;
-                }
-            }
+            ActionRegistry.runChain(actions, player, null, null, null);
         }
     }
 
     public static void register() {
         TraitRegistry.register(ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "on_item_pickup"), json -> {
-            List<ActionRegistry.RaceAction> actions = new ArrayList<>();
-            if (json.has("actions")) {
-                JsonArray array = json.getAsJsonArray("actions");
-                for (int i = 0; i < array.size(); i++) {
-                    actions.add(ActionRegistry.fromJson(array.get(i).getAsJsonObject()));
-                }
-            }
-            Condition condition = null;
-            if (json.has("condition")) {
-                condition = Condition.fromJson(json.getAsJsonObject("condition"));
-            }
-            return new OnItemPickupTrait(actions, condition);
+            Condition condition = json.has("condition") ? Condition.fromJson(json.getAsJsonObject("condition")) : null;
+            return new OnItemPickupTrait(ActionRegistry.listFromJson(json, "actions"), condition);
         });
     }
 }

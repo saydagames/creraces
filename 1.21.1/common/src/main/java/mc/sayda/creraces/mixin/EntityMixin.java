@@ -1,13 +1,18 @@
 package mc.sayda.creraces.mixin;
 
-import mc.sayda.creraces.util.IPersistentDataAccessor;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.entity.Entity;
 import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.engine.AquaticMovementHandler;
 import mc.sayda.creraces.race.Race;
 import mc.sayda.creraces.race.RaceRegistry;
-import net.minecraft.world.entity.player.Player;
+import mc.sayda.creraces.registry.ModMobEffects;
+import mc.sayda.creraces.util.IPersistentDataAccessor;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.material.Fluid;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -16,8 +21,13 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.function.Predicate;
+
 @Mixin(Entity.class)
 public abstract class EntityMixin implements IPersistentDataAccessor {
+    @Unique
+    private static final String CRERACES_PERSISTENT_DATA_KEY = "creraces:persistent_data";
+
     @Unique
     private CompoundTag creraces$persistentData;
 
@@ -31,91 +41,70 @@ public abstract class EntityMixin implements IPersistentDataAccessor {
 
     @Inject(method = "load", at = @At("TAIL"))
     private void creraces$readPersistentData(CompoundTag tag, CallbackInfo ci) {
-        if (tag.contains("creraces:persistent_data", 10)) {
-            this.creraces$persistentData = tag.getCompound("creraces:persistent_data");
+        if (tag.contains(CRERACES_PERSISTENT_DATA_KEY, Tag.TAG_COMPOUND)) {
+            this.creraces$persistentData = tag.getCompound(CRERACES_PERSISTENT_DATA_KEY);
         }
     }
 
     @Inject(method = "saveWithoutId", at = @At("TAIL"))
-    private void creraces$writePersistentData(CompoundTag tag, CallbackInfoReturnable cir) {
+    private void creraces$writePersistentData(CompoundTag tag, CallbackInfoReturnable<CompoundTag> cir) {
         if (this.creraces$persistentData != null && !this.creraces$persistentData.isEmpty()) {
-            tag.put("creraces:persistent_data", this.creraces$persistentData);
+            tag.put(CRERACES_PERSISTENT_DATA_KEY, this.creraces$persistentData);
         }
     }
 
     @Inject(method = "updateFluidHeightAndDoFluidPushing", at = @At("HEAD"), cancellable = true)
-    private void creraces$cancelFluidDetection(TagKey<Fluid> tag, double d, CallbackInfoReturnable<Boolean> cir) {
-        if ((Object) this instanceof Player player) {
-            if (mc.sayda.creraces.engine.AquaticMovementHandler.isUnaffected(player, tag)) {
-                cir.setReturnValue(false);
-            }
+    private void creraces$cancelFluidDetection(TagKey<Fluid> tag, double motionScale,
+            CallbackInfoReturnable<Boolean> cir) {
+        if ((Object) this instanceof Player player && AquaticMovementHandler.isUnaffected(player, tag)) {
+            cir.setReturnValue(false);
         }
     }
 
     @Inject(method = "setSwimming", at = @At("HEAD"), cancellable = true)
     private void creraces$blockSwimming(boolean swimming, CallbackInfo ci) {
-        if (swimming && (Object) this instanceof Player player) {
-            DataUtils.getVariables(player).ifPresent(vars -> {
-                Race race = RaceRegistry.get(vars.getRace());
-                if (race != null) {
-                    var passives = race.passives();
-                    if (passives != null && passives.unaffectedByWater()) {
-                        ci.cancel();
-                    }
-                }
-            });
-        }
-    }
-
-    @Inject(method = "setAirSupply", at = @At("HEAD"), cancellable = true)
-    private void creraces$preventRefill(int air, CallbackInfo ci) {
-        if ((Object) this instanceof net.minecraft.world.entity.player.Player player
-                && !player.level().isClientSide()) {
-            // If the new air value is higher than current, it's a refill attempt
-            if (air > player.getAirSupply()) {
-                mc.sayda.creraces.capability.DataUtils.getVariables(player).ifPresent(vars -> {
-                    mc.sayda.creraces.race.Race race = mc.sayda.creraces.race.RaceRegistry.get(vars.getRace());
-                    if (race != null) {
-                        var passives = race.passives();
-                        if (passives != null && !passives.canBreatheOnLand()) {
-                            // Prevent refill if on land and not protected, EXCEPT if it's a reset to 0
-                            var waterBreathing = net.minecraft.world.effect.MobEffects.WATER_BREATHING;
-                            if (air != 0 && !player.isInWaterRainOrBubble()
-                                    && (waterBreathing == null || !player.hasEffect(waterBreathing))) {
-                                ci.cancel();
-                            }
-                        }
-                    }
-                });
-            }
+        if (swimming && (Object) this instanceof Player player
+                && creraces$hasPassive(player, Race.Passives::unaffectedByWater)) {
+            ci.cancel();
         }
     }
 
     /**
-     * Suppress fire-ticks for unaffectedByLava races - they cannot be set on fire
-     * by lava or fire blocks.
+     * Races that can't breathe on land get no air back out of water (unless under Water Breathing).
+     * Resetting air to 0 is still allowed.
      */
+    @Inject(method = "setAirSupply", at = @At("HEAD"), cancellable = true)
+    private void creraces$preventRefill(int air, CallbackInfo ci) {
+        if ((Object) this instanceof Player player && !player.level().isClientSide()
+                && air > player.getAirSupply() && air != 0
+                && !player.isInWaterRainOrBubble() && !player.hasEffect(MobEffects.WATER_BREATHING)
+                && creraces$hasPassive(player, passives -> !passives.canBreatheOnLand())) {
+            ci.cancel();
+        }
+    }
+
+    /** Lava-immune races can't be set on fire by lava or fire blocks. */
     @Inject(method = "setRemainingFireTicks", at = @At("HEAD"), cancellable = true)
     private void creraces$suppressFireFromLava(int fireTicks, CallbackInfo ci) {
-        if ((Object) this instanceof Player player && fireTicks > player.getRemainingFireTicks()) {
-            DataUtils.getVariables(player).ifPresent(vars -> {
-                Race race = RaceRegistry.get(vars.getRace());
-                if (race != null) {
-                    var passives = race.passives();
-                    if (passives != null && passives.unaffectedByLava()) {
-                        ci.cancel();
-                    }
-                }
-            });
+        if ((Object) this instanceof Player player && fireTicks > player.getRemainingFireTicks()
+                && creraces$hasPassive(player, Race.Passives::unaffectedByLava)) {
+            ci.cancel();
         }
     }
 
     @Inject(method = "isInvisible", at = @At("HEAD"), cancellable = true)
     private void creraces$trueInvisibilityFlag(CallbackInfoReturnable<Boolean> cir) {
-        if ((Object) this instanceof net.minecraft.world.entity.LivingEntity living) {
-            if (mc.sayda.creraces.registry.ModMobEffects.isInvisible(living)) {
-                cir.setReturnValue(true);
-            }
+        if ((Object) this instanceof LivingEntity living && ModMobEffects.isInvisible(living)) {
+            cir.setReturnValue(true);
         }
+    }
+
+    @Unique
+    private static boolean creraces$hasPassive(Player player, Predicate<Race.Passives> test) {
+        return DataUtils.getVariables(player)
+                .map(vars -> RaceRegistry.get(vars.getRace()))
+                .map(Race::passives)
+                .filter(test)
+                .isPresent();
     }
 }

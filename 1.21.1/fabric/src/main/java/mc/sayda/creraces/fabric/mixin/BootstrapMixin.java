@@ -11,9 +11,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class BootstrapMixin {
     @Inject(method = "bootStrap", at = @At("RETURN"))
     private static void creraces$bootStrap(CallbackInfo ci) {
-        // Ensure attributes are registered immediately after vanilla bootstrap.
-        // Registries are ready by this point, and it beats Player class loading.
-        // CreRaces.init() calls this too; DeferredRegister makes the repeat harmless.
+        // Register attributes as soon as vanilla bootstrap finishes, before any Player is created.
+        // CreRaces.init() calls this too; init() ignores the repeat.
         ModAttributes.init();
     }
 }

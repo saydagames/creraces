@@ -23,5 +23,4 @@ public class EssenceBottleItem extends Item {
         return Component.translatable("item.creraces.essence_bottle",
                 Component.translatable("essence.creraces." + essenceType.getSerializedName()));
     }
-
 }

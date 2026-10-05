@@ -1,19 +1,20 @@
 package mc.sayda.creraces.network;
 
+import dev.architectury.networking.NetworkManager;
+import dev.architectury.utils.Env;
+import dev.architectury.utils.EnvExecutor;
 import mc.sayda.creraces.CreRaces;
-import mc.sayda.creraces.ability.AbilityManager;
+import mc.sayda.creraces.client.ClientAccess;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
-/**
- * Syncs the entire AbilityRegistry (in JSON form) from server to client.
- */
+/** S2C: every ability definition, as JSON, so the client can mirror the server's AbilityRegistry. */
 public class SyncAbilitiesPacket {
     public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "sync_abilities");
+
     private final Map<ResourceLocation, String> abilityData;
 
     public SyncAbilitiesPacket(Map<ResourceLocation, String> abilityData) {
@@ -21,27 +22,15 @@ public class SyncAbilitiesPacket {
     }
 
     public SyncAbilitiesPacket(FriendlyByteBuf buf) {
-        this.abilityData = new HashMap<>();
-        int size = buf.readInt();
-        for (int i = 0; i < size; i++) {
-            this.abilityData.put(buf.readResourceLocation(), buf.readUtf(262144));
-        }
+        this.abilityData = JsonDefinitions.read(buf);
     }
 
     public void encode(FriendlyByteBuf buf) {
-        buf.writeInt(abilityData.size());
-        abilityData.forEach((id, json) -> {
-            buf.writeResourceLocation(id);
-            buf.writeUtf(json, 262144);
-        });
+        JsonDefinitions.write(buf, abilityData);
     }
 
-    public void handle(Supplier<dev.architectury.networking.NetworkManager.PacketContext> contextSupplier) {
+    public void handle(Supplier<NetworkManager.PacketContext> contextSupplier) {
         var context = contextSupplier.get();
-        context.queue(() -> {
-            dev.architectury.utils.EnvExecutor.runInEnv(dev.architectury.utils.Env.CLIENT, () -> () -> {
-                mc.sayda.creraces.client.ClientAccess.handleAbilitySync(this.abilityData);
-            });
-        });
+        context.queue(() -> EnvExecutor.runInEnv(Env.CLIENT, () -> () -> ClientAccess.handleAbilitySync(this.abilityData)));
     }
 }

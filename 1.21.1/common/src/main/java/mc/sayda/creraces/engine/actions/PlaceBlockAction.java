@@ -1,22 +1,34 @@
 package mc.sayda.creraces.engine.actions;
 
+import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.ability.AbilitySlot;
+import mc.sayda.creraces.block.RootBlock;
 import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.engine.ScalingValue;
+import mc.sayda.creraces.registry.ModGameRules;
 import mc.sayda.creraces.util.GsonHelper;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import mc.sayda.creraces.CreRaces;
-import mc.sayda.creraces.registry.ModGameRules;
-import net.minecraft.world.phys.AABB;
-import java.util.List;
-import java.util.ArrayList;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 
+import javax.annotation.Nullable;
+import java.util.List;
+
+/**
+ * Places a block at the resolved position (a raycast hit, the target, the interacted block or the
+ * caster), optionally writing block entity data and playing particle/sound feedback.
+ */
 public class PlaceBlockAction implements ActionRegistry.RaceAction {
     private final ResourceLocation block;
     private final boolean useTarget;
@@ -29,27 +41,15 @@ public class PlaceBlockAction implements ActionRegistry.RaceAction {
     private final boolean overwrite;
     private final boolean absolute;
     private final ScalingValue.MathOp coordinateMath;
-    private final List<DataModification> dataModifications;
+    private final List<BlockDataEdit> dataEdits;
     private final String particle;
     private final int particleCount;
     private final String sound;
 
-    private static class DataModification {
-        final String key;
-        final ScalingValue value;
-        final String mode;
-
-        DataModification(String key, ScalingValue value, String mode) {
-            this.key = key;
-            this.value = value;
-            this.mode = mode != null ? mode.toUpperCase() : "SET";
-        }
-    }
-
-    public PlaceBlockAction(ResourceLocation block, boolean useTarget, boolean useTargetBlock, boolean useRaycast,
+    private PlaceBlockAction(ResourceLocation block, boolean useTarget, boolean useTargetBlock, boolean useRaycast,
             ScalingValue rayRange, ScalingValue offsetX, ScalingValue offsetY, ScalingValue offsetZ,
-            boolean overwrite, boolean absolute, ScalingValue.MathOp coordinateMath,
-            List<DataModification> dataModifications, String particle, int particleCount, String sound) {
+            boolean overwrite, boolean absolute, ScalingValue.MathOp coordinateMath, List<BlockDataEdit> dataEdits,
+            String particle, int particleCount, String sound) {
         this.block = block;
         this.useTarget = useTarget;
         this.useTargetBlock = useTargetBlock;
@@ -60,8 +60,8 @@ public class PlaceBlockAction implements ActionRegistry.RaceAction {
         this.offsetZ = offsetZ;
         this.overwrite = overwrite;
         this.absolute = absolute;
-        this.coordinateMath = coordinateMath != null ? coordinateMath : ScalingValue.MathOp.FLOOR;
-        this.dataModifications = dataModifications;
+        this.coordinateMath = coordinateMath;
+        this.dataEdits = dataEdits;
         this.particle = particle;
         this.particleCount = particleCount;
         this.sound = sound;
@@ -69,192 +69,93 @@ public class PlaceBlockAction implements ActionRegistry.RaceAction {
 
     @SuppressWarnings("null")
     @Override
-    public boolean execute(Player player, @javax.annotation.Nullable LivingEntity target,
-            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
-
-        if (player == null || player.level() == null)
-            return false;
-
-        if (!player.level().getGameRules().getBoolean(ModGameRules.RULE_RACEGRIEFING)) {
-            player.displayClientMessage(
-                    net.minecraft.network.chat.Component.translatable("msg.creraces.race_griefing_disabled"), true);
+    public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
+            @Nullable BlockPos interactPos) {
+        Level level = player.level();
+        if (!level.getGameRules().getBoolean(ModGameRules.RULE_RACEGRIEFING)) {
+            player.displayClientMessage(Component.translatable("msg.creraces.race_griefing_disabled"), true);
             return false;
         }
 
-        BlockPos targetPos;
-        if (absolute) {
-            targetPos = BlockPos.ZERO;
-        } else if (useRaycast) {
-            double range = rayRange.evaluate(player, target, slot);
-            net.minecraft.world.phys.BlockHitResult hit = player.level().clip(new net.minecraft.world.level.ClipContext(
-                    player.getEyePosition(1f),
-                    player.getEyePosition(1f).add(player.getViewVector(1f).scale(range)),
-                    net.minecraft.world.level.ClipContext.Block.OUTLINE,
-                    net.minecraft.world.level.ClipContext.Fluid.NONE,
-                    player));
-            if (hit.getType() == net.minecraft.world.phys.HitResult.Type.MISS) return false;
-            targetPos = hit.getBlockPos().relative(hit.getDirection());
-        } else if (useTarget && target != null) {
-            targetPos = target.blockPosition();
-        } else if (useTargetBlock && interact_pos != null) {
-            targetPos = interact_pos;
-        } else {
-            double tx = player.getX();
-            double ty = player.getY();
-            double tz = player.getZ();
-
-            // Apply coordinate rounding mode
-            int x = (int) Math.floor(tx);
-            int y = (int) Math.floor(ty);
-            int z = (int) Math.floor(tz);
-
-            if (coordinateMath == ScalingValue.MathOp.ROUND) {
-                x = (int) Math.round(tx);
-                y = (int) Math.round(ty);
-                z = (int) Math.round(tz);
-            } else if (coordinateMath == ScalingValue.MathOp.CEIL) {
-                x = (int) Math.ceil(tx);
-                y = (int) Math.ceil(ty);
-                z = (int) Math.ceil(tz);
+        BlockPos anchor;
+        if (useRaycast && !absolute) {
+            BlockHitResult hit = BlockTargeting.raycast(level, player, rayRange.evaluate(player, target, slot));
+            if (hit.getType() == HitResult.Type.MISS) {
+                return false;
             }
-            targetPos = new BlockPos(x, y, z);
+            anchor = hit.getBlockPos().relative(hit.getDirection());
+        } else {
+            anchor = BlockTargeting.resolveAnchor(player, target, interactPos, absolute, useTarget, useTargetBlock,
+                    coordinateMath);
         }
+        BlockPos pos = anchor.offset(
+                (int) offsetX.evaluate(player, target, slot),
+                (int) offsetY.evaluate(player, target, slot),
+                (int) offsetZ.evaluate(player, target, slot));
 
-        int ox = (int) offsetX.evaluate(player, target, slot);
-        int oy = (int) offsetY.evaluate(player, target, slot);
-        int oz = (int) offsetZ.evaluate(player, target, slot);
-        BlockPos finalPos = targetPos.offset(ox, oy, oz);
-
-        net.minecraft.world.level.block.Block resolvedBlock = net.minecraft.core.registries.BuiltInRegistries.BLOCK
-                .get(block);
-
-        if (resolvedBlock == null) {
+        // The block registry falls back to air for unknown ids, so check the id itself.
+        if (!BuiltInRegistries.BLOCK.containsKey(block)) {
             CreRaces.LOGGER.error("PlaceBlockAction: block '{}' not found in registry", block);
             return false;
         }
+        Block resolvedBlock = BuiltInRegistries.BLOCK.get(block);
 
-        // If the block is already there and we're not overwriting, abort so the
-        // ability doesn't progress its state or consume costs when no change occurred.
-        if (!overwrite && player.level().getBlockState(finalPos).is(resolvedBlock)) {
+        BlockState existing = level.getBlockState(pos);
+        // Placing onto the same block is a no-op, so fail and let the ability skip its costs and state changes.
+        if (!overwrite && existing.is(resolvedBlock)) {
+            return false;
+        }
+        if (!canPlaceAt(level, pos, existing, player)) {
+            player.displayClientMessage(Component.translatable("msg.creraces.place_block_failed"), true);
+            return false;
+        }
+        // A territory root block can only be replaced by its owner (or in creative).
+        if (existing.getBlock() instanceof RootBlock && !player.isCreative() && !RootBlock.isOwner(player, pos)) {
             return false;
         }
 
-        // Check if block is replaceable
-        boolean canPlace = overwrite || player.level().getBlockState(finalPos).isAir()
-                || player.level().getBlockState(finalPos).canBeReplaced();
+        level.setBlockAndUpdate(pos, resolvedBlock.defaultBlockState());
 
-        // Check for entity obstruction (vanilla behavior)
-        if (canPlace && !overwrite) {
-            if (!player.level()
-                    .getEntitiesOfClass(net.minecraft.world.entity.Entity.class, new AABB(finalPos), e -> e != player)
-                    .isEmpty()) {
-                canPlace = false;
+        if (!dataEdits.isEmpty()) {
+            BlockEntity blockEntity = level.getBlockEntity(pos);
+            if (blockEntity != null
+                    && BlockDataEdit.applyAll(dataEdits, blockEntity, player, target, slot, interactPos)) {
+                BlockState placed = level.getBlockState(pos);
+                level.sendBlockUpdated(pos, placed, placed, Block.UPDATE_ALL);
             }
         }
 
-        if (canPlace) {
-            // Protection for RootBlock: only owner (or creative) can replace it.
-            net.minecraft.world.level.block.state.BlockState existingState = player.level().getBlockState(finalPos);
-            if (existingState.getBlock() instanceof mc.sayda.creraces.block.RootBlock) {
-                if (!player.isCreative() && !mc.sayda.creraces.block.RootBlock.isOwner(player, finalPos)) {
-                    return false;
-                }
-            }
-
-            player.level().setBlockAndUpdate(finalPos, resolvedBlock.defaultBlockState());
-
-            // Apply Data Modifications if BlockEntity exists
-            if (!dataModifications.isEmpty()) {
-                BlockEntity be = player.level().getBlockEntity(finalPos);
-                if (be != null) {
-                    CompoundTag tag = be.saveWithFullMetadata(player.level().registryAccess());
-                    boolean changed = false;
-                    for (DataModification mod : dataModifications) {
-                        // "owner" is a reserved key: auto-filled with the caster's UUID instead of evaluated normally.
-                        if ("owner".equalsIgnoreCase(mod.key)) {
-                            tag.putUUID("owner", player.getUUID());
-                            changed = true;
-                        } else if ("REMOVE".equals(mod.mode)) {
-                            if (tag.contains(mod.key)) {
-                                tag.remove(mod.key);
-                                changed = true;
-                            }
-                        } else {
-                            double val = mod.value.evaluate(player, target, slot, interact_pos);
-                            if (val == (long) val) {
-                                tag.putInt(mod.key, (int) val);
-                            } else {
-                                tag.putDouble(mod.key, val);
-                            }
-                            changed = true;
-                        }
-                    }
-                    if (changed) {
-                        be.loadWithComponents(tag, player.level().registryAccess());
-                        be.setChanged();
-                        player.level().sendBlockUpdated(finalPos, player.level().getBlockState(finalPos),
-                                player.level().getBlockState(finalPos), 3);
-                    }
-                }
-            }
-
-            // 4. Particles + 5. Sound (Resilient)
-            BlockActionEffects.spawnResilientEffects(player, finalPos, particle, sound, particleCount);
-            return true;
-        } else {
-            player.displayClientMessage(
-                    net.minecraft.network.chat.Component.translatable("msg.creraces.place_block_failed"), true);
-        }
-
-        return false;
+        BlockActionEffects.play(player, pos, particle, sound, particleCount);
+        return true;
     }
 
-    @SuppressWarnings("null")
+    /** Overwrite ignores everything; otherwise the spot must be replaceable and, like vanilla, free of entities. */
+    private boolean canPlaceAt(Level level, BlockPos pos, BlockState existing, Player player) {
+        if (overwrite) {
+            return true;
+        }
+        if (!existing.isAir() && !existing.canBeReplaced()) {
+            return false;
+        }
+        return level.getEntitiesOfClass(Entity.class, new AABB(pos), e -> e != player).isEmpty();
+    }
+
     public static void register() {
-        ActionRegistry.register(ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "place_block"), json -> {
-            String blockId = GsonHelper.getAsString(json, "block", "minecraft:air");
-            ResourceLocation block = ResourceLocation.parse(blockId);
-            boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
-            boolean useTargetBlock = GsonHelper.getAsBoolean(json, "use_target_block", false);
-            boolean useRaycast = GsonHelper.getAsBoolean(json, "use_raycast", false);
-            ScalingValue rayRange = ScalingValue.fromJson(json, "ray_range", 10.0);
-            ScalingValue offsetX = ScalingValue.fromJson(json, "offset_x", 0.0);
-            ScalingValue offsetY = ScalingValue.fromJson(json, "offset_y", 0.0);
-            ScalingValue offsetZ = ScalingValue.fromJson(json, "offset_z", 0.0);
-            boolean overwrite = GsonHelper.getAsBoolean(json, "overwrite", false);
-            boolean absolute = GsonHelper.getAsBoolean(json, "absolute", false);
-            String particle = GsonHelper.getAsString(json, "particle", "");
-            int particleCount = GsonHelper.getAsInt(json, "particle_count", 10);
-            String sound = GsonHelper.getAsString(json, "sound", "");
-
-            ScalingValue.MathOp coordinateMath = ScalingValue.MathOp.FLOOR;
-            if (json.has("math")) {
-                try {
-                    coordinateMath = ScalingValue.MathOp.valueOf(json.get("math").getAsString().toUpperCase());
-                } catch (Exception e) {
-                    CreRaces.LOGGER.warn("Invalid math mode in PlaceBlockAction: {}", json.get("math").getAsString());
-                }
-            }
-
-            List<DataModification> mods = new ArrayList<>();
-            if (json.has("data") && json.get("data").isJsonArray()) {
-                JsonArray arr = json.getAsJsonArray("data");
-                for (JsonElement el : arr) {
-                    if (el.isJsonObject()) {
-                        com.google.gson.JsonObject obj = el.getAsJsonObject();
-                        String key = GsonHelper.getAsString(obj, "key", "");
-                        ScalingValue val = ScalingValue.fromJson(obj, "value", 0.0);
-                        String mode = GsonHelper.getAsString(obj, "mode", "SET");
-                        if (!key.isEmpty()) {
-                            mods.add(new DataModification(key, val, mode));
-                        }
-                    }
-                }
-            }
-
-            return new PlaceBlockAction(block, useTarget, useTargetBlock, useRaycast, rayRange,
-                    offsetX, offsetY, offsetZ, overwrite, absolute, coordinateMath, mods, particle, particleCount, sound);
-        });
+        ActionRegistry.register(ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "place_block"), json -> new PlaceBlockAction(
+                ResourceLocation.parse(GsonHelper.getAsString(json, "block", "minecraft:air")),
+                GsonHelper.getAsBoolean(json, "use_target", false),
+                GsonHelper.getAsBoolean(json, "use_target_block", false),
+                GsonHelper.getAsBoolean(json, "use_raycast", false),
+                ScalingValue.fromJson(json, "ray_range", 10.0),
+                ScalingValue.fromJson(json, "offset_x", 0.0),
+                ScalingValue.fromJson(json, "offset_y", 0.0),
+                ScalingValue.fromJson(json, "offset_z", 0.0),
+                GsonHelper.getAsBoolean(json, "overwrite", false),
+                GsonHelper.getAsBoolean(json, "absolute", false),
+                BlockTargeting.parseMathOp(json, "PlaceBlockAction"),
+                BlockDataEdit.parseList(json),
+                GsonHelper.getAsString(json, "particle", ""),
+                GsonHelper.getAsInt(json, "particle_count", 10),
+                GsonHelper.getAsString(json, "sound", "")));
     }
 }

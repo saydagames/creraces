@@ -42,6 +42,10 @@ dependencies {
     modImplementation "org.ladysnake.cardinal-components-api:cardinal-components-base:6.1.0"
     modImplementation "org.ladysnake.cardinal-components-api:cardinal-components-entity:6.1.0"
     modImplementation "curse.maven:trinkets-341284:5534317"
+    // JourneyMap's Fabric build declares a Loom version this project's (outdated) Loom plugin
+    // refuses to process at configure time, so it is not pulled in here for local dev-testing the
+    // way it is on the NeoForge/Forge modules. The integration itself only needs the compile-time
+    // API dependency in common/build.gradle and works fully for any player with JourneyMap installed.
 }
 
 processResources {

@@ -26,6 +26,21 @@
         },
         {
             "type": "creraces:apply_effect",
+            "effect": "creraces:sun_resistance",
+            "amplifier": {
+                "base": 0
+            },
+            "duration": {
+                "base": 200
+            },
+            "radius": 10.0,
+            "targets": [
+                "allies",
+                "!self"
+            ]
+        },
+        {
+            "type": "creraces:apply_effect",
             "effect": "minecraft:speed",
             "amplifier": {
                 "base": 0
@@ -60,7 +75,3 @@
     ],
     "creraces:wiki_page": "Ability:Boost_Morale"
 }
-
-
-
-

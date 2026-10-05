@@ -8,12 +8,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 
-/**
- * Featherstorm - Harpy beneficial effect.
- * Granted to the player on hit.
- * Provides Attack Speed, Movement Speed, and Armor.
- * Spawns feather-like particles.
- */
+/** Harpy on-hit buff: attack speed, movement speed and armor, with a trail of cloud "feathers". */
 public class FeatherstormEffect extends MobEffect {
     public FeatherstormEffect() {
         super(MobEffectCategory.BENEFICIAL, 0xFFD700);
@@ -28,7 +23,6 @@ public class FeatherstormEffect extends MobEffect {
     @Override
     public void applyEffectTick(LivingEntity entity, int amplifier) {
         if (entity.level() instanceof ServerLevel level) {
-            // Spawn cloud/poof particles as representative of "feathers"
             level.sendParticles(ParticleTypes.CLOUD,
                     entity.getX(), entity.getY() + entity.getBbHeight() * 0.5, entity.getZ(),
                     2, 0.3, 0.5, 0.3, 0.02);
@@ -37,7 +31,6 @@ public class FeatherstormEffect extends MobEffect {
 
     @Override
     public boolean isDurationEffectTick(int duration, int amplifier) {
-        // Apply particles every tick
         return true;
     }
 }

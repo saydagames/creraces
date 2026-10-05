@@ -1,14 +1,17 @@
 package mc.sayda.creraces.network;
 
+import dev.architectury.networking.NetworkManager;
+import dev.architectury.utils.Env;
+import dev.architectury.utils.EnvExecutor;
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.util.DocCache;
+import mc.sayda.creraces.util.RemoteDocFetcher;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.function.Supplier;
 
-/**
- * Packet to clear remote documentation cache on the client.
- */
+/** S2C: drops the client's cached wiki docs, sent after a data reload. */
 public class ClearRemoteCachePacket {
     public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "clear_remote_cache");
 
@@ -21,12 +24,12 @@ public class ClearRemoteCachePacket {
     public void encode(FriendlyByteBuf buf) {
     }
 
-    public void handle(Supplier<dev.architectury.networking.NetworkManager.PacketContext> contextSupplier) {
+    public void handle(Supplier<NetworkManager.PacketContext> contextSupplier) {
         var context = contextSupplier.get();
         context.queue(() -> {
-            dev.architectury.utils.EnvExecutor.runInEnv(dev.architectury.utils.Env.CLIENT, () -> () -> {
-                mc.sayda.creraces.util.DocCache.clear();
-                mc.sayda.creraces.util.RemoteDocFetcher.clearCache();
+            EnvExecutor.runInEnv(Env.CLIENT, () -> () -> {
+                DocCache.clear();
+                RemoteDocFetcher.clearCache();
             });
         });
     }

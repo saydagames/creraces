@@ -3,58 +3,41 @@ package mc.sayda.creraces.util;
 import mc.sayda.creraces.config.CreRacesConfig;
 import net.minecraft.network.chat.Component;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 public class WikiUtils {
     public static String getAbilityUrl(Component name) {
         String nameStr = name.getString().replace(" ", "_");
-        String path = CreRacesConfig.WIKI_PAGE_PATH.get();
+        String path = withTrailingSlash(CreRacesConfig.WIKI_PAGE_PATH.get());
         String namespace = CreRacesConfig.WIKI_ABILITY_NAMESPACE.get();
 
-        // Ensure proper capitalization for wiki links
+        // Wiki page titles start with a capital letter.
         if (!nameStr.isEmpty() && Character.isLowerCase(nameStr.charAt(0))) {
             nameStr = Character.toUpperCase(nameStr.charAt(0)) + nameStr.substring(1);
         }
 
-        String baseUrl = getBaseWikiUrl();
-        if (!baseUrl.endsWith("/"))
-            baseUrl += "/";
-        if (!path.endsWith("/"))
-            path += "/";
-
-        return baseUrl + path + namespace + ":" + nameStr;
+        return getBaseWikiUrl() + path + namespace + ":" + nameStr;
     }
 
     public static String getRaceUrl(Component name) {
         String nameStr = name.getString().replace(" ", "_");
-        String path = CreRacesConfig.WIKI_PAGE_PATH.get();
-        if (!path.endsWith("/"))
-            path += "/";
+        String path = withTrailingSlash(CreRacesConfig.WIKI_PAGE_PATH.get());
         return getBaseWikiUrl() + path + nameStr;
     }
 
     public static String getBaseWikiUrl() {
-        String url = CreRacesConfig.WIKI_BASE_URL.get();
-        if (!url.endsWith("/"))
-            url += "/";
-        return url;
+        return withTrailingSlash(CreRacesConfig.WIKI_BASE_URL.get());
     }
 
     public static String getWikiApiUrl(String pageName) {
-        try {
-            String encodedPage = java.net.URLEncoder.encode(pageName, java.nio.charset.StandardCharsets.UTF_8.toString());
-            encodedPage = encodedPage.replace("+", "%20");
+        String encodedPage = URLEncoder.encode(pageName, StandardCharsets.UTF_8).replace("+", "%20");
+        String apiBase = withTrailingSlash(CreRacesConfig.WIKI_API_BASE.get());
+        return apiBase + "api.php"
+                + "?action=parse&format=json&prop=wikitext&redirects=true&page=" + encodedPage;
+    }
 
-            String apiBase = CreRacesConfig.WIKI_API_BASE.get();
-            if (!apiBase.endsWith("/"))
-                apiBase += "/";
-
-            return apiBase + "api.php"
-                    + "?action=parse&format=json&prop=wikitext&redirects=true&page=" + encodedPage;
-        } catch (java.io.UnsupportedEncodingException e) {
-            String apiBase = CreRacesConfig.WIKI_API_BASE.get();
-            if (!apiBase.endsWith("/"))
-                apiBase += "/";
-            return apiBase + "api.php"
-                    + "?action=parse&format=json&prop=wikitext&page=" + pageName.replace(" ", "%20");
-        }
+    private static String withTrailingSlash(String url) {
+        return url.endsWith("/") ? url : url + "/";
     }
 }

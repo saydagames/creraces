@@ -9,42 +9,25 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
-
 import org.joml.Vector3f;
 
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Client-side renderer for the casting beam.
+ * Draws the casting beam for every player with an active one.
  *
- * <h3>Why this approach works</h3>
- * <p>
- * When {@code Tesselator.end()} is called, it internally triggers
- * {@code ShaderInstance.apply()}, which reads
- * {@code RenderSystem.getModelViewMatrix()}
- * (NOT any values we manually set on the Uniform object) and uploads them to
- * the GPU.
- * Therefore we must push our desired camera-rotation matrix onto
- * {@code RenderSystem.getModelViewStack()} BEFORE ending the batch so that
- * {@code apply()} reads the correct world-to-view matrix.
- *
- * <p>
- * Vertices are provided in camera-relative world space (world_pos - cam_pos).
- * The camera rotation (world→view) is provided via the ModelViewStack. The
- * projectionMatrix from renderLevel is set via
- * {@code RenderSystem.setProjectionMatrix()}.
+ * <p>When the batch is drawn, ShaderInstance.apply() uploads RenderSystem's model-view matrix,
+ * not anything set on the uniform directly, so the camera rotation has to be pushed onto
+ * RenderSystem's model-view stack before drawing. Vertices are emitted relative to the camera
+ * position, and renderLevel's projection matrix is installed for the duration.
  */
 public class BeamRenderer {
 
     private static final ResourceLocation BEAM_TEXTURE = new ResourceLocation(
             "minecraft", "textures/entity/beacon_beam.png");
     private static final Map<UUID, BeamData> ACTIVE_BEAMS = new ConcurrentHashMap<>();
-
-    // -------------------------------------------------------------------------
-    // Public API
-    // -------------------------------------------------------------------------
 
     public static void handleSync(UUID playerId, boolean active,
             float r, float g, float b, float a, float radius, float length) {
@@ -60,15 +43,11 @@ public class BeamRenderer {
     }
 
     /**
-     * Render all active beams. Called from LevelRendererMixin at TAIL of
-     * renderLevel.
+     * Called from LevelRendererMixin at the TAIL of renderLevel.
      *
-     * @param poseStack        PoseStack at renderLevel TAIL - top matrix = camera
-     *                         rotation (world→view)
-     * @param projectionMatrix the projection matrix from renderLevel
-     * @param partialTick      interpolation factor [0,1]
-     * @param gameTime         game tick (for UV scroll animation)
-     * @param mc               Minecraft instance
+     * @param poseStack        its top matrix is the world-to-view camera rotation
+     * @param projectionMatrix renderLevel's projection matrix
+     * @param gameTime         level game time in ticks, drives the texture scroll
      */
     public static void render(PoseStack poseStack, Matrix4f projectionMatrix,
             float partialTick, long gameTime, Minecraft mc) {
@@ -77,14 +56,7 @@ public class BeamRenderer {
 
         Vec3 cam = mc.gameRenderer.getMainCamera().getPosition();
 
-        // poseStack.last().pose() = world-to-view rotation (confirmed by debug
-        // analysis).
-        // We push this onto the RenderSystem ModelViewStack so that
-        // ShaderInstance.apply()
-        // reads the correct matrix when tess.end() is called.
         Matrix4f cameraRotation = new Matrix4f(poseStack.last().pose());
-
-        // Back up and configure the RenderSystem matrices
         Matrix4f savedProj = new Matrix4f(RenderSystem.getProjectionMatrix());
         RenderSystem.setProjectionMatrix(projectionMatrix, null);
 
@@ -92,7 +64,6 @@ public class BeamRenderer {
         mvs.pushPose();
         mvs.last().pose().set(cameraRotation); // World-to-view camera rotation
         RenderSystem.applyModelViewMatrix();
-
         try {
             for (Map.Entry<UUID, BeamData> entry : ACTIVE_BEAMS.entrySet()) {
                 Player player = mc.level.getPlayerByUUID(entry.getKey());
@@ -101,20 +72,14 @@ public class BeamRenderer {
                 renderBeam(player, entry.getValue(), cam, partialTick, gameTime);
             }
         } finally {
-            // Always restore matrices
             mvs.popPose();
             RenderSystem.applyModelViewMatrix();
             RenderSystem.setProjectionMatrix(savedProj, null);
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Core rendering
-    // -------------------------------------------------------------------------
-
     private static void renderBeam(Player player, BeamData data, Vec3 cam,
             float partialTick, long gameTime) {
-
         // Beam axis: look direction, starting just in front of the eye
         Vec3 look = player.getViewVector(partialTick);
         Vec3 eye = player.getEyePosition(partialTick);
@@ -131,9 +96,9 @@ public class BeamRenderer {
 
         float innerR = data.radius * 0.1f;
         float outerR = data.radius * 0.2f;
+        // Beacon beam scroll. Wrapping at 40 ticks keeps the float small and is seamless, as 40 * 0.2 is whole.
         float anim = Mth.frac(-((float) Math.floorMod(gameTime, 40L) + partialTick) * 0.2f);
 
-        // GL state
         RenderSystem.disableDepthTest();
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
@@ -156,19 +121,15 @@ public class BeamRenderer {
                 data.r, data.g, data.b, data.a * 0.35f, anim, anim + data.length, cam);
         tess.end();
 
-        // Restore
         RenderSystem.enableDepthTest();
         RenderSystem.enableCull();
         RenderSystem.disableBlend();
     }
 
     /**
-     * Emits a 4-sided square tube between {@code start} and {@code end}.
-     *
-     * <p>
-     * Corners use all four diagonal combinations of {@code ±right ± up},
-     * forming a proper square (not diamond) cross-section.
-     * Vertices are in camera-relative world space (pos − cam).
+     * Emits a four-sided tube between {@code start} and {@code end}. The corners are the four
+     * diagonal combinations of right and up, so the cross-section is a square rather than a
+     * diamond. Vertices are relative to the camera position.
      */
     private static void emitSquareTube(
             BufferBuilder buf,
@@ -179,7 +140,6 @@ public class BeamRenderer {
             float vStart, float vEnd,
             Vec3 cam) {
 
-        // Four square corners: (±right ± up) × radius
         float[] rx = { 1, 1, -1, -1 };
         float[] ry = { 1, -1, -1, 1 };
 

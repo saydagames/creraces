@@ -2,7 +2,7 @@
     "creraces:name": "ability.creraces.troll_pillar.name",
     "creraces:description": "ability.creraces.troll_pillar.description",
     "creraces:type": "ACTIVE",
-    "creraces:icon": "minecraft:textures/item/stone.png",
+    "creraces:icon": "creraces:textures/icons/stone_pillar.png",
     "creraces:cooldown": 320,
     "creraces:cost": 30,
     "creraces:race": [
@@ -31,7 +31,3 @@
     ],
     "creraces:wiki_page": "Ability:Troll_Pillar"
 }
-
-
-
-

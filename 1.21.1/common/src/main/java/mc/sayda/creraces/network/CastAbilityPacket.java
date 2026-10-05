@@ -2,17 +2,18 @@ package mc.sayda.creraces.network;
 
 import dev.architectury.networking.NetworkManager;
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.ability.AbilityIncidents;
 import mc.sayda.creraces.ability.AbilitySlot;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 
 import java.util.function.Supplier;
 
-/**
- * Packet sent from client to server to trigger an ability cast.
- */
+/** C2S: casts whatever ability is equipped in a slot. */
 public class CastAbilityPacket {
     public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "cast_ability");
+
     private final AbilitySlot slot;
 
     public CastAbilityPacket(AbilitySlot slot) {
@@ -30,8 +31,8 @@ public class CastAbilityPacket {
     public void handle(Supplier<NetworkManager.PacketContext> contextSupplier) {
         NetworkManager.PacketContext context = contextSupplier.get();
         context.queue(() -> {
-            if (context.getPlayer() instanceof net.minecraft.server.level.ServerPlayer sp) {
-                mc.sayda.creraces.ability.AbilityIncidents.tryCast(sp, slot);
+            if (context.getPlayer() instanceof ServerPlayer sp) {
+                AbilityIncidents.tryCast(sp, slot);
             }
         });
     }

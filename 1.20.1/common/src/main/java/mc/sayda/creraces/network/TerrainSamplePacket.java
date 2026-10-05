@@ -1,6 +1,10 @@
 package mc.sayda.creraces.network;
 
+import dev.architectury.networking.NetworkManager;
+import dev.architectury.utils.Env;
+import dev.architectury.utils.EnvExecutor;
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.client.screen.TerritoryMapScreen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
@@ -12,13 +16,9 @@ import net.minecraft.world.level.material.MapColor;
 import java.util.function.Supplier;
 
 /**
- * S2C: per-chunk terrain color snapshot centered on the player.
- *
- * Resolution: SUB×SUB sub-samples per chunk, each stored as a packed MapColor
- * byte (same encoding as MapItemSavedData). 0 = no data (chunk unloaded, or no surface material found nearby).
- *
- * Client renders each sub-sample as a (CELL/SUB)×(CELL/SUB) pixel block, giving
- * proper terrain detail inside each chunk cell.
+ * S2C: per-chunk terrain colours centered on the player, for the territory map background.
+ * Each chunk carries SUB x SUB samples stored as packed MapColor bytes (the same encoding
+ * MapItemSavedData uses); 0 means no data, either an unloaded chunk or no surface found.
  */
 @SuppressWarnings("null")
 public class TerrainSamplePacket {
@@ -28,13 +28,13 @@ public class TerrainSamplePacket {
     public static final int SUB  = 5;
     public static final int SUB2 = SUB * SUB; // 25 bytes per chunk
 
-    public static final int RADIUS = 64; // chunks; gives 129×129×25 ≈ 406KB (one-shot)
+    public static final int RADIUS = 64; // chunks; gives 129x129x25 = ~406KB (one-shot)
 
     public final int originCX, originCZ;
     public final int width, height;
     /**
      * Layout: [(rz * width + rx) * SUB2 + sy * SUB + sx]
-     * 0 = no data → client leaves parchment fallback for that sub-cell.
+     * 0 = no data, so the client leaves its parchment fallback for that sub-cell.
      */
     public final byte[] colors;
 
@@ -67,13 +67,11 @@ public class TerrainSamplePacket {
         buf.writeBytes(colors);
     }
 
-    // ── Server-side factory ───────────────────────────────────────────────────
-
     public static TerrainSamplePacket buildFor(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
         int pcx = player.chunkPosition().x;
         int pcz = player.chunkPosition().z;
-        int w = RADIUS * 2 + 1; // 129
+        int w = RADIUS * 2 + 1;
         byte[] colors = new byte[w * w * SUB2];
 
         for (int rz = 0; rz < w; rz++) {
@@ -103,7 +101,7 @@ public class TerrainSamplePacket {
             int byC = level.getHeight(Heightmap.Types.WORLD_SURFACE, bx, bz);
             int byN = level.getHeight(Heightmap.Types.WORLD_SURFACE, bx, bz - 1);
 
-            // Walk down from surface to find a non-NONE MapColor
+            // Walk down from the surface to the first block with a map colour
             MapColor color = MapColor.NONE;
             for (int dy = 0; dy <= 5; dy++) {
                 int y = byC - 1 - dy;
@@ -122,23 +120,18 @@ public class TerrainSamplePacket {
 
             return color.getPackedId(brightness);
         } catch (Exception e) {
+            // One unreadable column only costs a blank map pixel; don't fail the whole snapshot
             return 0;
         }
     }
 
-    // ── Client-side color conversion ──────────────────────────────────────────
-
-    /** Packed byte → fully-opaque ARGB. Returns 0 for byte value 0 (no data). */
+    /** Packed byte to fully-opaque ARGB. Returns 0 for byte value 0 (no data). */
     public static int packedToArgb(byte packed) {
         return MapColor.getColorFromPackedId(packed & 0xFF);
     }
 
-    // ── Packet handler ────────────────────────────────────────────────────────
-
-    public void handle(Supplier<dev.architectury.networking.NetworkManager.PacketContext> contextSupplier) {
+    public void handle(Supplier<NetworkManager.PacketContext> contextSupplier) {
         var context = contextSupplier.get();
-        context.queue(() ->
-                dev.architectury.utils.EnvExecutor.runInEnv(dev.architectury.utils.Env.CLIENT, () -> () ->
-                        mc.sayda.creraces.client.screen.TerritoryMapScreen.updateTerrain(this)));
+        context.queue(() -> EnvExecutor.runInEnv(Env.CLIENT, () -> () -> TerritoryMapScreen.updateTerrain(this)));
     }
 }

@@ -9,6 +9,7 @@ import net.minecraft.client.particle.TextureSheetParticle;
 import net.minecraft.core.particles.SimpleParticleType;
 
 public class VeilMistParticle extends TextureSheetParticle {
+    private static final float PEAK_ALPHA = 0.55f;
 
     protected VeilMistParticle(ClientLevel level, double x, double y, double z, SpriteSet spriteSet) {
         super(level, x, y, z);
@@ -39,8 +40,8 @@ public class VeilMistParticle extends TextureSheetParticle {
         this.move(this.xd, this.yd, this.zd);
         float progress = (float) this.age / this.lifetime;
         this.alpha = progress < 0.15f
-                ? progress / 0.15f * 0.55f
-                : (progress > 0.7f ? (1.0f - progress) / 0.3f * 0.55f : 0.55f);
+                ? progress / 0.15f * PEAK_ALPHA
+                : (progress > 0.7f ? (1.0f - progress) / 0.3f * PEAK_ALPHA : PEAK_ALPHA);
     }
 
     public static class Provider implements ParticleProvider<SimpleParticleType> {

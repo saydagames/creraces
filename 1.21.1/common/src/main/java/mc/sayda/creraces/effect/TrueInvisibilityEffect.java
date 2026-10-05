@@ -1,9 +1,21 @@
 package mc.sayda.creraces.effect;
 
+import mc.sayda.creraces.capability.DataUtils;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 
+import javax.annotation.Nonnull;
+
+/**
+ * Full invisibility (hidden model and name tag, zero mob detection; see ModMobEffects.isInvisible).
+ * Players pay for it with mana every tick and drop out of it when they run dry.
+ */
 public class TrueInvisibilityEffect extends MobEffect {
+    private static final double MANA_PER_TICK = 2.0;
+
     public TrueInvisibilityEffect(MobEffectCategory category, int color) {
         super(category, color);
     }
@@ -14,21 +26,18 @@ public class TrueInvisibilityEffect extends MobEffect {
     }
 
     @Override
-    public boolean applyEffectTick(@javax.annotation.Nonnull net.minecraft.world.entity.LivingEntity entity, int amplifier) {
-        if (entity.level().isClientSide() || !(entity instanceof net.minecraft.world.entity.player.Player player)) return true;
+    public boolean applyEffectTick(@Nonnull LivingEntity entity, int amplifier) {
+        if (entity.level().isClientSide() || !(entity instanceof Player player)) return true;
 
-        mc.sayda.creraces.capability.DataUtils.getVariables(player).ifPresent(vars -> {
-            // Drains mana so this isn't a free permanent buff.
-            double drain = 2.0;
-            double current = vars.getMana();
-
-            if (current < drain) {
-                // wrapAsHolder resolves to whichever concrete effect "this" actually is
-                // (TrueInvisibilityEffect or a subclass like CamouflageEffect).
+        DataUtils.getVariables(player).ifPresent(vars -> {
+            double mana = vars.getMana();
+            if (mana < MANA_PER_TICK) {
+                // wrapAsHolder resolves to whichever effect this instance is registered as
+                // (true invisibility, or camouflage for the subclass).
                 player.removeEffect(entity.level().registryAccess()
-                        .registryOrThrow(net.minecraft.core.registries.Registries.MOB_EFFECT).wrapAsHolder(this));
+                        .registryOrThrow(Registries.MOB_EFFECT).wrapAsHolder(this));
             } else {
-                vars.setMana(current - drain);
+                vars.setMana(mana - MANA_PER_TICK);
             }
         });
         return true;

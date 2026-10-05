@@ -17,7 +17,6 @@
         "LivingEntitySleepMixin",
         "PlayerRespawnMixin",
         "BlockEntityAccessor",
-        "LivingEntityAccessor",
         "PoiTypesAccessor",
         "StructureTemplatePoolAccessor",
         "PackRepositoryMixin",
@@ -25,8 +24,10 @@
         "BlockEntityTypeAccessor",
         "AxeItemAccessor",
         "WoodTypeAccessor",
+        "TreeDecoratorTypeAccessor",
         "SpawnPlacementsAccessor",
-        "LakeFeatureMixin"
+        "LakeFeatureMixin",
+        "FireBlockAccessor"
     ],
     "client": [
         "LivingEntityRendererMixin",

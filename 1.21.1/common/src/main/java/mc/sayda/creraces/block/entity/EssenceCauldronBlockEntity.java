@@ -8,6 +8,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -31,7 +32,7 @@ public class EssenceCauldronBlockEntity extends BlockEntity {
         this.essenceType = type;
         setChanged();
         if (level != null && !level.isClientSide()) {
-            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_ALL);
         }
     }
 
@@ -49,16 +50,17 @@ public class EssenceCauldronBlockEntity extends BlockEntity {
         if (tag.contains("essence")) {
             try {
                 essenceType = EssenceType.byId(tag.getString("essence"));
-            } catch (IllegalArgumentException ignored) {
+            } catch (IllegalArgumentException unknownId) {
+                // An essence type that no longer exists: fall back to plain water
                 essenceType = null;
             }
         } else {
             essenceType = null;
         }
-        // When the client receives a block entity data packet, vanilla calls loadAdditional() directly.
-        // Force a chunk section re-render so the color handler picks up the new essence type.
+        // Client-side this runs for block entity data packets too; force a chunk section re-render so
+        // the color handler picks up the new essence type.
         if (level != null && level.isClientSide() && level.isLoaded(worldPosition)) {
-            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_ALL);
         }
     }
 

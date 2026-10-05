@@ -54,7 +54,8 @@ public class FairySourceRecipe implements Recipe<SingleRecipeInput> {
 
     /**
      * Produces the output stack for the given input item entity.
-     * Multiplies result count by the input count so the whole pile converts at once.
+     * Multiplies result count by the input count so the whole pile converts at once, which can
+     * go past the max stack size.
      */
     public ItemStack craft(ItemStack input) {
         ItemStack out = result.copy();
@@ -62,7 +63,8 @@ public class FairySourceRecipe implements Recipe<SingleRecipeInput> {
         return out;
     }
 
-    // ── Recipe<SingleRecipeInput> contract (not used; no inventory, entity-driven) ──
+    // Recipe contract. FairySourceBlock matches and converts item entities itself; these exist for
+    // the recipe manager and recipe viewers.
 
     @Override public boolean matches(@Nonnull SingleRecipeInput input, @Nonnull Level level) {
         return ingredient.test(input.item());

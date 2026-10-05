@@ -1,38 +1,54 @@
 package mc.sayda.creraces.client;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
 import dev.architectury.utils.Env;
 import dev.architectury.utils.EnvExecutor;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.entity.player.Player;
+import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.ability.AbilityManager;
+import mc.sayda.creraces.ability.AbilityRegistry;
+import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.quest.QuestManager;
+import mc.sayda.creraces.race.RaceManager;
+import mc.sayda.creraces.race.RaceRegistry;
+import mc.sayda.creraces.util.IPersistentDataAccessor;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 public class ClientAccess {
-    public static net.minecraft.world.entity.player.Player lastSyncedPlayer = null;
+    public static Player lastSyncedPlayer = null;
+    /** A race pick is waiting for the server sync that confirms it; see CreRacesClient.enforceRaceSelection. */
     public static boolean isWaitingForRaceSelection = false;
 
     public static Level getLevel() {
-        return EnvExecutor.getEnvSpecific(() -> () -> net.minecraft.client.Minecraft.getInstance().level,
-                () -> () -> null);
+        return EnvExecutor.getEnvSpecific(() -> () -> Minecraft.getInstance().level, () -> () -> null);
     }
 
     public static void setScreen(Screen screen) {
-        EnvExecutor.runInEnv(Env.CLIENT, () -> () -> net.minecraft.client.Minecraft.getInstance().setScreen(screen));
+        EnvExecutor.runInEnv(Env.CLIENT, () -> () -> Minecraft.getInstance().setScreen(screen));
     }
 
     public static Player getPlayer() {
-        return EnvExecutor.getEnvSpecific(() -> () -> net.minecraft.client.Minecraft.getInstance().player,
-                () -> () -> null);
+        return EnvExecutor.getEnvSpecific(() -> () -> Minecraft.getInstance().player, () -> () -> null);
     }
 
     public static void displayItemActivation(ItemStack stack) {
-        EnvExecutor.runInEnv(Env.CLIENT,
-                () -> () -> net.minecraft.client.Minecraft.getInstance().gameRenderer.displayItemActivation(stack));
+        EnvExecutor.runInEnv(Env.CLIENT, () -> () -> Minecraft.getInstance().gameRenderer.displayItemActivation(stack));
     }
 
-    public static void handleSyncIncident(java.util.UUID playerId, net.minecraft.nbt.CompoundTag data) {
-        net.minecraft.world.entity.player.Player target = null;
-        net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
+    public static void handleSyncIncident(UUID playerId, CompoundTag data) {
+        Minecraft minecraft = Minecraft.getInstance();
+        Player target = null;
         if (minecraft.player != null && minecraft.player.getUUID().equals(playerId)) {
             target = minecraft.player;
         } else if (minecraft.level != null) {
@@ -40,25 +56,24 @@ public class ClientAccess {
         }
 
         if (target == null) {
-            mc.sayda.creraces.CreRaces.LOGGER.warn("ClientAccess: Could not find target player {} for sync", playerId);
+            CreRaces.LOGGER.warn("ClientAccess: Could not find target player {} for sync", playerId);
             return;
         }
 
-        final net.minecraft.world.entity.player.Player finalTarget = target;
-        mc.sayda.creraces.capability.DataUtils.getVariables(finalTarget).ifPresent(vars -> {
+        final Player finalTarget = target;
+        DataUtils.getVariables(finalTarget).ifPresent(vars -> {
             boolean oldSmallBuild = vars.isSmallBuild();
             vars.deserialize(data);
             if (vars.isSmallBuild() != oldSmallBuild) {
-                mc.sayda.creraces.CreRaces.LOGGER.info("ClientAccess: smallBuild for {} changed from {} to {}",
+                CreRaces.LOGGER.info("ClientAccess: smallBuild for {} changed from {} to {}",
                         finalTarget.getName().getString(), oldSmallBuild, vars.isSmallBuild());
             }
-            // We skip client-side application here.
-            // Authority resides on the server, which sends SyncAddonsPacket.
-            // Local player preview is handled by screens (DynamicMirrorScreen) separately.
+            // Addons are not applied here: the server stays authoritative and sends SyncAddonsPacket
+            // itself, and the local preview is handled by the screens that show it.
 
-            // Sync persistent data tag directly to the Entity for client-side tag checks
+            // Mirror the persistent data tag onto the entity so client-side tag checks can read it
             if (data.contains("creraces:persistent_data")
-                    && finalTarget instanceof mc.sayda.creraces.util.IPersistentDataAccessor accessor) {
+                    && finalTarget instanceof IPersistentDataAccessor accessor) {
                 accessor.creraces$getPersistentData().merge(data.getCompound("creraces:persistent_data"));
             }
 
@@ -71,52 +86,35 @@ public class ClientAccess {
         });
     }
 
-    public static void handleRaceSync(java.util.Map<net.minecraft.resources.ResourceLocation, String> raceData) {
-        mc.sayda.creraces.race.RaceRegistry.clear();
-        java.util.Map<net.minecraft.resources.ResourceLocation, com.google.gson.JsonElement> data = new java.util.HashMap<>();
-
-        raceData.forEach((id, json) -> {
-            try {
-                data.put(id, com.google.gson.JsonParser.parseString(json));
-            } catch (Exception e) {
-                mc.sayda.creraces.CreRaces.LOGGER.error("Failed to parse synced race {}: {}", id, e.getMessage());
-            }
-        });
-
-        mc.sayda.creraces.race.RaceManager.syncFromServer(data);
-        mc.sayda.creraces.CreRaces.LOGGER.info("Synced {} races from server.", raceData.size());
-
-        // Server will send SyncAddonsPacket for the new race
+    public static void handleRaceSync(Map<ResourceLocation, String> raceData) {
+        RaceRegistry.clear();
+        RaceManager.syncFromServer(parseSyncedJson(raceData, "race"));
+        CreRaces.LOGGER.info("Synced {} races from server.", raceData.size());
+        // The server follows up with SyncAddonsPacket for the new race
     }
 
-    public static void handleQuestSync(java.util.Map<net.minecraft.resources.ResourceLocation, String> questData) {
-        java.util.Map<net.minecraft.resources.ResourceLocation, com.google.gson.JsonElement> data = new java.util.HashMap<>();
-
-        questData.forEach((id, json) -> {
-            try {
-                data.put(id, com.google.gson.JsonParser.parseString(json));
-            } catch (Exception e) {
-                mc.sayda.creraces.CreRaces.LOGGER.error("Failed to parse synced quest {}: {}", id, e.getMessage());
-            }
-        });
-
-        mc.sayda.creraces.quest.QuestManager.syncFromServer(data);
-        mc.sayda.creraces.CreRaces.LOGGER.info("Synced {} quests from server.", questData.size());
+    public static void handleQuestSync(Map<ResourceLocation, String> questData) {
+        QuestManager.syncFromServer(parseSyncedJson(questData, "quest"));
+        CreRaces.LOGGER.info("Synced {} quests from server.", questData.size());
     }
 
-    public static void handleAbilitySync(java.util.Map<net.minecraft.resources.ResourceLocation, String> abilityData) {
-        java.util.Map<net.minecraft.resources.ResourceLocation, com.google.gson.JsonElement> data = new java.util.HashMap<>();
+    public static void handleAbilitySync(Map<ResourceLocation, String> abilityData) {
+        Map<ResourceLocation, JsonElement> parsed = parseSyncedJson(abilityData, "ability");
+        AbilityRegistry.clear();
+        AbilityManager.syncFromServer(parsed);
+        CreRaces.LOGGER.info("Synced {} abilities from server.", abilityData.size());
+    }
 
-        abilityData.forEach((id, json) -> {
+    /** Parses each synced JSON string, logging and skipping any entry that fails to parse. */
+    private static Map<ResourceLocation, JsonElement> parseSyncedJson(Map<ResourceLocation, String> raw, String kind) {
+        Map<ResourceLocation, JsonElement> parsed = new HashMap<>();
+        raw.forEach((id, json) -> {
             try {
-                data.put(id, com.google.gson.JsonParser.parseString(json));
-            } catch (Exception e) {
-                mc.sayda.creraces.CreRaces.LOGGER.error("Failed to parse synced ability {}: {}", id, e.getMessage());
+                parsed.put(id, JsonParser.parseString(json));
+            } catch (JsonParseException e) {
+                CreRaces.LOGGER.error("Failed to parse synced {} {}: {}", kind, id, e.getMessage());
             }
         });
-
-        mc.sayda.creraces.ability.AbilityRegistry.clear();
-        mc.sayda.creraces.ability.AbilityManager.syncFromServer(data);
-        mc.sayda.creraces.CreRaces.LOGGER.info("Synced {} abilities from server.", abilityData.size());
+        return parsed;
     }
 }

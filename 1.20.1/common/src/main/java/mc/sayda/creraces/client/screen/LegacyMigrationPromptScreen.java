@@ -9,21 +9,22 @@ import javax.annotation.Nonnull;
 import java.util.function.IntConsumer;
 
 /**
- * Shown once, on the local (singleplayer) client only, when a CreRaces Classic world is detected.
- * Constructed and dismissed entirely by LegacyWorldLoadGate, BEFORE the world/integrated server
- * starts loading at all, never while anything is blocked waiting on it. An earlier version of
- * this feature tried to block the integrated server's startup thread on this screen's answer;
- * that raced vanilla's own level-loading screen for control of the display and tripped Forge's
- * server watchdog, crashing the game. Answering here now simply decides whether
- * WorldOpenFlows.loadLevel proceeds at all, nothing is ever blocked.
+ * Asks what to do with a CreRaces Classic world before singleplayer loads it. LegacyWorldLoadGate
+ * opens it before WorldOpenFlows.loadLevel runs, so the answer only decides whether loading goes
+ * ahead; nothing waits on this screen, which keeps it clear of the integrated server's startup.
  */
+@SuppressWarnings("null")
 public class LegacyMigrationPromptScreen extends Screen {
     private static final int CONTENT_WIDTH = 340;
-    private static final int BUTTON_WIDTH = 340;
     private static final int BUTTON_HEIGHT = 20;
+    private static final int OPTION_COUNT = 3;
+    private static final int TITLE_GAP = 8;
+    private static final int SECTION_GAP = 14;
+    private static final int BUTTON_TO_DESCRIPTION_GAP = 4;
 
     private final IntConsumer onChoice;
 
+    /** @param onChoice receives the chosen option, 1 to 3 */
     public LegacyMigrationPromptScreen(IntConsumer onChoice) {
         super(Component.translatable("screen.creraces.legacy_migration.title"));
         this.onChoice = onChoice;
@@ -31,48 +32,14 @@ public class LegacyMigrationPromptScreen extends Screen {
 
     @Override
     protected void init() {
-        int centerX = this.width / 2;
-        int y = layoutStartY();
-
-        y += titleHeight() + 8;
-        y += bodyHeight() + 14;
-
-        y = addOption(centerX, y, 1, "screen.creraces.legacy_migration.option_1", "screen.creraces.legacy_migration.option_1.desc");
-        y = addOption(centerX, y, 2, "screen.creraces.legacy_migration.option_2", "screen.creraces.legacy_migration.option_2.desc");
-        addOption(centerX, y, 3, "screen.creraces.legacy_migration.option_3", "screen.creraces.legacy_migration.option_3.desc");
-    }
-
-    private int addOption(int centerX, int y, int choice, String labelKey, String descKey) {
-        this.addRenderableWidget(Button.builder(Component.translatable(labelKey), btn -> onChoice.accept(choice))
-                .bounds(centerX - BUTTON_WIDTH / 2, y, BUTTON_WIDTH, BUTTON_HEIGHT).build());
-        y += BUTTON_HEIGHT + 4;
-        y += descLineCount(descKey) * this.font.lineHeight;
-        return y + 14;
-    }
-
-    private int layoutStartY() {
-        int totalHeight = titleHeight() + 8 + bodyHeight() + 14
-                + optionBlockHeight("screen.creraces.legacy_migration.option_1.desc")
-                + optionBlockHeight("screen.creraces.legacy_migration.option_2.desc")
-                + optionBlockHeight("screen.creraces.legacy_migration.option_3.desc");
-        return Math.max(20, this.height / 2 - totalHeight / 2);
-    }
-
-    private int optionBlockHeight(String descKey) {
-        return BUTTON_HEIGHT + 4 + descLineCount(descKey) * this.font.lineHeight + 14;
-    }
-
-    private int titleHeight() {
-        return this.font.lineHeight;
-    }
-
-    private int bodyHeight() {
-        return this.font.split(Component.translatable("screen.creraces.legacy_migration.body"), CONTENT_WIDTH).size()
-                * this.font.lineHeight;
-    }
-
-    private int descLineCount(String descKey) {
-        return Math.max(1, this.font.split(Component.translatable(descKey), CONTENT_WIDTH).size());
+        int y = optionsTop();
+        for (int option = 1; option <= OPTION_COUNT; option++) {
+            int choice = option;
+            this.addRenderableWidget(Button.builder(Component.translatable(optionKey(option)),
+                            btn -> onChoice.accept(choice))
+                    .bounds(this.width / 2 - CONTENT_WIDTH / 2, y, CONTENT_WIDTH, BUTTON_HEIGHT).build());
+            y += optionBlockHeight(option);
+        }
     }
 
     @Override
@@ -81,31 +48,62 @@ public class LegacyMigrationPromptScreen extends Screen {
     }
 
     @Override
-    @SuppressWarnings("null")
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         this.renderBackground(graphics);
         super.render(graphics, mouseX, mouseY, partialTick);
 
-        int centerX = this.width / 2;
+        int left = this.width / 2 - CONTENT_WIDTH / 2;
         int y = layoutStartY();
+        graphics.drawCenteredString(this.font, this.title, this.width / 2, y, 0xFFFFFF);
+        y += titleHeight() + TITLE_GAP;
 
-        graphics.drawCenteredString(this.font, this.title, centerX, y, 0xFFFFFF);
-        y += titleHeight() + 8;
+        graphics.drawWordWrap(this.font, bodyText(), left, y, CONTENT_WIDTH, 0xCCCCCC);
 
-        graphics.drawWordWrap(this.font, Component.translatable("screen.creraces.legacy_migration.body"),
-                centerX - CONTENT_WIDTH / 2, y, CONTENT_WIDTH, 0xCCCCCC);
-        y += bodyHeight() + 14;
-
-        y = drawOptionDesc(graphics, centerX, y, "screen.creraces.legacy_migration.option_1.desc");
-        y = drawOptionDesc(graphics, centerX, y, "screen.creraces.legacy_migration.option_2.desc");
-        drawOptionDesc(graphics, centerX, y, "screen.creraces.legacy_migration.option_3.desc");
+        y = optionsTop();
+        for (int option = 1; option <= OPTION_COUNT; option++) {
+            graphics.drawWordWrap(this.font, Component.translatable(descriptionKey(option)), left,
+                    y + BUTTON_HEIGHT + BUTTON_TO_DESCRIPTION_GAP, CONTENT_WIDTH, 0x999999);
+            y += optionBlockHeight(option);
+        }
     }
 
-    private int drawOptionDesc(GuiGraphics graphics, int centerX, int y, String descKey) {
-        y += BUTTON_HEIGHT + 4;
-        graphics.drawWordWrap(this.font, Component.translatable(descKey),
-                centerX - CONTENT_WIDTH / 2, y, CONTENT_WIDTH, 0x999999);
-        y += descLineCount(descKey) * this.font.lineHeight;
-        return y + 14;
+    /** Top of the whole block (title, body, options), centred vertically but never above y = 20. */
+    private int layoutStartY() {
+        int totalHeight = titleHeight() + TITLE_GAP + bodyHeight() + SECTION_GAP;
+        for (int option = 1; option <= OPTION_COUNT; option++) {
+            totalHeight += optionBlockHeight(option);
+        }
+        return Math.max(20, this.height / 2 - totalHeight / 2);
+    }
+
+    private int optionsTop() {
+        return layoutStartY() + titleHeight() + TITLE_GAP + bodyHeight() + SECTION_GAP;
+    }
+
+    /** One option's button, its wrapped description and the gap before the next option. */
+    private int optionBlockHeight(int option) {
+        int descriptionLines = Math.max(1, this.font.split(Component.translatable(descriptionKey(option)),
+                CONTENT_WIDTH).size());
+        return BUTTON_HEIGHT + BUTTON_TO_DESCRIPTION_GAP + descriptionLines * this.font.lineHeight + SECTION_GAP;
+    }
+
+    private int titleHeight() {
+        return this.font.lineHeight;
+    }
+
+    private int bodyHeight() {
+        return this.font.split(bodyText(), CONTENT_WIDTH).size() * this.font.lineHeight;
+    }
+
+    private static Component bodyText() {
+        return Component.translatable("screen.creraces.legacy_migration.body");
+    }
+
+    private static String optionKey(int option) {
+        return "screen.creraces.legacy_migration.option_" + option;
+    }
+
+    private static String descriptionKey(int option) {
+        return optionKey(option) + ".desc";
     }
 }

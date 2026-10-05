@@ -5,7 +5,9 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.Level;
 
 /**
@@ -33,9 +35,9 @@ public class ModEnchantments {
     }
 
     /** Convenience for the common "how many levels of X does this stack have" check. */
-    public static int levelOn(Level level, ResourceKey<Enchantment> key, net.minecraft.world.item.ItemStack stack) {
+    public static int levelOn(Level level, ResourceKey<Enchantment> key, ItemStack stack) {
         Holder<Enchantment> holder = get(level, key);
         return holder == null ? 0
-                : net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(holder, stack);
+                : EnchantmentHelper.getItemEnchantmentLevel(holder, stack);
     }
 }

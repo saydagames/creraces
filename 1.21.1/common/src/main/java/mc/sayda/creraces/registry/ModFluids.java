@@ -7,10 +7,11 @@ import mc.sayda.creraces.fluid.EterveilFluid;
 import mc.sayda.creraces.fluid.FairySourceFluid;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.material.FlowingFluid;
+import net.minecraft.world.level.material.Fluid;
 
 public class ModFluids {
 
-    public static final DeferredRegister<net.minecraft.world.level.material.Fluid> FLUIDS =
+    public static final DeferredRegister<Fluid> FLUIDS =
             DeferredRegister.create(CreRaces.MODID, Registries.FLUID);
 
     public static final RegistrySupplier<FlowingFluid> FAIRY_SOURCE =

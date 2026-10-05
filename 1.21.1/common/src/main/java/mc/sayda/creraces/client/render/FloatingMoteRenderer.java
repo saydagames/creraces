@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import mc.sayda.creraces.entity.FloatingMoteEntity;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRenderer;
@@ -33,20 +34,19 @@ public class FloatingMoteRenderer extends EntityRenderer<FloatingMoteEntity> {
         poseStack.mulPose(Minecraft.getInstance().getEntityRenderDispatcher().cameraOrientation());
         poseStack.scale(0.35f, 0.35f, 0.35f);
 
-        // entityTranslucent (no cull) rather than entityTranslucentCull: this is a single
-        // billboarded quad, so culling its back face leaves it invisible from one side.
+        // No-cull entityTranslucent: 1.21 turned the camera orientation 180 degrees from 1.20.1, which
+        // leaves this quad wound away from the camera, so a culling render type would hide it.
         VertexConsumer consumer = buffer.getBuffer(RenderType.entityTranslucent(TEXTURE));
         Matrix4f pose = poseStack.last().pose();
-        int fullBright = 0xF000F0;
 
         consumer.addVertex(pose, -0.5f, 0.5f, 0f).setColor(255, 255, 255, 255)
-                .setUv(0, 0).setOverlay(OverlayTexture.NO_OVERLAY).setLight(fullBright).setNormal(0, 0, 1);
+                .setUv(0, 0).setOverlay(OverlayTexture.NO_OVERLAY).setLight(LightTexture.FULL_BRIGHT).setNormal(0, 0, 1);
         consumer.addVertex(pose, 0.5f, 0.5f, 0f).setColor(255, 255, 255, 255)
-                .setUv(1, 0).setOverlay(OverlayTexture.NO_OVERLAY).setLight(fullBright).setNormal(0, 0, 1);
+                .setUv(1, 0).setOverlay(OverlayTexture.NO_OVERLAY).setLight(LightTexture.FULL_BRIGHT).setNormal(0, 0, 1);
         consumer.addVertex(pose, 0.5f, -0.5f, 0f).setColor(255, 255, 255, 255)
-                .setUv(1, 1).setOverlay(OverlayTexture.NO_OVERLAY).setLight(fullBright).setNormal(0, 0, 1);
+                .setUv(1, 1).setOverlay(OverlayTexture.NO_OVERLAY).setLight(LightTexture.FULL_BRIGHT).setNormal(0, 0, 1);
         consumer.addVertex(pose, -0.5f, -0.5f, 0f).setColor(255, 255, 255, 255)
-                .setUv(0, 1).setOverlay(OverlayTexture.NO_OVERLAY).setLight(fullBright).setNormal(0, 0, 1);
+                .setUv(0, 1).setOverlay(OverlayTexture.NO_OVERLAY).setLight(LightTexture.FULL_BRIGHT).setNormal(0, 0, 1);
 
         poseStack.popPose();
         super.render(entity, yaw, partialTick, poseStack, buffer, packedLight);

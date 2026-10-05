@@ -34,6 +34,12 @@ dependencies {
     modImplementation "curse.maven:pehkui-319596:5446174"
     modImplementation "com.github.glitchfiend:TerraBlender-neoforge:${rootProject.property('1_21_1_terrablender_version')}"
     modImplementation "curse.maven:curios-309927:6529130"
+    modImplementation "curse.maven:journeymap-32274:8923668"
+    // JourneyMap ships these three jar-in-jar, which dev runs do not extract: its API, the
+    // commonnetworking mod it requires, and the image library it writes maps with.
+    modRuntimeOnly "info.journeymap:journeymap-api-neoforge:2.0.0-1.21.1"
+    modRuntimeOnly "mysticdrew:common-networking-neoforge:1.0.21-1.21.1"
+    runtimeOnly "ar.com.hjg:pngj:2.1.0"
 }
 
 processResources {

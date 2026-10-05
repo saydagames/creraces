@@ -15,6 +15,6 @@ public class MicroCartographyMenu extends CartographyTableMenu {
 
     @Override
     public boolean stillValid(Player player) {
-        return this.access.evaluate((level, pos) -> MicroMenuUtils.isValidMicroBlockAccess(level, pos, player), true);
+        return MicroMenuUtils.stillValid(access, player);
     }
 }

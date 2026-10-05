@@ -1,14 +1,23 @@
 package mc.sayda.creraces.engine.actions;
 
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.engine.ScalingValue;
 import mc.sayda.creraces.engine.TargetFilter;
 import mc.sayda.creraces.util.GsonHelper;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 
+import javax.annotation.Nullable;
+import java.util.Set;
+
+/**
+ * Heals everything valid in a radius, or else the target (use_target) or the caster. Healing the
+ * caster directly skips the target filter.
+ */
 public class HealAction implements ActionRegistry.RaceAction {
 
     private final ScalingValue amount;
@@ -24,37 +33,29 @@ public class HealAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public boolean execute(Player player, @javax.annotation.Nullable LivingEntity target,
-            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
-        float h = (float) amount.evaluate(player, target, slot);
-        if (h <= 0) return true;
-
-        double r = radius.evaluate(player, target, slot);
-        int maxAoeRadius = mc.sayda.creraces.config.CreRacesConfig.AOE_MAX_RADIUS.get();
-        if (maxAoeRadius > 0) r = Math.min(r, maxAoeRadius);
-
-        if (r > 0) {
-            final float amount = h;
-            net.minecraft.world.phys.AABB area = player.getBoundingBox().inflate(r);
-            player.level().getEntitiesOfClass(LivingEntity.class, area, e -> targets.isValid(e, player))
-                    .forEach(e -> e.heal(amount));
-        } else if (useTarget && target != null && targets.isValid(target, player)) {
-            target.heal(h);
-        } else if (!useTarget) {
-            player.heal(h);
+    public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
+            @Nullable BlockPos interactPos) {
+        float heal = (float) amount.evaluate(player, target, slot);
+        if (heal <= 0) {
+            return true;
         }
 
+        double r = AreaTargets.clampRadius(radius.evaluate(player, target, slot));
+        if (r > 0) {
+            AreaTargets.around(player, r, e -> targets.isValid(e, player)).forEach(e -> e.heal(heal));
+        } else if (useTarget && target != null && targets.isValid(target, player)) {
+            target.heal(heal);
+        } else if (!useTarget) {
+            player.heal(heal);
+        }
         return true;
     }
 
     public static void register() {
-        ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "heal"), json -> {
-            ScalingValue amount = ScalingValue.fromJson(json, "amount", 1.0);
-            boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
-            ScalingValue radius = ScalingValue.fromJson(json, "radius", 0.0);
-            TargetFilter targets = TargetFilter.fromJson(json, "targets", java.util.Set.of("allies", "self"));
-            return new HealAction(amount, useTarget, radius, targets);
-        });
+        ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "heal"), json -> new HealAction(
+                ScalingValue.fromJson(json, "amount", 1.0),
+                GsonHelper.getAsBoolean(json, "use_target", false),
+                ScalingValue.fromJson(json, "radius", 0.0),
+                TargetFilter.fromJson(json, "targets", Set.of("allies", "self"))));
     }
 }

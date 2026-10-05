@@ -5,20 +5,17 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 
 /**
- * Utility class for LoL-style combat attribute resolution.
- * Implements "Smart Getters" that prioritize Apothic Attributes (Forge)
- * but fall back to CreRaces equivalents on Fabric or standalone Forge.
+ * LoL-style combat stat getters. Each goes through ModAttributes.resolve, so Apothic Attributes'
+ * version of a stat is used when that mod is loaded and CreRaces' own attribute otherwise.
  */
 public class CombatAttributes {
-
-    public static final String APOTHIC_ID = "attributeslib";
 
     public static double getHealingReceived(LivingEntity entity) {
         return entity.getAttributeValue(ModAttributes.resolve(ModAttributes.HEALING_RECEIVED));
     }
 
     public static double getArmor(LivingEntity entity) {
-        // We use vanilla armor as the base for Physical defense
+        // Physical defense is plain vanilla armor.
         return entity.getAttributeValue(Attributes.ARMOR);
     }
 

@@ -1,12 +1,20 @@
 package mc.sayda.creraces.engine;
 
 import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.capability.IPlayerVariables;
+import mc.sayda.creraces.registry.ModAttributes;
+import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
+import javax.annotation.Nullable;
 import java.util.UUID;
 
 public class SpiritMobilityHandler {
@@ -19,17 +27,17 @@ public class SpiritMobilityHandler {
             SPIRIT_DOUBLE_JUMP_MODIFIER_ID,
             "Spirit Double Jump", 1.0, AttributeModifier.Operation.ADDITION);
 
+    private static final double MAX_SPIRIT_FALL_SPEED = 0.4;
+
     /**
-     * Called from LivingEntityMixin to handle server-side/synced mechanics like
-     * speed and slow fall.
+     * Ticked from LivingEntityMixin. Caps how fast spirits fall (on both sides), and on the server
+     * keeps the spirit-realm speed and double-jump modifiers in step with the realm state.
      */
     public static void tick(LivingEntity entity) {
-        // Slow Fall logic
-        if (isSpirit(entity)) {
+        if (isOnSpiritPlane(entity)) {
             Vec3 vel = entity.getDeltaMovement();
-            // Constant drift downwards if falling
-            if (vel.y < -0.4) {
-                entity.setDeltaMovement(vel.x, -0.4, vel.z);
+            if (vel.y < -MAX_SPIRIT_FALL_SPEED) {
+                entity.setDeltaMovement(vel.x, -MAX_SPIRIT_FALL_SPEED, vel.z);
                 entity.resetFallDistance();
             }
         }
@@ -37,56 +45,44 @@ public class SpiritMobilityHandler {
         if (entity.level().isClientSide())
             return;
 
-        if (entity instanceof Player) {
-            Player player = (Player) entity;
+        if (entity instanceof Player player) {
             DataUtils.getVariables(player).ifPresent(vars -> {
-                var speedAttr = player.getAttribute(Attributes.MOVEMENT_SPEED);
-                if (speedAttr != null) {
-                    boolean hasMod = speedAttr.getModifier(SPEED_MODIFIER_UUID) != null;
-                    if (vars.isInSpiritRealm()) {
-                        if (!hasMod) {
-                            speedAttr.addPermanentModifier(SPEED_MODIFIER);
-                        }
-                    } else {
-                        if (hasMod) {
-                            speedAttr.removeModifier(SPEED_MODIFIER_UUID);
-                        }
-                    }
-                }
-
-                var doubleJumpAttr = player.getAttribute(mc.sayda.creraces.registry.ModAttributes.DOUBLE_JUMP.get());
-                if (doubleJumpAttr != null) {
-                    boolean hasMod = doubleJumpAttr.getModifier(SPIRIT_DOUBLE_JUMP_MODIFIER_ID) != null;
-                    if (vars.isInSpiritRealm()) {
-                        if (!hasMod) {
-                            doubleJumpAttr.addPermanentModifier(SPIRIT_DOUBLE_JUMP_MODIFIER);
-                        }
-                    } else {
-                        if (hasMod) {
-                            doubleJumpAttr.removeModifier(SPIRIT_DOUBLE_JUMP_MODIFIER_ID);
-                        }
-                    }
-                }
+                boolean inRealm = vars.isInSpiritRealm();
+                setModifier(player.getAttribute(Attributes.MOVEMENT_SPEED), SPEED_MODIFIER, inRealm);
+                setModifier(player.getAttribute(ModAttributes.DOUBLE_JUMP.get()), SPIRIT_DOUBLE_JUMP_MODIFIER, inRealm);
             });
         }
     }
 
-    public static boolean isSpirit(LivingEntity entity) {
-        if (entity instanceof Player) {
-            Player player = (Player) entity;
-            return DataUtils.getVariables(player).map(v -> v.isInSpiritRealm() || v.isSpirit())
-                    .orElse(false);
+    private static void setModifier(@Nullable AttributeInstance attribute, AttributeModifier modifier, boolean active) {
+        if (attribute == null)
+            return;
+        boolean present = attribute.getModifier(modifier.getId()) != null;
+        if (active && !present) {
+            attribute.addPermanentModifier(modifier);
+        } else if (!active && present) {
+            attribute.removeModifier(modifier.getId());
+        }
+    }
+
+    /**
+     * Whether spirit-plane rules (visibility, targeting, damage and fall immunity) apply to this entity
+     * right now. For players that is being in the spirit realm, not being a spirit: a human in the realm
+     * is on the plane, a fairy outside it is not. Mobs have no realm state of their own, so spirit mobs count.
+     */
+    public static boolean isOnSpiritPlane(LivingEntity entity) {
+        if (entity instanceof Player player) {
+            return DataUtils.getVariables(player).map(IPlayerVariables::isInSpiritRealm).orElse(false);
         }
         return entity.getTags().contains("creraces:spirit") || entity.getTags().contains("creraces:in_spirit_realm");
     }
 
     @SuppressWarnings("null")
-    public static <T extends net.minecraft.core.particles.ParticleOptions> void sendParticlesIfSpirit(
-            net.minecraft.server.level.ServerLevel level, T particle,
+    public static <T extends ParticleOptions> void sendParticlesIfSpirit(ServerLevel level, T particle,
             double x, double y, double z, int count, double dx, double dy, double dz, double speed) {
-        for (net.minecraft.server.level.ServerPlayer p : level.players()) {
-            if (isSpirit(p)) {
-                p.connection.send(new net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket(
+        for (ServerPlayer p : level.players()) {
+            if (isOnSpiritPlane(p)) {
+                p.connection.send(new ClientboundLevelParticlesPacket(
                         particle, false, x, y, z, (float) dx, (float) dy, (float) dz, (float) speed, count));
             }
         }

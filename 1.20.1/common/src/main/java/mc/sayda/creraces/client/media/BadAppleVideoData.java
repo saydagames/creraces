@@ -2,7 +2,6 @@ package mc.sayda.creraces.client.media;
 
 import com.mojang.blaze3d.platform.NativeImage;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -31,13 +30,7 @@ public class BadAppleVideoData {
             if (in == null) {
                 throw new IOException("Bad Apple video resource not found: " + RESOURCE_PATH);
             }
-            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-            byte[] chunk = new byte[8192];
-            int read;
-            while ((read = in.read(chunk)) != -1) {
-                buffer.write(chunk, 0, read);
-            }
-            data = ByteBuffer.wrap(buffer.toByteArray()).order(ByteOrder.BIG_ENDIAN);
+            data = ByteBuffer.wrap(in.readAllBytes()).order(ByteOrder.BIG_ENDIAN);
         }
 
         width = data.getInt();
@@ -57,8 +50,7 @@ public class BadAppleVideoData {
 
     /**
      * Decodes a frame directly into a NativeImage the same size as the video (white =
-     * opaque white, black = opaque black). Caller is responsible for uploading the
-     * texture afterwards.
+     * opaque white, black = opaque black). The caller uploads the texture afterwards.
      */
     public void decodeFrame(int frameIndex, NativeImage target) {
         int pos = frameOffsets[frameIndex];

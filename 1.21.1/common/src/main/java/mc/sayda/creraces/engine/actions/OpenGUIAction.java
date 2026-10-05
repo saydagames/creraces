@@ -1,29 +1,48 @@
 package mc.sayda.creraces.engine.actions;
 
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.engine.ScalingValue;
+import mc.sayda.creraces.network.BoundaryHandler;
 import mc.sayda.creraces.util.GsonHelper;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-
 import net.minecraft.world.MenuProvider;
+import net.minecraft.world.SimpleMenuProvider;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.ChestMenu;
+import net.minecraft.world.inventory.CraftingMenu;
+import net.minecraft.world.inventory.PlayerEnderChestContainer;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.AnvilBlock;
+import net.minecraft.world.level.block.BarrelBlock;
+import net.minecraft.world.level.block.BlastFurnaceBlock;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.CartographyTableBlock;
+import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.FurnaceBlock;
+import net.minecraft.world.level.block.GrindstoneBlock;
+import net.minecraft.world.level.block.LoomBlock;
+import net.minecraft.world.level.block.ShulkerBoxBlock;
+import net.minecraft.world.level.block.SmokerBlock;
+import net.minecraft.world.level.block.StonecutterBlock;
+import net.minecraft.world.level.block.state.BlockState;
+
+import javax.annotation.Nullable;
 
 /**
- * Forces a container GUI to open for the player, searching nearby for a container block of the appropriate type.
- * It searches the area around the interaction position or player position for a
- * container block of the appropriate type.
- * Supported UI types: "crafting_table"/"crafting", "ender_chest"/"enderchest",
- * "inventory", "chest", "barrel", "furnace", "smoker", "blast_furnace", "loom",
- * "cartography", "grindstone", "stonecutter", "anvil", "race_selection"/"race_menu",
- * "skill_wheel", "team_menu", "mirror", "debug"
- * The scan radius is controlled by the {@code "radius"} JSON field (default 4).
+ * Opens a screen for the caster. The crafting grid and ender chest open anywhere; container types
+ * ("chest", "furnace", "anvil", ...) open the interacted block if it matches, or else the nearest
+ * matching block within "radius" (default 4). The mod's own screens ("race_selection", "skill_wheel",
+ * "team_menu", "mirror", "debug") are opened client-side.
  */
+@SuppressWarnings("null")
 public class OpenGUIAction implements ActionRegistry.RaceAction {
-    public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath("creraces", "open_gui");
+    public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "open_gui");
 
     private final String guiId;
     private final ScalingValue radius;
@@ -34,38 +53,35 @@ public class OpenGUIAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public boolean execute(Player player,
-            @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target,
-            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable BlockPos interact_pos) {
-
-        if (!(player instanceof ServerPlayer sp))
+    public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
+            @Nullable BlockPos interactPos) {
+        if (!(player instanceof ServerPlayer serverPlayer)) {
             return false;
+        }
 
         return switch (guiId) {
-            case "crafting_table", "crafting" -> openNearestCraftingTable(sp);
-            case "ender_chest", "enderchest" -> openEnderChest(sp);
+            case "crafting_table", "crafting" -> openCraftingGrid(serverPlayer);
+            case "ender_chest", "enderchest" -> openEnderChest(serverPlayer);
             case "inventory", "chest", "barrel", "furnace", "smoker", "blast_furnace", "loom", "cartography",
-                    "grindstone", "stonecutter", "anvil" ->
-                openNearestContainer(sp, interact_pos, slot);
+                    "grindstone", "stonecutter", "anvil" -> openNearestContainer(serverPlayer, interactPos, slot);
             case "race_selection", "race_menu" -> {
-                mc.sayda.creraces.network.BoundaryHandler.sendOpenSelection(sp);
+                BoundaryHandler.sendOpenSelection(serverPlayer);
                 yield true;
             }
             case "skill_wheel" -> {
-                mc.sayda.creraces.network.BoundaryHandler.sendOpenSkillWheel(sp);
+                BoundaryHandler.sendOpenSkillWheel(serverPlayer);
                 yield true;
             }
             case "team_menu" -> {
-                mc.sayda.creraces.network.BoundaryHandler.sendOpenTeamGUI(sp);
+                BoundaryHandler.sendOpenTeamGUI(serverPlayer);
                 yield true;
             }
             case "mirror" -> {
-                mc.sayda.creraces.network.BoundaryHandler.sendOpenMirror(sp);
+                BoundaryHandler.sendOpenMirror(serverPlayer);
                 yield true;
             }
             case "debug" -> {
-                mc.sayda.creraces.network.BoundaryHandler.sendOpenDebug(sp);
+                BoundaryHandler.sendOpenDebug(serverPlayer);
                 yield true;
             }
             default -> {
@@ -75,87 +91,42 @@ public class OpenGUIAction implements ActionRegistry.RaceAction {
         };
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Opens the player's personal ender chest inventory without requiring a nearby
-     * ender chest block. Each player has their own private 27-slot inventory stored
-     * server-side - equivalent to right-clicking an ender chest.
-     */
-    private boolean openEnderChest(ServerPlayer player) {
-        net.minecraft.world.inventory.PlayerEnderChestContainer enderInv = player.getEnderChestInventory();
-        player.openMenu(new net.minecraft.world.MenuProvider() {
-            @Override
-            public net.minecraft.network.chat.Component getDisplayName() {
-                return net.minecraft.network.chat.Component.translatable("container.enderchest");
-            }
-
-            @Override
-            public net.minecraft.world.inventory.AbstractContainerMenu createMenu(
-                    int syncId,
-                    @javax.annotation.Nonnull net.minecraft.world.entity.player.Inventory inv,
-                    @javax.annotation.Nonnull net.minecraft.world.entity.player.Player p) {
-                return net.minecraft.world.inventory.ChestMenu.threeRows(syncId, inv, enderInv);
-            }
-        });
+    /** The caster's own ender chest inventory, as if they had opened an ender chest block. */
+    private static boolean openEnderChest(ServerPlayer player) {
+        PlayerEnderChestContainer enderChest = player.getEnderChestInventory();
+        player.openMenu(new SimpleMenuProvider((syncId, inventory, p) -> ChestMenu.threeRows(syncId, inventory,
+                enderChest), Component.translatable("container.enderchest")));
         return true;
     }
 
-    /**
-     * Opens a full 3x3 crafting grid for the player without requiring a nearby
-     * CraftingTable block - equivalent to right-clicking a crafting table but
-     * available anywhere.
-     */
-    private boolean openNearestCraftingTable(ServerPlayer player) {
-        player.openMenu(new net.minecraft.world.MenuProvider() {
-            @Override
-            public net.minecraft.network.chat.Component getDisplayName() {
-                return net.minecraft.network.chat.Component.translatable("container.crafting");
-            }
-
-            @Override
-            public net.minecraft.world.inventory.AbstractContainerMenu createMenu(
-                    int syncId,
-                    @javax.annotation.Nonnull net.minecraft.world.entity.player.Inventory inv,
-                    @javax.annotation.Nonnull net.minecraft.world.entity.player.Player p) {
-                return new net.minecraft.world.inventory.CraftingMenu(syncId, inv);
-            }
-        });
+    /** A 3x3 crafting grid that works anywhere, with no crafting table required. */
+    private static boolean openCraftingGrid(ServerPlayer player) {
+        player.openMenu(new SimpleMenuProvider((syncId, inventory, p) -> new CraftingMenu(syncId, inventory),
+                Component.translatable("container.crafting")));
         return true;
     }
 
-    /**
-     * Scans nearby blocks for a valid container and opens it.
-     */
-    private boolean openNearestContainer(ServerPlayer player, @javax.annotation.Nullable BlockPos interact_pos, @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot) {
+    private boolean openNearestContainer(ServerPlayer player, @Nullable BlockPos interactPos,
+            @Nullable AbilitySlot slot) {
         Level level = player.level();
         BlockPos origin = player.blockPosition();
 
         BlockPos best = null;
-        double bestDist = Double.MAX_VALUE;
-        boolean foundContainer = false;
-
-        if (interact_pos != null) {
-            net.minecraft.world.level.block.state.BlockState state = level.getBlockState(interact_pos);
-            if (state != null && isMatchingContainer(state)) {
-                best = interact_pos;
-                foundContainer = true;
+        if (interactPos != null) {
+            // An interacted block that isn't the right container means nothing opens; there is no fallback scan.
+            if (isMatchingContainer(level.getBlockState(interactPos))) {
+                best = interactPos;
             }
-        }
-
-        if (!foundContainer && interact_pos == null) {
-            int rad = Math.max(1, (int) radius.evaluate(player, null, slot));
-            BlockPos min = java.util.Objects.requireNonNull(origin.offset(-rad, -rad, -rad));
-            BlockPos max = java.util.Objects.requireNonNull(origin.offset(rad, rad, rad));
-            for (BlockPos pos : java.util.Objects.requireNonNull(BlockPos.betweenClosed(min, max))) {
-                if (pos == null) continue;
-                net.minecraft.world.level.block.state.BlockState state = level.getBlockState(pos);
-                if (state != null && isMatchingContainer(state)) {
+        } else {
+            int scanRadius = Math.max(1, (int) radius.evaluate(player, null, slot));
+            double bestDist = Double.MAX_VALUE;
+            for (BlockPos pos : BlockPos.betweenClosed(origin.offset(-scanRadius, -scanRadius, -scanRadius),
+                    origin.offset(scanRadius, scanRadius, scanRadius))) {
+                if (isMatchingContainer(level.getBlockState(pos))) {
                     double dist = pos.distSqr(origin);
                     if (dist < bestDist) {
                         bestDist = dist;
                         best = pos.immutable();
-                        foundContainer = true;
                     }
                 }
             }
@@ -163,44 +134,37 @@ public class OpenGUIAction implements ActionRegistry.RaceAction {
 
         if (best == null) {
             CreRaces.LOGGER.debug("[OpenGUIAction] No container found within {} blocks of {}.",
-                    (int) radius.evaluate(player, null, slot),
-                    origin);
+                    (int) radius.evaluate(player, null, slot), origin);
             return false;
         }
-
-        MenuProvider mp = level.getBlockState(best).getMenuProvider(level, best);
-        if (mp != null) {
-            player.openMenu(mp);
-            return true;
+        MenuProvider menu = level.getBlockState(best).getMenuProvider(level, best);
+        if (menu == null) {
+            return false;
         }
-        return false;
+        player.openMenu(menu);
+        return true;
     }
 
-    private boolean isMatchingContainer(net.minecraft.world.level.block.state.BlockState state) {
-        net.minecraft.world.level.block.Block block = state.getBlock();
+    private boolean isMatchingContainer(BlockState state) {
+        Block block = state.getBlock();
         return switch (guiId) {
-            case "inventory", "chest" -> block instanceof net.minecraft.world.level.block.ChestBlock
-                    || block instanceof net.minecraft.world.level.block.ShulkerBoxBlock;
-            case "barrel" -> block instanceof net.minecraft.world.level.block.BarrelBlock;
-            case "furnace" -> block instanceof net.minecraft.world.level.block.FurnaceBlock;
-            case "smoker" -> block instanceof net.minecraft.world.level.block.SmokerBlock;
-            case "blast_furnace" -> block instanceof net.minecraft.world.level.block.BlastFurnaceBlock;
-            case "loom" -> block instanceof net.minecraft.world.level.block.LoomBlock;
-            case "cartography" -> block instanceof net.minecraft.world.level.block.CartographyTableBlock;
-            case "grindstone" -> block instanceof net.minecraft.world.level.block.GrindstoneBlock;
-            case "stonecutter" -> block instanceof net.minecraft.world.level.block.StonecutterBlock;
-            case "anvil" -> block instanceof net.minecraft.world.level.block.AnvilBlock;
+            case "inventory", "chest" -> block instanceof ChestBlock || block instanceof ShulkerBoxBlock;
+            case "barrel" -> block instanceof BarrelBlock;
+            case "furnace" -> block instanceof FurnaceBlock;
+            case "smoker" -> block instanceof SmokerBlock;
+            case "blast_furnace" -> block instanceof BlastFurnaceBlock;
+            case "loom" -> block instanceof LoomBlock;
+            case "cartography" -> block instanceof CartographyTableBlock;
+            case "grindstone" -> block instanceof GrindstoneBlock;
+            case "stonecutter" -> block instanceof StonecutterBlock;
+            case "anvil" -> block instanceof AnvilBlock;
             default -> false;
         };
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-
     public static void register() {
-        ActionRegistry.register(ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "open_gui"), json -> {
-            String gui = GsonHelper.getAsString(json, "gui", "inventory").toLowerCase();
-            ScalingValue radius = ScalingValue.fromJson(json, "radius", 4.0);
-            return new OpenGUIAction(gui, radius);
-        });
+        ActionRegistry.register(ID, json -> new OpenGUIAction(
+                GsonHelper.getAsString(json, "gui", "inventory").toLowerCase(),
+                ScalingValue.fromJson(json, "radius", 4.0)));
     }
 }

@@ -3,35 +3,33 @@ package mc.sayda.creraces.engine;
 import dev.architectury.event.EventResult;
 import dev.architectury.event.events.common.EntityEvent;
 import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.capability.IPlayerVariables;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 
-import java.util.List;
-
+/**
+ * Spirit mobs (entity tag creraces:spirit) only exist while a spirit-realm player is close enough
+ * to see them; any that would be added to the level otherwise are discarded instead.
+ */
 public class SpiritSpawningHandler {
+    private static final int SPIRIT_VIEWER_RANGE = 16;
+
     public static void init() {
         EntityEvent.ADD.register((entity, level) -> {
             if (level.isClientSide())
                 return EventResult.pass();
 
             if (entity.getTags().contains("creraces:spirit")) {
-                // Only keep spirit mobs alive if a spirit-realm player is nearby to see them.
-                boolean playerInSpiritNearby = false;
-                int checkDist = 16;
-                net.minecraft.core.BlockPos pos = entity.blockPosition();
-                if (pos != null) {
-                    List<Player> players = level.getEntitiesOfClass(Player.class,
-                            new AABB(pos).inflate(checkDist));
-                    for (Player p : players) {
-                        if (DataUtils.getVariables(p).map(vars -> vars.isInSpiritRealm()).orElse(false)) {
-                            playerInSpiritNearby = true;
-                            break;
-                        }
+                boolean spiritViewerNearby = false;
+                for (Player p : level.getEntitiesOfClass(Player.class,
+                        new AABB(entity.blockPosition()).inflate(SPIRIT_VIEWER_RANGE))) {
+                    if (DataUtils.getVariables(p).map(IPlayerVariables::isInSpiritRealm).orElse(false)) {
+                        spiritViewerNearby = true;
+                        break;
                     }
                 }
 
-                if (!playerInSpiritNearby) {
-                    // Discard the entity if no spirit-aware player is around to see it
+                if (!spiritViewerNearby) {
                     entity.discard();
                     return EventResult.interruptFalse();
                 }

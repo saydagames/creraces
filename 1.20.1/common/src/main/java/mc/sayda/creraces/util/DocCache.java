@@ -2,9 +2,11 @@ package mc.sayda.creraces.util;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.config.CreRacesConfig;
 import net.minecraft.resources.ResourceLocation;
 
 import java.io.File;
@@ -13,27 +15,31 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Handles disk-based caching of remote documentation.
  */
 public class DocCache {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final Map<ResourceLocation, String> CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final Map<ResourceLocation, String> CACHE = new ConcurrentHashMap<>();
     private static File cacheFile;
     private static volatile boolean isDirty = false;
 
     public static void init(Path configDir) {
-        cacheFile = configDir.resolve(mc.sayda.creraces.config.CreRacesConfig.DOC_CACHE_DIR.get())
-                .resolve(mc.sayda.creraces.config.CreRacesConfig.DOC_CACHE_FILENAME.get()).toFile();
+        cacheFile = configDir.resolve(CreRacesConfig.DOC_CACHE_DIR.get())
+                .resolve(CreRacesConfig.DOC_CACHE_FILENAME.get()).toFile();
         load();
 
-        new java.util.Timer("DocCache-Saver", true).scheduleAtFixedRate(new java.util.TimerTask() {
+        new Timer("DocCache-Saver", true).scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
                 if (isDirty) {
-                    save();
+                    // Cleared before saving so a store() that lands mid-save is picked up next round.
                     isDirty = false;
+                    save();
                 }
             }
         }, 30000, 30000);
@@ -65,13 +71,15 @@ public class DocCache {
 
         try (FileReader reader = new FileReader(cacheFile)) {
             JsonObject json = JsonParser.parseReader(reader).getAsJsonObject();
-            json.entrySet().forEach(entry -> {
-                @javax.annotation.Nullable String val = entry.getValue() != null && !entry.getValue().isJsonNull() ? entry.getValue().getAsString() : null;
-                if (val != null) {
-                    CACHE.put(new ResourceLocation(entry.getKey()), val);
+            for (Map.Entry<String, JsonElement> entry : json.entrySet()) {
+                ResourceLocation id = ResourceLocation.tryParse(entry.getKey());
+                JsonElement value = entry.getValue();
+                if (id != null && value != null && !value.isJsonNull()) {
+                    CACHE.put(id, value.getAsString());
                 }
-            });
-        } catch (IOException e) {
+            }
+        } catch (IOException | RuntimeException e) {
+            // A corrupt cache file only costs a re-fetch; it must not stop the mod from loading.
             CreRaces.LOGGER.error("Failed to load doc cache: {}", e.getMessage());
         }
     }

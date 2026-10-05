@@ -1,5 +1,6 @@
 package mc.sayda.creraces.registry;
 
+import dev.architectury.registry.CreativeTabRegistry;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
 import mc.sayda.creraces.CreRaces;
@@ -10,24 +11,22 @@ import mc.sayda.creraces.item.EssenceBucketItem;
 import mc.sayda.creraces.item.ScrollItem;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
 public class ModTabs {
     public static final DeferredRegister<CreativeModeTab> TABS = DeferredRegister.create(CreRaces.MODID,
             Registries.CREATIVE_MODE_TAB);
 
-    // Positions are intentionally not hard-coded: dev.architectury.registry.CreativeTabRegistry.create
-    // hands each platform an auto-positioning builder (Forge's no-arg CreativeModeTab.builder(),
-    // Fabric's FabricItemGroup.builder()), so tabs registered in this order (main, scrolls, essence)
-    // land adjacent to each other instead of all fighting over the same explicit row/column.
-    public static final RegistrySupplier<CreativeModeTab> MAIN_TAB = TABS.register("main",
-            () -> dev.architectury.registry.CreativeTabRegistry.create(builder -> builder
+    public static final RegistrySupplier<CreativeModeTab> MAIN_TAB = TABS.register("tab_1_main",
+            () -> CreativeTabRegistry.create(builder -> builder
                     .icon(() -> new ItemStack(ModItems.DRYAD_SAPLING_ITEM.get()))
                     .title(Component.translatable("itemGroup.creraces.main"))
                     .displayItems((parameters, output) -> {
-                        for (RegistrySupplier<net.minecraft.world.item.Item> itemSupplier : ModItems.ITEMS) {
-                            net.minecraft.world.item.Item item = itemSupplier.get();
+                        for (RegistrySupplier<Item> itemSupplier : ModItems.ITEMS) {
+                            Item item = itemSupplier.get();
                             if (item instanceof ScrollItem) continue;
                             if (isEssenceItem(item)) continue;
                             output.accept(item);
@@ -35,9 +34,10 @@ public class ModTabs {
                         output.accept(ModItems.ABILITY_SCROLL.get());
                     })));
 
-    public static final RegistrySupplier<CreativeModeTab> SCROLLS_TAB = TABS.register("scrolls",
-            () -> dev.architectury.registry.CreativeTabRegistry.create(builder -> builder
-                    .icon(() -> new ItemStack(ModItems.ABILITY_SCROLL.get()))
+    public static final RegistrySupplier<CreativeModeTab> SCROLLS_TAB = TABS.register("tab_2_scrolls",
+            () -> CreativeTabRegistry.create(builder -> {
+                withTabsBefore(builder, MAIN_TAB.getId());
+                builder.icon(() -> new ItemStack(ModItems.ABILITY_SCROLL.get()))
                     .title(Component.translatable("itemGroup.creraces.scrolls"))
                     .displayItems((parameters, output) -> {
                         // Add default scroll
@@ -47,11 +47,13 @@ public class ModTabs {
                         AbilityRegistry.getAll().forEach(ability -> {
                             output.accept(ScrollItem.create(ability.id()));
                         });
-                    })));
+                    });
+            }));
 
-    public static final RegistrySupplier<CreativeModeTab> ESSENCE_TAB = TABS.register("essence",
-            () -> dev.architectury.registry.CreativeTabRegistry.create(builder -> builder
-                    .icon(() -> new ItemStack(EssenceRegistry.BOTTLES.get(EssenceType.ARCANE).get()))
+    public static final RegistrySupplier<CreativeModeTab> ESSENCE_TAB = TABS.register("tab_3_essence",
+            () -> CreativeTabRegistry.create(builder -> {
+                withTabsBefore(builder, SCROLLS_TAB.getId());
+                builder.icon(() -> new ItemStack(EssenceRegistry.BOTTLES.get(EssenceType.ARCANE).get()))
                     .title(Component.translatable("itemGroup.creraces.essence"))
                     .displayItems((parameters, output) -> {
                         for (EssenceType type : EssenceType.values()) {
@@ -63,9 +65,23 @@ public class ModTabs {
                         }
                         output.accept(ModItems.ESSENCE_BELT.get());
                         output.accept(ModItems.ESSENCE_CAULDRON_ITEM.get());
-                    })));
+                    });
+            }));
 
-    private static boolean isEssenceItem(net.minecraft.world.item.Item item) {
+    // Forge only: makes `id` sort immediately before this tab, chaining main -> scrolls -> essence
+    // adjacent. Reflection because Fabric's builder has no equivalent method (no-ops there).
+    // Fabric instead sorts mod tabs alphabetically by registry path when nothing else orders them,
+    // which is why the three paths above are numbered tab_1_/tab_2_/tab_3_. That numbering is what
+    // keeps the order correct on Fabric; this call is what keeps it correct on Forge.
+    private static void withTabsBefore(CreativeModeTab.Builder builder, ResourceLocation id) {
+        try {
+            builder.getClass().getMethod("withTabsBefore", ResourceLocation[].class)
+                    .invoke(builder, (Object) new ResourceLocation[]{id});
+        } catch (ReflectiveOperationException ignored) {
+        }
+    }
+
+    private static boolean isEssenceItem(Item item) {
         for (EssenceType type : EssenceType.values()) {
             if (EssenceRegistry.SHARDS.get(type).get() == item) return true;
             if (EssenceRegistry.BOTTLES.get(type).get() == item) return true;

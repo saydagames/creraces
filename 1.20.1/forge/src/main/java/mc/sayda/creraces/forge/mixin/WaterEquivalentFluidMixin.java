@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * Entity.updateFluidHeightAndDoFluidPushing(TagKey, double)'s return value IS wasTouchingWater, which
  * backs isInWater()/isInWaterOrBubble()/etc, but Forge's fluid rewrite resolves FluidTags.WATER via
  * literal identity with ForgeMod.WATER_TYPE, so a modded FluidType never satisfies it regardless of
- * fluid tags (see WaterLikeFluidSplashMixin for the fuller writeup). Folding
+ * fluid tags (see FairySourceSplashMixin for the fuller writeup). Folding
  * CreRacesForge.WATER_EQUIVALENT_FLUID_TYPES into this check, rather than replicating vanilla's
  * downstream side effects separately, gives those fluids real isInWater()-family semantics for free:
  * mob AI, drowning, other mods' water checks, all of it, not just splash/particles.

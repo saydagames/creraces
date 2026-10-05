@@ -1,5 +1,6 @@
 package mc.sayda.creraces.neoforge.migration;
 
+import mc.sayda.creraces.CreRaces;
 import net.minecraft.resources.ResourceLocation;
 
 import javax.annotation.Nullable;
@@ -7,13 +8,16 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Maps CreRaces Classic's {@code IsRace} value onto this rewrite's future race ResourceLocations.
- * Mirrors {@code mc.sayda.creraces.forge.migration.LegacyRaceMap} from the 1.20.1 module, kept
- * ready for when 1.21.1 gets its own race system; unused until then. See that file for the full
- * rationale (the "no rewrite equivalent" Classic values are deliberately absent from this table).
+ * Maps CreRaces Classic's {@code IsRace} value (a double, e.g. 9.3 = Dryad) onto this rewrite's
+ * race ResourceLocations. The rewrite's {@code creraces:index} field was deliberately kept 1:1
+ * with Classic's IsRace scheme, so this table is a direct lookup, not a heuristic.
+ *
+ * Classic values with no rewrite equivalent (Dragonborn 3.1-3.4, Day/Night Fairy 5.1/5.2,
+ * Axolotl 6.6, Elementalist 7, Golem 8, Pixie/Nixie 14.1/14.2, Slime 19, Goblin 20) are simply
+ * absent from this map, callers should treat a missing lookup as "no migration for this player,
+ * let them pick a race normally" rather than an error.
  */
 public final class LegacyRaceMap {
-    private static final String MODID = "creraces";
     private static final double EPSILON = 0.001;
 
     private static final Map<Double, String> TABLE = new LinkedHashMap<>();
@@ -49,7 +53,7 @@ public final class LegacyRaceMap {
     public static ResourceLocation resolve(double isRace) {
         for (Map.Entry<Double, String> entry : TABLE.entrySet()) {
             if (Math.abs(entry.getKey() - isRace) < EPSILON) {
-                return ResourceLocation.fromNamespaceAndPath(MODID, entry.getValue());
+                return ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, entry.getValue());
             }
         }
         return null;

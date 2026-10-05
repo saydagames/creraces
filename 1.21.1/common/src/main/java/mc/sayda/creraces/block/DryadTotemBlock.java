@@ -9,9 +9,8 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 /**
- * Ported from CreRaces Classic's Forest Totem. Not yet wired into any race trait/ability
- * (registered as a placeable block only), intentionally left inert for now.
- * Hitbox matches NymphNodeBlock's (Aurai/Naiad/Oread), which shares the same totem model.
+ * The Forest Totem from CreRaces Classic. Placeable but inert for now: no race trait or ability
+ * uses it yet. Shares the totem model, and therefore the hitbox, with NymphNodeBlock.
  */
 @SuppressWarnings("null")
 public class DryadTotemBlock extends Block {

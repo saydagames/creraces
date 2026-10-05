@@ -16,7 +16,7 @@ import mc.sayda.creraces.util.IPersistentDataAccessor;
 @Mixin(Mob.class)
 public abstract class MobGoalMixin {
     @Shadow public GoalSelector goalSelector;
-    
+
     @Unique
     private boolean creraces$servantGoalAdded = false;
 
@@ -27,8 +27,9 @@ public abstract class MobGoalMixin {
 
         if (!creraces$servantGoalAdded) {
             CompoundTag nbt = ((IPersistentDataAccessor) mob).creraces$getPersistentData();
-            if (nbt.contains("creraces:servant_of")) {
-                // Priority 0 (highest) to override other behaviors when commanded
+            // NoAi mobs (e.g. Remains) never get servant AI, even if they carry the tag.
+            if (!mob.isNoAi() && nbt.contains("creraces:servant_of")) {
+                // Priority 0 so commands override the mob's own goals.
                 this.goalSelector.addGoal(0, new ServantGoal(mob));
                 this.goalSelector.addGoal(0, new ServantAttackGoal(mob));
                 creraces$servantGoalAdded = true;

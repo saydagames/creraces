@@ -35,20 +35,16 @@ public class DryadLeavesFruitBlock extends LeavesBlock {
                 .map(vars -> DRYAD_RACE.equals(vars.getRace()))
                 .orElse(false);
 
-        if (isDryad) {
-            // Drop apple
-            ItemStack apple = new ItemStack(ModItems.DRYAD_APPLE.get());
-            ItemEntity entity = new ItemEntity(level, pos.getX() + 0.5, pos.getY() - 0.5, pos.getZ() + 0.5, apple);
-            entity.setPickUpDelay(10);
-            level.addFreshEntity(entity);
-
-            // Revert to flowering
-            level.setBlockAndUpdate(pos, ModBlocks.DRYAD_LEAVES_FLOWERING.get().withPropertiesOf(state));
-
-            return InteractionResult.CONSUME;
-        } else {
+        if (!isDryad) {
             player.displayClientMessage(Component.translatable("msg.creraces.cant_harvest_fruit"), true);
             return InteractionResult.PASS;
         }
+
+        ItemStack apple = new ItemStack(ModItems.DRYAD_APPLE.get());
+        ItemEntity drop = new ItemEntity(level, pos.getX() + 0.5, pos.getY() - 0.5, pos.getZ() + 0.5, apple);
+        drop.setPickUpDelay(10);
+        level.addFreshEntity(drop);
+        level.setBlockAndUpdate(pos, ModBlocks.DRYAD_LEAVES_FLOWERING.get().withPropertiesOf(state));
+        return InteractionResult.CONSUME;
     }
 }

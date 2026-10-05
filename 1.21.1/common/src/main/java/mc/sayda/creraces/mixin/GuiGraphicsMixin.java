@@ -1,5 +1,6 @@
 package mc.sayda.creraces.mixin;
 
+import mc.sayda.creraces.client.AbilityIconRenderer;
 import mc.sayda.creraces.item.QuestScrollItem;
 import mc.sayda.creraces.item.ScrollItem;
 import net.minecraft.client.gui.Font;
@@ -18,12 +19,12 @@ public abstract class GuiGraphicsMixin {
         if (stack.getItem() instanceof ScrollItem) {
             int level = ScrollItem.getLevel(stack);
             if (level > 0) {
-                mc.sayda.creraces.client.AbilityIconRenderer.renderLevel((GuiGraphics) (Object) this, level, x, y, 16);
+                AbilityIconRenderer.renderLevel((GuiGraphics) (Object) this, level, x, y, 16);
             }
         } else if (stack.getItem() instanceof QuestScrollItem) {
             int tier = QuestScrollItem.getTier(stack);
             if (tier > 0) {
-                mc.sayda.creraces.client.AbilityIconRenderer.renderLevel((GuiGraphics) (Object) this, tier, x, y, 16);
+                AbilityIconRenderer.renderLevel((GuiGraphics) (Object) this, tier, x, y, 16);
             }
         }
     }

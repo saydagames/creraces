@@ -2,19 +2,19 @@ package mc.sayda.creraces.config.fabric;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.mojang.logging.LogUtils;
+import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.config.CreRacesConfig;
 import net.fabricmc.loader.api.FabricLoader;
-import org.slf4j.Logger;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 public class FabricConfig {
-    private static final Logger LOGGER = LogUtils.getLogger();
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Path CONFIG_DIR = FabricLoader.getInstance().getConfigDir().resolve("creraces");
 
@@ -45,7 +45,7 @@ public class FabricConfig {
                 saveConfig(fileName, data);
             }
         } catch (Exception e) {
-            LOGGER.error("Failed to load CreRaces Fabric config: " + fileName, e);
+            CreRaces.LOGGER.error("Failed to load CreRaces Fabric config: {}", fileName, e);
             try {
                 data = clazz.getDeclaredConstructor().newInstance();
             } catch (Exception ex) {
@@ -64,7 +64,7 @@ public class FabricConfig {
         try (FileWriter writer = new FileWriter(file)) {
             GSON.toJson(data, writer);
         } catch (IOException e) {
-            LOGGER.error("Failed to save CreRaces Fabric config: " + fileName, e);
+            CreRaces.LOGGER.error("Failed to save CreRaces Fabric config: {}", fileName, e);
         }
     }
 
@@ -191,7 +191,6 @@ public class FabricConfig {
         CreRacesConfig.HUD_CONFIG_SAVE = FabricConfig::saveClientConfig;
 
         // Balancing
-
         CreRacesConfig.ENTITY_TROLL_PILLAR_MAX_HEALTH = () -> balancing.entities.troll_pillar_health;
         CreRacesConfig.ENTITY_TROLL_PILLAR_ARMOR = () -> balancing.entities.troll_pillar_armor;
         CreRacesConfig.ENTITY_TROLL_PILLAR_FOLLOW_RANGE = () -> balancing.entities.troll_pillar_follow_range;
@@ -315,7 +314,7 @@ public class FabricConfig {
             public long mini_placement_spam_threshold_ms = CreRacesConfig.MINI_PLACEMENT_SPAM_THRESHOLD_MS.get();
             public double mini_block_reach_margin = CreRacesConfig.MINI_BLOCK_REACH_MARGIN.get();
             public boolean mini_block_water_resistant = CreRacesConfig.MINI_BLOCK_WATER_RESISTANT.get();
-            public java.util.List<String> mini_build_dimension_blacklist = new java.util.ArrayList<>(
+            public List<String> mini_build_dimension_blacklist = new ArrayList<>(
                     CreRacesConfig.MINI_BUILD_DIMENSION_BLACKLIST.get());
         }
 

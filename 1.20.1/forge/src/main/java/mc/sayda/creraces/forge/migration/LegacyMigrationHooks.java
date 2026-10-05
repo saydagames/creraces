@@ -18,6 +18,7 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.server.ServerAboutToStartEvent;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -25,10 +26,11 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Detects a leftover CreRaces Classic world on server startup and offers the operator (console)
- * or the local singleplayer user (a blocking screen) a one-time choice: abort loading, migrate
- * player races, or skip and load normally. See the "CreRaces Classic Migration System" plan for
- * the full design.
+ * Detects a leftover CreRaces Classic world on server startup and gives a dedicated server's
+ * operator a one-time console choice: abort loading, migrate player races, or skip and load
+ * normally. Singleplayer is asked earlier, client-side (see LegacyWorldLoadGate). Players who join
+ * while migration is active get their Classic race converted. Block ID remapping lives in
+ * LegacyBlockRemaps.
  */
 public final class LegacyMigrationHooks {
     /** True only for the remainder of this boot, after the operator chose "migrate". Never persisted. */
@@ -61,8 +63,8 @@ public final class LegacyMigrationHooks {
             // Singleplayer is gated earlier, client-side, before the integrated server exists at
             // all (see LegacyWorldLoadGate/WorldOpenFlowsMixin), blocking THIS thread waiting on
             // a screen click both races vanilla's own level-loading screen for control of the
-            // display and trips Forge's server watchdog, crashing the game. By the time we get
-            // here the marker should already exist; just read whatever was decided.
+            // display and trips the server watchdog, crashing the game. By the time we get here
+            // the marker should already exist; just read whatever was decided.
             String choice = LegacyDetection.readChoice(server);
             migrationModeActive = "migrate".equals(choice);
             if (choice == null) {
@@ -160,7 +162,7 @@ public final class LegacyMigrationHooks {
         MinecraftServer server = serverPlayer.getServer();
         if (server == null) return;
 
-        java.nio.file.Path playerDataFile = server.getWorldPath(Objects.requireNonNull(LevelResource.PLAYER_DATA_DIR))
+        Path playerDataFile = server.getWorldPath(Objects.requireNonNull(LevelResource.PLAYER_DATA_DIR))
                 .resolve(player.getUUID() + ".dat");
         File file = playerDataFile.toFile();
         if (!file.exists()) return;

@@ -79,7 +79,7 @@
                                     "if_false": [
                                         {
                                             "type": "creraces:message",
-                                            "text": "Not enough mana",
+                                            "text": "msg.creraces.oread.not_enough_mana",
                                             "actionbar": true
                                         }
                                     ]
@@ -88,7 +88,7 @@
                             "if_false": [
                                 {
                                     "type": "creraces:message",
-                                    "text": "Placement blocked",
+                                    "text": "msg.creraces.oread.placement_blocked",
                                     "actionbar": true
                                 }
                             ]
@@ -96,6 +96,14 @@
                     ]
                 }
             ]
+        }
+    ],
+    "creraces:on_deactivate": [
+        {
+            "type": "creraces:modify_value",
+            "resource": "self",
+            "operation": "set",
+            "value": 0
         }
     ],
     "creraces:wiki_page": "Ability:Magmamancy"

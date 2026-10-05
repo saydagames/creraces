@@ -1,17 +1,17 @@
 package mc.sayda.creraces.engine.traits;
 
-import mc.sayda.creraces.engine.ScalingValue;
-import mc.sayda.creraces.engine.TraitRegistry;
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.capability.IPlayerVariables;
+import mc.sayda.creraces.engine.ScalingValue;
+import mc.sayda.creraces.engine.TraitRegistry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
+
 import java.util.Optional;
 
 /**
- * Base class for traits that execute actions periodically.
- * Handles state management via IPlayerVariables to prevent memory leaks and
- * multi-player collisions.
+ * Base class for server-side traits that run every {@code interval} ticks. The countdown lives in
+ * the player's trait timers under the trait id, so every player has their own.
  */
 public abstract class PeriodicTrait implements TraitRegistry.RaceTrait {
     protected final ScalingValue interval;
@@ -47,14 +47,8 @@ public abstract class PeriodicTrait implements TraitRegistry.RaceTrait {
         }
     }
 
-    /**
-     * @return true if the trait should attempt to execute this tick (if the timer
-     *         is 0).
-     */
+    /** Checked each time the timer runs out; returning false skips this cycle. */
     protected abstract boolean shouldExecute(Player player, IPlayerVariables vars);
 
-    /**
-     * The logic to run when the interval completes.
-     */
     protected abstract void execute(Player player, IPlayerVariables vars);
 }

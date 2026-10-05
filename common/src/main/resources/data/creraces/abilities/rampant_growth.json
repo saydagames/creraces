@@ -66,5 +66,11 @@
             ]
         }
     ],
+    "creraces:on_deactivate": [
+        {
+            "type": "creraces:remove_effect",
+            "effects": ["creraces:rooted", "minecraft:resistance", "creraces:thorns"]
+        }
+    ],
     "creraces:wiki_page": "Ability:Rampant_Growth"
 }

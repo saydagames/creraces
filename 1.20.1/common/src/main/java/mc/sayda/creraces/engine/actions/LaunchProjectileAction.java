@@ -1,25 +1,47 @@
 package mc.sayda.creraces.engine.actions;
 
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.engine.ActionRegistry;
+import mc.sayda.creraces.engine.ScalingValue;
 import mc.sayda.creraces.entity.FeatherProjectile;
 import mc.sayda.creraces.util.GsonHelper;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.projectile.Arrow;
+import net.minecraft.world.entity.projectile.LargeFireball;
+import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.entity.projectile.SmallFireball;
+import net.minecraft.world.entity.projectile.Snowball;
+import net.minecraft.world.entity.projectile.SpectralArrow;
+import net.minecraft.world.entity.projectile.ThrownEgg;
+import net.minecraft.world.entity.projectile.ThrownEnderpearl;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nullable;
+import java.util.Optional;
 
+/**
+ * Shoots a projectile along the caster's view. Besides the common vanilla projectiles, any
+ * projectile entity id works, and any item id is thrown as a feather-style projectile of that item.
+ */
 public class LaunchProjectileAction implements ActionRegistry.RaceAction {
     private final String projectileType;
-    private final mc.sayda.creraces.engine.ScalingValue damage;
-    private final mc.sayda.creraces.engine.ScalingValue speed;
-    private final mc.sayda.creraces.engine.ScalingValue inaccuracy;
+    private final ScalingValue damage;
+    private final ScalingValue speed;
+    private final ScalingValue inaccuracy;
 
-    public LaunchProjectileAction(String projectileType, mc.sayda.creraces.engine.ScalingValue damage,
-            mc.sayda.creraces.engine.ScalingValue speed, mc.sayda.creraces.engine.ScalingValue inaccuracy) {
+    public LaunchProjectileAction(String projectileType, ScalingValue damage, ScalingValue speed,
+            ScalingValue inaccuracy) {
         this.projectileType = projectileType;
         this.damage = damage;
         this.speed = speed;
@@ -27,109 +49,85 @@ public class LaunchProjectileAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public boolean execute(Player player, @Nullable net.minecraft.world.entity.LivingEntity target,
-            @Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @Nullable net.minecraft.core.BlockPos interact_pos) {
-        if (player.level() == null || player.level().isClientSide())
+    public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
+            @Nullable BlockPos interactPos) {
+        Level level = player.level();
+        if (level.isClientSide()) {
             return true;
+        }
 
         float dmg = (float) damage.evaluate(player, target, slot);
         float spd = (float) speed.evaluate(player, target, slot);
         float acc = (float) inaccuracy.evaluate(player, target, slot);
-
         String type = projectileType.contains(":") ? projectileType : "minecraft:" + projectileType;
 
         switch (type) {
             case "minecraft:arrow" -> {
-                Arrow arrow = new Arrow(player.level(), player);
+                Arrow arrow = new Arrow(level, player);
                 arrow.setBaseDamage(dmg);
-                arrow.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, spd, acc);
-                player.level().addFreshEntity(arrow);
+                shoot(player, arrow, spd, acc);
             }
             case "minecraft:spectral_arrow" -> {
-                net.minecraft.world.entity.projectile.SpectralArrow spectral =
-                        new net.minecraft.world.entity.projectile.SpectralArrow(player.level(), player);
-                spectral.setBaseDamage(dmg);
-                spectral.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, spd, acc);
-                player.level().addFreshEntity(spectral);
+                SpectralArrow arrow = new SpectralArrow(level, player);
+                arrow.setBaseDamage(dmg);
+                shoot(player, arrow, spd, acc);
             }
-            case "minecraft:snowball" -> {
-                net.minecraft.world.entity.projectile.Snowball snowball =
-                        new net.minecraft.world.entity.projectile.Snowball(player.level(), player);
-                snowball.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, spd, acc);
-                player.level().addFreshEntity(snowball);
-            }
-            case "minecraft:egg" -> {
-                net.minecraft.world.entity.projectile.ThrownEgg egg =
-                        new net.minecraft.world.entity.projectile.ThrownEgg(player.level(), player);
-                egg.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, spd, acc);
-                player.level().addFreshEntity(egg);
-            }
-            case "minecraft:ender_pearl" -> {
-                net.minecraft.world.entity.projectile.ThrownEnderpearl pearl =
-                        new net.minecraft.world.entity.projectile.ThrownEnderpearl(player.level(), player);
-                pearl.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, spd, acc);
-                player.level().addFreshEntity(pearl);
-            }
+            case "minecraft:snowball" -> shoot(player, new Snowball(level, player), spd, acc);
+            case "minecraft:egg" -> shoot(player, new ThrownEgg(level, player), spd, acc);
+            case "minecraft:ender_pearl" -> shoot(player, new ThrownEnderpearl(level, player), spd, acc);
             case "minecraft:fireball" -> {
-                net.minecraft.world.phys.Vec3 look = player.getLookAngle().scale(spd);
-                net.minecraft.world.entity.projectile.LargeFireball fireball =
-                        new net.minecraft.world.entity.projectile.LargeFireball(player.level(), player,
-                                look.x, look.y, look.z, (int) dmg);
+                // Fireballs fly along their power vector instead of being shot; damage is the explosion power.
+                Vec3 power = player.getLookAngle().scale(spd);
+                LargeFireball fireball = new LargeFireball(level, player, power.x, power.y, power.z, (int) dmg);
                 fireball.setPos(player.getX(), player.getEyeY(), player.getZ());
-                player.level().addFreshEntity(fireball);
+                level.addFreshEntity(fireball);
             }
             case "minecraft:small_fireball" -> {
-                net.minecraft.world.phys.Vec3 look = player.getLookAngle().scale(spd);
-                net.minecraft.world.entity.projectile.SmallFireball smallFireball =
-                        new net.minecraft.world.entity.projectile.SmallFireball(player.level(), player,
-                                look.x, look.y, look.z);
-                smallFireball.setPos(player.getX(), player.getEyeY(), player.getZ());
-                player.level().addFreshEntity(smallFireball);
+                Vec3 power = player.getLookAngle().scale(spd);
+                SmallFireball fireball = new SmallFireball(level, player, power.x, power.y, power.z);
+                fireball.setPos(player.getX(), player.getEyeY(), player.getZ());
+                level.addFreshEntity(fireball);
             }
-            default -> {
-                ResourceLocation typeLoc = new ResourceLocation(type);
-                var entityTypeOpt = BuiltInRegistries.ENTITY_TYPE.getOptional(typeLoc);
-                if (entityTypeOpt.isPresent()) {
-                    net.minecraft.world.entity.Entity entity = entityTypeOpt.get().create(player.level());
-                    if (entity instanceof net.minecraft.world.entity.projectile.Projectile proj) {
-                        entity.setPos(player.getX(), player.getEyeY(), player.getZ());
-                        if (proj instanceof net.minecraft.world.entity.projectile.AbstractArrow arrow) {
-                            arrow.setBaseDamage(dmg);
-                            arrow.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, spd, acc);
-                        } else {
-                            proj.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, spd, acc);
-                        }
-                        player.level().addFreshEntity(entity);
-                    }
-                } else {
-                    // Not a registered entity type - if it's a registered item, throw it as a
-                    // feather-style projectile carrying that item (generalizes the old
-                    // harpy_feather/feather special case to any race's item, no Java change needed).
-                    net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.getOptional(typeLoc).orElse(null);
-                    if (item != null) {
-                        FeatherProjectile feather = new FeatherProjectile(player.level(), player);
-                        feather.setDamage(dmg);
-                        feather.setItem(new ItemStack(item));
-                        feather.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, spd, acc);
-                        player.level().addFreshEntity(feather);
-                    }
-                }
-            }
+            default -> launchById(player, new ResourceLocation(type), dmg, spd, acc);
         }
         return true;
     }
 
+    private static void launchById(Player player, ResourceLocation id, float dmg, float spd, float acc) {
+        Level level = player.level();
+        Optional<EntityType<?>> entityType = BuiltInRegistries.ENTITY_TYPE.getOptional(id);
+        if (entityType.isPresent()) {
+            Entity entity = entityType.get().create(level);
+            if (entity instanceof Projectile projectile) {
+                projectile.setPos(player.getX(), player.getEyeY(), player.getZ());
+                if (projectile instanceof AbstractArrow arrow) {
+                    arrow.setBaseDamage(dmg);
+                }
+                shoot(player, projectile, spd, acc);
+            }
+            return;
+        }
+        // Not an entity: an item id is thrown as a feather-style projectile carrying that item.
+        Item item = BuiltInRegistries.ITEM.getOptional(id).orElse(null);
+        if (item != null) {
+            FeatherProjectile feather = new FeatherProjectile(level, player);
+            feather.setDamage(dmg);
+            feather.setItem(new ItemStack(item));
+            shoot(player, feather, spd, acc);
+        }
+    }
+
+    private static void shoot(Player player, Projectile projectile, float speed, float inaccuracy) {
+        projectile.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, speed, inaccuracy);
+        player.level().addFreshEntity(projectile);
+    }
+
     public static void register() {
-        ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "launch_projectile"), json -> {
-            String type = GsonHelper.getAsString(json, "projectile", "minecraft:arrow");
-            mc.sayda.creraces.engine.ScalingValue damage = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
-                    "damage", 1.0);
-            mc.sayda.creraces.engine.ScalingValue speed = mc.sayda.creraces.engine.ScalingValue.fromJson(json, "speed",
-                    1.0);
-            mc.sayda.creraces.engine.ScalingValue inaccuracy = mc.sayda.creraces.engine.ScalingValue.fromJson(json,
-                    "inaccuracy", 1.0);
-            return new LaunchProjectileAction(type, damage, speed, inaccuracy);
-        });
+        ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "launch_projectile"),
+                json -> new LaunchProjectileAction(
+                        GsonHelper.getAsString(json, "projectile", "minecraft:arrow"),
+                        ScalingValue.fromJson(json, "damage", 1.0),
+                        ScalingValue.fromJson(json, "speed", 1.0),
+                        ScalingValue.fromJson(json, "inaccuracy", 1.0)));
     }
 }

@@ -17,7 +17,6 @@
         "LivingEntitySleepMixin",
         "PlayerRespawnMixin",
         "BlockEntityAccessor",
-        "LivingEntityAccessor",
         "PoiTypesAccessor",
         "StructureTemplatePoolAccessor",
         "PackRepositoryMixin",

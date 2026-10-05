@@ -26,10 +26,6 @@ public class QuestRegistry {
         return Collections.unmodifiableCollection(QUESTS.values());
     }
 
-    public static boolean exists(ResourceLocation id) {
-        return QUESTS.containsKey(id);
-    }
-
     public static void clear() {
         QUESTS.clear();
     }

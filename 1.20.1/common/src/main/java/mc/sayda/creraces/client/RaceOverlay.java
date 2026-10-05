@@ -4,35 +4,27 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import mc.sayda.creraces.ability.Ability;
 import mc.sayda.creraces.ability.AbilityRegistry;
 import mc.sayda.creraces.ability.AbilitySlot;
+import mc.sayda.creraces.ability.AbilityType;
+import mc.sayda.creraces.ability.OverlayBar;
 import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.capability.IPlayerVariables;
 import mc.sayda.creraces.config.CreRacesConfig;
 import mc.sayda.creraces.race.Race;
 import mc.sayda.creraces.race.RaceRegistry;
 import mc.sayda.creraces.race.ResourceType;
 import mc.sayda.creraces.registry.ModAttributes;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
 import javax.annotation.Nonnull;
-import java.util.Map;
+import java.util.Objects;
 
 public class RaceOverlay {
-    /** The raw current-value reading for a resource type that has a dedicated PlayerVariables getter. */
-    private static double resourceValue(mc.sayda.creraces.capability.IPlayerVariables vars, ResourceType type) {
-        switch (type) {
-            case MANA: return vars.getMana();
-            case RAGE: return vars.getRage();
-            case ENERGY: return vars.getEnergy();
-            case GRIT: return vars.getGrit();
-            case SOUL: return vars.getSoul();
-            default: return 0;
-        }
-    }
-
     private static final ResourceLocation UI_BG = new ResourceLocation("creraces", "textures/screens/ui_bg.png");
     private static final ResourceLocation UI_BG2 = new ResourceLocation("creraces", "textures/screens/ui_bg2.png");
     private static final ResourceLocation UI_FRAME = new ResourceLocation("creraces", "textures/screens/ui.png");
@@ -45,6 +37,17 @@ public class RaceOverlay {
     private static final ResourceLocation UI_E = new ResourceLocation("creraces", "textures/screens/ui_e.png");
     private static final ResourceLocation UI_G = new ResourceLocation("creraces", "textures/screens/ui_g.png");
 
+    /** Current value of a resource type that has a dedicated PlayerVariables getter, 0 for any other. */
+    private static double resourceValue(IPlayerVariables vars, ResourceType type) {
+        return switch (type) {
+            case MANA -> vars.getMana();
+            case RAGE -> vars.getRage();
+            case ENERGY -> vars.getEnergy();
+            case GRIT -> vars.getGrit();
+            case SOUL -> vars.getSoul();
+            default -> 0;
+        };
+    }
 
     public static void render(@Nonnull GuiGraphics graphics, float tickDelta) {
         Minecraft mc = Minecraft.getInstance();
@@ -141,17 +144,15 @@ public class RaceOverlay {
                 default             -> 30;
             };
             for (AbilitySlot slot : AbilitySlot.values()) {
-                net.minecraft.client.KeyMapping keyMapping = getKeyMapping(slot);
+                KeyMapping keyMapping = getKeyMapping(slot);
                 if (keyMapping != null && !keyMapping.isUnbound()) {
                     renderAbilitySlot(graphics, vars, slot, slotX, slotY, labelOrientation);
                     if (abilitiesVertical) slotY += verticalStep;
                     else                   slotX += 25;
                 }
             }
-
-            // graphics.blit handled the state
         });
-        
+
         graphics.pose().popPose();
     }
 
@@ -172,27 +173,27 @@ public class RaceOverlay {
     }
 
     private static void renderOverlayBars(@Nonnull GuiGraphics graphics,
-            @Nonnull mc.sayda.creraces.capability.IPlayerVariables vars,
+            @Nonnull IPlayerVariables vars,
             @Nonnull Race race, int x, int startY) {
         var font = Minecraft.getInstance().font;
         boolean growUp = CreRacesConfig.HUD_BARS_GROW_UP.get();
         int barY = startY;
 
-        for (mc.sayda.creraces.ability.OverlayBar bar : race.overlayBars()) {
+        for (OverlayBar bar : race.overlayBars()) {
             barY = renderBar(graphics, font, vars, bar, x, barY, growUp);
         }
 
         for (Ability ability : AbilityRegistry.getAll()) {
             if (!ability.allowedRaces().isEmpty() && !ability.allowedRaces().contains(race.id())) continue;
-            for (mc.sayda.creraces.ability.OverlayBar bar : ability.overlayBars()) {
+            for (OverlayBar bar : ability.overlayBars()) {
                 barY = renderBar(graphics, font, vars, bar, x, barY, growUp);
             }
         }
     }
 
-    private static int renderBar(@Nonnull GuiGraphics graphics, net.minecraft.client.gui.Font font,
-            @Nonnull mc.sayda.creraces.capability.IPlayerVariables vars,
-            @Nonnull mc.sayda.creraces.ability.OverlayBar bar, int x, int barY, boolean growUp) {
+    private static int renderBar(@Nonnull GuiGraphics graphics, Font font,
+            @Nonnull IPlayerVariables vars,
+            @Nonnull OverlayBar bar, int x, int barY, boolean growUp) {
         double value = bar.getValue(vars);
         if (value <= 0) return barY;
 
@@ -243,7 +244,7 @@ public class RaceOverlay {
     }
 
     private static void renderAbilitySlot(@Nonnull GuiGraphics graphics,
-            @Nonnull mc.sayda.creraces.capability.IPlayerVariables vars,
+            @Nonnull IPlayerVariables vars,
             @Nonnull AbilitySlot slot, int x, int y, String labelOrientation) {
         ResourceLocation abilityId = vars.getAbilityInSlot(slot);
 
@@ -254,7 +255,7 @@ public class RaceOverlay {
             Ability ability = AbilityRegistry.get(abilityId);
             if (ability != null) {
                 // Unified icon rendering: handles both item IDs and texture paths
-                mc.sayda.creraces.client.AbilityIconRenderer.render(graphics, ability.icon(), x + 1, y + 1, 16);
+                AbilityIconRenderer.render(graphics, ability.icon(), x + 1, y + 1, 16);
 
                 // Push Z so overlays render above 3D block icons
                 graphics.pose().pushPose();
@@ -268,23 +269,23 @@ public class RaceOverlay {
                             ? Math.min(1f, (float) cooldown / (float) ability.cooldown())
                             : 1f;
                     graphics.fill(x + 1, y + 1 + (int) (16 * (1 - cooldownPercent)), x + 17, y + 17, 0x80000000);
-                    String k = java.util.Objects.requireNonNull(String.valueOf(Math.max(1, cooldown / 20)));
+                    String cooldownText = Objects.requireNonNull(String.valueOf(Math.max(1, cooldown / 20)));
                     var font = Minecraft.getInstance().font;
                     if (font != null) {
-                        graphics.drawCenteredString(font, k, x + 9, y + 5, 0xFFFFFF);
+                        graphics.drawCenteredString(font, cooldownText, x + 9, y + 5, 0xFFFFFF);
                     }
                 }
 
                 // Draw "Unusable" or "Off" indication (Borders)
-                boolean usable = isUsable(Minecraft.getInstance().player, vars, ability);
+                boolean usable = isUsable(vars, ability);
                 boolean active = vars.getPersistentState(abilityId) > 0;
 
                 if (!usable) {
                     drawBorder(graphics, x - 1, y - 1, 20, 20, 0x88FF0000); // Translucent Red
                 } else if (active) {
                     drawBorder(graphics, x - 1, y - 1, 20, 20, 0x8800FF00); // Translucent Green
-                } else if (ability.type() == mc.sayda.creraces.ability.AbilityType.INNATE
-                        || ability.type() == mc.sayda.creraces.ability.AbilityType.PASSIVE) {
+                } else if (ability.type() == AbilityType.INNATE
+                        || ability.type() == AbilityType.PASSIVE) {
                     // Only show gray border if it's a toggleable ability that is currently OFF
                     if (ability.onDeactivate() != null && !ability.onDeactivate().isEmpty()) {
                         drawBorder(graphics, x - 1, y - 1, 20, 20, 0x88AAAAAA); // Translucent Gray
@@ -296,7 +297,7 @@ public class RaceOverlay {
                 // Draw Level Overlay
                 int level = vars.getAbilityLevel(abilityId);
                 if (level > 0) {
-                    mc.sayda.creraces.client.AbilityIconRenderer.renderLevel(graphics, level, x + 1, y + 1, 16);
+                    AbilityIconRenderer.renderLevel(graphics, level, x + 1, y + 1, 16);
                 }
             }
         }
@@ -315,18 +316,13 @@ public class RaceOverlay {
     }
 
     private static void drawBorder(GuiGraphics graphics, int x, int y, int width, int height, int color) {
-        // Top
         graphics.fill(x, y, x + width, y + 1, color);
-        // Bottom
         graphics.fill(x, y + height - 1, x + width, y + height, color);
-        // Left
         graphics.fill(x, y + 1, x + 1, y + height - 1, color);
-        // Right
         graphics.fill(x + width - 1, y + 1, x + width, y + height - 1, color);
     }
 
-    private static boolean isUsable(net.minecraft.client.player.LocalPlayer player,
-            mc.sayda.creraces.capability.IPlayerVariables vars, Ability ability) {
+    private static boolean isUsable(IPlayerVariables vars, Ability ability) {
         if (ability.cost() <= 0)
             return true;
 
@@ -342,20 +338,13 @@ public class RaceOverlay {
         return currentRes >= ability.cost();
     }
 
-    private static net.minecraft.client.KeyMapping getKeyMapping(AbilitySlot slot) {
-        switch (slot) {
-            case A1:
-                return ModKeyMappings.ABILITY_A1;
-            case A2:
-                return ModKeyMappings.ABILITY_A2;
-            case A3:
-                return ModKeyMappings.ABILITY_A3;
-            case A4:
-                return ModKeyMappings.ABILITY_A4;
-            case A5:
-                return ModKeyMappings.ABILITY_A5;
-            default:
-                return null;
-        }
+    private static KeyMapping getKeyMapping(AbilitySlot slot) {
+        return switch (slot) {
+            case A1 -> ModKeyMappings.ABILITY_A1;
+            case A2 -> ModKeyMappings.ABILITY_A2;
+            case A3 -> ModKeyMappings.ABILITY_A3;
+            case A4 -> ModKeyMappings.ABILITY_A4;
+            case A5 -> ModKeyMappings.ABILITY_A5;
+        };
     }
 }

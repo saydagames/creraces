@@ -1,26 +1,25 @@
 package mc.sayda.creraces.item;
 
-import mc.sayda.creraces.ability.EssenceRegistry;
+import dev.architectury.registry.menu.ExtendedMenuProvider;
+import dev.architectury.registry.menu.MenuRegistry;
 import mc.sayda.creraces.ability.EssenceType;
+import mc.sayda.creraces.util.EssenceBeltHelper;
 import mc.sayda.creraces.world.inventory.EssenceBeltMenu;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
-
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
-import net.minecraft.network.chat.Component;
-import dev.architectury.registry.menu.ExtendedMenuProvider;
-import net.minecraft.network.FriendlyByteBuf;
 
 public class EssenceBeltItem extends Item {
 
@@ -43,7 +42,7 @@ public class EssenceBeltItem extends Item {
         ItemStack belt = EssenceBeltMenu.findBeltStack(player);
         if (belt == null) return;
         SimpleContainer beltInv = loadInventory(belt);
-        dev.architectury.registry.menu.MenuRegistry.openExtendedMenu(player, new ExtendedMenuProvider() {
+        MenuRegistry.openExtendedMenu(player, new ExtendedMenuProvider() {
             @Override
             public void saveExtraData(FriendlyByteBuf buf) {}
             @Override
@@ -87,36 +86,13 @@ public class EssenceBeltItem extends Item {
     }
 
     public int getEssenceCount(ItemStack beltStack, EssenceType type) {
-        SimpleContainer inv = loadInventory(beltStack);
-        int total = 0;
-        for (int i = 0; i < SLOTS; i++) {
-            ItemStack slot = inv.getItem(i);
-            EssenceType slotType = EssenceRegistry.typeFromBottle(slot.getItem());
-            if (slotType == type) {
-                total += slot.getMaxDamage() - slot.getDamageValue();
-            }
-        }
-        return total;
+        return EssenceBeltHelper.countInContainer(loadInventory(beltStack), type);
     }
 
+    /** Drains {@code amount} charges from the belt's bottles. Leaves the belt untouched and returns false if it holds too few. */
     public boolean consumeEssence(ItemStack beltStack, EssenceType type, int amount) {
         SimpleContainer inv = loadInventory(beltStack);
-        int remaining = amount;
-        for (int i = 0; i < SLOTS && remaining > 0; i++) {
-            ItemStack slot = inv.getItem(i);
-            EssenceType slotType = EssenceRegistry.typeFromBottle(slot.getItem());
-            if (slotType == type && slot.getItem() instanceof EssenceBottleItem) {
-                int charges = slot.getMaxDamage() - slot.getDamageValue();
-                if (charges <= remaining) {
-                    remaining -= charges;
-                    inv.setItem(i, new ItemStack(Items.GLASS_BOTTLE));
-                } else {
-                    slot.setDamageValue(slot.getDamageValue() + remaining);
-                    remaining = 0;
-                }
-            }
-        }
-        if (remaining > 0) return false;
+        if (EssenceBeltHelper.drainFromContainer(inv, type, amount) > 0) return false;
         saveInventory(beltStack, inv);
         return true;
     }

@@ -1,17 +1,20 @@
 package mc.sayda.creraces.effect;
 
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.registry.ModMobEffects;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.ai.attributes.AttributeMap;
+import virtuoel.pehkui.api.ScaleData;
+import virtuoel.pehkui.api.ScaleTypes;
 
+/** Doubles the player's Pehkui flight scale outside the fairy realm. Washed off by water or Soggy. */
 public class FairyDustEffect extends MobEffect {
 
-    private static final ResourceLocation FAIRY_REALM =
-            ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "fairy_realm");
+    private static final ResourceLocation FAIRY_REALM = ResourceLocation.fromNamespaceAndPath(CreRaces.MODID,
+            "fairy_realm");
 
     public FairyDustEffect() {
         super(MobEffectCategory.BENEFICIAL, 0xCD88D6);
@@ -20,21 +23,12 @@ public class FairyDustEffect extends MobEffect {
     @Override
     public boolean applyEffectTick(LivingEntity entity, int amplifier) {
         if (!(entity instanceof ServerPlayer player)) return true;
-        if (player.isInWater()) {
-            player.removeEffect(mc.sayda.creraces.registry.ModMobEffects.FAIRY_DUST_EFFECT);
-            return true;
-        }
-        if (player.hasEffect(mc.sayda.creraces.registry.ModMobEffects.SOGGY)) {
-            player.removeEffect(mc.sayda.creraces.registry.ModMobEffects.FAIRY_DUST_EFFECT);
+        if (player.isInWater() || player.hasEffect(ModMobEffects.SOGGY)) {
+            player.removeEffect(ModMobEffects.FAIRY_DUST_EFFECT);
             return true;
         }
         if (player.level().dimension().location().equals(FAIRY_REALM)) return true;
-        try {
-            virtuoel.pehkui.api.ScaleData data = virtuoel.pehkui.api.ScaleTypes.FLIGHT.getScaleData(player);
-            data.setScale(2.0f);
-            data.setTargetScale(2.0f);
-        } catch (NoClassDefFoundError ignored) {
-        } catch (Exception e) { mc.sayda.creraces.CreRaces.LOGGER.debug("Pehkui scale error: {}", e.getMessage()); }
+        setFlightScale(player, 2.0f);
         return true;
     }
 
@@ -43,7 +37,21 @@ public class FairyDustEffect extends MobEffect {
         return true;
     }
 
-    // removeAttributeModifiers(AttributeMap) no longer receives the owning entity in 1.21+,
-    // so the Pehkui flight-scale reset that used to run here has no entity to reset - it needs
-    // a different hook (e.g. a tick-based check for the effect disappearing) to be restored.
+    /** Undoes the boost. LivingEntityMixin calls this when the effect ends or is removed. */
+    public static void resetFlightScale(LivingEntity entity) {
+        if (entity instanceof ServerPlayer player)
+            setFlightScale(player, 1.0f);
+    }
+
+    private static void setFlightScale(ServerPlayer player, float scale) {
+        try {
+            ScaleData data = ScaleTypes.FLIGHT.getScaleData(player);
+            data.setScale(scale);
+            data.setTargetScale(scale);
+        } catch (NoClassDefFoundError pehkuiMissing) {
+            // Pehkui is optional; without it fairy dust simply has no flight boost.
+        } catch (Exception e) {
+            CreRaces.LOGGER.debug("Pehkui scale error: {}", e.getMessage());
+        }
+    }
 }

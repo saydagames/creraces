@@ -10,7 +10,10 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 
 import java.util.List;
 
-/** Exposes StructureTemplatePool's private template lists so a village pool can be mutated directly instead of overriding the whole datapack file. */
+/**
+ * Exposes StructureTemplatePool's private template lists so a village pool can be extended in place
+ * instead of overriding the whole datapack file.
+ */
 @Mixin(StructureTemplatePool.class)
 public interface StructureTemplatePoolAccessor {
     @Accessor("rawTemplates")

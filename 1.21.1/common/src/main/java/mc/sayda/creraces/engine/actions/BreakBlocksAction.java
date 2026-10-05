@@ -1,18 +1,24 @@
 package mc.sayda.creraces.engine.actions;
 
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.ability.AbilitySlot;
+import mc.sayda.creraces.config.CreRacesConfig;
 import mc.sayda.creraces.engine.ActionRegistry;
-import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
 import mc.sayda.creraces.engine.ScalingValue;
+import mc.sayda.creraces.registry.ModGameRules;
 import mc.sayda.creraces.util.GsonHelper;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import mc.sayda.creraces.registry.ModGameRules;
+import net.minecraft.world.level.Level;
 
+import javax.annotation.Nullable;
+
+/** Breaks every breakable block in a cube around the resolved position, like a player would. */
 @SuppressWarnings("null")
 public class BreakBlocksAction implements ActionRegistry.RaceAction {
-
     private final ScalingValue radius;
     private final boolean dropItems;
     private final ScalingValue offsetX;
@@ -25,7 +31,7 @@ public class BreakBlocksAction implements ActionRegistry.RaceAction {
 
     public BreakBlocksAction(ScalingValue radius, boolean dropItems, ScalingValue offsetX, ScalingValue offsetY,
             ScalingValue offsetZ, boolean useTarget, boolean useTargetBlock, boolean absolute,
-            ScalingValue.MathOp coordinateMath) {
+            @Nullable ScalingValue.MathOp coordinateMath) {
         this.radius = radius;
         this.dropItems = dropItems;
         this.offsetX = offsetX;
@@ -38,69 +44,35 @@ public class BreakBlocksAction implements ActionRegistry.RaceAction {
     }
 
     @Override
-    public boolean execute(Player player, @javax.annotation.Nullable LivingEntity target,
-            @javax.annotation.Nullable mc.sayda.creraces.ability.AbilitySlot slot,
-            @javax.annotation.Nullable net.minecraft.core.BlockPos interact_pos) {
-        if (player == null || player.level() == null) return false;
-        if (player.level().isClientSide()) return true;
-
-        if (!player.level().getGameRules().getBoolean(ModGameRules.RULE_RACEGRIEFING)) {
-            player.displayClientMessage(net.minecraft.network.chat.Component.translatable("msg.creraces.race_griefing_disabled"), true);
+    public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
+            @Nullable BlockPos interactPos) {
+        Level level = player.level();
+        if (level.isClientSide()) {
+            return true;
+        }
+        if (!level.getGameRules().getBoolean(ModGameRules.RULE_RACEGRIEFING)) {
+            player.displayClientMessage(Component.translatable("msg.creraces.race_griefing_disabled"), true);
             return false;
         }
 
-        BlockPos basePos;
-        if (absolute) {
-            basePos = BlockPos.ZERO;
-        } else if (useTarget && target != null) {
-            basePos = target.blockPosition();
-        } else if (useTargetBlock && interact_pos != null) {
-            basePos = interact_pos;
-        } else {
-            double tx = player.getX();
-            double ty = player.getY();
-            double tz = player.getZ();
-
-            int bx = (int) Math.floor(tx);
-            int by = (int) Math.floor(ty);
-            int bz = (int) Math.floor(tz);
-
-            switch (coordinateMath) {
-                case ROUND:
-                    bx = (int) Math.round(tx);
-                    by = (int) Math.round(ty);
-                    bz = (int) Math.round(tz);
-                    break;
-                case CEIL:
-                    bx = (int) Math.ceil(tx);
-                    by = (int) Math.ceil(ty);
-                    bz = (int) Math.ceil(tz);
-                    break;
-                default:
-                    break;
-            }
-            basePos = new BlockPos(bx, by, bz);
-        }
-
-        int ox = (int) offsetX.evaluate(player, target, slot);
-        int oy = (int) offsetY.evaluate(player, target, slot);
-        int oz = (int) offsetZ.evaluate(player, target, slot);
-        BlockPos center = basePos.offset(ox, oy, oz);
+        BlockPos center = BlockTargeting.resolveAnchor(player, target, interactPos, absolute, useTarget,
+                useTargetBlock, coordinateMath).offset(
+                        (int) offsetX.evaluate(player, target, slot),
+                        (int) offsetY.evaluate(player, target, slot),
+                        (int) offsetZ.evaluate(player, target, slot));
 
         double r = radius.evaluate(player, target, slot);
-        int maxRadius = mc.sayda.creraces.config.CreRacesConfig.BREAK_BLOCKS_MAX_RADIUS.get();
-        if (maxRadius > 0)
+        int maxRadius = CreRacesConfig.BREAK_BLOCKS_MAX_RADIUS.get();
+        if (maxRadius > 0) {
             r = Math.min(r, maxRadius);
+        }
         for (int x = -(int) r; x <= r; x++) {
             for (int y = -(int) r; y <= r; y++) {
                 for (int z = -(int) r; z <= r; z++) {
                     BlockPos pos = center.offset(x, y, z);
-
-                    float speed = player.level().getBlockState(pos).getDestroySpeed(player.level(), pos);
-                    // destroySpeed == -1 means the block is unbreakable (bedrock, command blocks,
-                    // etc.)
-                    if (speed >= 0) {
-                        player.level().destroyBlock(pos, dropItems, player);
+                    // A destroy speed of -1 marks unbreakable blocks (bedrock, command blocks, ...).
+                    if (level.getBlockState(pos).getDestroySpeed(level, pos) >= 0) {
+                        level.destroyBlock(pos, dropItems, player);
                     }
                 }
             }
@@ -109,34 +81,15 @@ public class BreakBlocksAction implements ActionRegistry.RaceAction {
     }
 
     public static void register() {
-        ActionRegistry.register(ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "break_blocks"), json -> {
-            ScalingValue radius = ScalingValue.fromJson(json, "radius", 1.0);
-            boolean dropItems = GsonHelper.getAsBoolean(json, "drop_items", true);
-            ScalingValue offsetX = ScalingValue.fromJson(json, "offset_x", 0.0);
-            ScalingValue offsetY = ScalingValue.fromJson(json, "offset_y", 0.0);
-            ScalingValue offsetZ = ScalingValue.fromJson(json, "offset_z", 0.0);
-            boolean useTarget = GsonHelper.getAsBoolean(json, "use_target", false);
-            boolean useTargetBlock = GsonHelper.getAsBoolean(json, "use_target_block", false);
-            boolean absolute = GsonHelper.getAsBoolean(json, "absolute", false);
-
-            ScalingValue.MathOp coordinateMath = ScalingValue.MathOp.FLOOR;
-            if (json.has("math")) {
-                try {
-                    String mode = json.get("math").getAsString().toUpperCase();
-                    for (ScalingValue.MathOp op : ScalingValue.MathOp.values()) {
-                        if (op.name().equals(mode)) {
-                            coordinateMath = op;
-                            break;
-                        }
-                    }
-                } catch (Exception e) {
-                    mc.sayda.creraces.CreRaces.LOGGER.warn("Invalid math mode in BreakBlocksAction: {}",
-                            json.get("math").getAsString());
-                }
-            }
-
-            return new BreakBlocksAction(radius, dropItems, offsetX, offsetY, offsetZ, useTarget, useTargetBlock,
-                    absolute, coordinateMath);
-        });
+        ActionRegistry.register(ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "break_blocks"), json -> new BreakBlocksAction(
+                ScalingValue.fromJson(json, "radius", 1.0),
+                GsonHelper.getAsBoolean(json, "drop_items", true),
+                ScalingValue.fromJson(json, "offset_x", 0.0),
+                ScalingValue.fromJson(json, "offset_y", 0.0),
+                ScalingValue.fromJson(json, "offset_z", 0.0),
+                GsonHelper.getAsBoolean(json, "use_target", false),
+                GsonHelper.getAsBoolean(json, "use_target_block", false),
+                GsonHelper.getAsBoolean(json, "absolute", false),
+                BlockTargeting.parseMathOp(json, "BreakBlocksAction")));
     }
 }

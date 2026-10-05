@@ -2,8 +2,6 @@ package mc.sayda.creraces.block;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -48,17 +46,14 @@ public class DryadExpansionPanelBlock extends Block {
     }
 
     @Override
-    public BlockState mirror(BlockState state, Mirror mirrorIn) {
-        return state.rotate(mirrorIn.getRotation(state.getValue(FACING)));
+    public BlockState mirror(BlockState state, Mirror mirror) {
+        return state.rotate(mirror.getRotation(state.getValue(FACING)));
     }
 
     @Override
-    public InteractionResult useWithoutItem(BlockState state, Level world, BlockPos pos, Player player,
+    public InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
             BlockHitResult hit) {
-        if (world.isClientSide) {
-            return InteractionResult.SUCCESS;
-        }
-
+        // Nothing to do yet; consuming the click stops held items from being used on the panel.
         return InteractionResult.SUCCESS;
     }
 }
