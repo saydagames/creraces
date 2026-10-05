@@ -1,6 +1,0 @@
-{
-  "type": "neoforge:add_features",
-  "biomes": "#minecraft:is_overworld",
-  "features": "creraces:essence_vortex",
-  "step": "vegetal_decoration"
-}
