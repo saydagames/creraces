@@ -1,0 +1,49 @@
+{
+    "creraces:name": "race.creraces.siren.name",
+    "creraces:parent_races": ["creraces:aquatic"],
+    "creraces:index": 6.2,
+    "creraces:description": "race.creraces.siren.description",
+    "creraces:icon": "creraces:textures/screens/siren_icon.png",
+    "creraces:splash": "creraces:textures/screens/siren_splash.png",
+    "creraces:portrait": "creraces:textures/screens/siren_portrait.png",
+    "creraces:name_texture": "creraces:textures/screens/siren_text.png",
+    "creraces:resource_type": "mana",
+    "creraces:difficulty": 2,
+    "creraces:gstate": "female",
+    "creraces:can_breathe_on_land": false,
+    "creraces:allowed_food_types": ["seafood"],
+    "creraces:negate_effects": ["minecraft:poison", "creraces:boiling"],
+    "creraces:starting_abilities": ["creraces:tidal_wave", "creraces:spicy_whirlpool", "tidal_blessing", "hydro_barrier"],
+    "land_penalties": [
+        {
+            "id": "land_penalties",
+            "type": "creraces:on_tick",
+            "interval": 20,
+            "condition": {
+                "type": "creraces:not",
+                "condition": {
+                    "type": "creraces:or",
+                    "conditions": [{ "type": "creraces:in_water" }, { "type": "creraces:exposed_to_rain" }]
+                }
+            },
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "minecraft:weakness",
+                    "duration": 30,
+                    "amplifier": 0,
+                    "visible": true
+                }
+            ]
+        }
+    ],
+    "creraces:wiki_page": "Siren",
+    "creraces:splash_x": 9,
+    "creraces:splash_y": -20,
+    "creraces:splash_w": 166,
+    "creraces:name_tex_x": 32,
+    "creraces:name_tex_y": -39,
+    "creraces:name_tex_w": 108,
+    "creraces:name_tex_h": 25,
+    "creraces:bg_texture": "creraces:textures/screens/selection_water_bg.png"
+}

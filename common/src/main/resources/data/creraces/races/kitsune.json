@@ -1,198 +1,104 @@
 {
     "creraces:name": "race.creraces.kitsune.name",
-    "creraces:index": 17.0,
+    "creraces:index": 17,
     "creraces:description": "race.creraces.kitsune.description",
     "creraces:icon": "creraces:textures/screens/kitsune_icon.png",
     "creraces:splash": "creraces:textures/screens/kitsune_splash.png",
-    "creraces:resource_type": "MANA",
+    "creraces:resource_type": "mana",
     "creraces:difficulty": 4,
     "creraces:is_spirit": true,
-    "creraces:gstate": "FEMALE",
-    "creraces:immune_to_damage": [
-        "minecraft:sweet_berry_bush"
-    ],
+    "creraces:gstate": "female",
+    "creraces:immune_to_damage": ["minecraft:sweet_berry_bush"],
     "creraces:scale": {
-        "base": {
-            "base": 1.0
-        },
-        "hitbox_height": {
-            "base": 1.0,
-            "scales_with": "state:fox_form",
-            "factor": -0.6
-        },
-        "eye_height": {
-            "base": 1.0,
-            "scales_with": "state:fox_form",
-            "factor": -0.6
-        }
+        "base": { "base": 1 },
+        "hitbox_height": { "base": 1, "scales_with": "state:fox_form", "factor": -0.6 },
+        "eye_height": { "base": 1, "scales_with": "state:fox_form", "factor": -0.6 }
     },
     "kitsune_attributes": [
         {
             "id": "kitsune_health",
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.max_health",
-            "value": {
-                "base": -18.0,
-                "scales_with": "custom:tail_count",
-                "factor": 2.0
-            },
-            "operation": "addition"
+            "value": { "base": -18, "scales_with": "custom:tail_count", "factor": 2 }
         },
         {
             "id": "kitsune_luck",
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.luck",
-            "value": {
-                "base": 10.0
-            },
-            "operation": "addition"
+            "value": { "base": 10 }
         }
     ],
     "foxfire_logic": [
         {
-            "name": "foxfire_flight",
+            "id": "foxfire_flight",
             "type": "creraces:flight",
-            "resource": "MANA",
-            "drain_rate": {
-                "base": 1.0,
-                "scales_with": "custom:tail_count",
-                "factor": -0.1
-            },
+            "resource": "mana",
+            "drain_rate": { "base": 1, "scales_with": "custom:tail_count", "factor": -0.1 },
             "force_fly": true,
             "blocked_by_effects": ["creraces:broken_wings"],
-            "condition": {
-                "type": "creraces:state",
-                "state": "foxfire",
-                "value": 2.0
-            },
+            "condition": { "type": "creraces:compare", "value": "state:foxfire", "to": 2 },
             "on_fail": [
-                {
-                    "type": "creraces:modify_value",
-                    "resource": "state:foxfire",
-                    "value": {
-                        "base": 0.0
-                    }
-                },
-                {
-                    "type": "creraces:set_cooldown",
-                    "state": "foxfire",
-                    "value": {
-                        "base": 360.0
-                    }
-                }
+                { "type": "creraces:modify_value", "state": "foxfire", "value": { "base": 0 } },
+                { "type": "creraces:modify_value", "cooldown": "foxfire", "value": { "base": 360 } }
             ]
         },
         {
             "type": "creraces:on_tick",
-            "interval": {
-                "base": 2.0
-            },
-            "condition": {
-                "type": "creraces:state",
-                "state": "foxfire",
-                "value": 2.0
-            },
+            "interval": { "base": 2 },
+            "condition": { "type": "creraces:compare", "value": "state:foxfire", "to": 2 },
             "actions": [
                 {
                     "type": "creraces:spawn_particles",
                     "particle": "minecraft:soul_fire_flame",
-                    "count": {
-                        "base": 0.0,
-                        "scales_with": "custom:tail_count",
-                        "factor": 1.0
-                    },
-                    "speed": {
-                        "base": 0.0
-                    },
-                    "spin": {
-                        "base": 0.1
-                    },
+                    "count": { "base": 0, "scales_with": "custom:tail_count", "factor": 1 },
+                    "speed": { "base": 0 },
+                    "spin": { "base": 0.1 },
                     "shape": "circle",
-                    "radius": {
-                        "base": 1.2
-                    },
-                    "points": {
-                        "base": 0.0,
-                        "scales_with": "custom:tail_count",
-                        "factor": 2.0
-                    },
-                    "axis": "Y"
+                    "radius": { "base": 1.2 },
+                    "points": { "base": 0, "scales_with": "custom:tail_count", "factor": 2 },
+                    "axis": "y"
                 }
             ]
         }
     ],
-    "creraces:starting_abilities": [
-        "creraces:foxfire",
-        "creraces:fox_form",
-        "creraces:kitsune_sleep"
-    ],
-    "creraces:starting_items": [
-        "creraces:mirror"
-    ],
+    "creraces:starting_abilities": ["creraces:foxfire", "creraces:fox_form", "creraces:kitsune_sleep"],
+    "creraces:starting_items": ["creraces:mirror"],
     "creraces:customization": [
         {
             "id": "tail_count",
             "type": "property",
-            "options": [
-                "1",
-                "2",
-                "3",
-                "4",
-                "5",
-                "6",
-                "7",
-                "8",
-                "9"
-            ],
-            "defaultValue": "1",
+            "options": ["1", "2", "3", "4", "5", "6", "7", "8", "9"],
+            "default": "1",
             "hidden": true
         },
         {
             "id": "ear_style",
             "type": "property",
-            "options": [
-                "standard",
-                "alt"
-            ],
-            "defaultValue": "standard",
-            "addons": {
-                "standard": "kitsune_ears_{color}",
-                "alt": "kitsune_ears_{color}_alt"
-            }
+            "options": ["standard", "alt"],
+            "default": "standard",
+            "addons": { "standard": "kitsune_ears_{color}", "alt": "kitsune_ears_{color}_alt" }
         },
         {
             "id": "snout",
             "type": "property",
-            "options": [
-                "true",
-                "false"
-            ],
-            "defaultValue": "false",
-            "addons": {
-                "true": "kitsune_snout_{color}"
-            }
+            "options": ["true", "false"],
+            "default": "false",
+            "addons": { "true": "kitsune_snout_{color}" }
         },
         {
             "id": "tail_style",
             "type": "property",
-            "options": [
-                "standard",
-                "alt"
-            ],
-            "defaultValue": "standard",
+            "options": ["standard", "alt"],
+            "default": "standard",
             "addons": {
                 "standard": "kitsune_tails_{tail_count}_{color}",
                 "alt": [
                     {
-                        "id": "kitsune_tails_{tail_count}_{color}_alt",
+                        "addon": "kitsune_tails_{tail_count}_{color}_alt",
                         "condition": {
-                            "type": "creraces:customization_equals",
-                            "id": "tail_count",
-                            "values": [
-                                "3",
-                                "4",
-                                "5"
-                            ]
+                            "type": "creraces:customization",
+                            "customization": "tail_count",
+                            "values": ["3", "4", "5"]
                         }
                     },
                     "kitsune_tails_{tail_count}_{color}"
@@ -201,17 +107,9 @@
         },
         {
             "id": "color",
-            "type": "tint",
-            "options": [
-                "yellow",
-                "white",
-                "black",
-                "red",
-                "blue",
-                "purple",
-                "orange"
-            ],
-            "defaultValue": "orange"
+            "type": "property",
+            "options": ["yellow", "white", "black", "red", "blue", "purple", "orange"],
+            "default": "orange"
         }
     ],
     "creraces:portrait": "creraces:textures/screens/kitsune_portrait.png",

@@ -1,85 +1,53 @@
 {
     "creraces:name": "race.creraces.lycan.name",
-    "creraces:index": 10.0,
+    "creraces:index": 10,
     "creraces:description": "race.creraces.lycan.description",
     "creraces:icon": "creraces:textures/screens/lycanthrope_icon.png",
     "creraces:splash": "creraces:textures/screens/lycanthrope_splash.png",
     "creraces:portrait": "creraces:textures/screens/lycanthrope_portrait.png",
     "creraces:name_texture": "creraces:textures/screens/lycanthrope_text.png",
-    "creraces:resource_type": "RAGE",
+    "creraces:resource_type": "rage",
     "creraces:difficulty": 1,
     "creraces:regeneration_multiplier": 1.2,
-    "creraces:starting_abilities": [
-        "creraces:wild_hunt",
-        "creraces:trophy_hunter"
-    ],
+    "creraces:starting_abilities": ["creraces:wild_hunt", "creraces:trophy_hunter"],
     "lunar_cycle": [
         {
             "id": "lunar_speed",
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.movement_speed",
             "value": 0.02,
-            "operation": "addition",
-            "condition": {
-                "type": "creraces:time",
-                "min": 13000,
-                "max": 23000
-            }
+            "condition": { "type": "creraces:time", "min": 13000, "max": 23000 }
         },
         {
             "id": "lunar_width",
             "type": "creraces:attribute_modifier",
             "attribute": "pehkui:width",
             "value": 0.2,
-            "operation": "addition",
-            "condition": {
-                "type": "creraces:time",
-                "min": 13000,
-                "max": 23000
-            }
+            "condition": { "type": "creraces:time", "min": 13000, "max": 23000 }
         },
         {
             "id": "lunar_height",
             "type": "creraces:attribute_modifier",
             "attribute": "pehkui:height",
             "value": 0.2,
-            "operation": "addition",
-            "condition": {
-                "type": "creraces:time",
-                "min": 13000,
-                "max": 23000
-            }
+            "condition": { "type": "creraces:time", "min": 13000, "max": 23000 }
         },
         {
             "id": "lunar_life_steal",
             "type": "creraces:attribute_modifier",
             "attribute": "attributeslib:life_steal",
-            "value": 0.2,
-            "operation": "addition",
-            "condition": {
-                "type": "creraces:time",
-                "min": 13000,
-                "max": 23000
-            }
+            "value": 20,
+            "condition": { "type": "creraces:time", "min": 13000, "max": 23000 }
         }
     ],
     "hunt_mechanics": [
         {
             "type": "creraces:on_hit",
-            "condition": {
-                "type": "creraces:state",
-                "state": "wild_hunt",
-                "value": 1.0
-            },
+            "condition": { "type": "creraces:compare", "value": "state:wild_hunt", "to": 1 },
             "actions": [
                 {
                     "type": "creraces:damage",
-                    "amount": {
-                        "base": 1.0,
-                        "scales_with": "state:creraces:stacks",
-                        "factor": 0.1
-                    },
-                    "damage_type": "minecraft:player_attack"
+                    "amount": { "base": 1, "scales_with": "state:creraces:stacks", "factor": 0.1 }
                 },
                 {
                     "type": "creraces:apply_effect",
@@ -88,26 +56,19 @@
                     "amplifier": 0,
                     "visible": true
                 },
-                {
-                    "type": "creraces:modify_value",
-                    "resource": "state:wild_hunt",
-                    "value": 0
-                }
+                { "type": "creraces:modify_value", "state": "wild_hunt", "value": 0 }
             ]
         },
         {
             "type": "creraces:on_kill",
-            "condition": {
-                "type": "creraces:has_effect",
-                "effect": "creraces:bleeding",
-                "use_target": true
-            },
+            "condition": { "type": "creraces:has_effect", "effect": "creraces:bleeding" },
             "actions": [
                 {
                     "type": "creraces:modify_value",
-                    "resource": "state:creraces:stacks",
+                    "state": "creraces:stacks",
                     "operation": "add",
-                    "value": 2.0
+                    "value": 2,
+                    "persistent": true
                 }
             ]
         },
@@ -115,18 +76,15 @@
             "type": "creraces:on_kill",
             "condition": {
                 "type": "creraces:not",
-                "condition": {
-                    "type": "creraces:has_effect",
-                    "effect": "creraces:bleeding",
-                    "use_target": true
-                }
+                "condition": { "type": "creraces:has_effect", "effect": "creraces:bleeding" }
             },
             "actions": [
                 {
                     "type": "creraces:modify_value",
-                    "resource": "state:creraces:stacks",
+                    "state": "creraces:stacks",
                     "operation": "add",
-                    "value": 1.0
+                    "value": 1,
+                    "persistent": true
                 }
             ]
         },
@@ -135,7 +93,7 @@
             "actions": [
                 {
                     "type": "creraces:modify_value",
-                    "resource": "state:creraces:stacks",
+                    "state": "creraces:stacks",
                     "operation": "multiply",
                     "value": 0.5
                 }

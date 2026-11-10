@@ -7,6 +7,7 @@ import mc.sayda.creraces.capability.IPlayerVariables;
 import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.engine.ScalingValue;
 import mc.sayda.creraces.engine.condition.Condition;
+import mc.sayda.creraces.engine.condition.ConditionRegistry;
 import mc.sayda.creraces.util.GsonHelper;
 import mc.sayda.creraces.util.PocketManager;
 import net.minecraft.core.BlockPos;
@@ -161,7 +162,7 @@ public class PocketEntryAction implements ActionRegistry.RaceAction {
     }
 
     public static void register() {
-        ActionRegistry.register(ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "enter_pocket"), json -> new PocketEntryAction(
+        ActionRegistry.register(CreRaces.id("enter_pocket"), json -> new PocketEntryAction(
                 ResourceLocation.parse(GsonHelper.getAsString(json, "dimension", "creraces:pocket")),
                 ResourceLocation.parse(GsonHelper.getAsString(json, "structure", "creraces:box")),
                 ScalingValue.fromJson(json, "spawn_x", 6),
@@ -173,7 +174,7 @@ public class PocketEntryAction implements ActionRegistry.RaceAction {
                 ScalingValue.fromJson(json, "return_offset_x", 0.0),
                 ScalingValue.fromJson(json, "return_offset_y", 0.0),
                 ScalingValue.fromJson(json, "return_offset_z", 0.0),
-                json.has("condition") ? Condition.fromJson(json.getAsJsonObject("condition")) : null,
+                ConditionRegistry.optional(json, "condition"),
                 GsonHelper.getNullableString(json, "blocked_message", null)));
     }
 }

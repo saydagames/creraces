@@ -1,12 +1,10 @@
 package mc.sayda.creraces.race;
 
-import com.google.gson.JsonObject;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.capability.IPlayerVariables;
 import mc.sayda.creraces.config.CreRacesConfig;
-import mc.sayda.creraces.engine.AttributeMethod;
 import mc.sayda.creraces.engine.ManagedModifier;
 import mc.sayda.creraces.engine.TraitDispatch;
 import mc.sayda.creraces.engine.TraitRegistry.RaceTrait;
@@ -23,7 +21,6 @@ import javax.annotation.Nullable;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -52,7 +49,7 @@ public class AttributeIncidents {
             }
 
             applyRacialAttackDamage(player, vars);
-            applyTraitModifiers(player, vars);
+            applyTraitModifiers(player);
             syncManagedModifiers(player, vars);
             applyDoubleJump(player, vars);
             applyManaScaling(player, vars);
@@ -78,7 +75,7 @@ public class AttributeIncidents {
         }
     }
 
-    private static void applyTraitModifiers(ServerPlayer player, IPlayerVariables vars) {
+    private static void applyTraitModifiers(ServerPlayer player) {
         for (RaceTrait trait : TraitDispatch.forPlayer(player)) {
             if (!(trait instanceof AttributeModifierTrait amt))
                 continue;
@@ -90,56 +87,11 @@ public class AttributeIncidents {
             String traitId = trait.getTraitId();
             UUID modifierId = UUID.nameUUIDFromBytes(
                     (TRAIT_MODIFIER_PREFIX + traitId).getBytes(StandardCharsets.UTF_8));
-
-            if (amt.getMethod() == AttributeMethod.REMOVE) {
-                AttributeInstance instance = player.getAttribute(attribute);
-                if (instance != null && instance.getModifier(modifierId) != null) {
-                    instance.removeModifier(modifierId);
-                    vars.removeManagedModifier(modifierId);
-                    CreRaces.LOGGER.debug("AttributeIncidents: Trait REMOVED {} from {}", traitId, player.getScoreboardName());
-                }
-            } else if (amt.isManaged()) {
-                registerManagedModifier(player, vars, amt, modifierId, traitId);
-            } else {
-                applyStaticTraitModifier(player, amt, attribute, modifierId, traitId);
-            }
+            applyStaticTraitModifier(player, amt, attribute, modifierId, traitId);
         }
     }
 
-    /**
-     * Managed modifiers are applied by syncManagedModifiers on their own interval. Re-registering
-     * one restarts that interval, so it only happens when the trait's value or condition changed.
-     */
-    private static void registerManagedModifier(ServerPlayer player, IPlayerVariables vars,
-            AttributeModifierTrait amt, UUID modifierId, String traitId) {
-        Optional<ManagedModifier> existing = vars.getManagedModifier(modifierId);
-        if (existing.isEmpty()) {
-            vars.addManagedModifier(createManagedModifier(player, amt, modifierId, traitId));
-            CreRaces.LOGGER.debug("AttributeIncidents: Registered new Managed modifier {}", traitId);
-            return;
-        }
-
-        ManagedModifier mod = existing.get();
-        JsonObject rawCondition = amt.getRawCondition();
-        boolean changed = !mod.valueJson().equals(amt.getValueJson())
-                || (rawCondition != null && !mod.conditionJson().equals(rawCondition));
-        if (changed) {
-            vars.addManagedModifier(createManagedModifier(player, amt, modifierId, traitId));
-            CreRaces.LOGGER.debug("AttributeIncidents: Updated data for Managed modifier {}", traitId);
-        }
-    }
-
-    private static ManagedModifier createManagedModifier(ServerPlayer player, AttributeModifierTrait amt,
-            UUID modifierId, String traitId) {
-        JsonObject rawCondition = amt.getRawCondition();
-        return new ManagedModifier(
-                modifierId, amt.getAttributeId(), amt.getValueJson(), amt.getOperation(),
-                TRAIT_MODIFIER_PREFIX + traitId,
-                rawCondition != null ? rawCondition : new JsonObject(),
-                rawCondition != null, amt.getInterval(), player.tickCount + amt.getInterval());
-    }
-
-    /** Unmanaged trait modifiers follow their condition on every check. */
+    /** Trait modifiers follow their condition and value on every check. */
     private static void applyStaticTraitModifier(ServerPlayer player, AttributeModifierTrait amt, Attribute attribute,
             UUID modifierId, String traitId) {
         boolean conditionMet = amt.getCondition() == null

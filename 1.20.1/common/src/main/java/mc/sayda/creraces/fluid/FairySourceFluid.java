@@ -1,9 +1,11 @@
 package mc.sayda.creraces.fluid;
 
+import mc.sayda.creraces.config.CreRacesConfig;
 import mc.sayda.creraces.registry.ModBlocks;
 import mc.sayda.creraces.registry.ModFluids;
 import mc.sayda.creraces.registry.ModItems;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -21,6 +23,10 @@ public abstract class FairySourceFluid extends WaterlikeFluid {
 
     @Override
     public Item getBucket() { return ModItems.FAIRY_BUCKET.get(); }
+
+    /** Fabric asks here; Forge and NeoForge ask the fluid type, which reads the same option. */
+    @Override
+    protected boolean canConvertToSource(Level level) { return CreRacesConfig.FAIRY_SOURCE_CONVERSION_ENABLED.get(); }
 
     @Override
     protected BlockState createLegacyBlock(FluidState state) {

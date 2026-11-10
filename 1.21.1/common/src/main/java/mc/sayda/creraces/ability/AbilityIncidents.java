@@ -5,6 +5,7 @@ import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.capability.IPlayerVariables;
 import mc.sayda.creraces.config.CreRacesConfig;
 import mc.sayda.creraces.engine.ActionRegistry.RaceAction;
+import mc.sayda.creraces.engine.CloneManager;
 import mc.sayda.creraces.engine.TraitDispatch;
 import mc.sayda.creraces.race.Race;
 import mc.sayda.creraces.race.RaceRegistry;
@@ -78,6 +79,7 @@ public class AbilityIncidents {
                     BoundaryHandler.resyncVariables(player, player);
 
                     TraitDispatch.runVoid("AbilityIncidents", player, trait -> trait.onAbilityUse(player, ability));
+                    CloneManager.replayAbility(player, ability, slot);
                 }
             } catch (Exception e) {
                 CreRaces.LOGGER.error("Failed to execute ability: {}", abilityId, e);
@@ -90,7 +92,7 @@ public class AbilityIncidents {
         if (ability.onActivate() == null || ability.onActivate().isEmpty())
             return false;
 
-        // Actions using use_target_block target the space in front of the block face being looked at.
+        // The "block" position of an ability is the space in front of the block face being looked at.
         BlockPos lookTarget = null;
         HitResult hit = player.pick(DEFAULT_PICK_RANGE, 0f, false);
         if (hit instanceof BlockHitResult bhr && bhr.getType() == HitResult.Type.BLOCK) {

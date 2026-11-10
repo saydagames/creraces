@@ -4,6 +4,8 @@ import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.config.CreRacesConfig;
 import mc.sayda.creraces.engine.ActionRegistry;
+import mc.sayda.creraces.engine.CastSource;
+import mc.sayda.creraces.engine.EventContext;
 import mc.sayda.creraces.engine.ScalingValue;
 import mc.sayda.creraces.util.Scheduler;
 import net.minecraft.core.BlockPos;
@@ -19,11 +21,12 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Runs its actions after a number of ticks. The caster and target are looked up again by UUID when
- * the delay ends, so a caster who logged off is skipped and a target that is gone becomes null.
+ * Runs its actions after "duration" ticks. The caster and target are looked up again by UUID when
+ * the delay ends, so a caster who logged off is skipped and a target that is gone becomes null. A
+ * clone's repeat of a cast stays the clone's, and is dropped if the clone is gone by then.
  */
 public class DelayAction implements ActionRegistry.RaceAction {
-    public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "delay");
+    public static final ResourceLocation ID = CreRaces.id("delay");
 
     private final ScalingValue ticks;
     private final List<ActionRegistry.RaceAction> actions;
@@ -44,7 +47,7 @@ public class DelayAction implements ActionRegistry.RaceAction {
             return true;
         }
 
-        int delay = Math.max(1, (int) ticks.evaluate(player, target, slot));
+        int delay = Math.max(1, (int) ticks.evaluate(player, target, slot, interactPos));
         // Caps how far ahead actions can be queued, so the scheduler can't pile up (0 disables the cap).
         int maxDelay = CreRacesConfig.DELAY_ACTION_MAX_TICKS.get();
         if (maxDelay > 0) {
@@ -54,10 +57,12 @@ public class DelayAction implements ActionRegistry.RaceAction {
         UUID playerId = player.getUUID();
         UUID targetId = target != null ? target.getUUID() : null;
         BlockPos pos = interactPos != null ? interactPos.immutable() : null;
+        EventContext event = EventContext.current();
+        CastSource.Replay replay = CastSource.current();
 
         Scheduler.delay(delay, () -> {
             ServerPlayer delayedPlayer = server.getPlayerList().getPlayer(playerId);
-            if (delayedPlayer == null) {
+            if (delayedPlayer == null || replay != null && replay.source().isRemoved()) {
                 return;
             }
             LivingEntity delayedTarget = null;
@@ -65,14 +70,16 @@ public class DelayAction implements ActionRegistry.RaceAction {
                     && level.getEntity(targetId) instanceof LivingEntity living) {
                 delayedTarget = living;
             }
-            ActionRegistry.runChain(actions, delayedPlayer, delayedTarget, slot, pos);
+            LivingEntity finalTarget = delayedTarget;
+            CastSource.run(replay,
+                    () -> event.run(() -> ActionRegistry.runChain(actions, delayedPlayer, finalTarget, slot, pos)));
         });
         return true;
     }
 
     public static void register() {
         ActionRegistry.register(ID, json -> new DelayAction(
-                ScalingValue.fromJson(json, "ticks", 20.0),
+                ScalingValue.fromJson(json, "duration", 20.0),
                 ActionRegistry.listFromJson(json, "actions")));
     }
 }

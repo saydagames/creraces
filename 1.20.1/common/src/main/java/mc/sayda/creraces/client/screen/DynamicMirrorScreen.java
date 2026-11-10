@@ -8,6 +8,7 @@ import mc.sayda.creraces.race.CosmeticIncidents;
 import mc.sayda.creraces.race.Race;
 import mc.sayda.creraces.race.RaceCustomization;
 import mc.sayda.creraces.race.RaceRegistry;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
@@ -48,6 +49,10 @@ public class DynamicMirrorScreen extends Screen {
     private boolean saved = false;
     private boolean initializedRaceWidgets = false;
     private boolean originalsCaptured = false;
+
+    public static void open() {
+        Minecraft.getInstance().setScreen(new DynamicMirrorScreen());
+    }
 
     public DynamicMirrorScreen() {
         super(Component.translatable("screen.creraces.mirror"));

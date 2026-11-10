@@ -45,8 +45,8 @@ public class UnbindAbilityAction implements ActionRegistry.RaceAction {
     }
 
     public static void register() {
-        ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "unbind"), json -> new UnbindAbilityAction(
-                BindAbilityAction.parseSlot(json, "unbind"),
+        ActionRegistry.register(CreRaces.id("unbind"), json -> new UnbindAbilityAction(
+                BindAbilityAction.parseSlot(json),
                 GsonHelper.getNullableString(json, "restore_from", null)));
     }
 }

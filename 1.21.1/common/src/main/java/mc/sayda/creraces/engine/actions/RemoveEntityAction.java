@@ -4,16 +4,12 @@ import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.engine.ActionRegistry;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 
 import javax.annotation.Nullable;
 
-/**
- * Silently discards the target (no death event, no drops); never a player. Meant for use inside
- * {@code creraces:aoe}, where each found entity becomes the target.
- */
+/** Removes the target from the world without killing it. Players are never removed. */
 public class RemoveEntityAction implements ActionRegistry.RaceAction {
 
     @Override
@@ -30,7 +26,6 @@ public class RemoveEntityAction implements ActionRegistry.RaceAction {
     }
 
     public static void register() {
-        ActionRegistry.register(ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "remove_entity"),
-                json -> new RemoveEntityAction());
+        ActionRegistry.register(CreRaces.id("remove_entity"), json -> new RemoveEntityAction());
     }
 }

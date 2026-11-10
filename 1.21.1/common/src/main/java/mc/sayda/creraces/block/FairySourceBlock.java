@@ -3,6 +3,7 @@ package mc.sayda.creraces.block;
 import mc.sayda.creraces.recipe.FairySourceRecipe;
 import mc.sayda.creraces.registry.ModRecipes;
 import mc.sayda.creraces.registry.ModMobEffects;
+import mc.sayda.creraces.config.CreRacesConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -30,10 +31,12 @@ public class FairySourceBlock extends LiquidBlock {
         super(fluid, properties);
     }
 
-    /** Prevents buckets from collecting fairy source. */
+    /** Buckets can't collect fairy source unless fairy_source_pickup_enabled is on. */
     @Override
     public ItemStack pickupBlock(@Nullable Player player, LevelAccessor level, BlockPos pos, BlockState state) {
-        return ItemStack.EMPTY;
+        return CreRacesConfig.FAIRY_SOURCE_PICKUP_ENABLED.get()
+                ? super.pickupBlock(player, level, pos, state)
+                : ItemStack.EMPTY;
     }
 
     @Override

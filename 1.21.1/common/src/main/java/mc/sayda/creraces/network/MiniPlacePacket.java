@@ -92,9 +92,9 @@ public class MiniPlacePacket {
             ServerLevel level = serverPlayer.serverLevel();
 
             IPlayerVariables vars = DataUtils.getVariables(serverPlayer).orElse(null);
-            if (vars == null || !vars.isSmallBuild()) {
-                CreRaces.LOGGER.warn("MiniPlace: Player {} is not in smallBuild mode (vars={}, smallBuild={})",
-                        serverPlayer.getName().getString(), vars != null, vars != null && vars.isSmallBuild());
+            if (vars == null || !vars.isMiniBuild()) {
+                CreRaces.LOGGER.warn("MiniPlace: Player {} is not in miniBuild mode (vars={}, miniBuild={})",
+                        serverPlayer.getName().getString(), vars != null, vars != null && vars.isMiniBuild());
                 return;
             }
 

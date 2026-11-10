@@ -16,7 +16,7 @@ import javax.annotation.Nullable;
 /** Releases the caster's claim on the chunk of the interacted block (or the caster's own chunk). */
 public class UnclaimTerritoryAction implements ActionRegistry.RaceAction {
 
-    public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "unclaim_territory");
+    public static final ResourceLocation ID = CreRaces.id("unclaim_territory");
 
     private static final UnclaimTerritoryAction INSTANCE = new UnclaimTerritoryAction();
 

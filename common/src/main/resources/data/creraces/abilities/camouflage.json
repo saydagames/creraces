@@ -1,52 +1,36 @@
 {
     "creraces:name": "ability.creraces.camouflage.name",
     "creraces:description": "ability.creraces.camouflage.description",
-    "creraces:type": "ACTIVE",
+    "creraces:type": "active",
     "creraces:cooldown": 400,
     "creraces:icon": "creraces:textures/mob_effect/camouflage.png",
     "creraces:cost": 1,
     "creraces:condition_fail_message": "msg.creraces.rain_fail_message",
-    "creraces:race": [
-        "creraces:dryad",
-        "creraces:naiad"
-    ],
+    "creraces:race": ["creraces:dryad", "creraces:naiad"],
     "creraces:condition": {
         "type": "creraces:or",
         "conditions": [
+            { "type": "creraces:race", "races": ["creraces:dryad"] },
             {
-                "type": "creraces:race_equals",
-                "race": "creraces:dryad"
-            },
-            {
-                "type": "creraces:in_water",
-                "include_rain": true
+                "type": "creraces:or",
+                "conditions": [{ "type": "creraces:in_water" }, { "type": "creraces:exposed_to_rain" }]
             }
         ]
     },
     "creraces:actions": [
         {
             "type": "creraces:conditional",
-            "condition": {
-                "type": "creraces:has_effect",
-                "effect": "creraces:camouflage"
-            },
-            "if_true": [
-                {
-                    "type": "creraces:remove_effect",
-                    "effect": "creraces:camouflage"
-                }
-            ],
+            "condition": { "type": "creraces:has_effect", "effect": "creraces:camouflage" },
+            "if_true": [{ "type": "creraces:remove_effect", "effect": "creraces:camouflage" }],
             "if_false": [
                 {
                     "type": "creraces:apply_effect",
                     "effect": "creraces:camouflage",
-                    "duration": 1000000,
+                    "duration": -1,
                     "amplifier": 0,
                     "visible": true
                 },
-                {
-                    "type": "creraces:cancel"
-                }
+                { "type": "creraces:cancel" }
             ]
         },
         {
@@ -56,11 +40,6 @@
             "pitch": 2
         }
     ],
-    "creraces:on_deactivate": [
-        {
-            "type": "creraces:remove_effect",
-            "effect": "creraces:camouflage"
-        }
-    ],
+    "creraces:on_deactivate": [{ "type": "creraces:remove_effect", "effect": "creraces:camouflage" }],
     "creraces:wiki_page": "Ability:Camouflage"
 }

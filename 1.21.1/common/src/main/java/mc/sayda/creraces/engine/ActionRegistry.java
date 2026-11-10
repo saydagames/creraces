@@ -28,18 +28,15 @@ import mc.sayda.creraces.engine.actions.DamageAction;
 import mc.sayda.creraces.engine.actions.DashAction;
 import mc.sayda.creraces.engine.actions.DelayAction;
 import mc.sayda.creraces.engine.actions.DisableShieldAction;
-import mc.sayda.creraces.engine.actions.DisplayResourceAction;
 import mc.sayda.creraces.engine.actions.DropItemAction;
 import mc.sayda.creraces.engine.actions.DurabilityAction;
 import mc.sayda.creraces.engine.actions.EnchantAction;
 import mc.sayda.creraces.engine.actions.ExpandPocketAction;
-import mc.sayda.creraces.engine.actions.GetEnchantmentAction;
 import mc.sayda.creraces.engine.actions.GiveItemAction;
 import mc.sayda.creraces.engine.actions.HealAction;
 import mc.sayda.creraces.engine.actions.InteractBlockAction;
 import mc.sayda.creraces.engine.actions.ItemAnimationAction;
 import mc.sayda.creraces.engine.actions.LaunchProjectileAction;
-import mc.sayda.creraces.engine.actions.MassSummonAction;
 import mc.sayda.creraces.engine.actions.MessageAction;
 import mc.sayda.creraces.engine.actions.ModifyEntityDataAction;
 import mc.sayda.creraces.engine.actions.ModifyValueAction;
@@ -48,11 +45,11 @@ import mc.sayda.creraces.engine.actions.OpenGUIAction;
 import mc.sayda.creraces.engine.actions.PlaceBlockAction;
 import mc.sayda.creraces.engine.actions.PlaySoundAction;
 import mc.sayda.creraces.engine.actions.PocketEntryAction;
+import mc.sayda.creraces.engine.actions.RaycastAction;
 import mc.sayda.creraces.engine.actions.RecallProjectilesAction;
-import mc.sayda.creraces.engine.actions.RemoveBlockAction;
 import mc.sayda.creraces.engine.actions.RemoveEffectAction;
 import mc.sayda.creraces.engine.actions.RemoveEntityAction;
-import mc.sayda.creraces.engine.actions.SetCooldownAction;
+import mc.sayda.creraces.engine.actions.RemoveModifierAction;
 import mc.sayda.creraces.engine.actions.SetCustomizationAction;
 import mc.sayda.creraces.engine.actions.SetFlagAction;
 import mc.sayda.creraces.engine.actions.SetOnFireAction;
@@ -62,9 +59,10 @@ import mc.sayda.creraces.engine.actions.SpawnParticlesAction;
 import mc.sayda.creraces.engine.actions.StealItemAction;
 import mc.sayda.creraces.engine.actions.StopSoundAction;
 import mc.sayda.creraces.engine.actions.SummonEntityAction;
+import mc.sayda.creraces.engine.actions.SummonClonesAction;
 import mc.sayda.creraces.engine.actions.TeleportAction;
+import mc.sayda.creraces.engine.actions.TemplateAction;
 import mc.sayda.creraces.engine.actions.TetherAction;
-import mc.sayda.creraces.engine.actions.ToggleMinibuildAction;
 import mc.sayda.creraces.engine.actions.ToggleStateAction;
 import mc.sayda.creraces.engine.actions.UnbindAbilityAction;
 import mc.sayda.creraces.engine.actions.UnclaimTerritoryAction;
@@ -79,6 +77,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ActionRegistry {
 
@@ -95,6 +96,17 @@ public class ActionRegistry {
     private static final Map<ResourceLocation, ActionFactory> REGISTRY = new HashMap<>();
     private static final ThreadLocal<Integer> RECURSION_DEPTH = ThreadLocal.withInitial(() -> 0);
     private static final int MAX_RECURSION_DEPTH = 16;
+
+    /**
+     * Actions that only make sense on the real player: their resources, slots, inventory, body and
+     * screen. A clone repeating an ability skips them (see CastSource), and the chain carries on.
+     */
+    private static final Set<ResourceLocation> PLAYER_ONLY = Stream.of("bind", "unbind", "change_size", "channel",
+            "claim_territory", "clear_cooldowns", "command", "consume_item", "dash", "drop_item", "durability",
+            "enchant", "enter_pocket", "expand_pocket", "give_item", "interact_block", "item_animation", "message",
+            "modify_value", "morph", "open_gui", "place_block", "recall_projectiles", "set_customization",
+            "set_flag", "sleep", "smelt_item", "steal_item", "stop_sound", "summon_clones", "teleport", "tether",
+            "toggle_state", "unclaim_territory", "update_block").map(CreRaces::id).collect(Collectors.toSet());
 
     /** Stands in for an action that could not be parsed; failing keeps the rest of its chain from running. */
     private static final RaceAction INVALID_ACTION = (player, target, slot, interactPos) -> false;
@@ -146,8 +158,13 @@ public class ActionRegistry {
             }
 
             ScalingValue chance = json.has("chance") ? ScalingValue.fromJson(json, "chance", 1.0) : null;
+            boolean playerOnly = PLAYER_ONLY.contains(type);
 
             return (player, target, slot, interactPos) -> {
+                if (playerOnly && CastSource.isReplay()) {
+                    return true;
+                }
+
                 int depth = RECURSION_DEPTH.get();
                 if (depth >= MAX_RECURSION_DEPTH) {
                     CreRaces.LOGGER.warn(
@@ -235,7 +252,6 @@ public class ActionRegistry {
         ClearCooldownsAction.register();
         LaunchProjectileAction.register();
         DropItemAction.register();
-        SetCooldownAction.register();
         RemoveEffectAction.register();
         ModifyEntityDataAction.register();
         CommandAction.register();
@@ -251,26 +267,21 @@ public class ActionRegistry {
         SmeltItemAction.register();
         TeleportAction.register();
         SetCustomizationAction.register();
-        ToggleMinibuildAction.register();
         SetFlagAction.register();
         BeamAction.register();
-        RemoveBlockAction.register();
         SleepAction.register();
         MessageAction.register();
         SummonEntityAction.register();
         SetOnFireAction.register();
-        DisplayResourceAction.register();
         TetherAction.register();
         StopSoundAction.register();
         CancelAction.register();
         GiveItemAction.register();
         RecallProjectilesAction.register();
-        MassSummonAction.register();
         RemoveEntityAction.register();
         BindAbilityAction.register();
         UnbindAbilityAction.register();
         EnchantAction.register();
-        GetEnchantmentAction.register();
         UpdateBlockAction.register();
         AttributeModifierAction.register();
         InteractBlockAction.register();
@@ -278,5 +289,9 @@ public class ActionRegistry {
         UnclaimTerritoryAction.register();
         ChannelAction.register();
         DurabilityAction.register();
+        RaycastAction.register();
+        RemoveModifierAction.register();
+        TemplateAction.register();
+        SummonClonesAction.register();
     }
 }

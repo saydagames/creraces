@@ -8,6 +8,7 @@ import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.engine.EntityMatcher;
 import mc.sayda.creraces.engine.TraitRegistry;
 import mc.sayda.creraces.engine.condition.Condition;
+import mc.sayda.creraces.engine.condition.ConditionRegistry;
 import mc.sayda.creraces.util.CombatUtils;
 import mc.sayda.creraces.util.GsonHelper;
 import net.minecraft.resources.ResourceLocation;
@@ -167,7 +168,7 @@ public final class GlobalHandler {
         List<ActorSource> actorSources = parseActorSources(json, triggers);
         double actorRadius = GsonHelper.getAsDouble(json, "actor_radius", 128.0);
 
-        Condition condition = json.has("condition") ? Condition.fromJson(json.getAsJsonObject("condition")) : null;
+        Condition condition = ConditionRegistry.optional(json, "condition");
 
         List<ActionRegistry.RaceAction> actions = new ArrayList<>();
         if (json.has("actions")) {

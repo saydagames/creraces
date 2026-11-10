@@ -186,7 +186,7 @@ public final class WaypointStore {
         }
     }
 
-    /** Call after mutating a Waypoint in place (rename, recolour) to persist and re-sync. */
+    /** Call after mutating a Waypoint in place (rename, recolor) to persist and re-sync. */
     public void notifyEdited() {
         save();
         pushToSink(Minecraft.getInstance().player);

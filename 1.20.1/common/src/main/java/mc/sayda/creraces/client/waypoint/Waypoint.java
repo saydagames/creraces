@@ -12,7 +12,7 @@ import java.util.UUID;
  */
 public class Waypoint {
     // Old Bell, not the current Torii Bell. Its texture is closer to plain grey, so the marker
-    // colour tints it cleanly instead of fighting the current bell's own gold/orange paint.
+    // color tints it cleanly instead of fighting the current bell's own gold/orange paint.
     public static final ResourceLocation DEFAULT_ICON = new ResourceLocation("creraces", "old_bell");
     public static final int DEFAULT_COLOR = 0xFFE0A0FF;
 

@@ -1,41 +1,17 @@
 {
     "creraces:name": "ability.creraces.talon_strike.name",
     "creraces:description": "ability.creraces.talon_strike.description",
-    "creraces:type": "ACTIVE",
+    "creraces:type": "active",
     "creraces:icon": "creraces:textures/mob_effect/talon_strike.png",
     "creraces:cooldown": 500,
     "creraces:cost": 5,
-    "creraces:race": [
-        "creraces:harpy"
-    ],
+    "creraces:race": ["creraces:harpy"],
+    "creraces:condition_fail_message": "msg.creraces.flying_fail_message",
+    "creraces:condition": { "type": "creraces:flying" },
     "creraces:actions": [
-        {
-            "type": "creraces:conditional",
-            "condition": {
-                "type": "creraces:flying",
-                "value": true
-            },
-            "if_true": [
-                {
-                    "type": "creraces:dash",
-                    "power": 2.0,
-                    "direction": "down",
-                    "reset_fall": true
-                },
-                {
-                    "type": "creraces:play_sound",
-                    "sound": "minecraft:entity.phantom.bite",
-                    "volume": 1.0,
-                    "pitch": 0.8
-                },
-                {
-                    "type": "creraces:modify_value",
-                    "resource": "state:creraces:talon_strike",
-                    "value": 1.0
-                }
-            ],
-            "if_false": []
-        }
+        { "type": "creraces:dash", "strength": 2, "direction": "down", "reset_fall": true },
+        { "type": "creraces:play_sound", "sound": "minecraft:entity.phantom.bite", "volume": 1, "pitch": 0.8 },
+        { "type": "creraces:modify_value", "state": "creraces:talon_strike", "value": 1 }
     ],
     "creraces:wiki_page": "Ability:Talon_Strike"
 }

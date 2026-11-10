@@ -8,6 +8,7 @@ import mc.sayda.creraces.race.RaceIncidents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -15,7 +16,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-/** C2S: an op edits their own variables, states or attributes from the debug screen. */
+/** C2S: an op edits their own variables, states or attributes, or the world time, from the debug screen. */
 public class DebugActionPacket {
     public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "debug_action");
 
@@ -81,9 +82,10 @@ public class DebugActionPacket {
                             CreRaces.LOGGER.debug("Applied debug attribute: {} = {}", key, value);
                         }
                         case "flag" -> applyFlag(vars, key, value);
+                        case "time" -> applyTime(player, key, value);
                     }
-                    // transformPlayer already resyncs everything
-                    if (!action.equals("race")) {
+                    // transformPlayer already resyncs everything, and the time isn't player data
+                    if (!action.equals("race") && !action.equals("time")) {
                         RaceIncidents.refreshPlayer(player);
                     }
                 } catch (Exception e) {
@@ -145,7 +147,19 @@ public class DebugActionPacket {
             case "isTiny" -> vars.setTiny(val);
             case "inSpirit" -> vars.setInSpiritRealm(val);
             case "morphed" -> vars.setMorphed(val);
-            case "smallBuild" -> vars.setSmallBuild(val);
+            case "miniBuild" -> vars.setMiniBuild(val);
+        }
+    }
+
+    /** Sets the time of day or the day count in every dimension, as /time set does, keeping the other. */
+    private void applyTime(ServerPlayer player, String key, String value) {
+        long entered = Math.max(0, (long) Double.parseDouble(value));
+        long dayTime = player.serverLevel().getDayTime();
+        long time = key.equals("day")
+                ? entered * 24000L + dayTime % 24000L
+                : dayTime / 24000L * 24000L + entered;
+        for (ServerLevel level : player.server.getAllLevels()) {
+            level.setDayTime(time);
         }
     }
 

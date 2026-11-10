@@ -1,38 +1,24 @@
 package mc.sayda.creraces.engine.traits;
 
-import mc.sayda.creraces.CreRaces;
+import com.google.gson.JsonObject;
 import mc.sayda.creraces.ability.Ability;
-import mc.sayda.creraces.engine.ActionRegistry;
+import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.engine.EventContext;
 import mc.sayda.creraces.engine.TraitRegistry;
-import mc.sayda.creraces.engine.condition.Condition;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 
-import javax.annotation.Nullable;
-import java.util.List;
-
-/** Runs actions whenever the player uses any ability. */
-public class OnAbilityUseTrait implements TraitRegistry.RaceTrait {
-    private final List<ActionRegistry.RaceAction> actions;
-    @Nullable
-    private final Condition condition;
-
-    public OnAbilityUseTrait(List<ActionRegistry.RaceAction> actions, @Nullable Condition condition) {
-        this.actions = actions;
-        this.condition = condition;
+/** Runs when the player uses an ability; event_ability reads which one. */
+public class OnAbilityUseTrait extends EventTrait {
+    OnAbilityUseTrait(JsonObject json) {
+        super(json, null);
     }
 
     @Override
     public void onAbilityUse(Player player, Ability ability) {
-        if (condition == null || condition.evaluate(player, null, null, null)) {
-            ActionRegistry.runChain(actions, player, null, null, null);
-        }
+        fire(player, null, null, EventContext.ofAbility(ability.id()));
     }
 
     public static void register() {
-        TraitRegistry.register(ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "on_ability_use"), json -> {
-            Condition condition = json.has("condition") ? Condition.fromJson(json.getAsJsonObject("condition")) : null;
-            return new OnAbilityUseTrait(ActionRegistry.listFromJson(json, "actions"), condition);
-        });
+        TraitRegistry.register(CreRaces.id("on_ability_use"), OnAbilityUseTrait::new);
     }
 }

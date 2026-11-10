@@ -1,13 +1,11 @@
 {
     "creraces:name": "ability.creraces.unstoppable_force.name",
     "creraces:description": "ability.creraces.unstoppable_force.description",
-    "creraces:type": "ACTIVE",
+    "creraces:type": "active",
     "creraces:icon": "minecraft:textures/item/iron_chestplate.png",
     "creraces:cooldown": 880,
     "creraces:cost": 0,
-    "creraces:race": [
-        "creraces:giant"
-    ],
+    "creraces:race": ["creraces:giant"],
     "creraces:actions": [
         {
             "type": "creraces:apply_effect",
@@ -26,13 +24,13 @@
         {
             "type": "creraces:play_sound",
             "sound": "minecraft:entity.iron_golem.repair",
-            "volume": 1.0,
+            "volume": 1,
             "pitch": 0.7
         },
         {
             "type": "creraces:spawn_particles",
             "particle": "minecraft:block",
-            "block_state": "minecraft:stone",
+            "block": "minecraft:stone",
             "count": 15
         }
     ],

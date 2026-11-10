@@ -9,7 +9,6 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.ai.attributes.Attribute;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.attributes.RangedAttribute;
 
 public class ModAttributes {
@@ -40,8 +39,16 @@ public class ModAttributes {
     public static final RegistrySupplier<Attribute> ATTACK_DAMAGE = ATTRIBUTES.register("attack_damage",
             () -> new RangedAttribute("attribute.creraces.attack_damage", 0.0, 0.0, 1000.0).setSyncable(true));
 
+    /**
+     * Critical strike chance (0.25 = 25%), 5% by default as in Apothic Attributes. Above 1.0 a hit can
+     * crit more than once. See CriticalStrikes.
+     */
     public static final RegistrySupplier<Attribute> CRIT_RATE = ATTRIBUTES.register("crit_rate",
-            () -> new RangedAttribute("attribute.creraces.crit_rate", 0.0, 0.0, 10.0).setSyncable(true));
+            () -> new RangedAttribute("attribute.creraces.crit_rate", 0.05, 0.0, 10.0).setSyncable(true));
+
+    /** Damage multiplier of a critical strike (1.5 = 150%). */
+    public static final RegistrySupplier<Attribute> CRIT_DAMAGE = ATTRIBUTES.register("crit_damage",
+            () -> new RangedAttribute("attribute.creraces.crit_damage", 1.5, 1.0, 100.0).setSyncable(true));
 
     /** Percent cooldown reduction. ABILITY_HASTE_CAP is the real cap, so this bound only has to stay above it. */
     public static final RegistrySupplier<Attribute> ABILITY_HASTE = ATTRIBUTES.register("ability_haste",
@@ -93,6 +100,10 @@ public class ModAttributes {
 
     public static final String APOTHIC_ID = "attributeslib";
 
+    public static boolean isApothicLoaded() {
+        return Platform.isModLoaded(APOTHIC_ID);
+    }
+
     /**
      * Returns the Apothic Attributes equivalent of a CreRaces attribute when that mod is installed, so
      * traits, scaling and combat all read the same attribute. Falls back to our own otherwise.
@@ -100,7 +111,7 @@ public class ModAttributes {
     public static Attribute resolve(RegistrySupplier<Attribute> supplier) {
         if (supplier == null)
             return null;
-        if (!Platform.isModLoaded(APOTHIC_ID))
+        if (!isApothicLoaded())
             return supplier.get();
 
         Attribute apothic = BuiltInRegistries.ATTRIBUTE.get(
@@ -110,7 +121,7 @@ public class ModAttributes {
 
     /** Same as {@link #resolve(RegistrySupplier)}, for an attribute already looked up. */
     public static Attribute resolve(Attribute attr) {
-        if (attr == null || !Platform.isModLoaded(APOTHIC_ID))
+        if (attr == null || !isApothicLoaded())
             return attr;
 
         ResourceLocation id = BuiltInRegistries.ATTRIBUTE.getKey(attr);
@@ -123,15 +134,10 @@ public class ModAttributes {
 
     /** Apothic's name for one of our attributes; most share the same path. */
     private static String apothicName(String path) {
-        return switch (path) {
-            case "crit_rate" -> "crit_chance";
-            case "ability_haste" -> "cooldown_reduction";
-            case "magic_resist" -> "magic_resistance";
-            default -> path;
-        };
+        return path.equals("crit_rate") ? "crit_chance" : path;
     }
 
-    /** Whether a resolved attribute is one of Apothic's percentages, stored as 0.0-1.0 rather than 0-100. */
+    /** Whether a resolved attribute is a percentage stored as 0.0-1.0 rather than 0-100 (crit rate and Apothic's). */
     public static boolean isPercentAttribute(Attribute attr) {
         if (attr == null)
             return false;
@@ -140,48 +146,15 @@ public class ModAttributes {
             return false;
 
         return switch (id.getPath()) {
-            case "crit_chance", "cooldown_reduction", "armor_shred", "life_steal", "overheal",
+            case "crit_rate", "crit_chance", "armor_shred", "prot_shred", "life_steal", "overheal",
                     "current_hp_damage", "dodge_chance" -> true;
             default -> false;
         };
     }
 
-    /**
-     * Resolves an attribute id from JSON, accepting the short aliases hp, ad, ap, speed, armor, luck,
-     * mana, energy, rage, grit and crit, then applies {@link #resolve(Attribute)}.
-     */
+    /** Looks up an attribute by its exact id, swapped for its Apothic equivalent when that mod is loaded. */
     public static Attribute getAttribute(ResourceLocation id) {
-        if (id == null)
-            return null;
-        String path = id.getPath().toLowerCase();
-
-        Attribute aliased = switch (path) {
-            case "max_health", "hp" -> Attributes.MAX_HEALTH;
-            case "attack_damage", "ad" -> Attributes.ATTACK_DAMAGE;
-            case "movement_speed", "speed" -> Attributes.MOVEMENT_SPEED;
-            case "armor" -> Attributes.ARMOR;
-            case "luck" -> Attributes.LUCK;
-            case "ap", "ability_power" -> ABILITY_POWER.get();
-            case "mana", "max_mana" -> MAX_MANA.get();
-            case "energy", "max_energy" -> MAX_ENERGY.get();
-            case "rage", "max_rage" -> MAX_RAGE.get();
-            case "grit", "max_grit" -> MAX_GRIT.get();
-            case "crit", "crit_rate" -> CRIT_RATE.get();
-            default -> {
-                if (path.contains("life_steal") || path.contains("lifesteal")) {
-                    Attribute lifeSteal = BuiltInRegistries.ATTRIBUTE.get(new ResourceLocation(APOTHIC_ID, "life_steal"));
-                    if (lifeSteal == null)
-                        lifeSteal = BuiltInRegistries.ATTRIBUTE.get(new ResourceLocation(APOTHIC_ID, "lifesteal"));
-                    yield lifeSteal;
-                }
-                yield null;
-            }
-        };
-
-        if (aliased != null)
-            return resolve(aliased);
-
-        return resolve(BuiltInRegistries.ATTRIBUTE.getOptional(id).orElse(null));
+        return id == null ? null : resolve(BuiltInRegistries.ATTRIBUTE.getOptional(id).orElse(null));
     }
 
     public static void init() {

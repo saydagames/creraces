@@ -42,25 +42,23 @@ public class BindAbilityAction implements ActionRegistry.RaceAction {
         return true;
     }
 
-    /** Reads the "slot" field shared by bind and unbind; missing or invalid values fall back to A1. */
-    static AbilitySlot parseSlot(JsonObject json, String actionName) {
-        if (!json.has("slot")) {
-            return AbilitySlot.A1;
-        }
-        String name = json.get("slot").getAsString();
+    /** Reads the "slot" field shared by bind and unbind (a1, a2, ...). */
+    static AbilitySlot parseSlot(JsonObject json) {
+        String name = GsonHelper.getAsString(json, "slot");
         try {
             return AbilitySlot.valueOf(name.toUpperCase());
         } catch (IllegalArgumentException e) {
-            CreRaces.LOGGER.warn("Invalid slot in {} action: {}", actionName, name);
-            return AbilitySlot.A1;
+            throw new IllegalArgumentException("unknown ability slot '" + name + "'");
         }
     }
 
     public static void register() {
-        ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "bind"), json -> {
-            ResourceLocation abilityId = new ResourceLocation(
-                    GsonHelper.getAsString(json, "id", "minecraft:barrier"));
-            return new BindAbilityAction(parseSlot(json, "bind"), abilityId,
+        ActionRegistry.register(CreRaces.id("bind"), json -> {
+            ResourceLocation abilityId = ResourceLocation.tryParse(GsonHelper.getAsString(json, "ability"));
+            if (abilityId == null) {
+                throw new IllegalArgumentException("malformed ability id");
+            }
+            return new BindAbilityAction(parseSlot(json), abilityId,
                     GsonHelper.getNullableString(json, "save_to", null));
         });
     }

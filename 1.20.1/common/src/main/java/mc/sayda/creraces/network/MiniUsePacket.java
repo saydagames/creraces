@@ -16,7 +16,7 @@ import java.util.function.Supplier;
 
 /**
  * C2S: opens the interface of an interactive mini-block (crafting table, barrel, furnace, etc.)
- * that the player right-clicked while in smallBuild mode.
+ * that the player right-clicked while in miniBuild mode.
  */
 public class MiniUsePacket {
 

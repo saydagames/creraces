@@ -118,6 +118,9 @@ public interface IPlayerVariables extends ISerializableData {
 
     Map<String, String> getCustomizations();
 
+    /** Addons this mod put on the player, which a race refresh takes off again. */
+    Set<String> getRacialAddons();
+
     void setCustomization(String key, String value);
 
     String getCustomization(String key);
@@ -212,9 +215,9 @@ public interface IPlayerVariables extends ISerializableData {
 
     void setInSpiritRealm(boolean inSpiritRealm);
 
-    boolean isSmallBuild();
+    boolean isMiniBuild();
 
-    void setSmallBuild(boolean smallBuild);
+    void setMiniBuild(boolean miniBuild);
 
     boolean isUndead();
 

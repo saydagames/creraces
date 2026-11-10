@@ -10,6 +10,14 @@ architectury {
     fabric()
 }
 
+// The JSON engine game tests. Kept out of main so they never ship.
+sourceSets {
+    gametest {
+        compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+        runtimeClasspath += sourceSets.main.runtimeClasspath + sourceSets.main.output
+    }
+}
+
 loom {
     mixin {
         defaultRefmapName = "creraces-fabric.refmap.json"
@@ -22,6 +30,19 @@ loom {
         // dev runs already do, so the same offline player persists across restarts.
         client {
             programArgs "--username", "Dev"
+        }
+        // Headless test server: fails the build if a test fails. See src/gametest.
+        gametest {
+            server()
+            name "Game Tests"
+            source sourceSets.gametest
+            runDir "build/gametest"
+            vmArg "-Dfabric-api.gametest"
+            vmArg "-Dfabric-api.gametest.report-file=${layout.buildDirectory.get()}/gametest-report.xml"
+        }
+        // Its own folder, so a dev server can run beside the dev client without sharing logs or config.
+        server {
+            runDir "run-server"
         }
     }
 }

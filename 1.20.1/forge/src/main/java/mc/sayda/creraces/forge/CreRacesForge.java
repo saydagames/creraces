@@ -7,18 +7,15 @@ import mc.sayda.creraces.block.EterveilBlock;
 import mc.sayda.creraces.block.FairySourceBlock;
 import mc.sayda.creraces.client.CreRacesClient;
 import mc.sayda.creraces.config.forge.ForgeConfig;
+import mc.sayda.creraces.config.CreRacesConfig;
 import mc.sayda.creraces.forge.compat.CuriosBeltCompat;
 import mc.sayda.creraces.forge.migration.LegacyBlockRemaps;
 import mc.sayda.creraces.forge.migration.LegacyMigrationHooks;
-import mc.sayda.creraces.item.SpiritCompassItem;
-import mc.sayda.creraces.registry.ModFluids;
 import mc.sayda.creraces.registry.ModItems;
 import mc.sayda.creraces.registry.ModPotions;
 import mc.sayda.creraces.util.PlatformServices;
 import mc.sayda.creraces.worldgen.VeilwoodBiomeInjector;
-import net.minecraft.client.renderer.ItemBlockRenderTypes;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.item.ItemProperties;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -26,12 +23,16 @@ import net.minecraft.world.item.alchemy.PotionUtils;
 import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions;
 import net.minecraftforge.common.ForgeHooks;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.brewing.BrewingRecipeRegistry;
+import net.minecraftforge.common.SoundActions;
 import net.minecraftforge.event.entity.player.FillBucketEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -40,7 +41,6 @@ import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.DeferredRegister;
@@ -97,26 +97,18 @@ public class CreRacesForge {
 
         // Forge's FillBucketEvent fires before BucketPickup.pickupBlock and uses the fluid
         // capability to fill the bucket, bypassing our pickupBlock override. Cancel it at
-        // HIGHEST priority so Forge's default handler never runs for fairy_source/eterveil.
+        // HIGHEST priority so Forge's default handler never runs for eterveil, or for
+        // fairy_source unless fairy_source_pickup_enabled allows it.
         MinecraftForge.EVENT_BUS.addListener(EventPriority.HIGHEST, (FillBucketEvent event) -> {
             if (event.getTarget() instanceof BlockHitResult blockHit) {
                 BlockState state = event.getLevel().getBlockState(blockHit.getBlockPos());
-                if (state.getBlock() instanceof FairySourceBlock || state.getBlock() instanceof EterveilBlock) {
+                boolean fairyLocked = state.getBlock() instanceof FairySourceBlock
+                        && !CreRacesConfig.FAIRY_SOURCE_PICKUP_ENABLED.get();
+                if (fairyLocked || state.getBlock() instanceof EterveilBlock) {
                     event.setCanceled(true);
                 }
             }
         });
-
-        modBus.addListener((FMLClientSetupEvent event) -> event.enqueueWork(() -> {
-            // Translucent layer for the fluids themselves, so LiquidBlockRenderer alpha-blends them
-            ItemBlockRenderTypes.setRenderLayer(ModFluids.FAIRY_SOURCE.get(), RenderType.translucent());
-            ItemBlockRenderTypes.setRenderLayer(ModFluids.FAIRY_SOURCE_FLOWING.get(), RenderType.translucent());
-            ItemBlockRenderTypes.setRenderLayer(ModFluids.ETERVEIL.get(), RenderType.translucent());
-            ItemBlockRenderTypes.setRenderLayer(ModFluids.ETERVEIL_FLOWING.get(), RenderType.translucent());
-            // Spirit Compass needle model predicate
-            ItemProperties.register(ModItems.SPIRIT_COMPASS.get(), new ResourceLocation("creraces", "angle"),
-                    (stack, level, entity, seed) -> SpiritCompassItem.needleAngle(stack, level, entity));
-        }));
 
         modBus.addListener((FMLCommonSetupEvent event) -> event.enqueueWork(() -> {
             VeilwoodBiomeInjector.init();
@@ -132,6 +124,7 @@ public class CreRacesForge {
 
         CreRaces.init();
         DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> CreRacesClient::init);
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> CreRacesForgeClient.init(modBus));
     }
 
     /** One FluidType per fluid, shared by that fluid's source and flowing variants. */
@@ -139,8 +132,15 @@ public class CreRacesForge {
         DeferredRegister<FluidType> fluidTypes =
                 DeferredRegister.create(ForgeRegistries.Keys.FLUID_TYPES, CreRaces.MODID);
 
-        FluidType.Properties fairyProps = FluidType.Properties.create().density(1000).viscosity(1000).lightLevel(7);
+        FluidType.Properties fairyProps = FluidType.Properties.create().density(1000).viscosity(1000).lightLevel(7)
+                .sound(SoundActions.BUCKET_FILL, SoundEvents.BUCKET_FILL)
+                .sound(SoundActions.BUCKET_EMPTY, SoundEvents.BUCKET_EMPTY);
         FAIRY_FLUID_TYPE = fluidTypes.register("fairy_source", () -> new FluidType(fairyProps) {
+            @Override
+            public boolean canConvertToSource(FluidState state, LevelReader reader, BlockPos pos) {
+                return CreRacesConfig.FAIRY_SOURCE_CONVERSION_ENABLED.get();
+            }
+
             @Override
             public void initializeClient(Consumer<IClientFluidTypeExtensions> consumer) {
                 consumer.accept(new IClientFluidTypeExtensions() {

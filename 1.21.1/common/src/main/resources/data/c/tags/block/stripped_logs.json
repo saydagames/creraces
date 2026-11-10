@@ -1,0 +1,9 @@
+{
+    "replace": false,
+    "values": [
+        "creraces:stripped_dryad_log",
+        "creraces:stripped_veil_willow_log",
+        "creraces:red_stripped_oak_log",
+        "creraces:weathered_red_stripped_oak_log"
+    ]
+}

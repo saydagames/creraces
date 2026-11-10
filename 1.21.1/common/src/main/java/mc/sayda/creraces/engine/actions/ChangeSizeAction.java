@@ -3,41 +3,38 @@ package mc.sayda.creraces.engine.actions;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.engine.ActionRegistry;
-import mc.sayda.creraces.engine.TargetFilter;
+import mc.sayda.creraces.engine.EntitySelector;
 import mc.sayda.creraces.race.RaceIncidents;
 import mc.sayda.creraces.race.RaceScale;
-import mc.sayda.creraces.util.GsonHelper;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 
 import javax.annotation.Nullable;
 
-/** Applies a race scale (size) to the target, or to the caster when there is none and use_target is off. */
+/** Applies a "scale" (the same shape as a race's creraces:scale) to a player. */
 public class ChangeSizeAction implements ActionRegistry.RaceAction {
-
     private final RaceScale scale;
-    private final boolean useTarget;
+    private final EntitySelector entity;
 
-    public ChangeSizeAction(RaceScale scale, boolean useTarget) {
+    public ChangeSizeAction(RaceScale scale, EntitySelector entity) {
         this.scale = scale;
-        this.useTarget = useTarget;
+        this.entity = entity;
     }
 
     @Override
     public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
             @Nullable BlockPos interactPos) {
-        LivingEntity entity = TargetFilter.resolveSmartTarget(player, target, useTarget);
-        if (entity != null) {
-            RaceIncidents.applyScale(entity, scale);
+        LivingEntity subject = entity.resolve(player, target);
+        if (subject != null) {
+            RaceIncidents.applyScale(subject, scale);
         }
         return true;
     }
 
     public static void register() {
-        ActionRegistry.register(ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "change_size"), json -> new ChangeSizeAction(
+        ActionRegistry.register(CreRaces.id("change_size"), json -> new ChangeSizeAction(
                 RaceScale.fromJson(json.get("scale")),
-                GsonHelper.getAsBoolean(json, "use_target", false)));
+                EntitySelector.fromJson(json, EntitySelector.AUTO)));
     }
 }

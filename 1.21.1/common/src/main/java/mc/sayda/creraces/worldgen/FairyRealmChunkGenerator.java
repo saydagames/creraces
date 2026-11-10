@@ -284,7 +284,7 @@ public class FairyRealmChunkGenerator extends ChunkGenerator {
         postProcessGeography(chunk);
         placeIslandBushes(region, chunk);
         placeIslandDecoration(region, chunk);
-        // Snow and ice are handled by minecraft:snowy_taiga's FREEZE_TOP_LAYER biome
+        // Snow and ice are handled by the winter biome's FREEZE_TOP_LAYER biome
         // feature, which runs in applyBiomeDecoration AFTER tree placement. Placing
         // snow here (before applyBiomeDecoration) would block spruce tree growth.
     }

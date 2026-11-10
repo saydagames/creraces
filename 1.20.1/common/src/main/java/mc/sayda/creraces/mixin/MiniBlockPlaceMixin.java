@@ -60,7 +60,7 @@ public class MiniBlockPlaceMixin {
         }
 
         IPlayerVariables vars = DataUtils.getVariables(player).orElse(null);
-        if (vars == null || !vars.isSmallBuild()) {
+        if (vars == null || !vars.isMiniBuild()) {
             return;
         }
 
@@ -220,7 +220,7 @@ public class MiniBlockPlaceMixin {
         }
 
         IPlayerVariables vars = DataUtils.getVariables(minecraft.player).orElse(null);
-        if (vars == null || !vars.isSmallBuild()) {
+        if (vars == null || !vars.isMiniBuild()) {
             return false;
         }
 

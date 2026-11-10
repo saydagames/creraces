@@ -1,28 +1,23 @@
 {
     "creraces:name": "race.creraces.fairy.name",
-    "creraces:scale": {
-        "base": 0.25,
-        "reach": 1.5
-    },
-    "creraces:index": 5.0,
+    "creraces:scale": { "base": 0.25, "reach": 1.5 },
+    "creraces:index": 5,
     "creraces:description": "race.creraces.fairy.description",
     "creraces:icon": "minecraft:textures/item/feather.png",
     "creraces:portrait": "creraces:textures/screens/fairy_portrait.png",
     "creraces:splash": "creraces:textures/screens/fairy_splash.png",
-    "creraces:resource_type": "MANA",
+    "creraces:resource_type": "mana",
     "creraces:difficulty": 1,
     "creraces:is_spirit": true,
     "creraces:is_tiny": true,
-    "creraces:immune_to_damage": [
-        "minecraft:fall"
-    ],
+    "creraces:immune_to_damage": ["minecraft:fall"],
     "passive": [
         {
             "type": "creraces:food_multiplier",
-            "multiplier": 2.0,
+            "multiplier": 2,
             "condition": {
                 "type": "creraces:not",
-                "condition": { "type": "creraces:dimension", "value": "creraces:fairy_realm" }
+                "condition": { "type": "creraces:dimension", "dimension": "creraces:fairy_realm" }
             }
         },
         {
@@ -31,7 +26,10 @@
             "condition": {
                 "type": "creraces:and",
                 "conditions": [
-                    { "type": "creraces:not", "condition": { "type": "creraces:dimension", "value": "creraces:fairy_realm" } },
+                    {
+                        "type": "creraces:not",
+                        "condition": { "type": "creraces:dimension", "dimension": "creraces:fairy_realm" }
+                    },
                     {
                         "type": "creraces:or",
                         "conditions": [
@@ -40,7 +38,12 @@
                                 "type": "creraces:and",
                                 "conditions": [
                                     { "type": "creraces:exposed_to_rain" },
-                                    { "type": "creraces:scaling_compare", "first": "config:SAG_WINGS", "operator": ">", "second": 0 }
+                                    {
+                                        "type": "creraces:compare",
+                                        "value": "config:SAG_WINGS",
+                                        "operator": ">",
+                                        "to": 0
+                                    }
                                 ]
                             }
                         ]
@@ -59,15 +62,14 @@
         },
         {
             "type": "creraces:flight",
-            "resource": "MANA",
+            "resource": "mana",
             "blocked_by_effects": ["creraces:soggy", "creraces:broken_wings"]
         },
         {
             "id": "fairy_mining",
             "type": "creraces:attribute_modifier",
             "attribute": "twilight_lib:mining_penalty",
-            "value": 0.0,
-            "operation": "multiply_total"
+            "value": -1
         }
     ],
     "sugar_rush": [
@@ -91,8 +93,8 @@
                 {
                     "type": "creraces:play_sound",
                     "sound": "minecraft:entity.generic.eat",
-                    "volume": 1.0,
-                    "pitch": 1.0
+                    "volume": 1,
+                    "pitch": 1
                 }
             ]
         },
@@ -101,14 +103,11 @@
             "item": "minecraft:paper",
             "consume": true,
             "actions": [
-                {
-                    "type": "creraces:remove_effect",
-                    "effect": "creraces:soggy"
-                },
+                { "type": "creraces:remove_effect", "effect": "creraces:soggy" },
                 {
                     "type": "creraces:play_sound",
                     "sound": "minecraft:item.book.page_turn",
-                    "volume": 1.0,
+                    "volume": 1,
                     "pitch": 1.2
                 }
             ]
@@ -127,60 +126,30 @@
                 {
                     "type": "creraces:play_sound",
                     "sound": "minecraft:block.amethyst_block.fall",
-                    "volume": 1.0,
+                    "volume": 1,
                     "pitch": 1.5
                 }
             ]
         }
     ],
-    "creraces:starting_items": [
-        "creraces:mirror"
-    ],
-    "creraces:starting_abilities": [
-        "creraces:dash",
-        "creraces:mini_build",
-        "creraces:fae_circle"
-    ],
+    "creraces:starting_items": ["creraces:mirror"],
+    "creraces:starting_abilities": ["creraces:dash", "creraces:mini_build", "creraces:fae_circle"],
     "creraces:customization": [
         {
             "id": "wing_style",
             "type": "property",
-            "options": [
-                "wings_1",
-                "wings_2",
-                "wings_3",
-                "wings_4"
-            ],
-            "defaultValue": "wings_1"
+            "options": ["wings_1", "wings_2", "wings_3", "wings_4"],
+            "default": "wings_1"
         },
-        {
-            "id": "fairy_color",
-            "type": "tint",
-            "defaultValue": "#FFFFFF",
-            "hidden": true
-        }
+        { "id": "fairy_color", "type": "tint", "default": "#FFFFFF", "hidden": true }
     ],
     "creraces:race_defaults": {
-        "creraces:spring_fairy": {
-            "fairy_color": "#FF99FF"
-        },
-        "creraces:summer_fairy": {
-            "fairy_color": "#99FF99"
-        },
-        "creraces:autumn_fairy": {
-            "fairy_color": "#996600"
-        },
-        "creraces:winter_fairy": {
-            "fairy_color": "#FFFFFF"
-        }
+        "creraces:spring_fairy": { "fairy_color": "#FF99FF" },
+        "creraces:summer_fairy": { "fairy_color": "#99FF99" },
+        "creraces:autumn_fairy": { "fairy_color": "#996600" },
+        "creraces:winter_fairy": { "fairy_color": "#FFFFFF" }
     },
-    "cosmetics": [
-        {
-            "type": "creraces:addon",
-            "addon_id": "{wing_style}",
-            "tint": "{fairy_color}"
-        }
-    ],
+    "cosmetics": [{ "type": "creraces:addon", "addon": "{wing_style}", "tint": "{fairy_color}" }],
     "creraces:wiki_page": "Fairy",
     "creraces:splash_x": -22,
     "creraces:splash_y": -12,

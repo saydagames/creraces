@@ -13,11 +13,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
 
-/**
- * Architectury's ParticleProviderRegistry never wires providers into NeoForge's real
- * RegisterParticleProvidersEvent (same known bug class as MenuRegistry/EntityRenderersEvent on
- * NeoForge 1.21.1+, see architectury-api#517/#641) - registering natively here bypasses it.
- */
+// Registered with NeoForge directly: Architectury 13's ParticleProviderRegistry is an empty stub.
 @EventBusSubscriber(modid = CreRaces.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class CreRacesNeoForgeClient {
 

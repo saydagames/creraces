@@ -1,63 +1,54 @@
 package mc.sayda.creraces.engine.traits;
 
+import com.google.gson.JsonObject;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.capability.DataUtils;
-import mc.sayda.creraces.engine.ActionRegistry;
+import mc.sayda.creraces.engine.EventContext;
 import mc.sayda.creraces.engine.TraitRegistry;
-import mc.sayda.creraces.engine.condition.Condition;
-import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 
-import javax.annotation.Nullable;
-import java.util.List;
-
-/** Runs actions when the player lands after being airborne, with the landing block as the interact position. */
-public class OnLandTrait implements TraitRegistry.RaceTrait {
-
-    private final ResourceLocation traitId;
+/**
+ * Runs when the player lands, with the block landed on as the "block" position and the height
+ * fallen as event:fall_distance.
+ */
+public class OnLandTrait extends EventTrait {
+    private final ResourceLocation trackedId;
     private final ResourceLocation wasOnGroundStateId;
-    private final List<ActionRegistry.RaceAction> actions;
-    @Nullable
-    private final Condition condition;
+    private final ResourceLocation fallStateId;
 
-    public OnLandTrait(ResourceLocation traitId, List<ActionRegistry.RaceAction> actions, @Nullable Condition condition) {
-        this.traitId = traitId;
-        this.wasOnGroundStateId = traitId.withSuffix("_was_on_ground");
-        this.actions = actions;
-        this.condition = condition;
+    OnLandTrait(JsonObject json) {
+        super(json, null);
+        ResourceLocation id = TraitIds.of(json);
+        this.trackedId = id;
+        this.wasOnGroundStateId = id.withSuffix("_was_on_ground");
+        this.fallStateId = id.withSuffix("_fall_distance");
     }
 
     @Override
     public void tick(Player player) {
-        if (player.level().isClientSide()) return;
+        if (player.level().isClientSide()) {
+            return;
+        }
         DataUtils.getVariables(player).ifPresent(vars -> {
             boolean onGround = player.onGround();
-
             // A player not tracked yet counts as grounded, so nothing fires on the first tick after spawning.
             boolean wasOnGround = vars.getPersistentState(wasOnGroundStateId) > 0.5
-                    || !vars.getTraitTimers().containsKey(traitId);
+                    || !vars.getTraitTimers().containsKey(trackedId);
 
             if (onGround && !wasOnGround) {
-                BlockPos pos = player.blockPosition();
-                if (condition == null || condition.evaluate(player, null, null, pos)) {
-                    CreRaces.LOGGER.debug("OnLandTrait: Firing {} actions for player {}", actions.size(),
-                            player.getName().getString());
-                    ActionRegistry.runChain(actions, player, null, null, pos);
-                }
+                // Vanilla resets the fall distance on the landing tick, so the last airborne value is used.
+                float fallen = (float) vars.getPersistentState(fallStateId);
+                fire(player, null, player.getOnPos(), EventContext.ofFall(fallen));
             }
-
+            vars.setPersistentState(fallStateId, onGround ? 0.0 : player.fallDistance);
             vars.setPersistentState(wasOnGroundStateId, onGround ? 1.0 : 0.0);
             // The trait timer only marks this player as tracked.
-            vars.setTraitTimer(traitId, 1);
+            vars.setTraitTimer(trackedId, 1);
         });
     }
 
     public static void register() {
-        TraitRegistry.register(ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "on_land"), json -> {
-            Condition condition = json.has("condition") ? Condition.fromJson(json.getAsJsonObject("condition")) : null;
-            return new OnLandTrait(TraitIds.fromJson(json, "on_land_"), ActionRegistry.listFromJson(json, "actions"),
-                    condition);
-        });
+        TraitRegistry.register(CreRaces.id("on_land"), OnLandTrait::new);
     }
 }

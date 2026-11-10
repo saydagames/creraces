@@ -38,21 +38,13 @@ public final class WaypointRenderer {
     private static final int STALE_COLOR = 0x888888;
     private static final float EDGE_MARGIN = 20f;
     private static final float MIN_EDGE_MARGIN = 12f;
-    /** Icon size holds at its smallest within this range of the player. */
-    private static final double NEAR_DISTANCE = 16.0;
-    /** Base size of a marker's icon and label, relative to the raw 16px icon and 8px text. */
+    /** Size of a marker close up, relative to the raw 16px icon and 8px text. Icon and label share it. */
     private static final float BASE_SCALE = 0.75f;
-    /** Extra multiplier on top of BASE_SCALE, icon only; the label doesn't use this. */
-    private static final float ICON_BOOST = 0.72f;
-    /** Icon size close up, as a fraction of its full size; grows to full size by ICON_GROW_DISTANCE. */
-    private static final float NEAR_ICON_SCALE = 0.6f;
-    /** Distance at which the icon reaches full size; unchanged beyond it. Purely distance-based -
-     *  unlike the label, icon size never reacts to how much of the screen's centre it's near. */
-    private static final double ICON_GROW_DISTANCE = 64.0;
-    /** Labels finish shrinking well before icons do, so a far gate's name never dwarfs its icon. */
-    private static final double TEXT_FAR_DISTANCE = 96.0;
-    /** How small a label gets once fully shrunk by distance, as a fraction of its near-distance size. */
-    private static final float MIN_TEXT_SCALE = 0.48f;
+    /** Markers keep their full size within this range of the player... */
+    private static final double NEAR_DISTANCE = 16.0;
+    /** ...and ease down to FAR_SCALE of it by this distance, the icon and its label together. */
+    private static final double FAR_DISTANCE = 96.0;
+    private static final float FAR_SCALE = 0.6f;
     /** A label is fully opaque while its marker is within this fraction of the screen's shorter side of the centre... */
     private static final float FOCUS_INNER = 0.07f;
     /** ...and has faded to LABEL_MIN_OPACITY by this fraction, so labels read while looked at and fade when not. */
@@ -127,7 +119,7 @@ public final class WaypointRenderer {
 
     private static void drawMarker(GuiGraphics graphics, Candidate c, Matrix4f viewProj, Vec3 cameraPos,
             int guiWidth, int guiHeight, float userScale, float arrowScale) {
-        float markerMargin = Math.max(MIN_EDGE_MARGIN, EDGE_MARGIN * userScale * BASE_SCALE * ICON_BOOST);
+        float markerMargin = Math.max(MIN_EDGE_MARGIN, EDGE_MARGIN * userScale * BASE_SCALE);
         float arrowMargin = Math.max(MIN_EDGE_MARGIN, EDGE_MARGIN * arrowScale);
         ScreenPoint sp = project(c.worldPos, cameraPos, viewProj, guiWidth, guiHeight, markerMargin, arrowMargin);
         boolean stale = c.waypoint.isStale();
@@ -137,10 +129,8 @@ public final class WaypointRenderer {
             return;
         }
 
-        float iconT = (float) Mth.clamp((c.distance - NEAR_DISTANCE) / (ICON_GROW_DISTANCE - NEAR_DISTANCE), 0.0, 1.0);
-        float textT = (float) Mth.clamp((c.distance - NEAR_DISTANCE) / (TEXT_FAR_DISTANCE - NEAR_DISTANCE), 0.0, 1.0);
-        float iconScale = userScale * BASE_SCALE * ICON_BOOST * (NEAR_ICON_SCALE + iconT * (1.0f - NEAR_ICON_SCALE));
-        float textScale = userScale * BASE_SCALE * (1.0f - textT * (1.0f - MIN_TEXT_SCALE));
+        float t = (float) Mth.clamp((c.distance - NEAR_DISTANCE) / (FAR_DISTANCE - NEAR_DISTANCE), 0.0, 1.0);
+        float scale = userScale * BASE_SCALE * (1.0f - t * (1.0f - FAR_SCALE));
         int alpha = (int) (lookOpacity(sp, guiWidth, guiHeight) * 255);
 
         var pose = graphics.pose();
@@ -148,7 +138,7 @@ public final class WaypointRenderer {
         int iconColor = stale ? STALE_COLOR : c.waypoint.color();
         pose.pushPose();
         pose.translate(sp.x, sp.y, 0);
-        pose.scale(iconScale, iconScale, 1.0f);
+        pose.scale(scale, scale, 1.0f);
         AbilityIconRenderer.render(graphics, icon, -ICON_SIZE / 2, -ICON_SIZE / 2, ICON_SIZE, iconColor);
         pose.popPose();
 
@@ -159,8 +149,8 @@ public final class WaypointRenderer {
         String label = c.waypoint.displayName();
         int textColor = (alpha << 24) | (stale ? STALE_COLOR : 0xFFFFFF);
         pose.pushPose();
-        pose.translate(sp.x, sp.y + ICON_SIZE * iconScale / 2f + 2f * textScale, 0);
-        pose.scale(textScale, textScale, 1.0f);
+        pose.translate(sp.x, sp.y + (ICON_SIZE / 2f + 2f) * scale, 0);
+        pose.scale(scale, scale, 1.0f);
         graphics.drawCenteredString(font, label, 0, 0, textColor);
         graphics.drawCenteredString(font, formatDistance(c.distance), 0, font.lineHeight, (alpha << 24) | 0xAAAAAA);
         pose.popPose();

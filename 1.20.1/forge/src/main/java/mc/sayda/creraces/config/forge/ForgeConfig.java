@@ -105,6 +105,8 @@ public class ForgeConfig {
 
         public final ForgeConfigSpec.ConfigValue<Integer> fairy_realm_border_size;
         public final ForgeConfigSpec.ConfigValue<Boolean> veilwood_forest_enabled;
+        public final ForgeConfigSpec.ConfigValue<Boolean> fairy_source_pickup_enabled;
+        public final ForgeConfigSpec.ConfigValue<Boolean> fairy_source_conversion_enabled;
         public final ForgeConfigSpec.ConfigValue<Boolean> essence_vortex_worldgen_enabled;
         public final ForgeConfigSpec.ConfigValue<Boolean> essence_vortex_conversion_enabled;
         public final ForgeConfigSpec.ConfigValue<Boolean> keep_quest_items;
@@ -228,7 +230,7 @@ public class ForgeConfig {
                     .defineInRange("break_blocks_max_radius",
                             CreRacesConfig.BREAK_BLOCKS_MAX_RADIUS.get(), -1, 256);
             remove_block_hardness_limit = builder.comment(
-                    "Max hardness for creraces:remove_block. -1.0 = no cap (allows breaking bedrock). Default: -1.0")
+                    "Max hardness creraces:break_blocks can break. -1.0 = no cap (unbreakable blocks still need \"bypass\"). Default: -1.0")
                     .defineInRange("remove_block_hardness_limit",
                             CreRacesConfig.REMOVE_BLOCK_HARDNESS_LIMIT.get(), -1.0, 1000.0);
             customization_value_max_length = builder
@@ -248,7 +250,7 @@ public class ForgeConfig {
                     .defineInRange("give_item_max_count", CreRacesConfig.GIVE_ITEM_MAX_COUNT.get(),
                             -1, 6400);
             mass_summon_max_count = builder
-                    .comment("Max entities for creraces:mass_summon per cast. -1 = no cap. Default: -1")
+                    .comment("Max entities one creraces:summon_entity action summons. -1 = no cap. Default: -1")
                     .defineInRange("mass_summon_max_count",
                             CreRacesConfig.MASS_SUMMON_MAX_COUNT.get(),
                             -1, 512);
@@ -368,6 +370,12 @@ public class ForgeConfig {
             veilwood_forest_enabled = builder
                     .comment("Enable Veilwood Forest overworld biome generation. Requires TerraBlender. Default: true")
                     .define("veilwood_forest_enabled", CreRacesConfig.VEILWOOD_FOREST_ENABLED.get());
+            fairy_source_pickup_enabled = builder
+                    .comment("Allow picking up Fairy Source with a bucket. Default: false")
+                    .define("fairy_source_pickup_enabled", CreRacesConfig.FAIRY_SOURCE_PICKUP_ENABLED.get());
+            fairy_source_conversion_enabled = builder
+                    .comment("Let Fairy Source form a new source block between two sources, like water. Default: false")
+                    .define("fairy_source_conversion_enabled", CreRacesConfig.FAIRY_SOURCE_CONVERSION_ENABLED.get());
             builder.pop();
 
             builder.push("Essence");
@@ -867,6 +875,8 @@ public class ForgeConfig {
 
             CreRacesConfig.FAIRY_REALM_BORDER_SIZE = () -> COMMON.fairy_realm_border_size.get();
             CreRacesConfig.VEILWOOD_FOREST_ENABLED = () -> COMMON.veilwood_forest_enabled.get();
+            CreRacesConfig.FAIRY_SOURCE_PICKUP_ENABLED = () -> COMMON.fairy_source_pickup_enabled.get();
+            CreRacesConfig.FAIRY_SOURCE_CONVERSION_ENABLED = () -> COMMON.fairy_source_conversion_enabled.get();
 
             CreRacesConfig.POCKET_DIM_SPACING = () -> COMMON.pocket_dim_spacing.get();
             CreRacesConfig.POCKET_DIM_Y = () -> COMMON.pocket_dim_y.get();

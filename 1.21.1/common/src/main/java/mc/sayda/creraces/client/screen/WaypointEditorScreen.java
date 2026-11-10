@@ -29,18 +29,13 @@ import java.util.function.DoubleConsumer;
 import java.util.function.DoubleSupplier;
 
 /**
- * Lists every gate the local kitsune has discovered, with per-gate rename, recolour and delete,
+ * Lists every gate the local kitsune has discovered, with per-gate rename, recolor and delete,
  * sharing (the selected gate, the ticked ones, or all of them), a global marker toggle and the icon
  * and arrow sizes. Opened by sneak-clicking a torii bell (see ToriiGateInteractions). The panel is
  * sized from the screen so it stays usable at large GUI scales.
  */
 @SuppressWarnings("null")
 public class WaypointEditorScreen extends Screen {
-    private static final int PALETTE_COLS = 8;
-    private static final int[] PALETTE = {
-            0xFFE0A0FF, 0xFFFF6B6B, 0xFFFFA94D, 0xFFFFE066, 0xFF69DB7C, 0xFF66D9E8, 0xFF74C0FC, 0xFFB197FC,
-            0xFFFFFFFF, 0xFFCED4DA, 0xFF868E96, 0xFF343A40, 0xFFF783AC, 0xFF38D9A9, 0xFF5C7CFA, 0xFFA9784A,
-    };
     private static final int MAX_PANEL_WIDTH = 340;
     private static final int MAX_PANEL_HEIGHT = 220;
     private static final int PAD = 8;
@@ -52,11 +47,12 @@ public class WaypointEditorScreen extends Screen {
     private static final int CHECK_W = 9;
     private static final int OFFER_BTN_W = 54;
     private static final int SHARE_BTN_W = 52;
+    private static final int PICKER_H = 36;
     /**
      * The share block sits at a fixed offset below the header, selection or not, so it does not
-     * jump around. It clears two full rows of the colour palette (up to 16px swatches, 4px gaps).
+     * jump around. It clears the edit column: name box, buttons, the color row and the picker.
      */
-    private static final int SHARE_BLOCK_Y = 94;
+    private static final int SHARE_BLOCK_Y = 98;
 
     /** Which gates the Share button sends. */
     private enum Scope {
@@ -77,12 +73,18 @@ public class WaypointEditorScreen extends Screen {
     private int panelLeft, panelTop, panelWidth, panelHeight;
     private int listX, listW, listTop, listBottom, visibleRows;
     private int rightX, rightW;
-    private int colourLabelY, shareRowY;
+    private int colorRowY, previewX, previewW, shareRowY;
     private boolean noPlayersHint;
     private int footerY, bannerY, scaleLabelX, arrowLabelX;
 
     @Nullable
     private EditBox nameBox;
+    @Nullable
+    private EditBox hexBox;
+    @Nullable
+    private ColorPickerWidget colorPicker;
+    /** A picked or typed color is shown at once but saved by commitColor(), so a drag saves once. */
+    private boolean colorDirty;
     @Nullable
     private EditBox scaleBox;
     @Nullable
@@ -117,6 +119,8 @@ public class WaypointEditorScreen extends Screen {
         }
         marked.retainAll(known);
         nameBox = null;
+        hexBox = null;
+        colorPicker = null;
 
         List<WaypointStore.PendingOffer> offers = store.pendingOffers();
         layOut(!offers.isEmpty());
@@ -166,7 +170,7 @@ public class WaypointEditorScreen extends Screen {
         return panelTop + HEADER_H;
     }
 
-    /** Name box, rename and delete, and the colour swatches for the selected gate. */
+    /** Name box, rename and delete, and the color picker for the selected gate. */
     private void initEditColumn(WaypointStore store, Waypoint sel) {
         int y = contentTop();
         nameBox = new EditBox(this.font, rightX, y, rightW, BTN_H,
@@ -186,16 +190,23 @@ public class WaypointEditorScreen extends Screen {
         }).bounds(rightX + half + 2, y, rightW - half - 2, BTN_H).build());
         y += BTN_H + 4;
 
-        colourLabelY = y;
-        y += 10;
-        int size = Math.max(8, Math.min(16, (rightW - (PALETTE_COLS - 1)) / PALETTE_COLS));
-        int gap = Math.min(4, Math.max(1, (rightW - PALETTE_COLS * size) / (PALETTE_COLS - 1)));
-        for (int i = 0; i < PALETTE.length; i++) {
-            int col = i % PALETTE_COLS;
-            int row = i / PALETTE_COLS;
-            addRenderableWidget(new ColorSwatch(rightX + col * (size + gap), y + row * (size + gap), size,
-                    PALETTE[i], sel));
-        }
+        // "Color", the hex box, then a preview of the color filling the rest of the row
+        colorRowY = y;
+        Component colorLabel = Component.translatable("gui.creraces.waypoint_editor.color");
+        int hexX = rightX + this.font.width(colorLabel) + 4;
+        int hexW = this.font.width("#DDDDDD") + 10;
+        hexBox = new EditBox(this.font, hexX, y, hexW, BTN_H, colorLabel);
+        hexBox.setMaxLength(7);
+        hexBox.setFilter(text -> text.matches("#?[0-9a-fA-F]{0,6}"));
+        hexBox.setValue(ColorPickerWidget.toHex(sel.color()));
+        hexBox.setResponder(text -> onHexTyped(sel, text));
+        addRenderableWidget(hexBox);
+        previewX = hexX + hexW + 3;
+        previewW = Math.max(0, rightX + rightW - previewX);
+        y += BTN_H + 3;
+
+        colorPicker = addRenderableWidget(new ColorPickerWidget(rightX, y, rightW, PICKER_H, sel.color() & 0xFFFFFF,
+                colorLabel, rgb -> onColorPicked(sel, rgb)));
     }
 
     /** Recipient, which gates, and the Share button. Shown with or without a selection. */
@@ -325,6 +336,39 @@ public class WaypointEditorScreen extends Screen {
         }
     }
 
+    /** The picker moved: show the color straight away, and in the hex box. */
+    private void onColorPicked(Waypoint sel, int rgb) {
+        previewColor(sel, rgb);
+        if (hexBox != null) {
+            hexBox.setValue(ColorPickerWidget.toHex(rgb));
+        }
+    }
+
+    /** A complete hex value moves the picker to it; a half-typed one is left alone. */
+    private void onHexTyped(Waypoint sel, String text) {
+        Integer rgb = ColorPickerWidget.parseHex(text);
+        // Also skips the echo when onColorPicked fills the box in
+        if (rgb == null || rgb == (sel.color() & 0xFFFFFF)) {
+            return;
+        }
+        previewColor(sel, rgb);
+        if (colorPicker != null) {
+            colorPicker.setRgb(rgb);
+        }
+    }
+
+    private void previewColor(Waypoint sel, int rgb) {
+        sel.setColor(0xFF000000 | rgb);
+        colorDirty = true;
+    }
+
+    private void commitColor() {
+        if (colorDirty) {
+            colorDirty = false;
+            WaypointStore.get().notifyEdited();
+        }
+    }
+
     /** Parses a size box into the store, then shows the stored (clamped) value back in it. */
     private static void commitScale(@Nullable EditBox box, DoubleConsumer setter, DoubleSupplier current) {
         if (box == null) {
@@ -344,9 +388,10 @@ public class WaypointEditorScreen extends Screen {
         commitScale(arrowBox, store::setArrowScale, store::arrowScale);
     }
 
-    /** Full re-init rather than patching widgets in place; commits pending size edits first. */
+    /** Full re-init rather than patching widgets in place; commits pending size and color edits first. */
     private void refresh() {
         applyScales();
+        commitColor();
         rebuildWidgets();
     }
 
@@ -414,13 +459,27 @@ public class WaypointEditorScreen extends Screen {
                 applyRename(selected);
                 return true;
             }
+            if (hexBox != null && hexBox.isFocused()) {
+                commitColor();
+                hexBox.setFocused(false);
+                return true;
+            }
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override
+    public boolean mouseReleased(double mx, double my, int button) {
+        // Saved here rather than by the picker: a drag can end anywhere, and the release only reaches
+        // whichever widget is under the cursor.
+        commitColor();
+        return super.mouseReleased(mx, my, button);
+    }
+
+    @Override
     public void onClose() {
         applyScales();
+        commitColor();
         super.onClose();
     }
 
@@ -447,8 +506,10 @@ public class WaypointEditorScreen extends Screen {
             drawWrapped(g, Component.translatable("gui.creraces.waypoint_editor.select_hint"), rightX,
                     contentTop() + 2, rightW);
         } else {
-            g.drawString(font, Component.translatable("gui.creraces.waypoint_editor.colour"), rightX, colourLabelY,
+            g.drawString(font, Component.translatable("gui.creraces.waypoint_editor.color"), rightX, colorRowY + 4,
                     0xAAAAAA, false);
+            g.fill(previewX, colorRowY, previewX + previewW, colorRowY + BTN_H, 0xFF000000 | selected.color());
+            g.renderOutline(previewX, colorRowY, previewW, BTN_H, 0xFF555555);
         }
         if (noPlayersHint) {
             g.drawString(font, font.plainSubstrByWidth(
@@ -466,7 +527,7 @@ public class WaypointEditorScreen extends Screen {
         super.render(g, mx, my, dt);
     }
 
-    /** Each row: a colour bar, the name over the coordinates, and a tick box for sharing. */
+    /** Each row: a color bar, the name over the coordinates, and a tick box for sharing. */
     private void renderGateList(GuiGraphics g, int mx, int my) {
         List<Waypoint> all = WaypointStore.get().all();
         g.fill(listX - 1, listTop - 1, listX + listW + 1, listBottom + 1, 0x55000000);
@@ -540,31 +601,6 @@ public class WaypointEditorScreen extends Screen {
         for (FormattedCharSequence line : font.split(text, width)) {
             g.drawString(font, line, x, y, 0xAAAAAA, false);
             y += font.lineHeight + 1;
-        }
-    }
-
-    /** A single clickable colour square; applies immediately and persists through the store. */
-    private static class ColorSwatch extends Button {
-        private final int color;
-        private final Waypoint target;
-
-        ColorSwatch(int x, int y, int size, int color, Waypoint target) {
-            super(x, y, size, size, Component.empty(), b -> {
-                target.setColor(color);
-                WaypointStore.get().notifyEdited();
-            }, DEFAULT_NARRATION);
-            this.color = color;
-            this.target = target;
-        }
-
-        @Override
-        public void renderWidget(GuiGraphics g, int mx, int my, float dt) {
-            g.fill(getX(), getY(), getX() + width, getY() + height, 0xFF000000 | (color & 0xFFFFFF));
-            if (target.color() == color) {
-                g.renderOutline(getX() - 1, getY() - 1, width + 2, height + 2, 0xFFFFFFFF);
-            } else if (isHoveredOrFocused()) {
-                g.renderOutline(getX(), getY(), width, height, 0xFFAAAAAA);
-            }
         }
     }
 }

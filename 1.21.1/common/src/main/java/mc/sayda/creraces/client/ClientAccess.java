@@ -62,11 +62,11 @@ public class ClientAccess {
 
         final Player finalTarget = target;
         DataUtils.getVariables(finalTarget).ifPresent(vars -> {
-            boolean oldSmallBuild = vars.isSmallBuild();
+            boolean oldMiniBuild = vars.isMiniBuild();
             vars.deserialize(data);
-            if (vars.isSmallBuild() != oldSmallBuild) {
-                CreRaces.LOGGER.info("ClientAccess: smallBuild for {} changed from {} to {}",
-                        finalTarget.getName().getString(), oldSmallBuild, vars.isSmallBuild());
+            if (vars.isMiniBuild() != oldMiniBuild) {
+                CreRaces.LOGGER.info("ClientAccess: miniBuild for {} changed from {} to {}",
+                        finalTarget.getName().getString(), oldMiniBuild, vars.isMiniBuild());
             }
             // Addons are not applied here: the server stays authoritative and sends SyncAddonsPacket
             // itself, and the local preview is handled by the screens that show it.

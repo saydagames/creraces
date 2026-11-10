@@ -3,11 +3,9 @@ package mc.sayda.creraces.engine.actions;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.engine.ActionRegistry;
-import mc.sayda.creraces.engine.ScalingValue;
-import mc.sayda.creraces.util.GsonHelper;
+import mc.sayda.creraces.engine.Position;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
@@ -18,27 +16,13 @@ import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nullable;
 
-/** "Right-clicks" a block as the caster, succeeding only if the block consumed the interaction. */
+/** Right-clicks the block at "position" (the interacted block by default) with the main hand. */
+@SuppressWarnings("null")
 public class InteractBlockAction implements ActionRegistry.RaceAction {
-    private final ScalingValue offsetX;
-    private final ScalingValue offsetY;
-    private final ScalingValue offsetZ;
-    private final boolean useInteractPos;
+    private final Position position;
 
-    public InteractBlockAction(ScalingValue offsetX, ScalingValue offsetY, ScalingValue offsetZ,
-            boolean useInteractPos) {
-        this.offsetX = offsetX;
-        this.offsetY = offsetY;
-        this.offsetZ = offsetZ;
-        this.useInteractPos = useInteractPos;
-    }
-
-    public static void register() {
-        ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "interact_block"), json -> new InteractBlockAction(
-                ScalingValue.fromJson(json, "offset_x", 0.0),
-                ScalingValue.fromJson(json, "offset_y", 0.0),
-                ScalingValue.fromJson(json, "offset_z", 0.0),
-                GsonHelper.getAsBoolean(json, "use_interact_pos", true)));
+    public InteractBlockAction(Position position) {
+        this.position = position;
     }
 
     @Override
@@ -47,15 +31,18 @@ public class InteractBlockAction implements ActionRegistry.RaceAction {
         if (player.level().isClientSide()) {
             return true;
         }
-        BlockPos base = (useInteractPos && interactPos != null) ? interactPos : player.blockPosition();
-        BlockPos pos = base.offset(
-                (int) offsetX.evaluate(player, target, slot, interactPos),
-                (int) offsetY.evaluate(player, target, slot, interactPos),
-                (int) offsetZ.evaluate(player, target, slot, interactPos));
-
+        BlockPos pos = position.resolveBlock(player, target, slot, interactPos);
+        if (pos == null) {
+            return false;
+        }
         BlockState state = player.level().getBlockState(pos);
         BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(pos), Direction.UP, pos, false);
         InteractionResult result = state.use(player.level(), player, InteractionHand.MAIN_HAND, hit);
         return result.consumesAction();
+    }
+
+    public static void register() {
+        ActionRegistry.register(CreRaces.id("interact_block"), json -> new InteractBlockAction(
+                Position.fromJson(json, "position", Position.of(Position.Source.BLOCK))));
     }
 }

@@ -1,0 +1,51 @@
+{
+    "actions": [
+        {
+            "type": "creraces:conditional",
+            "condition": {
+                "type": "creraces:or",
+                "conditions": [
+                    { "type": "creraces:compare", "value": "state:node_x", "to": 0, "operator": "!=" },
+                    { "type": "creraces:compare", "value": "state:node_y", "to": 0, "operator": "!=" },
+                    { "type": "creraces:compare", "value": "state:node_z", "to": 0, "operator": "!=" }
+                ]
+            },
+            "if_true": [
+                { "type": "creraces:message", "text": "$(msg_already_has_node)", "actionbar": true },
+                { "type": "creraces:cancel" }
+            ]
+        },
+        {
+            "type": "creraces:claim_territory",
+            "anchor_y_offset": "$(anchor_y_offset)",
+            "on_success": [
+                "$(on_claimed)",
+                {
+                    "type": "creraces:spawn_particles",
+                    "particle": "minecraft:happy_villager",
+                    "count": 15,
+                    "spread": 0.5,
+                    "position": { "from": "block", "x": 0.5, "y": 1, "z": 0.5 }
+                },
+                {
+                    "type": "creraces:play_sound",
+                    "sound": "minecraft:item.bone_meal.use",
+                    "source": "blocks",
+                    "position": { "from": "block" }
+                },
+                { "type": "creraces:message", "text": "$(msg_claimed)", "actionbar": true }
+            ],
+            "on_invalid_biome": [
+                { "type": "creraces:message", "text": "$(msg_invalid_biome)", "actionbar": true },
+                { "type": "creraces:cancel" }
+            ],
+            "on_enemy_territory": [
+                { "type": "creraces:message", "text": "$(msg_enemy_territory)", "actionbar": true }
+            ],
+            "on_inside_own": [
+                "$(on_claimed)",
+                { "type": "creraces:message", "text": "$(msg_relocated)", "actionbar": true }
+            ]
+        }
+    ]
+}

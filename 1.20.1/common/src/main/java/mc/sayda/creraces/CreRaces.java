@@ -17,6 +17,7 @@ import mc.sayda.creraces.capability.IPlayerVariables;
 import mc.sayda.creraces.commands.CreracesCommand;
 import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.engine.SpiritSpawningHandler;
+import mc.sayda.creraces.engine.TemplateManager;
 import mc.sayda.creraces.engine.TraitRegistry;
 import mc.sayda.creraces.engine.condition.ConditionRegistry;
 import mc.sayda.creraces.global.GlobalManager;
@@ -45,8 +46,10 @@ import mc.sayda.creraces.registry.ModSounds;
 import mc.sayda.creraces.registry.ModTabs;
 import mc.sayda.creraces.registry.ModVillagerProfessions;
 import mc.sayda.creraces.registry.ModWoodTypes;
+import mc.sayda.creraces.util.DataErrors;
 import mc.sayda.creraces.util.DocCache;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -64,16 +67,26 @@ public class CreRaces {
     public static final String MODID = "creraces";
     public static final Logger LOGGER = LogUtils.getLogger();
 
+    /** An id in this mod's namespace. */
+    public static ResourceLocation id(String path) {
+        return new ResourceLocation(MODID, path);
+    }
+
     public static void init() {
         LOGGER.info("CreRaces is loading...");
 
         DocCache.init(Platform.getConfigFolder());
 
+        // DataErrors counts what the listeners between LOAD_START and LOAD_END log.
+        DataErrors.init();
+        ReloadListenerRegistry.register(PackType.SERVER_DATA, DataErrors.LOAD_START);
         ReloadListenerRegistry.register(PackType.SERVER_DATA, new AbilityManager());
         ReloadListenerRegistry.register(PackType.SERVER_DATA, new RaceManager());
         ReloadListenerRegistry.register(PackType.SERVER_DATA, new QuestManager());
         ReloadListenerRegistry.register(PackType.SERVER_DATA, new HexRecipeManager());
         ReloadListenerRegistry.register(PackType.SERVER_DATA, new GlobalManager());
+        ReloadListenerRegistry.register(PackType.SERVER_DATA, new TemplateManager());
+        ReloadListenerRegistry.register(PackType.SERVER_DATA, DataErrors.LOAD_END);
 
         BoundaryHandler.init();
 
@@ -95,10 +108,10 @@ public class CreRaces {
             // A micro block only breaks as a whole for a sneaking player outside small-build mode;
             // in small-build mode single slots are removed through MiniRemovePacket instead.
             if (state.is(ModBlocks.MICRO_BLOCK.get()) && player != null) {
-                boolean isSmallBuild = DataUtils.getVariables(player)
-                        .map(IPlayerVariables::isSmallBuild)
+                boolean isMiniBuild = DataUtils.getVariables(player)
+                        .map(IPlayerVariables::isMiniBuild)
                         .orElse(false);
-                if (isSmallBuild || !player.isShiftKeyDown()) {
+                if (isMiniBuild || !player.isShiftKeyDown()) {
                     return EventResult.interruptFalse();
                 }
             }

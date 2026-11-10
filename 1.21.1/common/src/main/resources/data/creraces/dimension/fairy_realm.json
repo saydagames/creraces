@@ -6,10 +6,10 @@
         "biome_source": {
             "type": "creraces:fairy_realm_biomes",
             "center": "creraces:fairy_tree",
-            "spring": "minecraft:cherry_grove",
-            "summer": "minecraft:forest",
-            "winter": "minecraft:snowy_taiga",
-            "autumn": "minecraft:taiga",
+            "spring": "creraces:fairy_realm_spring",
+            "summer": "creraces:fairy_realm_summer",
+            "winter": "creraces:fairy_realm_winter",
+            "autumn": "creraces:fairy_realm_autumn",
             "river": "minecraft:river",
             "frozen_river": "minecraft:frozen_river"
         }

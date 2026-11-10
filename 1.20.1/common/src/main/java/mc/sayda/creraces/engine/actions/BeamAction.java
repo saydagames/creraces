@@ -1,13 +1,17 @@
 package mc.sayda.creraces.engine.actions;
 
-import com.google.gson.JsonArray;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.config.CreRacesConfig;
 import mc.sayda.creraces.engine.ActionRegistry;
+import mc.sayda.creraces.engine.AimOffset;
+import mc.sayda.creraces.engine.AreaSearch;
+import mc.sayda.creraces.engine.CastSource;
 import mc.sayda.creraces.engine.ScalingValue;
 import mc.sayda.creraces.engine.TargetFilter;
+import mc.sayda.creraces.engine.condition.Condition;
+import mc.sayda.creraces.engine.condition.ConditionRegistry;
 import mc.sayda.creraces.network.BoundaryHandler;
 import mc.sayda.creraces.network.SyncAnimationPacket;
 import mc.sayda.creraces.network.SyncBeamPacket;
@@ -28,30 +32,39 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Fires a beam along the caster's view and runs its actions on every valid entity inside it.
+ * Fires a beam along the caster's view, turned by "yaw" and "pitch" (see {@link AimOffset}), and
+ * runs its actions on every valid entity inside it. A held beam is always drawn along the view, so
+ * offsets suit instant beams.
  * With a duration or drain rate it becomes a sustained ability instead: the beam is cached per
  * player and re-fired every tick through {@link #tickExecution} until the ability ends.
  */
 @SuppressWarnings("null")
 public class BeamAction implements ActionRegistry.RaceAction {
-    public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "beam");
+    public static final ResourceLocation ID = CreRaces.id("beam");
 
     private static final Map<UUID, Map<ResourceLocation, BeamAction>> CACHED_INSTANCES = new ConcurrentHashMap<>();
 
-    private final ScalingValue length;
+    private final ScalingValue range;
     private final ScalingValue radius;
+    private final AimOffset aim;
     private final TargetFilter targets;
+    @Nullable
+    private final Condition condition;
     private final ScalingValue duration;
     private final ScalingValue drainRate;
     private final List<ActionRegistry.RaceAction> actions;
     private final float[] color;
     private final int syncInterval;
 
-    public BeamAction(ScalingValue length, ScalingValue radius, TargetFilter targets, ScalingValue duration,
-            ScalingValue drainRate, List<ActionRegistry.RaceAction> actions, float[] color, int syncInterval) {
-        this.length = length;
+    public BeamAction(ScalingValue range, ScalingValue radius, AimOffset aim, TargetFilter targets,
+            @Nullable Condition condition,
+            ScalingValue duration, ScalingValue drainRate, List<ActionRegistry.RaceAction> actions, float[] color,
+            int syncInterval) {
+        this.range = range;
         this.radius = radius;
+        this.aim = aim;
         this.targets = targets;
+        this.condition = condition;
         this.duration = duration;
         this.drainRate = drainRate;
         this.actions = actions;
@@ -68,7 +81,8 @@ public class BeamAction implements ActionRegistry.RaceAction {
 
         double drain = drainRate.evaluate(player, target, slot);
         double ticks = duration.evaluate(player, target, slot);
-        if (ticks <= 0 && drain <= 0) {
+        // A clone repeating a held beam fires it once: the hold belongs to the player's own cast.
+        if ((ticks <= 0 && drain <= 0) || CastSource.isReplay()) {
             fire(player, slot);
             return true;
         }
@@ -92,29 +106,31 @@ public class BeamAction implements ActionRegistry.RaceAction {
     }
 
     private void fire(Player player, @Nullable AbilitySlot slot) {
-        Vec3 start = player.getEyePosition();
-        Vec3 end = start.add(player.getLookAngle().scale(clampedLength(player, slot)));
-        AABB searchArea = new AABB(start, end).inflate(AreaTargets.clampRadius(radius.evaluate(player, null, slot)));
-        List<Entity> candidates = player.level().getEntities(player, searchArea,
-                e -> e instanceof LivingEntity living && targets.isValid(living, player));
+        LivingEntity source = CastSource.self(player);
+        Vec3 start = source.getEyePosition();
+        Vec3 end = start.add(aim.direction(source, player, null, slot, null).scale(clampedLength(player, slot)));
+        AABB searchArea = new AABB(start, end).inflate(AreaSearch.clampRadius(radius.evaluate(player, null, slot)));
+        List<Entity> candidates = player.level().getEntities(source, searchArea,
+                e -> e instanceof LivingEntity living && living != player && targets.isValid(living, player));
 
         for (Entity candidate : candidates) {
             LivingEntity living = (LivingEntity) candidate;
-            double hitRadius = AreaTargets.clampRadius(radius.evaluate(player, living, slot));
-            if (isInsideBeam(start, end, living.getEyePosition(), hitRadius)) {
-                ActionRegistry.runAll(actions, player, living, slot, null);
+            double hitRadius = AreaSearch.clampRadius(radius.evaluate(player, living, slot));
+            if (isInsideBeam(start, end, living.getEyePosition(), hitRadius)
+                    && (condition == null || condition.evaluate(player, living, slot, null))) {
+                ActionRegistry.runChain(actions, player, living, slot, null);
             }
         }
     }
 
     private double clampedLength(Player player, @Nullable AbilitySlot slot) {
-        double l = length.evaluate(player, null, slot);
+        double l = range.evaluate(player, null, slot);
         int maxLength = CreRacesConfig.BEAM_MAX_LENGTH.get();
         return maxLength > 0 ? Math.min(l, maxLength) : l;
     }
 
     private void sendBeamVisual(Player player, @Nullable AbilitySlot slot) {
-        float visualRadius = (float) AreaTargets.clampRadius(radius.evaluate(player, null, slot));
+        float visualRadius = (float) AreaSearch.clampRadius(radius.evaluate(player, null, slot));
         float visualLength = (float) clampedLength(player, slot);
         broadcast(player, new SyncBeamPacket(player.getUUID(), true, color[0], color[1], color[2], color[3],
                 visualRadius, visualLength));
@@ -181,17 +197,15 @@ public class BeamAction implements ActionRegistry.RaceAction {
 
     public static void register() {
         ActionRegistry.register(ID, json -> {
-            float[] color = new float[] { 1.0f, 1.0f, 1.0f, 1.0f };
-            if (json.has("color")) {
-                JsonArray rgba = json.getAsJsonArray("color");
-                for (int i = 0; i < Math.min(rgba.size(), 4); i++) {
-                    color[i] = rgba.get(i).getAsFloat();
-                }
-            }
+            int argb = GsonHelper.getAsColor(json, "color", 0xFFFFFFFF);
+            float[] color = new float[] { (argb >> 16 & 0xFF) / 255f, (argb >> 8 & 0xFF) / 255f, (argb & 0xFF) / 255f,
+                    (argb >>> 24) / 255f };
             return new BeamAction(
-                    ScalingValue.fromJson(json, "length", 16.0),
+                    ScalingValue.fromJson(json, "range", 16.0),
                     ScalingValue.fromJson(json, "radius", 0.25),
+                    AimOffset.fromJson(json),
                     TargetFilter.fromJson(json, "targets", Set.of("enemies")),
+                    ConditionRegistry.optional(json, "condition"),
                     ScalingValue.fromJson(json, "duration", 0.0),
                     ScalingValue.fromJson(json, "drain_rate", 0.0),
                     ActionRegistry.listFromJson(json, "actions"),

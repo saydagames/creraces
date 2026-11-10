@@ -1,7 +1,6 @@
 package mc.sayda.creraces.mixin;
 
 import mc.sayda.creraces.capability.DataUtils;
-import mc.sayda.creraces.capability.IPlayerVariables;
 import mc.sayda.creraces.race.Race;
 import mc.sayda.creraces.race.RaceRegistry;
 import mc.sayda.creraces.util.IFoodDataAccessor;
@@ -9,11 +8,12 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.food.FoodData;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.Optional;
 
 @Mixin(FoodData.class)
 public class FoodDataMixin implements IFoodDataAccessor {
@@ -56,33 +56,41 @@ public class FoodDataMixin implements IFoodDataAccessor {
         saturationLevel = Math.min(oldSat + adjustedSat, (float) foodLevel);
     }
 
-    /** Races with no_natural_regeneration skip the health regen FoodData grants from a full hunger bar. */
-    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;heal(F)V"), cancellable = true)
-    private void creraces$cancelHeal(Player player, CallbackInfo ci) {
+    /** The ticking player's regeneration_multiplier, read once at the start of each tick. */
+    @Unique
+    private float creraces$regenerationMultiplier = 1.0f;
+
+    /**
+     * Reads the race passives for this tick: no_hunger_drain wipes exhaustion so food never drops,
+     * and regeneration_multiplier is kept for the heal below.
+     */
+    @Inject(method = "tick", at = @At("HEAD"))
+    private void creraces$readRacePassives(Player player, CallbackInfo ci) {
+        creraces$regenerationMultiplier = 1.0f;
         if (player.level().isClientSide())
             return;
 
-        Optional<IPlayerVariables> varsOpt = DataUtils.getVariables(player);
-        if (varsOpt.isPresent()) {
-            Race race = RaceRegistry.get(varsOpt.get().getRace());
-            if (race != null && race.passives() != null && race.passives().noNaturalRegeneration()) {
-                ci.cancel();
-            }
+        Race race = DataUtils.getVariables(player).map(vars -> RaceRegistry.get(vars.getRace())).orElse(null);
+        if (race == null || race.passives() == null)
+            return;
+
+        if (race.passives().noHungerDrain()) {
+            this.exhaustionLevel = 0.0f;
+        }
+        creraces$regenerationMultiplier = (float) race.passives().regenerationMultiplier().evaluate(player);
+    }
+
+    /** A regeneration_multiplier of 0 or less skips natural regeneration and the hunger it costs. */
+    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;heal(F)V"), cancellable = true)
+    private void creraces$skipRegeneration(Player player, CallbackInfo ci) {
+        if (creraces$regenerationMultiplier <= 0.0f) {
+            ci.cancel();
         }
     }
 
-    /** Races with no_hunger_drain have their exhaustion wiped every tick, so food never drops. */
-    @Inject(method = "tick", at = @At("HEAD"))
-    private void creraces$cancelHungerDrain(Player player, CallbackInfo ci) {
-        if (player.level().isClientSide())
-            return;
-
-        Optional<IPlayerVariables> varsOpt = DataUtils.getVariables(player);
-        if (varsOpt.isPresent()) {
-            Race race = RaceRegistry.get(varsOpt.get().getRace());
-            if (race != null && race.passives() != null && race.passives().noHungerDrain()) {
-                this.exhaustionLevel = 0.0f;
-            }
-        }
+    /** Scales the health natural regeneration restores by regeneration_multiplier. */
+    @ModifyArg(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;heal(F)V"))
+    private float creraces$scaleRegeneration(float amount) {
+        return amount * creraces$regenerationMultiplier;
     }
 }

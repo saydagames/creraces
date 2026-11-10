@@ -37,6 +37,10 @@ public class SkillWheelScreen extends Screen {
 
     private ResourceLocation hoveredAbility = null;
 
+    public static void open() {
+        Minecraft.getInstance().setScreen(new SkillWheelScreen());
+    }
+
     public SkillWheelScreen() {
         super(Component.translatable("screen.creraces.skill_wheel"));
     }

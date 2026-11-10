@@ -132,7 +132,7 @@ public class Race {
         private ResourceLocation nameTexture = null;
         private List<ResourceLocation> parentRaces = new ArrayList<>();
         private double index = Double.MAX_VALUE;
-        private int baseAp = 0, baseAd = 0, baseAh = 0, baseCr = 0;
+        private int baseAp = 0, baseAd = 0, baseAh = 0, baseCr = 5;
         private RaceScale scale = null;
         private ResourceType resourceType = ResourceType.NONE;
         private ResourceLocation bgTexture = new ResourceLocation("creraces",
@@ -553,21 +553,20 @@ public class Race {
      */
     public static class Passives {
         private final boolean canBreatheUnderwater;
+        private final boolean canBreatheInWater;
+        private final boolean canBreatheInLava;
         private final int landSuffocationInterval;
         private final int sunlightBurnInterval;
         private final List<String> immuneToDamageTypes;
         private final List<String> immuneToPotionEffects;
         private final boolean waterVision;
         private final boolean lavaVision;
-        private final boolean canFly;
         private final ScalingValue liquidSpeedMultiplier;
         private final boolean unaffectedByWater;
         private final boolean unaffectedByLava;
         private final boolean cannotSprint;
-        private final boolean noNaturalRegeneration;
         private final ScalingValue regenerationMultiplier;
         private final boolean immuneToKnockback;
-        private final ScalingValue invulnerabilityTicksMultiplier;
         private final boolean noHunger;
         private final boolean noHungerDrain;
         private final ScalingValue fixedHunger;
@@ -580,36 +579,38 @@ public class Race {
         private final EntitySpawnData spawnOnDeath;
         private final boolean canCommandSocials;
 
-        public Passives(boolean canBreatheUnderwater, int landSuffocationInterval, int sunlightBurnInterval,
+        public Passives(boolean canBreatheUnderwater, boolean canBreatheInWater, boolean canBreatheInLava,
+                int landSuffocationInterval,
+                int sunlightBurnInterval,
                 List<String> immuneToDamageTypes, List<String> immuneToPotionEffects,
                 boolean waterVision, boolean lavaVision,
-                boolean canFly, ScalingValue liquidSpeedMultiplier,
+                ScalingValue liquidSpeedMultiplier,
                 boolean unaffectedByWater,
-                boolean unaffectedByLava, boolean cannotSprint, boolean noNaturalRegeneration,
+                boolean unaffectedByLava, boolean cannotSprint,
                 ScalingValue regenerationMultiplier, boolean immuneToKnockback,
-                ScalingValue invulnerabilityTicksMultiplier, boolean noHunger,
+                boolean noHunger,
                 boolean noHungerDrain, ScalingValue fixedHunger,
                 List<String> blockedFoodTypes,
                 List<String> allowedFoodTypes,
                 boolean canEatWhenFull, List<String> hatedByEntities, List<String> respectedByEntities,
                 List<String> defendedByEntities, @Nullable EntitySpawnData spawnOnDeath,
                 boolean canCommandSocials) {
-            this.canBreatheUnderwater = canBreatheUnderwater;
+            // can_breathe_in_water is the looser rule, so it includes breathing with the head under.
+            this.canBreatheUnderwater = canBreatheUnderwater || canBreatheInWater;
+            this.canBreatheInWater = canBreatheInWater;
+            this.canBreatheInLava = canBreatheInLava;
             this.landSuffocationInterval = landSuffocationInterval;
             this.sunlightBurnInterval = sunlightBurnInterval;
             this.immuneToDamageTypes = immuneToDamageTypes;
             this.immuneToPotionEffects = immuneToPotionEffects;
             this.waterVision = waterVision;
             this.lavaVision = lavaVision;
-            this.canFly = canFly;
             this.liquidSpeedMultiplier = liquidSpeedMultiplier;
             this.unaffectedByWater = unaffectedByWater;
             this.unaffectedByLava = unaffectedByLava;
             this.cannotSprint = cannotSprint;
-            this.noNaturalRegeneration = noNaturalRegeneration;
             this.regenerationMultiplier = regenerationMultiplier;
             this.immuneToKnockback = immuneToKnockback;
-            this.invulnerabilityTicksMultiplier = invulnerabilityTicksMultiplier;
             this.noHunger = noHunger;
             this.noHungerDrain = noHungerDrain;
             this.fixedHunger = fixedHunger;
@@ -629,12 +630,25 @@ public class Race {
             return canBreatheUnderwater;
         }
 
+        public boolean canBreatheInWater() {
+            return canBreatheInWater;
+        }
+
+        public boolean canBreatheInLava() {
+            return canBreatheInLava;
+        }
+
         public int landSuffocationInterval() {
             return landSuffocationInterval;
         }
 
         public boolean canBreatheOnLand() {
             return landSuffocationInterval <= 0;
+        }
+
+        /** Whether the race breathes anything but open air, or can't breathe open air; see Breathing. */
+        public boolean hasCustomBreathing() {
+            return canBreatheUnderwater || canBreatheInLava || !canBreatheOnLand();
         }
 
         public int sunlightBurnInterval() {
@@ -657,10 +671,6 @@ public class Race {
             return lavaVision;
         }
 
-        public boolean canFly() {
-            return canFly;
-        }
-
         public ScalingValue liquidSpeedMultiplier() {
             return liquidSpeedMultiplier;
         }
@@ -677,20 +687,12 @@ public class Race {
             return cannotSprint;
         }
 
-        public boolean noNaturalRegeneration() {
-            return noNaturalRegeneration;
-        }
-
         public ScalingValue regenerationMultiplier() {
             return regenerationMultiplier;
         }
 
         public boolean immuneToKnockback() {
             return immuneToKnockback;
-        }
-
-        public ScalingValue invulnerabilityTicksMultiplier() {
-            return invulnerabilityTicksMultiplier;
         }
 
         public boolean noHunger() {
@@ -738,17 +740,14 @@ public class Race {
         }
 
         public static final Passives DEFAULT = new Passives(
-                false, -1, -1, new ArrayList<>(), new ArrayList<>(), // Breathing (+ effect immunity)
+                false, false, false, -1, -1, new ArrayList<>(), new ArrayList<>(), // Breathing (+ effect immunity)
                 false, false, // Vision (Water, Lava)
-                false, // canFly
-                new ScalingValue(1.0, null, 0, new ArrayList<>()), // liquidSpeedMultiplier
+                ScalingValue.fixed(1.0), // liquidSpeedMultiplier
                 false, false, false, // Environmental (unaffected by water/lava, cannot sprint)
-                false, // noNaturalRegeneration
-                new ScalingValue(1.0, null, 0, new ArrayList<>()), // regenerationMultiplier
+                ScalingValue.fixed(1.0), // regenerationMultiplier
                 false, // immuneToKnockback
-                new ScalingValue(1.0, null, 0, new ArrayList<>()), // invulnerabilityTicksMultiplier
                 false, false, // noHunger, noHungerDrain
-                new ScalingValue(0.0, null, 0, new ArrayList<>()), // fixedHunger
+                ScalingValue.fixed(0.0), // fixedHunger
                 new ArrayList<>(), new ArrayList<>(), false, // Food (blocked, allowed, canEatWhenFull)
                 new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), // Social (hated, respected, defended)
                 null, // spawnOnDeath

@@ -5,6 +5,7 @@ import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.entity.DryadBoatEntity;
+import mc.sayda.creraces.entity.CloneEntity;
 import mc.sayda.creraces.entity.DryadChestBoatEntity;
 import mc.sayda.creraces.entity.FeatherProjectile;
 import mc.sayda.creraces.entity.PoisonEmitterEntity;
@@ -21,6 +22,7 @@ import net.minecraft.world.entity.SpawnPlacementTypes;
 import net.minecraft.world.entity.vehicle.Boat;
 import net.minecraft.world.entity.vehicle.ChestBoat;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -97,6 +99,14 @@ public class ModEntities {
                             .updateInterval(3)
                             .build("remains_undead"));
 
+    public static final RegistrySupplier<EntityType<CloneEntity>> CLONE = ENTITIES.register(
+            "clone",
+            () -> EntityType.Builder.<CloneEntity>of(CloneEntity::new, MobCategory.MISC)
+                    .sized(0.6F, 1.8F)
+                    .clientTrackingRange(10)
+                    .updateInterval(2)
+                    .build("clone"));
+
     public static final RegistrySupplier<EntityType<DryadBoatEntity>> DRYAD_BOAT = ENTITIES.register(
             "dryad_boat",
             () -> EntityType.Builder.<DryadBoatEntity>of(DryadBoatEntity::new, MobCategory.MISC)
@@ -137,6 +147,19 @@ public class ModEntities {
                             .clientTrackingRange(10)
                             .build("veil_willow_chest_boat"));
 
+    // Never spawned. Undead and aquatic players also count as these types in entity type tag checks,
+    // see StandInEntityTypes.
+    public static final RegistrySupplier<EntityType<Entity>> UNDEAD_PLAYER = registerStandIn("undead_player");
+    public static final RegistrySupplier<EntityType<Entity>> AQUATIC_PLAYER = registerStandIn("aquatic_player");
+
+    private static RegistrySupplier<EntityType<Entity>> registerStandIn(String name) {
+        return ENTITIES.register(name,
+                () -> EntityType.Builder.<Entity>of((type, level) -> null, MobCategory.MISC)
+                        .noSave()
+                        .noSummon()
+                        .build(name));
+    }
+
     public static void registerAttributes() {
         EntityAttributeRegistry.register(TROLL_PILLAR,
                 TrollPillarEntity::createAttributes);
@@ -152,6 +175,8 @@ public class ModEntities {
                 RemainsEntity::createAttributes);
         EntityAttributeRegistry.register(FLOATING_MOTE,
                 FloatingMoteEntity::createAttributes);
+        EntityAttributeRegistry.register(CLONE,
+                CloneEntity::createAttributes);
     }
 
     /**

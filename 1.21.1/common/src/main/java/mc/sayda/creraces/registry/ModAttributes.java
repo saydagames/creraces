@@ -11,7 +11,6 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.ai.attributes.Attribute;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.attributes.RangedAttribute;
 
 public class ModAttributes {
@@ -42,8 +41,16 @@ public class ModAttributes {
     private static final RegistrySupplier<Attribute> ATTACK_DAMAGE_ENTRY = ATTRIBUTES.register("attack_damage",
             () -> new RangedAttribute("attribute.creraces.attack_damage", 0.0, 0.0, 1000.0).setSyncable(true));
 
+    /**
+     * Critical strike chance (0.25 = 25%), 5% by default as in Apothic Attributes. Above 1.0 a hit can
+     * crit more than once. See CriticalStrikes.
+     */
     private static final RegistrySupplier<Attribute> CRIT_RATE_ENTRY = ATTRIBUTES.register("crit_rate",
-            () -> new RangedAttribute("attribute.creraces.crit_rate", 0.0, 0.0, 10.0).setSyncable(true));
+            () -> new RangedAttribute("attribute.creraces.crit_rate", 0.05, 0.0, 10.0).setSyncable(true));
+
+    /** Damage multiplier of a critical strike (1.5 = 150%). */
+    private static final RegistrySupplier<Attribute> CRIT_DAMAGE_ENTRY = ATTRIBUTES.register("crit_damage",
+            () -> new RangedAttribute("attribute.creraces.crit_damage", 1.5, 1.0, 100.0).setSyncable(true));
 
     /** Percent cooldown reduction. ABILITY_HASTE_CAP is the real cap, so this bound only has to stay above it. */
     private static final RegistrySupplier<Attribute> ABILITY_HASTE_ENTRY = ATTRIBUTES.register("ability_haste",
@@ -102,6 +109,7 @@ public class ModAttributes {
     public static Holder<Attribute> ABILITY_POWER;
     public static Holder<Attribute> ATTACK_DAMAGE;
     public static Holder<Attribute> CRIT_RATE;
+    public static Holder<Attribute> CRIT_DAMAGE;
     public static Holder<Attribute> ABILITY_HASTE;
     public static Holder<Attribute> MANA_REGEN;
     public static Holder<Attribute> ENERGY_REGEN;
@@ -117,7 +125,14 @@ public class ModAttributes {
 
     private static boolean initialized = false;
 
-    public static final String APOTHIC_ID = "attributeslib";
+    public static final String APOTHIC_ID = "apothic_attributes";
+
+    /** Apothic Attributes' namespace on 1.20.1, where it was called AttributesLib. */
+    private static final String OLD_APOTHIC_ID = "attributeslib";
+
+    public static boolean isApothicLoaded() {
+        return Platform.isModLoaded(APOTHIC_ID);
+    }
 
     /** The registered holder for an attribute id, or null if it isn't registered. */
     private static Holder<Attribute> holderFor(String namespace, String path) {
@@ -130,7 +145,7 @@ public class ModAttributes {
      * traits, scaling and combat all read the same attribute. Falls back to our own otherwise.
      */
     public static Holder<Attribute> resolve(Holder<Attribute> attr) {
-        if (attr == null || !Platform.isModLoaded(APOTHIC_ID))
+        if (attr == null || !isApothicLoaded())
             return attr;
 
         ResourceLocation id = attr.unwrapKey().map(ResourceKey::location).orElse(null);
@@ -146,12 +161,11 @@ public class ModAttributes {
         return switch (path) {
             case "crit_rate" -> "crit_chance";
             case "ability_haste" -> "cooldown_reduction";
-            case "magic_resist" -> "magic_resistance";
             default -> path;
         };
     }
 
-    /** Whether a resolved attribute is one of Apothic's percentages, stored as 0.0-1.0 rather than 0-100. */
+    /** Whether a resolved attribute is a percentage stored as 0.0-1.0 rather than 0-100 (crit rate and Apothic's). */
     public static boolean isPercentAttribute(Holder<Attribute> attr) {
         if (attr == null)
             return false;
@@ -160,48 +174,21 @@ public class ModAttributes {
             return false;
 
         return switch (id.getPath()) {
-            case "crit_chance", "cooldown_reduction", "armor_shred", "life_steal", "overheal",
-                    "current_hp_damage", "dodge_chance" -> true;
+            case "crit_rate", "crit_chance", "cooldown_reduction", "armor_shred", "prot_shred", "life_steal",
+                    "overheal", "current_hp_damage", "dodge_chance" -> true;
             default -> false;
         };
     }
 
     /**
-     * Resolves an attribute id from JSON, accepting the short aliases hp, ad, ap, speed, armor, luck,
-     * mana, energy, rage, grit and crit, then applies {@link #resolve(Holder)}.
+     * Looks up an attribute by its exact id, swapped for its Apothic equivalent when that mod is loaded.
+     * Apothic's own attributes can also be named by their 1.20.1 namespace, which shared data uses.
      */
     public static Holder<Attribute> getAttribute(ResourceLocation id) {
         if (id == null)
             return null;
-        String path = id.getPath().toLowerCase();
-
-        Holder<Attribute> aliased = switch (path) {
-            case "max_health", "hp" -> Attributes.MAX_HEALTH;
-            case "attack_damage", "ad" -> Attributes.ATTACK_DAMAGE;
-            case "movement_speed", "speed" -> Attributes.MOVEMENT_SPEED;
-            case "armor" -> Attributes.ARMOR;
-            case "luck" -> Attributes.LUCK;
-            case "ap", "ability_power" -> ABILITY_POWER;
-            case "mana", "max_mana" -> MAX_MANA;
-            case "energy", "max_energy" -> MAX_ENERGY;
-            case "rage", "max_rage" -> MAX_RAGE;
-            case "grit", "max_grit" -> MAX_GRIT;
-            case "crit", "crit_rate" -> CRIT_RATE;
-            default -> {
-                if (path.contains("life_steal") || path.contains("lifesteal")) {
-                    Holder<Attribute> lifeSteal = holderFor(APOTHIC_ID, "life_steal");
-                    if (lifeSteal == null)
-                        lifeSteal = holderFor(APOTHIC_ID, "lifesteal");
-                    yield lifeSteal;
-                }
-                yield null;
-            }
-        };
-
-        if (aliased != null)
-            return resolve(aliased);
-
-        return resolve(holderFor(id.getNamespace(), id.getPath()));
+        String namespace = id.getNamespace().equals(OLD_APOTHIC_ID) ? APOTHIC_ID : id.getNamespace();
+        return resolve(holderFor(namespace, id.getPath()));
     }
 
     public static void init() {
@@ -215,6 +202,7 @@ public class ModAttributes {
         ABILITY_POWER_ENTRY.listen(v -> ABILITY_POWER = BuiltInRegistries.ATTRIBUTE.wrapAsHolder(v));
         ATTACK_DAMAGE_ENTRY.listen(v -> ATTACK_DAMAGE = BuiltInRegistries.ATTRIBUTE.wrapAsHolder(v));
         CRIT_RATE_ENTRY.listen(v -> CRIT_RATE = BuiltInRegistries.ATTRIBUTE.wrapAsHolder(v));
+        CRIT_DAMAGE_ENTRY.listen(v -> CRIT_DAMAGE = BuiltInRegistries.ATTRIBUTE.wrapAsHolder(v));
         ABILITY_HASTE_ENTRY.listen(v -> ABILITY_HASTE = BuiltInRegistries.ATTRIBUTE.wrapAsHolder(v));
         MANA_REGEN_ENTRY.listen(v -> MANA_REGEN = BuiltInRegistries.ATTRIBUTE.wrapAsHolder(v));
         ENERGY_REGEN_ENTRY.listen(v -> ENERGY_REGEN = BuiltInRegistries.ATTRIBUTE.wrapAsHolder(v));

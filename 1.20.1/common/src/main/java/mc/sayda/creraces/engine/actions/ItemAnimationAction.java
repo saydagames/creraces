@@ -15,7 +15,7 @@ import javax.annotation.Nullable;
 
 /** Plays the item activation animation (as with a totem) for an item on the caster's screen. */
 public class ItemAnimationAction implements ActionRegistry.RaceAction {
-    public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "item_animation");
+    public static final ResourceLocation ID = CreRaces.id("item_animation");
 
     private final ResourceLocation itemId;
 

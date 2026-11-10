@@ -151,14 +151,18 @@ public class CreRacesJourneyMapPlugin implements IClientPlugin {
         return changed;
     }
 
-    /** Looks the group up fresh every time; recreates it if JourneyMap no longer knows it. */
+    /**
+     * Looks the group up fresh every time; recreates it if JourneyMap no longer knows it. Like the
+     * waypoints it is never saved: the first sync can run before JourneyMap has loaded its saved
+     * groups, so a saved group would gain a duplicate on every boot.
+     */
     private WaypointGroup resolveGroup() {
         WaypointGroup found = api.getWaypointGroupByName(MOD_ID, GROUP_NAME);
         if (found != null) {
             return found;
         }
         WaypointGroup created = WaypointFactory.createWaypointGroup(MOD_ID, GROUP_NAME);
-        created.setPersistent(true);
+        created.setPersistent(false);
         api.addWaypointGroup(created);
         return created;
     }

@@ -1,72 +1,44 @@
 {
     "creraces:name": "race.creraces.dwarf.name",
-    "creraces:index": 2.0,
-    "creraces:state": "UNFINISHED",
-    "creraces:scale": {
-        "base": 1.0,
-        "height": 0.86,
-        "width": 0.86
-    },
+    "creraces:index": 2,
+    "creraces:state": "unfinished",
+    "creraces:scale": { "base": 1, "height": 0.86, "width": 0.86 },
     "creraces:description": "race.creraces.dwarf.description",
     "creraces:icon": "creraces:textures/screens/dwarf_icon.png",
     "creraces:splash": "creraces:textures/screens/dwarf_splash.png",
     "creraces:portrait": "creraces:textures/screens/dwarf_portrait.png",
     "creraces:name_texture": "creraces:textures/screens/dwarf_text.png",
-    "creraces:resource_type": "GRIT",
+    "creraces:resource_type": "grit",
     "creraces:difficulty": 1,
-    "creraces:negate_effects": [
-        "minecraft:mining_fatigue",
-        "minecraft:slowness"
-    ],
-    "creraces:starting_abilities": [
-        "creraces:unstoppable_charge",
-        "creraces:miners_verdict"
-    ],
+    "creraces:negate_effects": ["minecraft:mining_fatigue", "minecraft:slowness"],
+    "creraces:starting_abilities": ["creraces:unstoppable_charge", "creraces:miners_verdict"],
     "dwarf_attributes": [
         {
             "id": "dwarf_armor",
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.armor",
-            "value": {
-                "base": 2.0,
-                "scales_with": "creraces:ad",
-                "factor": 0.01
-            },
-            "operation": "addition"
+            "value": { "base": 2, "scales_with": "creraces:attack_damage", "factor": 0.01 }
         },
         {
             "id": "dwarf_knockback",
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.attack_knockback",
-            "value": {
-                "base": 2.0
-            },
-            "operation": "addition"
+            "value": { "base": 2 }
         }
     ],
     "forge_mastery": [
         {
-            "name": "miners_verdict_smelt",
+            "id": "miners_verdict_smelt",
             "type": "creraces:on_tick",
             "interval": 20,
             "condition": {
                 "type": "creraces:and",
                 "conditions": [
-                    {
-                        "type": "creraces:sneaking"
-                    },
-                    {
-                        "type": "creraces:state",
-                        "state": "miners_verdict",
-                        "value": 1.0
-                    }
+                    { "type": "creraces:sneaking" },
+                    { "type": "creraces:compare", "value": "state:miners_verdict", "to": 1 }
                 ]
             },
-            "actions": [
-                {
-                    "type": "creraces:smelt_item"
-                }
-            ]
+            "actions": [{ "type": "creraces:smelt_item" }]
         }
     ],
     "creraces:wiki_page": "Dwarf",

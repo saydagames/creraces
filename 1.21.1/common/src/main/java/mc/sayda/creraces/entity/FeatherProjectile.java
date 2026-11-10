@@ -43,7 +43,7 @@ import java.util.Set;
  * A thrown feather that pierces through entities, sticks where it lands, and can be recalled
  * back to its owner. Players of the thrower's race can also walk over a landed feather to pick it up.
  */
-public class FeatherProjectile extends ThrowableItemProjectile {
+public class FeatherProjectile extends ThrowableItemProjectile implements RecallableProjectile {
     private static final EntityDataAccessor<ItemStack> ITEM_STACK = SynchedEntityData.defineId(FeatherProjectile.class,
             EntityDataSerializers.ITEM_STACK);
     private static final ResourceKey<DamageType> FEATHER_DAMAGE =
@@ -75,6 +75,11 @@ public class FeatherProjectile extends ThrowableItemProjectile {
     @Nonnull
     public EntityDimensions getDimensions(@Nonnull Pose pose) {
         return Objects.requireNonNull(EntityDimensions.fixed(0.1f, 0.1f));
+    }
+
+    @Override
+    public void recall() {
+        setRecalling(true);
     }
 
     public void setRecalling(boolean recalling) {

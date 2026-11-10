@@ -2,121 +2,87 @@ package mc.sayda.creraces.engine.actions;
 
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.ability.AbilitySlot;
-import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.engine.DataValue;
-import mc.sayda.creraces.network.BoundaryHandler;
+import mc.sayda.creraces.engine.EntitySelector;
 import mc.sayda.creraces.util.GsonHelper;
 import mc.sayda.creraces.util.IPersistentDataAccessor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 
 import javax.annotation.Nullable;
 
-/** Sets, adds to, multiplies or removes a key in an entity's persistent data. */
-@SuppressWarnings("null")
+/**
+ * Writes a persistent-data "key" on an entity. "operation": set (default) writes "value" (a data
+ * value of any type), add and multiply change a number, remove deletes the key.
+ */
 public class ModifyEntityDataAction implements ActionRegistry.RaceAction {
-
-    // Writing either key on a player also sets its small-build flag (a value of 1 or more turns it on).
-    private static final String KEY_MINIBUILD = "minibuild";
-    private static final String KEY_SMALL_BUILD = "smallBuild";
-
-    public enum Operation {
-        SET, ADD, REMOVE, MULTIPLY;
-
-        /** Case-insensitive; unknown names fall back to SET. */
-        public static Operation fromString(String op) {
-            for (Operation o : values()) {
-                if (o.name().equalsIgnoreCase(op)) {
-                    return o;
-                }
-            }
-            return SET;
-        }
-    }
+    private enum Operation { SET, ADD, MULTIPLY, REMOVE }
 
     private final String key;
     private final Operation operation;
     private final DataValue value;
-    private final boolean useTarget;
+    private final EntitySelector entity;
 
-    public ModifyEntityDataAction(String key, Operation operation, DataValue value, boolean useTarget) {
+    private ModifyEntityDataAction(String key, Operation operation, DataValue value, EntitySelector entity) {
         this.key = key;
         this.operation = operation;
         this.value = value;
-        this.useTarget = useTarget;
+        this.entity = entity;
     }
 
     @Override
     public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
             @Nullable BlockPos interactPos) {
-        LivingEntity entity = DataValue.resolveEntity(useTarget, player, target);
-        if (!(entity instanceof IPersistentDataAccessor accessor)) {
+        if (!(entity.resolve(player, target) instanceof IPersistentDataAccessor accessor)) {
             return true;
         }
-        CompoundTag persistentData = accessor.creraces$getPersistentData();
-
-        if (operation == Operation.REMOVE) {
-            persistentData.remove(key);
-            return true;
-        }
-
-        if (operation == Operation.SET) {
-            boolean written = value.writeInto(persistentData, key, player, target, slot, interactPos);
-            if (written && entity instanceof Player playerEntity
-                    && value.resolve(player, target, slot, interactPos) instanceof Number number) {
-                applyMinibuildBridge(playerEntity, number.doubleValue());
+        CompoundTag data = accessor.creraces$getPersistentData();
+        switch (operation) {
+            case REMOVE -> data.remove(key);
+            case SET -> value.writeInto(data, key, player, target, slot, interactPos);
+            case ADD, MULTIPLY -> {
+                if (value.resolve(player, target, slot, interactPos) instanceof Number number) {
+                    double current = data.getDouble(key);
+                    double next = operation == Operation.ADD ? current + number.doubleValue()
+                            : current * number.doubleValue();
+                    if (value.type() == DataValue.DataType.INT) {
+                        data.putInt(key, (int) Math.round(next));
+                    } else {
+                        data.putDouble(key, next);
+                    }
+                }
             }
-            return true;
-        }
-
-        // ADD and MULTIPLY are numeric only.
-        if (!(value.resolve(player, target, slot, interactPos) instanceof Number number)) {
-            return true;
-        }
-        double current = persistentData.getDouble(key);
-        double newValue = operation == Operation.ADD ? current + number.doubleValue() : current * number.doubleValue();
-        if (value.type() == DataValue.DataType.INT) {
-            persistentData.putInt(key, (int) Math.round(newValue));
-        } else {
-            persistentData.putDouble(key, newValue);
-        }
-        if (entity instanceof Player playerEntity) {
-            applyMinibuildBridge(playerEntity, newValue);
         }
         return true;
     }
 
-    private void applyMinibuildBridge(Player playerEntity, double newValue) {
-        if (!key.equalsIgnoreCase(KEY_MINIBUILD) && !key.equalsIgnoreCase(KEY_SMALL_BUILD)) {
-            return;
-        }
-        DataUtils.getVariables(playerEntity).ifPresent(vars -> {
-            vars.setSmallBuild(newValue >= 1.0);
-            BoundaryHandler.resyncVariables(playerEntity, playerEntity);
-        });
-    }
-
     public static void register() {
-        ActionRegistry.register(ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "modify_entity_data"), json -> {
-            String key = DataValue.sanitizeKey(GsonHelper.getAsString(json, "key"), "ModifyEntityDataAction");
-            Operation op = Operation.fromString(GsonHelper.getAsString(json, "operation", "SET"));
-
+        ActionRegistry.register(CreRaces.id("modify_entity_data"), json -> {
+            String key = DataValue.sanitizeKey(GsonHelper.getAsString(json, "key"), "modify_entity_data");
+            String operationName = GsonHelper.getAsString(json, "operation", "set");
+            Operation operation = switch (operationName) {
+                case "set" -> Operation.SET;
+                case "add" -> Operation.ADD;
+                case "multiply" -> Operation.MULTIPLY;
+                case "remove" -> Operation.REMOVE;
+                default -> throw new IllegalArgumentException(
+                        "unknown operation '" + operationName + "' (set, add, multiply, remove)");
+            };
             DataValue value = DataValue.fromJson(json, "value", DataValue.DataType.DOUBLE);
             if (value == null) {
+                if (operation != Operation.REMOVE) {
+                    throw new IllegalArgumentException("needs a \"value\"");
+                }
                 value = DataValue.literal(DataValue.DataType.DOUBLE, 0.0);
             }
-            if ((op == Operation.ADD || op == Operation.MULTIPLY)
+            if ((operation == Operation.ADD || operation == Operation.MULTIPLY)
                     && value.type() != DataValue.DataType.INT && value.type() != DataValue.DataType.DOUBLE) {
-                CreRaces.LOGGER.error(
-                        "ModifyEntityDataAction: operation {} requires a numeric value type, got {} on key '{}' - using SET instead",
-                        op, value.type(), key);
-                op = Operation.SET;
+                throw new IllegalArgumentException(operationName + " needs a number value");
             }
-            return new ModifyEntityDataAction(key, op, value, DataValue.readUseTarget(json, false));
+            return new ModifyEntityDataAction(key, operation, value, EntitySelector.fromJson(json, EntitySelector.AUTO));
         });
     }
 }

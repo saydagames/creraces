@@ -65,6 +65,10 @@ public class BoundaryHandler {
         receive(NetworkManager.Side.C2S, ShareWaypointPacket.ID, ShareWaypointPacket::new, ShareWaypointPacket::handle);
     }
 
+    /**
+     * Packet classes also load on a dedicated server, so a handler may only call static methods on client
+     * classes. Building or passing a client object there makes the JVM load that class and stops the server.
+     */
     public static void registerS2C() {
         receive(NetworkManager.Side.S2C, SyncRacesPacket.ID, SyncRacesPacket::new, SyncRacesPacket::handle);
         receive(NetworkManager.Side.S2C, SyncAbilitiesPacket.ID, SyncAbilitiesPacket::new, SyncAbilitiesPacket::handle);
@@ -368,6 +372,13 @@ public class BoundaryHandler {
         FriendlyByteBuf buf = newBuf();
         encoder.accept(buf);
         NetworkManager.sendToServer(id, buf);
+    }
+
+    /** Sends to every player on the server. */
+    public static void sendToAll(MinecraftServer server, ResourceLocation id, Consumer<FriendlyByteBuf> encoder) {
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            send(player, id, encoder);
+        }
     }
 
     private static void send(ServerPlayer player, ResourceLocation id, Consumer<FriendlyByteBuf> encoder) {

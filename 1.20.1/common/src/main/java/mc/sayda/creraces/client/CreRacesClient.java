@@ -31,6 +31,7 @@ import mc.sayda.creraces.client.particle.PoisonEmitterParticle;
 import mc.sayda.creraces.client.particle.VeilEmberParticle;
 import mc.sayda.creraces.client.particle.VeilMistParticle;
 import mc.sayda.creraces.client.render.DryadBoatRenderer;
+import mc.sayda.creraces.client.render.CloneRenderer;
 import mc.sayda.creraces.client.render.ElysianVeilBloomBlockEntityRenderer;
 import mc.sayda.creraces.client.render.EssenceVortexRenderer;
 import mc.sayda.creraces.client.render.FloatingMoteRenderer;
@@ -200,6 +201,7 @@ public class CreRacesClient {
         EntityModelLayerRegistry.register(RemainsModel.LAYER_LOCATION, RemainsModel::createBodyLayer);
         EntityRendererRegistry.register(ModEntities.REMAINS, RemainsRenderer::new);
         EntityRendererRegistry.register(ModEntities.REMAINS_UNDEAD, RemainsRenderer::new);
+        EntityRendererRegistry.register(ModEntities.CLONE, CloneRenderer::new);
 
         EntityRendererRegistry.register(ModEntities.FLOATING_MOTE, FloatingMoteRenderer::new);
 

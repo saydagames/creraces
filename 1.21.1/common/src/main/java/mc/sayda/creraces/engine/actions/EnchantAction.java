@@ -4,6 +4,8 @@ import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.engine.ActionRegistry;
+import mc.sayda.creraces.engine.EntitySelector;
+import mc.sayda.creraces.engine.ItemSlots;
 import mc.sayda.creraces.engine.ScalingValue;
 import mc.sayda.creraces.util.GsonHelper;
 import net.minecraft.core.BlockPos;
@@ -19,76 +21,82 @@ import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import javax.annotation.Nullable;
 
 /**
- * Adds levels to, sets or removes an enchantment on the item in a slot. The enchantment may be
- * given as "custom:&lt;key&gt;" to read its id from a customization variable.
+ * Changes an enchantment on the item in "slot" (default mainhand): "operation" set (default) or add
+ * "level", or remove it. "enchantment" is an id, or "custom:&lt;key&gt;" to read the id from the
+ * caster's customization.
  */
+@SuppressWarnings("null")
 public class EnchantAction implements ActionRegistry.RaceAction {
     private static final String CUSTOM_PREFIX = "custom:";
+
+    private enum Operation { SET, ADD, REMOVE }
 
     private final String enchantmentId;
     private final ScalingValue level;
     private final String slot;
-    private final String mode;
-    private final boolean useTarget;
+    private final Operation operation;
+    private final EntitySelector entity;
 
-    public EnchantAction(String enchantmentId, ScalingValue level, String slot, String mode, boolean useTarget) {
+    private EnchantAction(String enchantmentId, ScalingValue level, String slot, Operation operation,
+            EntitySelector entity) {
         this.enchantmentId = enchantmentId;
         this.level = level;
         this.slot = slot;
-        this.mode = mode;
-        this.useTarget = useTarget;
+        this.operation = operation;
+        this.entity = entity;
     }
 
     @Override
     public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot abilitySlot,
             @Nullable BlockPos interactPos) {
-        LivingEntity holder = (useTarget && target != null) ? target : player;
-        ItemStack stack = ItemSlotResolver.getItemInSlot(holder, slot);
+        LivingEntity holder = entity.resolve(player, target);
+        ItemStack stack = holder != null ? ItemSlots.stack(holder, slot) : ItemStack.EMPTY;
         if (stack.isEmpty()) {
             return true;
         }
 
-        String idString = enchantmentId;
+        String idText = enchantmentId;
         if (enchantmentId.startsWith(CUSTOM_PREFIX)) {
             String key = enchantmentId.substring(CUSTOM_PREFIX.length());
-            idString = DataUtils.getVariables(player).map(vars -> vars.getCustomization(key)).orElse(null);
-            if (idString == null || idString.isEmpty()) {
+            idText = DataUtils.getVariables(player).map(vars -> vars.getCustomization(key)).orElse(null);
+            if (idText == null || idText.isEmpty()) {
                 return true;
             }
         }
-        ResourceLocation id = ResourceLocation.tryParse(idString);
-        if (id == null) {
-            CreRaces.LOGGER.error("Malformed enchantment ID: {}", idString);
-            return true;
-        }
-
+        ResourceLocation id = ResourceLocation.tryParse(idText);
         // Enchantments live in a datapack registry in 1.21, so they resolve off the level.
-        Holder<Enchantment> enchantment = player.level().registryAccess().registryOrThrow(Registries.ENCHANTMENT)
-                .getHolder(id).orElse(null);
+        Holder<Enchantment> enchantment = id == null ? null : player.level().registryAccess()
+                .registryOrThrow(Registries.ENCHANTMENT).getHolder(id).orElse(null);
         if (enchantment == null) {
-            CreRaces.LOGGER.error("Unknown enchantment ID: {}", id);
+            CreRaces.LOGGER.error("EnchantAction: unknown enchantment '{}'", idText);
             return true;
         }
 
-        int targetLevel = (int) level.evaluate(player, target, abilitySlot);
-        EnchantmentHelper.updateEnchantments(stack, enchants -> {
-            if (mode.equalsIgnoreCase("ADD")) {
-                enchants.set(enchantment, enchants.getLevel(enchantment) + targetLevel);
-            } else if (mode.equalsIgnoreCase("SET")) {
-                enchants.set(enchantment, targetLevel);
-            } else if (mode.equalsIgnoreCase("REMOVE")) {
-                enchants.removeIf(e -> e.equals(enchantment));
+        int amount = (int) level.evaluate(player, target, abilitySlot, interactPos);
+        EnchantmentHelper.updateEnchantments(stack, enchantments -> {
+            switch (operation) {
+                case SET -> enchantments.set(enchantment, amount);
+                case ADD -> enchantments.set(enchantment, enchantments.getLevel(enchantment) + amount);
+                case REMOVE -> enchantments.removeIf(e -> e.equals(enchantment));
             }
         });
         return true;
     }
 
     public static void register() {
-        ActionRegistry.register(ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "enchant"), json -> new EnchantAction(
-                GsonHelper.getAsString(json, "enchantment"),
-                ScalingValue.fromJson(json, "level", 1.0),
-                GsonHelper.getAsString(json, "slot", "mainhand"),
-                GsonHelper.getAsString(json, "mode", "SET"),
-                GsonHelper.getAsBoolean(json, "use_target", false)));
+        ActionRegistry.register(CreRaces.id("enchant"), json -> {
+            String operationName = GsonHelper.getAsString(json, "operation", "set");
+            Operation operation = switch (operationName) {
+                case "set" -> Operation.SET;
+                case "add" -> Operation.ADD;
+                case "remove" -> Operation.REMOVE;
+                default -> throw new IllegalArgumentException("unknown operation '" + operationName + "' (set, add, remove)");
+            };
+            return new EnchantAction(GsonHelper.getAsString(json, "enchantment"),
+                    ScalingValue.fromJson(json, "level", 1.0),
+                    GsonHelper.getAsString(json, "slot", "mainhand"),
+                    operation,
+                    EntitySelector.fromJson(json, EntitySelector.AUTO));
+        });
     }
 }

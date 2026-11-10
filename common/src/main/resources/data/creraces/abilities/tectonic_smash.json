@@ -1,73 +1,38 @@
 {
     "creraces:name": "ability.creraces.tectonic_smash.name",
     "creraces:description": "ability.creraces.tectonic_smash.description",
-    "creraces:type": "ACTIVE",
+    "creraces:type": "active",
     "creraces:icon": "minecraft:textures/item/iron_boots.png",
     "creraces:cooldown": 15,
     "creraces:cost": 0,
-    "creraces:race": [
-        "creraces:giant"
-    ],
+    "creraces:race": ["creraces:giant"],
     "creraces:actions": [
         {
             "type": "creraces:conditional",
-            "condition": {
-                "type": "creraces:state",
-                "state": "tectonic_smash",
-                "value": 4
-            },
+            "condition": { "type": "creraces:compare", "value": "state:tectonic_smash", "to": 4 },
             "if_true": [
                 {
                     "type": "creraces:aoe",
-                    "radius": 4.0,
-                    "targets": [
-                        "enemies"
-                    ],
+                    "radius": 4,
+                    "targets": ["enemies"],
                     "actions": [
                         {
                             "type": "creraces:damage",
-                            "amount": {
-                                "base": 4.0,
-                                "scales_with": "var:grit",
-                                "factor": 0.08
-                            },
-                            "damage_type": "minecraft:player_attack"
+                            "amount": { "base": 4, "scales_with": "resource:grit", "factor": 0.08 }
                         },
-                        {
-                            "type": "creraces:apply_velocity",
-                            "use_target": true,
-                            "y": 1.2,
-                            "relative": false
-                        }
+                        { "type": "creraces:apply_velocity", "y": 1.2 }
                     ]
                 },
-                {
-                    "type": "creraces:modify_value",
-                    "resource": "grit",
-                    "operation": "set",
-                    "value": 0
-                },
-                {
-                    "type": "creraces:modify_value",
-                    "resource": "state:tectonic_smash",
-                    "value": 0
-                },
-                {
-                    "type": "creraces:set_cooldown",
-                    "state": "tectonic_smash",
-                    "value": 1200
-                },
+                { "type": "creraces:modify_value", "resource": "grit", "value": 0 },
+                { "type": "creraces:modify_value", "state": "tectonic_smash", "value": 0 },
+                { "type": "creraces:modify_value", "cooldown": "tectonic_smash", "value": 1200 },
                 {
                     "type": "creraces:play_sound",
                     "sound": "minecraft:entity.generic.explode",
                     "volume": 1.5,
                     "pitch": 0.5
                 },
-                {
-                    "type": "creraces:spawn_particles",
-                    "particle": "minecraft:explosion",
-                    "count": 15
-                },
+                { "type": "creraces:spawn_particles", "particle": "minecraft:explosion", "count": 15 },
                 {
                     "type": "creraces:spawn_particles",
                     "particle": "minecraft:campfire_cosy_smoke",
@@ -82,11 +47,7 @@
             "if_false": [
                 {
                     "type": "creraces:conditional",
-                    "condition": {
-                        "type": "creraces:state",
-                        "state": "tectonic_smash",
-                        "value": 0
-                    },
+                    "condition": { "type": "creraces:compare", "value": "state:tectonic_smash", "to": 0 },
                     "if_true": [
                         {
                             "type": "creraces:message",
@@ -98,9 +59,9 @@
                         {
                             "type": "creraces:conditional",
                             "condition": {
-                                "type": "creraces:state",
-                                "state": "tectonic_smash",
-                                "value": 1
+                                "type": "creraces:compare",
+                                "value": "state:tectonic_smash",
+                                "to": 1
                             },
                             "if_true": [
                                 {
@@ -113,9 +74,9 @@
                                 {
                                     "type": "creraces:conditional",
                                     "condition": {
-                                        "type": "creraces:state",
-                                        "state": "tectonic_smash",
-                                        "value": 2
+                                        "type": "creraces:compare",
+                                        "value": "state:tectonic_smash",
+                                        "to": 2
                                     },
                                     "if_true": [
                                         {
@@ -138,56 +99,31 @@
                 },
                 {
                     "type": "creraces:aoe",
-                    "radius": 4.0,
-                    "targets": [
-                        "enemies"
-                    ],
+                    "radius": 4,
+                    "targets": ["enemies"],
                     "actions": [
                         {
                             "type": "creraces:damage",
-                            "amount": {
-                                "base": 2.0,
-                                "scales_with": "var:grit",
-                                "factor": 0.06
-                            },
-                            "damage_type": "minecraft:player_attack"
+                            "amount": { "base": 2, "scales_with": "resource:grit", "factor": 0.06 }
                         },
-                        {
-                            "type": "creraces:apply_velocity",
-                            "use_target": true,
-                            "y": 0.8,
-                            "relative": false
-                        }
+                        { "type": "creraces:apply_velocity", "y": 0.8 }
                     ]
                 },
-                {
-                    "type": "creraces:modify_value",
-                    "resource": "state:tectonic_smash",
-                    "operation": "add",
-                    "value": 1
-                },
+                { "type": "creraces:modify_value", "state": "tectonic_smash", "operation": "add", "value": 1 },
                 {
                     "type": "creraces:play_sound",
                     "sound": "minecraft:entity.iron_golem.attack",
-                    "volume": 1.0,
+                    "volume": 1,
                     "pitch": 0.7
                 },
                 {
                     "type": "creraces:play_sound",
                     "sound": "minecraft:block.stone.break",
-                    "volume": 1.0,
+                    "volume": 1,
                     "pitch": 0.8
                 },
-                {
-                    "type": "creraces:spawn_particles",
-                    "particle": "minecraft:sweep_attack",
-                    "count": 3
-                },
-                {
-                    "type": "creraces:spawn_particles",
-                    "particle": "minecraft:large_smoke",
-                    "count": 10
-                }
+                { "type": "creraces:spawn_particles", "particle": "minecraft:sweep_attack", "count": 3 },
+                { "type": "creraces:spawn_particles", "particle": "minecraft:large_smoke", "count": 10 }
             ]
         }
     ],

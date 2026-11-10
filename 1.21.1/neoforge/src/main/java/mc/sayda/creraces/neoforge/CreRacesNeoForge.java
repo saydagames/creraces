@@ -6,6 +6,7 @@ import dev.architectury.utils.EnvExecutor;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.client.CreRacesClient;
 import mc.sayda.creraces.config.neoforge.NeoForgeConfig;
+import mc.sayda.creraces.config.CreRacesConfig;
 import mc.sayda.creraces.neoforge.compat.CuriosBeltCompat;
 import mc.sayda.creraces.neoforge.migration.LegacyBlockRemaps;
 import mc.sayda.creraces.neoforge.migration.LegacyMigrationHooks;
@@ -14,8 +15,12 @@ import mc.sayda.creraces.registry.ModPotions;
 import mc.sayda.creraces.util.PlatformServices;
 import mc.sayda.creraces.worldgen.VeilwoodBiomeInjector;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.alchemy.Potions;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.material.FluidState;
+import net.minecraft.sounds.SoundEvents;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
@@ -23,6 +28,7 @@ import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.common.SoundActions;
 import net.neoforged.neoforge.event.brewing.RegisterBrewingRecipesEvent;
 import net.neoforged.neoforge.fluids.FluidType;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -99,8 +105,15 @@ public class CreRacesNeoForge {
         DeferredRegister<FluidType> fluidTypes =
                 DeferredRegister.create(NeoForgeRegistries.Keys.FLUID_TYPES, CreRaces.MODID);
 
-        FluidType.Properties fairyProps = FluidType.Properties.create().density(1000).viscosity(1000).lightLevel(7);
+        FluidType.Properties fairyProps = FluidType.Properties.create().density(1000).viscosity(1000).lightLevel(7)
+                .sound(SoundActions.BUCKET_FILL, SoundEvents.BUCKET_FILL)
+                .sound(SoundActions.BUCKET_EMPTY, SoundEvents.BUCKET_EMPTY);
         FAIRY_FLUID_TYPE = fluidTypes.register("fairy_source", () -> new FluidType(fairyProps) {
+            @Override
+            public boolean canConvertToSource(FluidState state, LevelReader reader, BlockPos pos) {
+                return CreRacesConfig.FAIRY_SOURCE_CONVERSION_ENABLED.get();
+            }
+
             @Override
             public void initializeClient(Consumer<IClientFluidTypeExtensions> consumer) {
                 consumer.accept(new IClientFluidTypeExtensions() {

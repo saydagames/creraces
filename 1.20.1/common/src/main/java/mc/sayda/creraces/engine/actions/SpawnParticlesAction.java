@@ -4,9 +4,11 @@ import com.google.gson.JsonObject;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.engine.ActionRegistry;
+import mc.sayda.creraces.engine.AimOffset;
+import mc.sayda.creraces.engine.CastSource;
+import mc.sayda.creraces.engine.Position;
 import mc.sayda.creraces.engine.ScalingValue;
 import mc.sayda.creraces.engine.SpiritMobilityHandler;
-import mc.sayda.creraces.engine.TargetFilter;
 import mc.sayda.creraces.util.GsonHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.BlockParticleOption;
@@ -24,43 +26,50 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nullable;
-import java.util.Set;
 
 /**
- * Spawns particles on the target (or the caster when there is none): a plain burst around the body,
- * or a shape ("circle", "disc", "sphere", "helix") whose points share the particle count. Casters in
- * the spirit realm only show their particles to other spirits.
+ * Spawns "count" particles at "position" (a block above the target, or the caster when there is no
+ * target). "spread" scatters them on every axis, "spread_x/y/z" per axis, and "speed" is their
+ * motion. A "shape" (circle, disc, sphere, helix) lays them out around the position instead, with
+ * "radius", "points", "axis", "height", "rotations" and "spin"; "line" runs them "length" blocks
+ * along the caster's view, turned by "yaw" and "pitch". Block and falling-dust particles take
+ * a "block", item particles an "item", and entity_effect a "color" ("#RRGGBB").
  */
 @SuppressWarnings("null")
 public class SpawnParticlesAction implements ActionRegistry.RaceAction {
 
     private interface ParticlePattern {
-        void spawn(ServerLevel level, @Nullable Player caster, LivingEntity center, ParticleOptions particle,
-                int totalCount, double speed, double spin, @Nullable AbilitySlot slot);
+        void spawn(ServerLevel level, Player caster, Vec3 center, ParticleSpec particle, int totalCount,
+                double speed, double spin, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
+                @Nullable BlockPos interactPos);
     }
 
-    private final ParticleOptions particle;
+    /** A particle and, for entity_effect, the colour it is sent with as 0-1 RGB. */
+    private record ParticleSpec(ParticleOptions options, @Nullable Vec3 tint) {
+    }
+
+    private final ParticleSpec particle;
     private final ScalingValue count;
     private final ScalingValue speed;
-    private final ScalingValue dx;
-    private final ScalingValue dy;
-    private final ScalingValue dz;
+    private final ScalingValue spreadX;
+    private final ScalingValue spreadY;
+    private final ScalingValue spreadZ;
     private final ScalingValue spin;
-    private final TargetFilter targets;
+    private final Position position;
     @Nullable
     private final ParticlePattern pattern;
 
-    private SpawnParticlesAction(ParticleOptions particle, ScalingValue count, ScalingValue speed, ScalingValue dx,
-            ScalingValue dy, ScalingValue dz, ScalingValue spin, TargetFilter targets,
+    private SpawnParticlesAction(ParticleSpec particle, ScalingValue count, ScalingValue speed, ScalingValue spreadX,
+            ScalingValue spreadY, ScalingValue spreadZ, ScalingValue spin, Position position,
             @Nullable ParticlePattern pattern) {
         this.particle = particle;
         this.count = count;
         this.speed = speed;
-        this.dx = dx;
-        this.dy = dy;
-        this.dz = dz;
+        this.spreadX = spreadX;
+        this.spreadY = spreadY;
+        this.spreadZ = spreadZ;
         this.spin = spin;
-        this.targets = targets;
+        this.position = position;
         this.pattern = pattern;
     }
 
@@ -70,32 +79,43 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
         if (!(player.level() instanceof ServerLevel level)) {
             return true;
         }
-        int particleCount = (int) count.evaluate(player, target, slot);
-        if (particleCount <= 0) {
+        int particleCount = (int) count.evaluate(player, target, slot, interactPos);
+        Vec3 center = position.resolve(player, target, slot, interactPos);
+        if (particleCount <= 0 || center == null) {
             return true;
         }
-        LivingEntity center = target != null ? target : player;
-        if (targets.isValid(center, player)) {
-            spawnOn(level, center, particleCount, slot, player);
+        double motion = speed.evaluate(player, target, slot, interactPos);
+        if (pattern != null) {
+            pattern.spawn(level, player, center, particle, particleCount, motion,
+                    spin.evaluate(player, target, slot, interactPos), target, slot, interactPos);
+        } else {
+            send(level, player, particle, center, particleCount, spreadX.evaluate(player, target, slot, interactPos),
+                    spreadY.evaluate(player, target, slot, interactPos),
+                    spreadZ.evaluate(player, target, slot, interactPos), motion);
         }
         return true;
     }
 
-    private void spawnOn(ServerLevel level, LivingEntity center, int particleCount, @Nullable AbilitySlot slot,
-            Player caster) {
-        if (pattern != null) {
-            pattern.spawn(level, caster, center, particle, particleCount, speed.evaluate(null, center, slot),
-                    spin.evaluate(null, center, slot), slot);
-        } else {
-            send(level, caster, particle, center.getX(), center.getY() + 1.0, center.getZ(), particleCount,
-                    dx.evaluate(null, center, slot), dy.evaluate(null, center, slot),
-                    dz.evaluate(null, center, slot), speed.evaluate(null, center, slot));
+    private static void send(ServerLevel level, Player caster, ParticleSpec particle, Vec3 at, int count,
+            double spreadX, double spreadY, double spreadZ, double speed) {
+        Vec3 tint = particle.tint();
+        if (tint == null) {
+            sendToViewers(level, caster, particle.options(), at.x, at.y, at.z, count, spreadX, spreadY, spreadZ, speed);
+            return;
+        }
+        // entity_effect takes its colour from its motion, which the client only sets from the offset when
+        // the count is 0. So tinted particles go out one at a time, with the spread applied here.
+        RandomSource random = level.getRandom();
+        for (int i = 0; i < count; i++) {
+            sendToViewers(level, caster, particle.options(), at.x + random.nextGaussian() * spreadX,
+                    at.y + random.nextGaussian() * spreadY, at.z + random.nextGaussian() * spreadZ,
+                    0, tint.x, tint.y, tint.z, 1.0);
         }
     }
 
-    private static void send(ServerLevel level, @Nullable Player caster, ParticleOptions particle, double x,
-            double y, double z, int count, double spreadX, double spreadY, double spreadZ, double speed) {
-        if (caster != null && SpiritMobilityHandler.isOnSpiritPlane(caster)) {
+    private static void sendToViewers(ServerLevel level, Player caster, ParticleOptions particle,
+            double x, double y, double z, int count, double spreadX, double spreadY, double spreadZ, double speed) {
+        if (SpiritMobilityHandler.isOnSpiritPlane(caster)) {
             SpiritMobilityHandler.sendParticlesIfSpirit(level, particle, x, y, z, count, spreadX, spreadY, spreadZ,
                     speed);
         } else {
@@ -103,49 +123,31 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
         }
     }
 
-    /** Sends {@code count} particles at a point offset from the entity's feet. */
-    private static void sendAt(ServerLevel level, @Nullable Player caster, ParticleOptions particle,
-            LivingEntity center, Vec3 offset, int count, double speed) {
-        send(level, caster, particle, center.getX() + offset.x, center.getY() + offset.y, center.getZ() + offset.z,
-                count, 0, 0, 0, speed);
-    }
-
     /** Splits the total particle count across the points as evenly as possible. */
     private static int countAtPoint(int point, int totalCount, int points) {
         return totalCount / points + (point < totalCount % points ? 1 : 0);
     }
 
-    /** A point at {@code angle} on a ring of the given radius around the axis, lifted one block off the feet. */
+    /** A point at {@code angle} on a ring of the given radius around the axis. */
     private static Vec3 ringOffset(String axis, double angle, double radius) {
         double a = Math.cos(angle) * radius;
         double b = Math.sin(angle) * radius;
-        if ("Y".equalsIgnoreCase(axis)) {
-            return new Vec3(a, 1.0, b);
-        }
-        if ("X".equalsIgnoreCase(axis)) {
-            return new Vec3(0, a + 1.0, b);
-        }
-        return new Vec3(a, b + 1.0, 0);
-    }
-
-    /**
-     * Shape sizes are scaled against the centre entity when it is a player, and with no player
-     * otherwise, rather than against the caster.
-     */
-    @Nullable
-    private static Player scalingPlayer(LivingEntity center) {
-        return center instanceof Player p ? p : null;
+        return switch (axis) {
+            case "x" -> new Vec3(0, a, b);
+            case "z" -> new Vec3(a, b, 0);
+            default -> new Vec3(a, 0, b);
+        };
     }
 
     /** Evenly spaced points on a ring, rotating over time with "spin". */
     private record CirclePattern(ScalingValue radius, ScalingValue points, String axis) implements ParticlePattern {
         @Override
-        public void spawn(ServerLevel level, @Nullable Player caster, LivingEntity center, ParticleOptions particle,
-                int totalCount, double speed, double spin, @Nullable AbilitySlot slot) {
-            Player player = scalingPlayer(center);
-            double r = radius.evaluate(player, center, slot);
-            int pointCount = (int) points.evaluate(player, center, slot);
-            if (pointCount <= 0 || totalCount <= 0) {
+        public void spawn(ServerLevel level, Player caster, Vec3 center, ParticleSpec particle, int totalCount,
+                double speed, double spin, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
+                @Nullable BlockPos interactPos) {
+            double r = radius.evaluate(caster, target, slot, interactPos);
+            int pointCount = (int) points.evaluate(caster, target, slot, interactPos);
+            if (pointCount <= 0) {
                 return;
             }
             double spinOffset = level.getGameTime() * spin;
@@ -153,7 +155,7 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
                 int pointParticles = countAtPoint(i, totalCount, pointCount);
                 if (pointParticles > 0) {
                     double angle = (2 * Math.PI * i / pointCount) + spinOffset;
-                    sendAt(level, caster, particle, center, ringOffset(axis, angle, r), pointParticles, speed);
+                    send(level, caster, particle, center.add(ringOffset(axis, angle, r)), pointParticles, 0, 0, 0, speed);
                 }
             }
         }
@@ -162,12 +164,12 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
     /** Random points spread evenly over a filled disc. */
     private record DiscPattern(ScalingValue radius, ScalingValue points, String axis) implements ParticlePattern {
         @Override
-        public void spawn(ServerLevel level, @Nullable Player caster, LivingEntity center, ParticleOptions particle,
-                int totalCount, double speed, double spin, @Nullable AbilitySlot slot) {
-            Player player = scalingPlayer(center);
-            double maxRadius = radius.evaluate(player, center, slot);
-            int pointCount = (int) points.evaluate(player, center, slot);
-            if (pointCount <= 0 || totalCount <= 0) {
+        public void spawn(ServerLevel level, Player caster, Vec3 center, ParticleSpec particle, int totalCount,
+                double speed, double spin, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
+                @Nullable BlockPos interactPos) {
+            double maxRadius = radius.evaluate(caster, target, slot, interactPos);
+            int pointCount = (int) points.evaluate(caster, target, slot, interactPos);
+            if (pointCount <= 0) {
                 return;
             }
             RandomSource random = level.getRandom();
@@ -177,7 +179,7 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
                     // The square root keeps the density even instead of bunching points at the centre.
                     double r = maxRadius * Math.sqrt(random.nextDouble());
                     double angle = 2 * Math.PI * random.nextDouble();
-                    sendAt(level, caster, particle, center, ringOffset(axis, angle, r), pointParticles, speed);
+                    send(level, caster, particle, center.add(ringOffset(axis, angle, r)), pointParticles, 0, 0, 0, speed);
                 }
             }
         }
@@ -185,12 +187,12 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
 
     private record SpherePattern(ScalingValue radius, ScalingValue points) implements ParticlePattern {
         @Override
-        public void spawn(ServerLevel level, @Nullable Player caster, LivingEntity center, ParticleOptions particle,
-                int totalCount, double speed, double spin, @Nullable AbilitySlot slot) {
-            Player player = scalingPlayer(center);
-            double r = radius.evaluate(player, center, slot);
-            int pointCount = (int) points.evaluate(player, center, slot);
-            if (pointCount <= 0 || totalCount <= 0) {
+        public void spawn(ServerLevel level, Player caster, Vec3 center, ParticleSpec particle, int totalCount,
+                double speed, double spin, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
+                @Nullable BlockPos interactPos) {
+            double r = radius.evaluate(caster, target, slot, interactPos);
+            int pointCount = (int) points.evaluate(caster, target, slot, interactPos);
+            if (pointCount <= 0) {
                 return;
             }
             double spinOffset = level.getGameTime() * spin;
@@ -200,26 +202,26 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
                     // Fibonacci sphere: spreads the points evenly using the golden angle.
                     double phi = Math.acos(1 - 2 * (i + 0.5) / pointCount);
                     double theta = (Math.PI * (1 + Math.sqrt(5)) * (i + 0.5)) + spinOffset;
-                    Vec3 offset = new Vec3(r * Math.sin(phi) * Math.cos(theta),
-                            r * Math.sin(phi) * Math.sin(theta) + 1.0, r * Math.cos(phi));
-                    sendAt(level, caster, particle, center, offset, pointParticles, speed);
+                    Vec3 offset = new Vec3(r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta),
+                            r * Math.cos(phi));
+                    send(level, caster, particle, center.add(offset), pointParticles, 0, 0, 0, speed);
                 }
             }
         }
     }
 
-    /** A spiral rising from the feet to "height" over "rotations" turns. */
+    /** A spiral rising from the position to "height" over "rotations" turns. */
     private record HelixPattern(ScalingValue radius, ScalingValue height, ScalingValue points,
             ScalingValue rotations) implements ParticlePattern {
         @Override
-        public void spawn(ServerLevel level, @Nullable Player caster, LivingEntity center, ParticleOptions particle,
-                int totalCount, double speed, double spin, @Nullable AbilitySlot slot) {
-            Player player = scalingPlayer(center);
-            double r = radius.evaluate(player, center, slot);
-            double h = height.evaluate(player, center, slot);
-            int pointCount = (int) points.evaluate(player, center, slot);
-            double turns = rotations.evaluate(player, center, slot);
-            if (pointCount <= 0 || totalCount <= 0) {
+        public void spawn(ServerLevel level, Player caster, Vec3 center, ParticleSpec particle, int totalCount,
+                double speed, double spin, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
+                @Nullable BlockPos interactPos) {
+            double r = radius.evaluate(caster, target, slot, interactPos);
+            double h = height.evaluate(caster, target, slot, interactPos);
+            int pointCount = (int) points.evaluate(caster, target, slot, interactPos);
+            double turns = rotations.evaluate(caster, target, slot, interactPos);
+            if (pointCount <= 0) {
                 return;
             }
             double spinOffset = level.getGameTime() * spin;
@@ -228,91 +230,100 @@ public class SpawnParticlesAction implements ActionRegistry.RaceAction {
                 if (pointParticles > 0) {
                     double t = (double) i / pointCount;
                     double angle = (2 * Math.PI * turns * t) + spinOffset;
-                    Vec3 offset = new Vec3(Math.cos(angle) * r, t * h, Math.sin(angle) * r);
-                    sendAt(level, caster, particle, center, offset, pointParticles, speed);
+                    send(level, caster, particle, center.add(Math.cos(angle) * r, t * h, Math.sin(angle) * r),
+                            pointParticles, 0, 0, 0, speed);
+                }
+            }
+        }
+    }
+
+    /** Evenly spaced points along the caster's view, turned by the aim offset, from the position onwards. */
+    private record LinePattern(ScalingValue length, ScalingValue points, AimOffset aim) implements ParticlePattern {
+        @Override
+        public void spawn(ServerLevel level, Player caster, Vec3 center, ParticleSpec particle, int totalCount,
+                double speed, double spin, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
+                @Nullable BlockPos interactPos) {
+            double l = length.evaluate(caster, target, slot, interactPos);
+            int pointCount = (int) points.evaluate(caster, target, slot, interactPos);
+            if (pointCount <= 0) {
+                return;
+            }
+            Vec3 direction = aim.direction(CastSource.self(caster), caster, target, slot, interactPos);
+            for (int i = 0; i < pointCount; i++) {
+                int pointParticles = countAtPoint(i, totalCount, pointCount);
+                if (pointParticles > 0) {
+                    double t = pointCount == 1 ? 0 : (double) i / (pointCount - 1);
+                    send(level, caster, particle, center.add(direction.scale(t * l)), pointParticles, 0, 0, 0, speed);
                 }
             }
         }
     }
 
     /** Builds the shape named in "shape"; the point count defaults to the particle count. */
-    @Nullable
     private static ParticlePattern parsePattern(String shape, JsonObject json, ScalingValue defaultPoints) {
         ScalingValue radius = ScalingValue.fromJson(json, "radius", 1.0);
         ScalingValue points = json.has("points") ? ScalingValue.fromJson(json, "points", 1.0) : defaultPoints;
-        return switch (shape.toLowerCase()) {
-            case "circle" -> new CirclePattern(radius, points, GsonHelper.getAsString(json, "axis", "Y"));
-            case "disc" -> new DiscPattern(radius, points, GsonHelper.getAsString(json, "axis", "Y"));
+        String axis = GsonHelper.getAsString(json, "axis", "y");
+        return switch (shape) {
+            case "circle" -> new CirclePattern(radius, points, axis);
+            case "disc" -> new DiscPattern(radius, points, axis);
             case "sphere" -> new SpherePattern(radius, points);
             case "helix" -> new HelixPattern(radius, ScalingValue.fromJson(json, "height", 2.0), points,
                     ScalingValue.fromJson(json, "rotations", 2.0));
-            default -> {
-                CreRaces.LOGGER.warn("SpawnParticlesAction: unknown shape '{}', spawning a plain burst.", shape);
-                yield null;
-            }
+            case "line" -> new LinePattern(ScalingValue.fromJson(json, "length", 5.0), points,
+                    AimOffset.fromJson(json));
+            default -> throw new IllegalArgumentException(
+                    "unknown shape '" + shape + "' (circle, disc, sphere, helix, line)");
         };
     }
 
     /** Simple particles are used as-is; block, falling-dust and item particles take their "block" or "item". */
-    @Nullable
     @SuppressWarnings("unchecked")
-    private static ParticleOptions parseParticle(JsonObject json, String particleId, ParticleType<?> type) {
+    private static ParticleOptions parseParticle(JsonObject json, ParticleType<?> type) {
         if (type instanceof ParticleOptions simple) {
             return simple;
         }
         if (type == ParticleTypes.BLOCK || type == ParticleTypes.FALLING_DUST) {
-            String blockId = GsonHelper.getAsString(json, "block", "minecraft:air");
-            ResourceLocation blockLoc = new ResourceLocation(blockId);
-            if (!BuiltInRegistries.BLOCK.containsKey(blockLoc)) {
-                CreRaces.LOGGER.error("SpawnParticlesAction: Unknown block ID '{}' for block particle.", blockId);
-                return null;
-            }
             return new BlockParticleOption((ParticleType<BlockParticleOption>) type,
-                    BuiltInRegistries.BLOCK.get(blockLoc).defaultBlockState());
+                    PlaceBlockAction.parseBlock(GsonHelper.getAsString(json, "block")).defaultBlockState());
         }
         if (type == ParticleTypes.ITEM) {
-            String itemId = GsonHelper.getAsString(json, "item", "minecraft:air");
-            ResourceLocation itemLoc = new ResourceLocation(itemId);
-            if (!BuiltInRegistries.ITEM.containsKey(itemLoc)) {
-                CreRaces.LOGGER.error("SpawnParticlesAction: Unknown item ID '{}' for item particle.", itemId);
-                return null;
-            }
             return new ItemParticleOption((ParticleType<ItemParticleOption>) type,
-                    new ItemStack(BuiltInRegistries.ITEM.get(itemLoc)));
+                    new ItemStack(GiveItemAction.parseItem(GsonHelper.getAsString(json, "item"))));
         }
-        CreRaces.LOGGER.error("Invalid or unsupported complex particle type for id {}: {}", particleId, type);
-        return null;
+        throw new IllegalArgumentException("particle type " + BuiltInRegistries.PARTICLE_TYPE.getKey(type)
+                + " is not supported");
+    }
+
+    /** The "color" of an entity_effect particle, white when unset. Other particles have no tint. */
+    @Nullable
+    private static Vec3 parseTint(JsonObject json, ParticleType<?> type) {
+        if (type != ParticleTypes.ENTITY_EFFECT) {
+            return null;
+        }
+        int rgb = GsonHelper.getAsColor(json, "color", 0xFFFFFFFF);
+        return new Vec3((rgb >> 16 & 0xFF) / 255.0, (rgb >> 8 & 0xFF) / 255.0, (rgb & 0xFF) / 255.0);
     }
 
     public static void register() {
-        ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "spawn_particles"), json -> {
+        ActionRegistry.register(CreRaces.id("spawn_particles"), json -> {
             String particleId = GsonHelper.getAsString(json, "particle");
-            if (particleId.isEmpty()) {
-                return null;
+            ResourceLocation particleLoc = ResourceLocation.tryParse(particleId);
+            if (particleLoc == null || !BuiltInRegistries.PARTICLE_TYPE.containsKey(particleLoc)) {
+                throw new IllegalArgumentException("unknown particle '" + particleId + "'");
             }
-            ResourceLocation particleLoc = new ResourceLocation(particleId);
-            if (!BuiltInRegistries.PARTICLE_TYPE.containsKey(particleLoc)) {
-                CreRaces.LOGGER.error("SpawnParticlesAction: Unknown particle ID '{}'.", particleId);
-                return null;
-            }
-            ParticleOptions options = parseParticle(json, particleId, BuiltInRegistries.PARTICLE_TYPE.get(particleLoc));
-            if (options == null) {
-                return null;
-            }
-
+            ParticleType<?> type = BuiltInRegistries.PARTICLE_TYPE.get(particleLoc);
             ScalingValue count = ScalingValue.fromJson(json, "count", 10.0);
             String shape = GsonHelper.getAsString(json, "shape", "");
-            ParticlePattern pattern = shape.isEmpty() ? null : parsePattern(shape, json, count);
-            // "spread" sets all three axes at once; dx/dy/dz override it individually.
             ScalingValue spread = ScalingValue.fromJson(json, "spread", 0.0);
-            return new SpawnParticlesAction(options, count,
+            return new SpawnParticlesAction(new ParticleSpec(parseParticle(json, type), parseTint(json, type)), count,
                     ScalingValue.fromJson(json, "speed", 0.0),
-                    json.has("dx") ? ScalingValue.fromJson(json, "dx", 0.0) : spread,
-                    json.has("dy") ? ScalingValue.fromJson(json, "dy", 0.0) : spread,
-                    json.has("dz") ? ScalingValue.fromJson(json, "dz", 0.0) : spread,
+                    json.has("spread_x") ? ScalingValue.fromJson(json, "spread_x", 0.0) : spread,
+                    json.has("spread_y") ? ScalingValue.fromJson(json, "spread_y", 0.0) : spread,
+                    json.has("spread_z") ? ScalingValue.fromJson(json, "spread_z", 0.0) : spread,
                     ScalingValue.fromJson(json, "spin", 0.0),
-                    TargetFilter.fromJson(json, "targets", Set.of("enemies", "self")),
-                    pattern);
+                    Position.fromJson(json, "position", Position.of(Position.Source.AUTO, 1.0)),
+                    shape.isEmpty() ? null : parsePattern(shape, json, count));
         });
     }
 }

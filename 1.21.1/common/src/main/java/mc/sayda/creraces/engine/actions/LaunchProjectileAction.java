@@ -3,6 +3,8 @@ package mc.sayda.creraces.engine.actions;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.engine.ActionRegistry;
+import mc.sayda.creraces.engine.CastSource;
+import mc.sayda.creraces.engine.ProjectileHooks;
 import mc.sayda.creraces.engine.ScalingValue;
 import mc.sayda.creraces.entity.FeatherProjectile;
 import mc.sayda.creraces.util.GsonHelper;
@@ -29,24 +31,28 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nullable;
+import java.util.List;
 import java.util.Optional;
 
 /**
  * Shoots a projectile along the caster's view. Besides the common vanilla projectiles, any
  * projectile entity id works, and any item id is thrown as a feather-style projectile of that item.
+ * "on_hit" runs when the projectile hurts something, with the victim as the target.
  */
 public class LaunchProjectileAction implements ActionRegistry.RaceAction {
     private final String projectileType;
     private final ScalingValue damage;
     private final ScalingValue speed;
     private final ScalingValue inaccuracy;
+    private final List<ActionRegistry.RaceAction> onHit;
 
     public LaunchProjectileAction(String projectileType, ScalingValue damage, ScalingValue speed,
-            ScalingValue inaccuracy) {
+            ScalingValue inaccuracy, List<ActionRegistry.RaceAction> onHit) {
         this.projectileType = projectileType;
         this.damage = damage;
         this.speed = speed;
         this.inaccuracy = inaccuracy;
+        this.onHit = onHit;
     }
 
     @Override
@@ -57,44 +63,53 @@ public class LaunchProjectileAction implements ActionRegistry.RaceAction {
             return true;
         }
 
-        float dmg = (float) damage.evaluate(player, target, slot);
-        float spd = (float) speed.evaluate(player, target, slot);
-        float acc = (float) inaccuracy.evaluate(player, target, slot);
+        float dmg = (float) damage.evaluate(player, target, slot, interactPos);
+        float spd = (float) speed.evaluate(player, target, slot, interactPos);
+        float acc = (float) inaccuracy.evaluate(player, target, slot, interactPos);
         String type = projectileType.contains(":") ? projectileType : "minecraft:" + projectileType;
 
         switch (type) {
             case "minecraft:arrow" -> {
                 Arrow arrow = new Arrow(level, player, new ItemStack(Items.ARROW), ItemStack.EMPTY);
                 arrow.setBaseDamage(dmg);
-                shoot(player, arrow, spd, acc);
+                shoot(player, arrow, spd, acc, slot);
             }
             case "minecraft:spectral_arrow" -> {
                 SpectralArrow arrow = new SpectralArrow(level, player, new ItemStack(Items.SPECTRAL_ARROW), ItemStack.EMPTY);
                 arrow.setBaseDamage(dmg);
-                shoot(player, arrow, spd, acc);
+                shoot(player, arrow, spd, acc, slot);
             }
-            case "minecraft:snowball" -> shoot(player, new Snowball(level, player), spd, acc);
-            case "minecraft:egg" -> shoot(player, new ThrownEgg(level, player), spd, acc);
-            case "minecraft:ender_pearl" -> shoot(player, new ThrownEnderpearl(level, player), spd, acc);
+            case "minecraft:snowball" -> shoot(player, new Snowball(level, player), spd, acc, slot);
+            case "minecraft:egg" -> shoot(player, new ThrownEgg(level, player), spd, acc, slot);
+            case "minecraft:ender_pearl" -> shoot(player, new ThrownEnderpearl(level, player), spd, acc, slot);
             case "minecraft:fireball" -> {
                 // Fireballs fly along their power vector instead of being shot; damage is the explosion power.
-                Vec3 power = player.getLookAngle().scale(spd);
+                Vec3 power = CastSource.self(player).getLookAngle().scale(spd);
                 LargeFireball fireball = new LargeFireball(level, player, power, (int) dmg);
-                fireball.setPos(player.getX(), player.getEyeY(), player.getZ());
+                placeAtSource(player, fireball);
+                ProjectileHooks.attach(fireball, onHit, slot);
                 level.addFreshEntity(fireball);
             }
             case "minecraft:small_fireball" -> {
-                Vec3 power = player.getLookAngle().scale(spd);
+                Vec3 power = CastSource.self(player).getLookAngle().scale(spd);
                 SmallFireball fireball = new SmallFireball(level, player, power);
-                fireball.setPos(player.getX(), player.getEyeY(), player.getZ());
+                placeAtSource(player, fireball);
+                ProjectileHooks.attach(fireball, onHit, slot);
                 level.addFreshEntity(fireball);
             }
-            default -> launchById(player, ResourceLocation.parse(type), dmg, spd, acc);
+            default -> {
+                ResourceLocation id = ResourceLocation.tryParse(type);
+                if (id == null) {
+                    return false;
+                }
+                launchById(player, id, dmg, spd, acc, slot);
+            }
         }
         return true;
     }
 
-    private static void launchById(Player player, ResourceLocation id, float dmg, float spd, float acc) {
+    private void launchById(Player player, ResourceLocation id, float dmg, float spd, float acc,
+            @Nullable AbilitySlot slot) {
         Level level = player.level();
         Optional<EntityType<?>> entityType = BuiltInRegistries.ENTITY_TYPE.getOptional(id);
         if (entityType.isPresent()) {
@@ -104,7 +119,7 @@ public class LaunchProjectileAction implements ActionRegistry.RaceAction {
                 if (projectile instanceof AbstractArrow arrow) {
                     arrow.setBaseDamage(dmg);
                 }
-                shoot(player, projectile, spd, acc);
+                shoot(player, projectile, spd, acc, slot);
             }
             return;
         }
@@ -114,21 +129,34 @@ public class LaunchProjectileAction implements ActionRegistry.RaceAction {
             FeatherProjectile feather = new FeatherProjectile(level, player);
             feather.setDamage(dmg);
             feather.setItem(new ItemStack(item));
-            shoot(player, feather, spd, acc);
+            shoot(player, feather, spd, acc, slot);
         }
     }
 
-    private static void shoot(Player player, Projectile projectile, float speed, float inaccuracy) {
-        projectile.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, speed, inaccuracy);
+    /** Starts a projectile at the eyes of whoever casts: the player, or a clone repeating the cast. */
+    private static void placeAtSource(Player player, Projectile projectile) {
+        LivingEntity source = CastSource.self(player);
+        projectile.setPos(source.getX(), source.getEyeY() - 0.1, source.getZ());
+    }
+
+    private void shoot(Player player, Projectile projectile, float speed, float inaccuracy, @Nullable AbilitySlot slot) {
+        // The player stays the owner, so hits are theirs; a clone repeating the cast only aims it.
+        LivingEntity source = CastSource.self(player);
+        if (source != player) {
+            placeAtSource(player, projectile);
+        }
+        projectile.shootFromRotation(source, source.getXRot(), source.getYRot(), 0.0F, speed, inaccuracy);
+        ProjectileHooks.attach(projectile, onHit, slot);
         player.level().addFreshEntity(projectile);
     }
 
     public static void register() {
-        ActionRegistry.register(ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "launch_projectile"),
+        ActionRegistry.register(CreRaces.id("launch_projectile"),
                 json -> new LaunchProjectileAction(
                         GsonHelper.getAsString(json, "projectile", "minecraft:arrow"),
                         ScalingValue.fromJson(json, "damage", 1.0),
                         ScalingValue.fromJson(json, "speed", 1.0),
-                        ScalingValue.fromJson(json, "inaccuracy", 1.0)));
+                        ScalingValue.fromJson(json, "inaccuracy", 1.0),
+                        ActionRegistry.listFromJson(json, "on_hit")));
     }
 }

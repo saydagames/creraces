@@ -1,36 +1,19 @@
 {
     "creraces:name": "ability.creraces.phaseshift.name",
     "creraces:description": "ability.creraces.phaseshift.description",
-    "creraces:type": "ACTIVE",
+    "creraces:type": "active",
     "creraces:icon": "minecraft:textures/item/ender_eye.png",
     "creraces:cost": 100,
     "creraces:cooldown": 400,
-    "creraces:race": [
-        "creraces:spirit"
-    ],
+    "creraces:race": ["creraces:spirit"],
     "creraces:actions": [
         {
             "type": "creraces:conditional",
-            "condition": {
-                "type": "creraces:sneaking"
-            },
+            "condition": { "type": "creraces:sneaking" },
             "if_true": [
-                {
-                    "type": "creraces:modify_value",
-                    "resource": "mana",
-                    "value": 0,
-                    "operation": "set"
-                },
-                {
-                    "type": "creraces:set_flag",
-                    "flag": "is_in_spirit_realm",
-                    "operation": "toggle"
-                },
-                {
-                    "type": "creraces:play_sound",
-                    "sound": "minecraft:entity.enderman.teleport",
-                    "pitch": 0.5
-                }
+                { "type": "creraces:modify_value", "resource": "mana", "value": 0 },
+                { "type": "creraces:set_flag", "flag": "in_spirit_realm", "operation": "toggle" },
+                { "type": "creraces:play_sound", "sound": "minecraft:entity.enderman.teleport", "pitch": 0.5 }
             ],
             "if_false": [
                 {
@@ -38,25 +21,25 @@
                     "duration": 60,
                     "cancelable_by_damage": true,
                     "cancelable_by_movement": true,
-                    "during_effects": [
-                        { "id": "minecraft:slowness", "amplifier": 1, "duration": 10 }
-                    ],
                     "on_complete": [
-                        {
-                            "type": "creraces:set_flag",
-                            "flag": "is_in_spirit_realm",
-                            "operation": "toggle"
-                        },
-                        {
-                            "type": "creraces:play_sound",
-                            "sound": "minecraft:entity.enderman.teleport"
-                        }
+                        { "type": "creraces:set_flag", "flag": "in_spirit_realm", "operation": "toggle" },
+                        { "type": "creraces:play_sound", "sound": "minecraft:entity.enderman.teleport" }
                     ],
                     "on_interrupt": [
                         {
                             "type": "creraces:play_sound",
                             "sound": "minecraft:block.note_block.bass",
-                            "volume": 1.0
+                            "volume": 1
+                        }
+                    ],
+                    "actions": [
+                        {
+                            "type": "creraces:apply_effect",
+                            "effect": "minecraft:slowness",
+                            "duration": 10,
+                            "amplifier": 1,
+                            "ambient": false,
+                            "show_icon": false
                         }
                     ]
                 }

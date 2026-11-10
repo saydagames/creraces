@@ -4,7 +4,6 @@ import dev.architectury.networking.NetworkManager;
 import dev.architectury.utils.Env;
 import dev.architectury.utils.EnvExecutor;
 import mc.sayda.creraces.CreRaces;
-import mc.sayda.creraces.client.ClientAccess;
 import mc.sayda.creraces.client.screen.RaceSelectionScreen;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
@@ -26,6 +25,6 @@ public class OpenSelectionScreenPacket {
 
     public void handle(Supplier<NetworkManager.PacketContext> contextSupplier) {
         var context = contextSupplier.get();
-        context.queue(() -> EnvExecutor.runInEnv(Env.CLIENT, () -> () -> ClientAccess.setScreen(new RaceSelectionScreen())));
+        context.queue(() -> EnvExecutor.runInEnv(Env.CLIENT, () -> () -> RaceSelectionScreen.open()));
     }
 }

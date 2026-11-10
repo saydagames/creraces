@@ -26,7 +26,7 @@
     "features": [
         [],
         ["minecraft:lake_lava_underground", "minecraft:lake_lava_surface", "creraces:ethereal_veil_spring", "creraces:ethereal_veil_spring_underground"],
-        ["minecraft:disk_clay", "minecraft:disk_gravel", "minecraft:amethyst_geode"],
+        ["minecraft:amethyst_geode"],
         [],
         [],
         [],
@@ -42,15 +42,17 @@
             "minecraft:ore_redstone", "minecraft:ore_redstone_lower",
             "minecraft:ore_diamond", "minecraft:ore_diamond_large", "minecraft:ore_diamond_buried",
             "minecraft:ore_lapis", "minecraft:ore_lapis_buried",
-            "minecraft:ore_copper"
+            "minecraft:ore_copper",
+            "minecraft:disk_clay", "minecraft:disk_gravel"
         ],
-        ["minecraft:glow_lichen"],
+        [],
         ["minecraft:spring_water"],
         [
+            "minecraft:glow_lichen",
             "creraces:veil_willow_tree",
             "creraces:veilwood_flowers",
             "creraces:veil_mushroom",
-            "minecraft:flower_swamp",
+            "creraces:veilwood_orchids",
             "minecraft:patch_grass_forest",
             "minecraft:brown_mushroom_normal",
             "minecraft:red_mushroom_normal",

@@ -5,6 +5,7 @@ import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.engine.condition.Condition;
+import mc.sayda.creraces.engine.condition.ConditionRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
@@ -16,7 +17,7 @@ import java.util.List;
 /** Runs if_true or if_false depending on a condition; fails if the chosen branch fails. */
 public class ConditionalAction implements ActionRegistry.RaceAction {
 
-    public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "conditional");
+    public static final ResourceLocation ID = CreRaces.id("conditional");
 
     private final Condition condition;
     private final List<ActionRegistry.RaceAction> ifTrue;
@@ -45,7 +46,7 @@ public class ConditionalAction implements ActionRegistry.RaceAction {
                 CreRaces.LOGGER.error("ConditionalAction missing 'condition' - the action will do nothing.");
                 return (player, target, slot, interactPos) -> true;
             }
-            return new ConditionalAction(Condition.fromJson(conditionJson.getAsJsonObject()),
+            return new ConditionalAction(ConditionRegistry.fromJson(conditionJson.getAsJsonObject()),
                     ActionRegistry.listFromJson(json, "if_true"),
                     ActionRegistry.listFromJson(json, "if_false"));
         });

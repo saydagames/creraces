@@ -22,17 +22,22 @@ public class SetRacePacket {
     public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "set_race");
 
     private final ResourceLocation raceId;
+    /** A bit per ability slot ordinal whose key the player has bound; see RaceIncidents.startingSlots. */
+    private final int boundAbilityKeys;
 
-    public SetRacePacket(ResourceLocation raceId) {
+    public SetRacePacket(ResourceLocation raceId, int boundAbilityKeys) {
         this.raceId = raceId;
+        this.boundAbilityKeys = boundAbilityKeys;
     }
 
     public SetRacePacket(FriendlyByteBuf buf) {
         this.raceId = buf.readResourceLocation();
+        this.boundAbilityKeys = buf.readVarInt();
     }
 
     public void encode(FriendlyByteBuf buf) {
         buf.writeResourceLocation(Objects.requireNonNull(this.raceId));
+        buf.writeVarInt(this.boundAbilityKeys);
     }
 
     public void handle(Supplier<NetworkManager.PacketContext> contextSupplier) {
@@ -50,7 +55,7 @@ public class SetRacePacket {
                     return;
                 }
 
-                RaceIncidents.transformPlayer(sp, raceId);
+                RaceIncidents.transformPlayer(sp, raceId, RaceIncidents.startingSlots(boundAbilityKeys));
                 CreRaces.LOGGER.info("Player {} chose race: {}", sp.getName().getString(), raceId);
                 teleportToSelectionPoint(sp, vars, race);
             });

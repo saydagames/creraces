@@ -17,7 +17,7 @@ import javax.annotation.Nullable;
 
 /** Puts the caster to sleep where they stand, without a bed, optionally setting their spawn there first. */
 public class SleepAction implements ActionRegistry.RaceAction {
-    public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "sleep");
+    public static final ResourceLocation ID = CreRaces.id("sleep");
 
     /** Tells the sleep mixins to skip their bed checks for this sleep; removed again when the player wakes. */
     private static final String FORCE_SLEEP_TAG = "creraces_force_sleep";

@@ -1,0 +1,45 @@
+{
+  "creraces:name": "ability.creraces.tidal_blessing.name",
+  "creraces:description": "ability.creraces.tidal_blessing.description",
+  "creraces:type": "active",
+  "creraces:icon": "minecraft:nautilus_shell",
+  "creraces:cooldown": 240,
+  "creraces:cost": 30,
+  "creraces:race": ["creraces:mermaid", "creraces:siren"],
+  "creraces:actions": [
+    {
+      "type": "creraces:aoe",
+      "radius": 6.0,
+      "targets": ["allies", "self"],
+      "actions": [
+        {
+          "type": "creraces:heal",
+          "amount": {
+            "base": 4.0,
+            "scales_with": "creraces:ability_power",
+            "factor": 0.25
+          }
+        },
+        {
+          "type": "creraces:apply_effect",
+          "effect": "minecraft:regeneration",
+          "duration": 100,
+          "amplifier": 0
+        },
+        {
+          "type": "creraces:spawn_particles",
+          "particle": "minecraft:falling_water",
+          "count": 20,
+          "spread": 0.5
+        },
+        {
+          "type": "creraces:play_sound",
+          "sound": "minecraft:ambient.underwater.enter",
+          "volume": 1.0,
+          "pitch": 1.2
+        }
+      ]
+    }
+  ],
+  "creraces:wiki_page": "Ability:Tidal_Blessing"
+}

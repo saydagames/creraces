@@ -73,7 +73,7 @@ public class MorphAction implements ActionRegistry.RaceAction {
     }
 
     public static void register() {
-        ActionRegistry.register(ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "morph"), json -> new MorphAction(
+        ActionRegistry.register(CreRaces.id("morph"), json -> new MorphAction(
                 GsonHelper.getNullableString(json, "entity_type", null),
                 ScalingValue.fromJson(json, "scale", 1.0)));
     }

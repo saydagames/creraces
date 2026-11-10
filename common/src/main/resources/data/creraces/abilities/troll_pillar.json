@@ -1,27 +1,19 @@
 {
     "creraces:name": "ability.creraces.troll_pillar.name",
     "creraces:description": "ability.creraces.troll_pillar.description",
-    "creraces:type": "ACTIVE",
+    "creraces:type": "active",
     "creraces:icon": "creraces:textures/icons/stone_pillar.png",
     "creraces:cooldown": 320,
     "creraces:cost": 30,
-    "creraces:race": [
-        "creraces:troll"
-    ],
+    "creraces:race": ["creraces:troll"],
     "creraces:actions": [
         {
             "type": "creraces:summon_entity",
-            "entity": "creraces:troll_pillar",
-            "use_raycast": true,
-            "ray_range": 10.0,
+            "entity_type": "creraces:troll_pillar",
+            "position": { "from": "look", "range": 10, "y": 1 },
             "tame": true
         },
-        {
-            "type": "creraces:play_sound",
-            "sound": "minecraft:block.stone.place",
-            "volume": 1.0,
-            "pitch": 1.2
-        },
+        { "type": "creraces:play_sound", "sound": "minecraft:block.stone.place", "volume": 1, "pitch": 1.2 },
         {
             "type": "creraces:spawn_particles",
             "particle": "minecraft:block",

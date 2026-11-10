@@ -4,7 +4,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import mc.sayda.creraces.ability.Ability;
 import mc.sayda.creraces.ability.AbilityRegistry;
 import mc.sayda.creraces.ability.AbilitySlot;
-import mc.sayda.creraces.ability.AbilityType;
 import mc.sayda.creraces.ability.OverlayBar;
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.capability.IPlayerVariables;
@@ -13,6 +12,7 @@ import mc.sayda.creraces.race.Race;
 import mc.sayda.creraces.race.RaceRegistry;
 import mc.sayda.creraces.race.ResourceType;
 import mc.sayda.creraces.registry.ModAttributes;
+import mc.sayda.creraces.util.RaceUtils;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -20,11 +20,17 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
 
 import javax.annotation.Nonnull;
 import java.util.Objects;
 
 public class RaceOverlay {
+    private static final int NO_BORDER = 0;
+    private static final int BORDER_RED = 0x88FF0000;
+    private static final int BORDER_GREEN = 0x8800FF00;
+    private static final int BORDER_GRAY = 0x88AAAAAA;
+
     private static final ResourceLocation UI_BG = ResourceLocation.fromNamespaceAndPath("creraces", "textures/screens/ui_bg.png");
     private static final ResourceLocation UI_BG2 = ResourceLocation.fromNamespaceAndPath("creraces", "textures/screens/ui_bg2.png");
     private static final ResourceLocation UI_FRAME = ResourceLocation.fromNamespaceAndPath("creraces", "textures/screens/ui.png");
@@ -140,7 +146,7 @@ public class RaceOverlay {
                 default             -> 30;
             };
             for (AbilitySlot slot : AbilitySlot.values()) {
-                KeyMapping keyMapping = getKeyMapping(slot);
+                KeyMapping keyMapping = ModKeyMappings.forSlot(slot);
                 if (keyMapping != null && !keyMapping.isUnbound()) {
                     renderAbilitySlot(graphics, vars, slot, slotX, slotY, labelOrientation);
                     if (abilitiesVertical) slotY += verticalStep;
@@ -180,7 +186,9 @@ public class RaceOverlay {
         }
 
         for (Ability ability : AbilityRegistry.getAll()) {
-            if (!ability.allowedRaces().isEmpty() && !ability.allowedRaces().contains(race.id())) continue;
+            if (!ability.allowedRaces().isEmpty()
+                    && ability.allowedRaces().stream().noneMatch(wanted -> RaceUtils.matchesRace(race.id(), wanted)))
+                continue;
             for (OverlayBar bar : ability.overlayBars()) {
                 barY = renderBar(graphics, font, vars, bar, x, barY, growUp);
             }
@@ -190,7 +198,8 @@ public class RaceOverlay {
     private static int renderBar(@Nonnull GuiGraphics graphics, Font font,
             @Nonnull IPlayerVariables vars,
             @Nonnull OverlayBar bar, int x, int barY, boolean growUp) {
-        double value = bar.getValue(vars);
+        LocalPlayer player = Minecraft.getInstance().player;
+        double value = player != null ? bar.getValue(player, vars) : 0;
         if (value <= 0) return barY;
 
         // growUp=false: anchor is top of stack, bars go down.
@@ -213,14 +222,14 @@ public class RaceOverlay {
         graphics.blit(UI_FG_FRAME, x - 1, drawY - 11, 0, 0, 35, 7, 35, 7);
 
         if (font != null) {
-            String valueStr = bar.sourceType().equals("cooldown") && CreRacesConfig.BAR_SHOW_SECONDS.get()
+            String valueStr = bar.kind() == OverlayBar.Kind.COOLDOWN && CreRacesConfig.BAR_SHOW_SECONDS.get()
                     ? Math.max(1, (int) value / 20) + "s"
                     : String.valueOf((int) value);
             String labelText = switch (CreRacesConfig.BAR_LABEL_MODE.get()) {
-                case "name"   -> bar.label();
+                case "name"   -> Component.translatable(bar.name()).getString();
                 case "value"  -> valueStr;
                 case "hidden" -> null;
-                default       -> bar.label() + ": " + valueStr;
+                default       -> Component.translatable(bar.name()).getString() + ": " + valueStr;
             };
             if (labelText != null) {
                 graphics.drawString(font, labelText, x + 37, drawY - 11, 0xAAAAAA, true);
@@ -272,20 +281,9 @@ public class RaceOverlay {
                     }
                 }
 
-                // Draw "Unusable" or "Off" indication (Borders)
-                boolean usable = isUsable(vars, ability);
-                boolean active = vars.getPersistentState(abilityId) > 0;
-
-                if (!usable) {
-                    drawBorder(graphics, x - 1, y - 1, 20, 20, 0x88FF0000); // Translucent Red
-                } else if (active) {
-                    drawBorder(graphics, x - 1, y - 1, 20, 20, 0x8800FF00); // Translucent Green
-                } else if (ability.type() == AbilityType.INNATE
-                        || ability.type() == AbilityType.PASSIVE) {
-                    // Only show gray border if it's a toggleable ability that is currently OFF
-                    if (ability.onDeactivate() != null && !ability.onDeactivate().isEmpty()) {
-                        drawBorder(graphics, x - 1, y - 1, 20, 20, 0x88AAAAAA); // Translucent Gray
-                    }
+                int border = stateBorder(vars, ability, abilityId, slot);
+                if (border != NO_BORDER) {
+                    drawBorder(graphics, x - 1, y - 1, 20, 20, border);
                 }
 
                 graphics.pose().popPose();
@@ -318,6 +316,24 @@ public class RaceOverlay {
         graphics.fill(x + width - 1, y + 1, x + width, y + height - 1, color);
     }
 
+    /**
+     * An innate is always on, so always gray. A passive is green while its condition holds and gray
+     * otherwise. Anything else is red when the player can't afford it and green while toggled on.
+     */
+    private static int stateBorder(IPlayerVariables vars, Ability ability, ResourceLocation abilityId,
+            AbilitySlot slot) {
+        return switch (ability.type()) {
+            case INNATE -> BORDER_GRAY;
+            case PASSIVE -> {
+                Player player = Minecraft.getInstance().player;
+                yield player != null && ability.condition().evaluate(player, null, slot, null)
+                        ? BORDER_GREEN : BORDER_GRAY;
+            }
+            default -> !isUsable(vars, ability) ? BORDER_RED
+                    : vars.getPersistentState(abilityId) > 0 ? BORDER_GREEN : NO_BORDER;
+        };
+    }
+
     private static boolean isUsable(IPlayerVariables vars, Ability ability) {
         if (ability.cost() <= 0)
             return true;
@@ -334,13 +350,4 @@ public class RaceOverlay {
         return currentRes >= ability.cost();
     }
 
-    private static KeyMapping getKeyMapping(AbilitySlot slot) {
-        return switch (slot) {
-            case A1 -> ModKeyMappings.ABILITY_A1;
-            case A2 -> ModKeyMappings.ABILITY_A2;
-            case A3 -> ModKeyMappings.ABILITY_A3;
-            case A4 -> ModKeyMappings.ABILITY_A4;
-            case A5 -> ModKeyMappings.ABILITY_A5;
-        };
-    }
 }

@@ -71,7 +71,7 @@ public class PlayerVariables implements IPlayerVariables {
     private double returnZ = 0.0;
     private String returnDim = "minecraft:overworld";
     private boolean isInSpiritRealm = false;
-    private boolean smallBuild = false;
+    private boolean miniBuild = false;
     private boolean isSpirit = false;
     private boolean isTiny = false;
     private boolean isAquatic = false;
@@ -79,11 +79,15 @@ public class PlayerVariables implements IPlayerVariables {
     private long resourceTimer = 0;
     private final Map<UUID, ManagedModifier> managedModifiers = new ConcurrentHashMap<>();
     private final Set<ResourceLocation> persistentStateIds = ConcurrentHashMap.newKeySet();
+    /** Addons this mod put on, so a refresh takes off only those. See CosmeticIncidents. */
+    private final Set<String> racialAddons = ConcurrentHashMap.newKeySet();
 
     // The client predicts these every tick, so delta syncs leave them out. Full syncs (join,
     // respawn, cast, combat resource events) still carry them.
     private static final String[] CLIENT_PREDICTED_KEYS = {
-            "mana", "rage", "energy", "grit", "soul", "passiveCooldown", "resourceTimer" };
+            "mana", "rage", "energy", "grit", "soul", "passiveCooldown", "resourceTimer",
+            // The Mirror's preview changes this on the client while it is open.
+            "racialAddons" };
 
     @Override
     public ResourceLocation getRace() {
@@ -374,7 +378,7 @@ public class PlayerVariables implements IPlayerVariables {
         this.isTiny = false;
         this.isAquatic = false;
         this.isUndead = false;
-        this.smallBuild = false;
+        this.miniBuild = false;
         this.abilityActive = false;
         this.activeAbility = null;
         this.activeAbilityDuration = 0;
@@ -423,6 +427,11 @@ public class PlayerVariables implements IPlayerVariables {
     @Override
     public Map<String, String> getCustomizations() {
         return customizations;
+    }
+
+    @Override
+    public Set<String> getRacialAddons() {
+        return racialAddons;
     }
 
     @Override
@@ -727,13 +736,13 @@ public class PlayerVariables implements IPlayerVariables {
     }
 
     @Override
-    public boolean isSmallBuild() {
-        return smallBuild;
+    public boolean isMiniBuild() {
+        return miniBuild;
     }
 
     @Override
-    public void setSmallBuild(boolean smallBuild) {
-        this.smallBuild = smallBuild;
+    public void setMiniBuild(boolean miniBuild) {
+        this.miniBuild = miniBuild;
     }
 
     @Override
@@ -820,6 +829,10 @@ public class PlayerVariables implements IPlayerVariables {
                 id -> persistentList.add(StringTag.valueOf(Objects.requireNonNull(id.toString()))));
         tag.put("persistentStateIds", persistentList);
 
+        ListTag racialAddonList = new ListTag();
+        racialAddons.forEach(id -> racialAddonList.add(StringTag.valueOf(id)));
+        tag.put("racialAddons", racialAddonList);
+
         CompoundTag levelsTag = new CompoundTag();
         abilityLevels.forEach((id, val) -> levelsTag.putInt(Objects.requireNonNull(id.toString()), val));
         tag.put("abilityLevels", levelsTag);
@@ -852,7 +865,7 @@ public class PlayerVariables implements IPlayerVariables {
         pocketInvitations.forEach(uuid -> invitationsList.add(StringTag.valueOf(uuid.toString())));
         tag.put("pocketInvitations", invitationsList);
         tag.putBoolean("isInSpiritRealm", isInSpiritRealm);
-        tag.putBoolean("smallBuild", smallBuild);
+        tag.putBoolean("miniBuild", miniBuild);
         tag.putBoolean("isSpirit", isSpirit);
         tag.putBoolean("isTiny", isTiny);
         tag.putBoolean("isAquatic", isAquatic);
@@ -968,6 +981,13 @@ public class PlayerVariables implements IPlayerVariables {
             }
         }
 
+        if (tag.contains("racialAddons", Tag.TAG_LIST)) {
+            this.racialAddons.clear();
+            ListTag list = tag.getList("racialAddons", Tag.TAG_STRING);
+            for (int i = 0; i < list.size(); i++) {
+                this.racialAddons.add(list.getString(i));
+            }
+        }
         if (tag.contains("persistentStateIds", Tag.TAG_LIST)) {
             this.persistentStateIds.clear();
             ListTag list = tag.getList("persistentStateIds", Tag.TAG_STRING);
@@ -1043,8 +1063,8 @@ public class PlayerVariables implements IPlayerVariables {
             this.returnDim = Objects.requireNonNull(tag.getString("returnDim"));
         if (tag.contains("isInSpiritRealm"))
             this.isInSpiritRealm = tag.getBoolean("isInSpiritRealm");
-        if (tag.contains("smallBuild"))
-            this.smallBuild = tag.getBoolean("smallBuild");
+        if (tag.contains("miniBuild"))
+            this.miniBuild = tag.getBoolean("miniBuild");
         if (tag.contains("isSpirit"))
             this.isSpirit = tag.getBoolean("isSpirit");
         if (tag.contains("isTiny"))

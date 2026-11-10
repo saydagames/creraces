@@ -1,37 +1,29 @@
 {
     "creraces:name": "race.creraces.mermaid.name",
-    "creraces:parent_race": "creraces:aquatic",
-    "creraces:index": 6.0,
+    "creraces:parent_races": ["creraces:aquatic"],
+    "creraces:index": 6.1,
     "creraces:description": "race.creraces.mermaid.description",
     "creraces:icon": "creraces:textures/screens/mermaid_icon.png",
     "creraces:splash": "creraces:textures/screens/mermaid_splash.png",
     "creraces:portrait": "creraces:textures/screens/mermaid_portrait.png",
     "creraces:name_texture": "creraces:textures/screens/mermaid_text.png",
-    "creraces:resource_type": "MANA",
+    "creraces:resource_type": "mana",
     "creraces:difficulty": 2,
-    "creraces:gstate": "FEMALE",
+    "creraces:gstate": "female",
     "creraces:can_breathe_on_land": false,
-    "creraces:allowed_food_types": [
-        "seafood"
-    ],
-    "creraces:negate_effects": [
-        "minecraft:poison",
-        "creraces:boiling"
-    ],
-    "creraces:starting_abilities": [
-        "creraces:tidal_wave",
-        "creraces:spicy_whirlpool"
-    ],
+    "creraces:allowed_food_types": ["seafood"],
+    "creraces:negate_effects": ["minecraft:poison", "creraces:boiling"],
+    "creraces:starting_abilities": ["creraces:tidal_wave", "creraces:spicy_whirlpool", "tidal_blessing", "hydro_barrier"],
     "land_penalties": [
         {
-            "name": "land_penalties",
+            "id": "land_penalties",
             "type": "creraces:on_tick",
             "interval": 20,
             "condition": {
                 "type": "creraces:not",
                 "condition": {
-                    "type": "creraces:in_water",
-                    "include_rain": true
+                    "type": "creraces:or",
+                    "conditions": [{ "type": "creraces:in_water" }, { "type": "creraces:exposed_to_rain" }]
                 }
             },
             "actions": [
@@ -45,6 +37,7 @@
             ]
         }
     ],
+    "cosmetics": [{ "type": "creraces:addon", "addon": "mermaid_tail" }],
     "creraces:wiki_page": "Mermaid",
     "creraces:splash_x": 9,
     "creraces:splash_y": -20,

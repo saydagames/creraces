@@ -1,9 +1,11 @@
 package mc.sayda.creraces.engine;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.engine.condition.Condition;
+import mc.sayda.creraces.engine.condition.ConditionRegistry;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -20,7 +22,7 @@ public final class ManagedModifier {
 
     private final UUID uuid;
     private final ResourceLocation attributeId;
-    private final JsonObject valueJson;
+    private final JsonElement valueJson;
     private final AttributeModifier.Operation operation;
     private final String name;
     private final JsonObject conditionJson;
@@ -34,7 +36,7 @@ public final class ManagedModifier {
     public ManagedModifier(
             UUID uuid,
             ResourceLocation attributeId,
-            JsonObject valueJson,
+            JsonElement valueJson,
             AttributeModifier.Operation operation,
             String name,
             JsonObject conditionJson,
@@ -42,10 +44,10 @@ public final class ManagedModifier {
             int interval,
             long nextCheck) {
         this(uuid, attributeId, valueJson, operation, name, conditionJson, hasLifecycle, interval, nextCheck,
-                Condition.fromJson(conditionJson), parseValue(valueJson));
+                ConditionRegistry.fromJson(conditionJson), parseValue(valueJson));
     }
 
-    private ManagedModifier(UUID uuid, ResourceLocation attributeId, JsonObject valueJson,
+    private ManagedModifier(UUID uuid, ResourceLocation attributeId, JsonElement valueJson,
             AttributeModifier.Operation operation, String name, JsonObject conditionJson, boolean hasLifecycle,
             int interval, long nextCheck, Condition cachedCondition, ScalingValue cachedScalingValue) {
         this.uuid = uuid;
@@ -61,7 +63,7 @@ public final class ManagedModifier {
         this.cachedScalingValue = cachedScalingValue;
     }
 
-    private static ScalingValue parseValue(JsonObject valueJson) {
+    private static ScalingValue parseValue(JsonElement valueJson) {
         JsonObject wrapper = new JsonObject();
         wrapper.add("value", valueJson);
         return ScalingValue.fromJson(wrapper, "value", 0.0);
@@ -69,7 +71,7 @@ public final class ManagedModifier {
 
     public UUID uuid()              { return uuid; }
     public ResourceLocation attributeId() { return attributeId; }
-    public JsonObject valueJson()   { return valueJson; }
+    public JsonElement valueJson()  { return valueJson; }
     public AttributeModifier.Operation operation() { return operation; }
     public String name()            { return name; }
     public JsonObject conditionJson() { return conditionJson; }
@@ -109,7 +111,7 @@ public final class ManagedModifier {
             return new ManagedModifier(
                     tag.getUUID("uuid"),
                     new ResourceLocation(tag.getString("attribute")),
-                    JsonParser.parseString(tag.getString("value")).getAsJsonObject(),
+                    JsonParser.parseString(tag.getString("value")),
                     AttributeModifier.Operation.valueOf(tag.getString("operation")),
                     tag.getString("name"),
                     JsonParser.parseString(tag.getString("condition")).getAsJsonObject(),

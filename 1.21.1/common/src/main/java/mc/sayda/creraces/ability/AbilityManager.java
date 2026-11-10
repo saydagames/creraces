@@ -7,6 +7,7 @@ import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.engine.ActionRegistry.RaceAction;
 import mc.sayda.creraces.engine.condition.Condition;
+import mc.sayda.creraces.engine.condition.ConditionRegistry;
 import mc.sayda.creraces.network.BoundaryHandler;
 import mc.sayda.creraces.util.GsonHelper;
 import mc.sayda.creraces.util.RemoteDocConfig;
@@ -101,19 +102,19 @@ public class AbilityManager extends SimplePreparableReloadListener<Map<ResourceL
 
         Condition condition = (player, target, slot, interactionPos) -> true;
         if (json.has("creraces:condition")) {
-            condition = Condition.fromJson(json.getAsJsonObject("creraces:condition"));
+            condition = ConditionRegistry.fromJson(json.getAsJsonObject("creraces:condition"));
         }
 
         String conditionFailMessage = json.has("creraces:condition_fail_message")
                 ? json.get("creraces:condition_fail_message").getAsString()
                 : null;
 
-        List<OverlayBar> overlayBars = new ArrayList<>();
-        OverlayBar.collectOverlayBars(json, overlayBars);
+        List<OverlayBar> overlayBars = OverlayBar.listFromJson(json);
+        boolean copiedByClones = GsonHelper.getAsBoolean(json, "creraces:copied_by_clones", true);
 
         return new Ability(id, Component.translatable(nameStr), Component.translatable(descStr), type, icon,
                 cooldown, cost, persistent, allowedRaces, onActivate, onDeactivate, condition,
-                conditionFailMessage, overlayBars);
+                conditionFailMessage, overlayBars, copiedByClones);
     }
 
     /** creraces:race is either a single race id or an array of them. */

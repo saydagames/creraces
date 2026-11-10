@@ -33,9 +33,6 @@ import java.util.Optional;
  */
 public class ResourceTicker {
 
-    // Only the first two slots auto-run their innate/passive abilities.
-    private static final AbilitySlot[] AUTO_RUN_SLOTS = { AbilitySlot.A1, AbilitySlot.A2 };
-
     public static void tick(Player player) {
         if (!player.isAlive())
             return;
@@ -200,9 +197,9 @@ public class ResourceTicker {
         }
     }
 
-    /** Innate and passive abilities re-run their on_activate actions on a fixed interval. */
+    /** Innate and passive abilities in any slot re-run their on_activate actions on a fixed interval. */
     private static void runAutoAbilities(Player player, IPlayerVariables vars) {
-        for (AbilitySlot slot : AUTO_RUN_SLOTS) {
+        for (AbilitySlot slot : AbilitySlot.values()) {
             ResourceLocation abilityId = vars.getAbilityInSlot(slot);
             if (abilityId == null)
                 continue;
@@ -211,10 +208,29 @@ public class ResourceTicker {
                 continue;
             if (ability.type() != AbilityType.INNATE && ability.type() != AbilityType.PASSIVE)
                 continue;
+            if (ability.type() == AbilityType.PASSIVE && !passiveConditionHolds(player, vars, ability, abilityId, slot))
+                continue;
             for (RaceAction action : ability.onActivate()) {
                 action.execute(player, null, slot, null);
             }
         }
+    }
+
+    /** Whether a passive may run now. Its on_deactivate runs once when the condition stops holding. */
+    private static boolean passiveConditionHolds(Player player, IPlayerVariables vars, Ability ability,
+            ResourceLocation abilityId, AbilitySlot slot) {
+        boolean holds = ability.condition().evaluate(player, null, slot, null);
+        if (ability.onDeactivate() == null || ability.onDeactivate().isEmpty()) {
+            return holds;
+        }
+        ResourceLocation runningState = abilityId.withSuffix("_running");
+        if (!holds && vars.getPersistentState(runningState) > 0) {
+            for (RaceAction action : ability.onDeactivate()) {
+                action.execute(player, null, slot, null);
+            }
+        }
+        vars.setPersistentState(runningState, holds ? 1.0 : 0.0);
+        return holds;
     }
 
     private static void tickSunlightBurn(Player player, Race.Passives passives) {
@@ -243,8 +259,10 @@ public class ResourceTicker {
         }
     }
 
+    /** Sunlight only sets a player alight, so a race that fire cannot hurt never burns in it. */
     private static boolean isImmuneToSunlight(Player player, Race.Passives passives) {
-        return passives.immuneToDamageTypes().contains("minecraft:fire")
+        return passives.immuneToDamageTypes().contains("minecraft:on_fire")
+                || passives.unaffectedByLava()
                 || player.isInvulnerable()
                 || player.hasEffect(ModMobEffects.SUN_RESISTANCE);
     }

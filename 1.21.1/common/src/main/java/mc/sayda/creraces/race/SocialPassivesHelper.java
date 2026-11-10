@@ -64,12 +64,11 @@ public class SocialPassivesHelper {
 
     /** True if any inclusion entry matches and no exclusion entry does. */
     private static boolean matchesAnyEntry(LivingEntity entity, List<String> entries) {
-        EntityType<?> entityType = entity.getType();
-        ResourceLocation entityId = EntityType.getKey(entityType);
+        ResourceLocation entityId = EntityType.getKey(entity.getType());
 
         boolean included = false;
         for (String entry : entries) {
-            if (!entry.startsWith("!") && matchesEntry(entity, entityType, entityId, entry)) {
+            if (!entry.startsWith("!") && matchesEntry(entity, entityId, entry)) {
                 included = true;
                 break;
             }
@@ -79,7 +78,7 @@ public class SocialPassivesHelper {
         }
 
         for (String entry : entries) {
-            if (entry.startsWith("!") && matchesEntry(entity, entityType, entityId, entry.substring(1))) {
+            if (entry.startsWith("!") && matchesEntry(entity, entityId, entry.substring(1))) {
                 return false;
             }
         }
@@ -88,21 +87,12 @@ public class SocialPassivesHelper {
 
     /**
      * Checks if an entity matches a single spec: either a direct entity id, or a
-     * #-prefixed entity type tag reference (with a fallback for undead-race players).
+     * #-prefixed entity type tag reference (players also match through their stand-in types).
      */
-    private static boolean matchesEntry(LivingEntity entity, EntityType<?> entityType, ResourceLocation entityId,
-            String spec) {
+    private static boolean matchesEntry(LivingEntity entity, ResourceLocation entityId, String spec) {
         if (!spec.startsWith("#")) {
             return entityId.toString().equals(spec);
         }
-
-        String tagPath = spec.substring(1);
-        if (entityType.is(getOrCreateTag(Objects.requireNonNull(tagPath)))) {
-            return true;
-        }
-
-        // Undead-race players are never in the vanilla entity type tag, but LivingEntityMixin
-        // makes isInvertedHealAndHarm() return true for them.
-        return tagPath.equals("minecraft:undead") && entity.isInvertedHealAndHarm();
+        return StandInEntityTypes.is(entity, getOrCreateTag(Objects.requireNonNull(spec.substring(1))));
     }
 }

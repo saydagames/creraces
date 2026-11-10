@@ -1,24 +1,16 @@
 {
     "creraces:name": "race.creraces.ratkin.name",
-    "creraces:index": 13.0,
-    "creraces:scale": {
-        "base": 1.0,
-        "height": 0.65,
-        "width": 0.65
-    },
+    "creraces:index": 13,
+    "creraces:scale": { "base": 1, "height": 0.65, "width": 0.65 },
     "creraces:description": "race.creraces.ratkin.description",
     "creraces:icon": "creraces:textures/screens/ratkin_icon.png",
     "creraces:splash": "creraces:textures/screens/ratkin_splash.png",
-    "creraces:resource_type": "MANA",
+    "creraces:resource_type": "mana",
     "creraces:difficulty": 2,
-    "creraces:gstate": "MALE",
+    "creraces:gstate": "male",
     "creraces:portrait": "creraces:textures/screens/ratkin_portrait.png",
     "creraces:name_texture": "creraces:textures/screens/ratkin_text.png",
-    "creraces:negate_effects": [
-        "creraces:rat_venom",
-        "minecraft:poison",
-        "minecraft:hunger"
-    ],
+    "creraces:negate_effects": ["creraces:rat_venom", "minecraft:poison", "minecraft:hunger"],
     "creraces:starting_abilities": [
         "creraces:cowardly_skirmish",
         "creraces:deadly_venom",
@@ -31,16 +23,17 @@
             "condition": {
                 "type": "creraces:and",
                 "conditions": [
-                    {
-                        "type": "creraces:attack_charged"
-                    },
+                    { "type": "creraces:attack_charged" },
                     {
                         "type": "creraces:not",
                         "condition": {
-                            "type": "creraces:has_effect",
-                            "effect": "creraces:rat_venom",
-                            "amplifier": 4,
-                            "use_target": true
+                            "type": "creraces:compare",
+                            "value": {
+                                "scales_with": "effect(creraces:rat_venom, amplifier)",
+                                "entity": "target"
+                            },
+                            "to": 4,
+                            "operator": ">="
                         }
                     }
                 ]
@@ -48,34 +41,22 @@
             "actions": [
                 {
                     "type": "creraces:apply_effect",
-                    "cooldown": 10,
                     "effect": "creraces:rat_venom",
-                    "duration": {
-                        "base": 100
-                    },
-                    "amplifier": {
-                        "base": 0
-                    },
+                    "duration": { "base": 100 },
+                    "amplifier": { "base": 0 },
                     "increment_amplifier": true,
                     "visible": true
                 }
-            ]
+            ],
+            "cooldown": 10
         }
     ],
     "ratkin_effects": [
         {
-            "name": "night_vision_passive",
-            "type": "creraces:on_tick",
-            "interval": 20,
-            "actions": [
-                {
-                    "type": "creraces:apply_effect",
-                    "effect": "minecraft:night_vision",
-                    "amplifier": 0,
-                    "duration": -1,
-                    "visible": false
-                }
-            ]
+            "id": "night_vision_passive",
+            "type": "creraces:keep_effect",
+            "effect": "minecraft:night_vision",
+            "visible": false
         }
     ],
     "creraces:wiki_page": "Ratkin",

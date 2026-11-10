@@ -32,16 +32,19 @@ public class RaceUtils {
      */
     private static final Map<String, List<String>> FOOD_KEYWORD_TAGS = Map.of(
             "vegetable", List.of("#forge:vegetables", "#farmersdelight:vegetables", "#forge:salad_ingredients",
-                    "#c:vegetables"),
-            "fruit", List.of("#forge:fruits", "#farmersdelight:fruits", "#forge:berries", "#c:fruits"),
+                    "#c:foods/vegetable"),
+            "fruit", List.of("#forge:fruits", "#farmersdelight:fruits", "#forge:berries", "#c:foods/fruit",
+                    "#c:foods/berry"),
             "grain", List.of("#forge:grain", "#forge:grains", "#farmersdelight:grains", "#forge:bread",
-                    "#forge:pasta", "#c:grains"),
-            "sweet", List.of("#forge:sweets", "#forge:desserts", "#farmersdelight:desserts", "#c:sweets"),
-            "dairy", List.of("#forge:dairy", "#forge:milk", "#farmersdelight:milk", "#c:dairy"),
+                    "#forge:pasta", "#c:foods/bread", "#c:foods/pasta"),
+            "sweet", List.of("#forge:sweets", "#forge:desserts", "#farmersdelight:desserts", "#c:foods/candy",
+                    "#c:foods/cookie", "#c:foods/chocolate"),
+            "dairy", List.of("#forge:dairy", "#forge:milk", "#farmersdelight:milk", "#c:foods/milk",
+                    "#c:foods/cheese"),
             "seafood", List.of("#minecraft:fishes", "#forge:raw_fishes", "#forge:cooked_fishes",
-                    "#farmersdelight:fish", "#c:fishes"),
+                    "#farmersdelight:fish", "#c:foods/raw_fish", "#c:foods/cooked_fish"),
             "fishes", List.of("#minecraft:fishes", "#forge:raw_fishes", "#forge:cooked_fishes",
-                    "#farmersdelight:fish", "#c:fishes"));
+                    "#farmersdelight:fish", "#c:foods/raw_fish", "#c:foods/cooked_fish"));
 
     /** The player's race id, or null if their data isn't available. */
     @Nullable
@@ -66,6 +69,30 @@ public class RaceUtils {
         if (vars.isSpirit()) return true;
         Race race = RaceRegistry.get(vars.getRace());
         return race != null && race.isSpirit();
+    }
+
+    /**
+     * Race ids that stand for every race with a flag, e.g. "creraces:spirit" in an ability's race
+     * list or a race condition.
+     */
+    public static final ResourceLocation CATEGORY_SPIRIT = CreRaces.id("spirit");
+    public static final ResourceLocation CATEGORY_TINY = CreRaces.id("tiny");
+    public static final ResourceLocation CATEGORY_AQUATIC = CreRaces.id("aquatic");
+    public static final ResourceLocation CATEGORY_UNDEAD = CreRaces.id("undead");
+
+    /**
+     * Whether a race counts as {@code wanted}: the race itself, any race descended from it, or a
+     * category id (see CATEGORY_SPIRIT) whose flag the race has.
+     */
+    public static boolean matchesRace(@Nullable ResourceLocation raceId, ResourceLocation wanted) {
+        if (isRaceOrDescendant(raceId, wanted)) return true;
+        Race race = raceId != null ? RaceRegistry.get(raceId) : null;
+        if (race == null) return false;
+        if (wanted.equals(CATEGORY_SPIRIT)) return race.isSpirit();
+        if (wanted.equals(CATEGORY_TINY)) return race.isTiny();
+        if (wanted.equals(CATEGORY_AQUATIC)) return race.isAquatic();
+        if (wanted.equals(CATEGORY_UNDEAD)) return race.isUndead();
+        return false;
     }
 
     /** True if {@code raceId} is {@code ancestorId} or has it somewhere up its parent chain. */

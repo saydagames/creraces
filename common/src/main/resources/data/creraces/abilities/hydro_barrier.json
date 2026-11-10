@@ -1,0 +1,45 @@
+{
+  "creraces:name": "ability.creraces.hydro_barrier.name",
+  "creraces:description": "ability.creraces.hydro_barrier.description",
+  "creraces:type": "active",
+  "creraces:icon": "minecraft:heart_of_the_sea",
+  "creraces:cooldown": 300,
+  "creraces:cost": 25,
+  "creraces:race": ["creraces:mermaid", "creraces:siren"],
+  "creraces:actions": [
+    {
+      "type": "creraces:remove_effect",
+      "effects": [
+        "minecraft:slowness",
+        "minecraft:poison",
+        "minecraft:weakness",
+        "minecraft:wither"
+      ]
+    },
+    {
+      "type": "creraces:apply_effect",
+      "effect": "minecraft:absorption",
+      "duration": 200,
+      "amplifier": 1
+    },
+    {
+      "type": "creraces:apply_effect",
+      "effect": "minecraft:resistance",
+      "duration": 200,
+      "amplifier": 0
+    },
+    {
+      "type": "creraces:spawn_particles",
+      "particle": "minecraft:bubble_pop",
+      "count": 30,
+      "spread": 0.8
+    },
+    {
+      "type": "creraces:play_sound",
+      "sound": "minecraft:entity.player.splash",
+      "volume": 1.0,
+      "pitch": 1.0
+    }
+  ],
+  "creraces:wiki_page": "Ability:Hydro_Barrier"
+}

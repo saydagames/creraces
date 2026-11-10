@@ -1,49 +1,27 @@
 package mc.sayda.creraces.engine.traits;
 
+import com.google.gson.JsonObject;
 import mc.sayda.creraces.CreRaces;
-import mc.sayda.creraces.engine.ActionRegistry;
+import mc.sayda.creraces.engine.EventContext;
 import mc.sayda.creraces.engine.TraitRegistry;
-import mc.sayda.creraces.engine.condition.Condition;
-import mc.sayda.creraces.team.RaceTeamManager;
-import mc.sayda.creraces.util.GsonHelper;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 
-import javax.annotation.Nullable;
-import java.util.List;
+import java.util.Set;
 
-/**
- * Runs actions, targeting the victim, when the player hits an entity. Allies are skipped
- * unless bypass_safety is set.
- */
-public class OnHitTrait implements TraitRegistry.RaceTrait {
-    private final List<ActionRegistry.RaceAction> actions;
-    @Nullable
-    private final Condition condition;
-    private final boolean bypassSafety;
-
-    public OnHitTrait(List<ActionRegistry.RaceAction> actions, @Nullable Condition condition, boolean bypassSafety) {
-        this.actions = actions;
-        this.condition = condition;
-        this.bypassSafety = bypassSafety;
-    }
-
-    public static void register() {
-        TraitRegistry.register(ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "on_hit"), json -> {
-            Condition condition = json.has("condition") ? Condition.fromJson(json.getAsJsonObject("condition")) : null;
-            boolean bypassSafety = GsonHelper.getAsBoolean(json, "bypass_safety", false);
-            return new OnHitTrait(ActionRegistry.listFromJson(json, "actions"), condition, bypassSafety);
-        });
+/** Runs when the player hurts an entity ("targets" filters it, enemies by default), with event:damage. */
+public class OnHitTrait extends EventTrait {
+    OnHitTrait(JsonObject json) {
+        super(json, Set.of("enemies"));
     }
 
     @Override
-    public void onHit(Player player, LivingEntity target) {
-        if (!bypassSafety && !RaceTeamManager.canHurt(target, player)) {
-            return;
-        }
-        if (condition == null || condition.evaluate(player, target, null, null)) {
-            ActionRegistry.runChain(actions, player, target, null, null);
-        }
+    public void onHit(Player player, LivingEntity target, DamageSource source, float amount) {
+        fire(player, target, null, EventContext.ofDamage(source, amount));
+    }
+
+    public static void register() {
+        TraitRegistry.register(CreRaces.id("on_hit"), OnHitTrait::new);
     }
 }

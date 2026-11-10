@@ -1,17 +1,15 @@
 {
     "creraces:name": "ability.creraces.quick_current.name",
     "creraces:description": "ability.creraces.quick_current.description",
-    "creraces:type": "ACTIVE",
+    "creraces:type": "active",
     "creraces:icon": "creraces:textures/mob_effect/rooted.png",
     "creraces:cooldown": 480,
     "creraces:cost": 15,
     "creraces:condition_fail_message": "msg.creraces.rain_fail_message",
-    "creraces:race": [
-        "creraces:naiad"
-    ],
+    "creraces:race": ["creraces:naiad"],
     "creraces:condition": {
-        "type": "creraces:in_water",
-        "include_rain": true
+        "type": "creraces:or",
+        "conditions": [{ "type": "creraces:in_water" }, { "type": "creraces:exposed_to_rain" }]
     },
     "creraces:actions": [
         {
@@ -32,13 +30,7 @@
                     "spread_y": 0.5,
                     "spread_z": 1
                 },
-                {
-                    "type": "creraces:play_sound",
-                    "sound": "creraces:blessing",
-                    "volume": 1,
-                    "pitch": 1.0,
-                    "use_target": true
-                }
+                { "type": "creraces:play_sound", "sound": "creraces:blessing", "volume": 1, "pitch": 1 }
             ]
         }
     ],

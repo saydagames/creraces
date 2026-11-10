@@ -1,68 +1,46 @@
 {
     "creraces:name": "race.creraces.nymph.name",
-    "creraces:scale": {
-        "base": 1.0,
-        "height": 1.1
-    },
-    "creraces:index": 9.0,
+    "creraces:scale": { "base": 1, "height": 1.1 },
+    "creraces:index": 9,
     "creraces:description": "race.creraces.nymph.description",
     "creraces:name_texture": "creraces:textures/screens/nymphs_text.png",
     "creraces:portrait": "creraces:textures/screens/nymphs_portrait.png",
-    "creraces:resource_type": "MANA",
+    "creraces:resource_type": "mana",
     "creraces:difficulty": 1,
-    "creraces:gstate": "FEMALE",
+    "creraces:gstate": "female",
     "creraces:is_spirit": true,
     "creraces:regeneration_multiplier": 1.1,
-    "creraces:blocked_food_types": [
-        "meat",
-        "#minecraft:fishes"
-    ],
+    "creraces:blocked_food_types": ["meat", "#minecraft:fishes"],
     "passive": [
         {
             "id": "nymph_health",
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.max_health",
-            "value": -4.0,
-            "operation": "addition"
+            "value": -4
         },
         {
             "id": "nymph_luck",
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.luck",
-            "value": 10.0,
-            "operation": "addition"
+            "value": 10
         },
         {
-            "name": "hero_of_the_village_passive",
-            "type": "creraces:on_tick",
-            "interval": 20,
-            "actions": [
-                {
-                    "type": "creraces:apply_effect",
-                    "effect": "minecraft:hero_of_the_village",
-                    "amplifier": 0,
-                    "duration": -1,
-                    "visible": false
-                }
-            ]
+            "id": "hero_of_the_village_passive",
+            "type": "creraces:keep_effect",
+            "effect": "minecraft:hero_of_the_village",
+            "visible": false
         },
         {
-            "name": "nymph_debuff",
+            "id": "nymph_debuff",
             "type": "creraces:on_tick",
             "interval": 20,
             "condition": {
                 "type": "creraces:and",
                 "conditions": [
-                    {
-                        "type": "creraces:in_spirit_realm",
-                        "value": false
-                    },
+                    { "type": "creraces:flag", "flag": "in_spirit_realm", "value": false },
                     {
                         "type": "creraces:not",
-                        "condition": {
-                            "type": "creraces:has_effect",
-                            "effect": "creraces:nymph_call"
-                        }
+                        "condition": { "type": "creraces:has_effect", "effect": "creraces:nymph_call" }
                     }
                 ]
             },
@@ -70,21 +48,9 @@
                 {
                     "type": "creraces:apply_effect",
                     "effects": [
-                        {
-                            "effect": "minecraft:slowness",
-                            "amplifier": 1,
-                            "duration": 100
-                        },
-                        {
-                            "effect": "minecraft:weakness",
-                            "amplifier": 254,
-                            "duration": 100
-                        },
-                        {
-                            "effect": "minecraft:darkness",
-                            "amplifier": 254,
-                            "duration": 100
-                        }
+                        { "effect": "minecraft:slowness", "amplifier": 1, "duration": 100 },
+                        { "effect": "minecraft:weakness", "amplifier": 254, "duration": 100 },
+                        { "effect": "minecraft:darkness", "amplifier": 254, "duration": 100 }
                     ]
                 }
             ]
@@ -92,8 +58,20 @@
     ],
     "graceperiod": [
         {
-            "type": "creraces:on_events",
-            "triggers": ["on_respawn", "on_select"],
+            "type": "creraces:on_respawn",
+            "actions": [
+                {
+                    "type": "creraces:apply_effect",
+                    "effect": "creraces:nymph_call",
+                    "duration": 6000,
+                    "amplifier": 0,
+                    "visible": false,
+                    "ambient": false
+                }
+            ]
+        },
+        {
+            "type": "creraces:on_select",
             "actions": [
                 {
                     "type": "creraces:apply_effect",
@@ -110,14 +88,14 @@
     "creraces:territory_biome_threshold": 0.00390625,
     "nature_passive": [
         {
-            "name": "nature_nymph_call",
+            "id": "nature_nymph_call",
             "type": "creraces:on_tick",
             "interval": 20,
             "condition": {
                 "type": "creraces:or",
                 "conditions": [
                     { "type": "creraces:in_claimed_territory", "scope": "own" },
-                    { "type": "creraces:dimension", "value": "creraces:pocket" }
+                    { "type": "creraces:dimension", "dimension": "creraces:pocket" }
                 ]
             },
             "actions": [

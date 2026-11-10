@@ -1,13 +1,11 @@
 {
     "creraces:name": "ability.creraces.wild_hunt.name",
     "creraces:description": "ability.creraces.wild_hunt.description",
-    "creraces:type": "ACTIVE",
+    "creraces:type": "active",
     "creraces:icon": "creraces:textures/mob_effect/wild_hunt.png",
     "creraces:cooldown": 380,
     "creraces:cost": 0,
-    "creraces:race": [
-        "creraces:lycan"
-    ],
+    "creraces:race": ["creraces:lycan"],
     "creraces:actions": [
         {
             "type": "creraces:apply_effect",
@@ -23,17 +21,8 @@
             "amplifier": 1,
             "visible": true
         },
-        {
-            "type": "creraces:modify_value",
-            "resource": "state:wild_hunt",
-            "value": 1
-        },
-        {
-            "type": "creraces:play_sound",
-            "sound": "minecraft:entity.wolf.howl",
-            "volume": 1.0,
-            "pitch": 0.8
-        }
+        { "type": "creraces:modify_value", "state": "wild_hunt", "value": 1 },
+        { "type": "creraces:play_sound", "sound": "minecraft:entity.wolf.howl", "volume": 1, "pitch": 0.8 }
     ],
     "creraces:wiki_page": "Ability:Wild_Hunt"
 }

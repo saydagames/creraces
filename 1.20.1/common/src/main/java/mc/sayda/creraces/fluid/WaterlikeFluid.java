@@ -24,7 +24,7 @@ import java.util.Optional;
 
 /**
  * Shared behaviour of the mod's spring fluids (eterveil, fairy source): they flow, sound and drip like
- * water, but never form new source blocks.
+ * water, but form no new source blocks unless a fluid allows it.
  */
 public abstract class WaterlikeFluid extends FlowingFluid {
 

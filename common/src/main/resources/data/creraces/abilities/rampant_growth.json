@@ -1,51 +1,37 @@
 {
     "creraces:name": "ability.creraces.rampant_growth.name",
     "creraces:description": "ability.creraces.rampant_growth.description",
-    "creraces:type": "ACTIVE",
+    "creraces:type": "active",
     "creraces:icon": "creraces:textures/mob_effect/thorns.png",
     "creraces:cooldown": 240,
     "creraces:cost": 40,
-    "creraces:race": [
-        "creraces:dryad"
-    ],
+    "creraces:race": ["creraces:dryad"],
     "creraces:actions": [
         {
             "type": "creraces:conditional",
-            "condition": {
-                "type": "creraces:has_effect",
-                "effect": "creraces:rooted"
-            },
+            "condition": { "type": "creraces:has_effect", "effect": "creraces:rooted" },
             "if_true": [
-                {
-                    "type": "creraces:remove_effect",
-                    "effect": "creraces:rooted"
-                },
-                {
-                    "type": "creraces:remove_effect",
-                    "effect": "minecraft:resistance"
-                },
-                {
-                    "type": "creraces:remove_effect",
-                    "effect": "creraces:thorns"
-                }
+                { "type": "creraces:remove_effect", "effect": "creraces:rooted" },
+                { "type": "creraces:remove_effect", "effect": "minecraft:resistance" },
+                { "type": "creraces:remove_effect", "effect": "creraces:thorns" }
             ],
             "if_false": [
                 {
                     "type": "creraces:apply_effect",
                     "effect": "creraces:rooted",
-                    "duration": 1000000,
+                    "duration": -1,
                     "amplifier": 0
                 },
                 {
                     "type": "creraces:apply_effect",
                     "effect": "minecraft:resistance",
-                    "duration": 1000000,
+                    "duration": -1,
                     "amplifier": 1
                 },
                 {
                     "type": "creraces:apply_effect",
                     "effect": "creraces:thorns",
-                    "duration": 1000000,
+                    "duration": -1,
                     "amplifier": 0
                 },
                 {
@@ -60,9 +46,7 @@
                     "volume": 0.8,
                     "pitch": 1.1
                 },
-                {
-                    "type": "creraces:cancel"
-                }
+                { "type": "creraces:cancel" }
             ]
         }
     ],

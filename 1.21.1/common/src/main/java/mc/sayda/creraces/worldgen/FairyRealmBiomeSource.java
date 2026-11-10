@@ -10,15 +10,15 @@ import net.minecraft.world.level.biome.Climate;
 import java.util.stream.Stream;
 
 /**
- * Assigns vanilla biomes to four seasonal quadrants using block-coordinate quadrant split.
+ * Assigns the season biomes to four quadrants split on block coordinates.
  * River/moat corridors are detected via {@link FairyRealmChunkGenerator#isWater} so the
  * biome assignment always agrees with where the chunk generator actually places water.
  *
- *   Island center         → center (plains)
- *   NE (x>=0, z<0)        → spring  (cherry_grove)
- *   SE (x>=0, z>=0)       → summer  (forest)
- *   NW (x<0,  z<0)        → winter  (snowy_taiga)
- *   SW (x<0,  z>=0)       → autumn  (taiga)
+ *   Island center         → center (fairy_tree)
+ *   NE (x>=0, z<0)        → spring  (fairy_realm_spring, a cherry grove)
+ *   SE (x>=0, z>=0)       → summer  (fairy_realm_summer, a forest)
+ *   NW (x<0,  z<0)        → winter  (fairy_realm_winter, a snowy taiga)
+ *   SW (x<0,  z>=0)       → autumn  (fairy_realm_autumn, a forest with orange leaves)
  *
  * Water zones in the winter quadrant (NW) return frozen_river; elsewhere river.
  */
@@ -72,7 +72,6 @@ public class FairyRealmBiomeSource extends BiomeSource {
         int bx = x << 2;
         int bz = z << 2;
 
-        // Island center gets plains biome
         if (FairyRealmChunkGenerator.isIsland(bx, bz)) {
             return center;
         }

@@ -9,13 +9,12 @@ import mc.sayda.creraces.engine.traits.AttributeModifierTrait;
 import mc.sayda.creraces.engine.traits.BlockInteractionTrait;
 import mc.sayda.creraces.engine.traits.BlockPlaceTrait;
 import mc.sayda.creraces.engine.traits.DamageMultiplierTrait;
-import mc.sayda.creraces.engine.traits.DomainTrait;
 import mc.sayda.creraces.engine.traits.FlightTrait;
 import mc.sayda.creraces.engine.traits.FoodMultiplierTrait;
 import mc.sayda.creraces.engine.traits.ItemInteractionTrait;
+import mc.sayda.creraces.engine.traits.KeepEffectTrait;
 import mc.sayda.creraces.engine.traits.OnAbilityUseTrait;
 import mc.sayda.creraces.engine.traits.OnDeathTrait;
-import mc.sayda.creraces.engine.traits.OnEventsTrait;
 import mc.sayda.creraces.engine.traits.OnHitTrait;
 import mc.sayda.creraces.engine.traits.OnHurtTrait;
 import mc.sayda.creraces.engine.traits.OnItemPickupTrait;
@@ -24,7 +23,6 @@ import mc.sayda.creraces.engine.traits.OnLandTrait;
 import mc.sayda.creraces.engine.traits.OnRespawnTrait;
 import mc.sayda.creraces.engine.traits.OnSelectTrait;
 import mc.sayda.creraces.engine.traits.OnTickTrait;
-import mc.sayda.creraces.engine.traits.TetherTrait;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.damagesource.DamageSource;
@@ -53,7 +51,7 @@ public class TraitRegistry {
         default void onKill(Player player, LivingEntity target) {
         }
 
-        default void onHit(Player player, LivingEntity target) {
+        default void onHit(Player player, LivingEntity target, DamageSource source, float amount) {
         }
 
         default boolean onInteraction(Player player, ItemStack stack) {
@@ -105,16 +103,15 @@ public class TraitRegistry {
         REGISTRY.put(id, factory);
     }
 
-    public static RaceTrait fromJson(JsonObject json) {
-        return fromJson(json, "");
-    }
-
+    /**
+     * Builds a trait. {@code defaultId} names it when the JSON has no "id" of its own; it is where the
+     * trait sits in its file (e.g. "passive/2"), so it stays stable as long as the list isn't reordered.
+     */
     public static RaceTrait fromJson(JsonObject json, String defaultId) {
         if (!json.has("type")) {
             return NO_OP_TRAIT;
         }
         String typeStr = json.get("type").getAsString();
-
         ResourceLocation type = ResourceLocation.tryParse(typeStr);
         if (type == null) {
             CreRaces.LOGGER.error("Malformed trait type '{}' - skipping.", typeStr);
@@ -126,14 +123,18 @@ public class TraitRegistry {
             return NO_OP_TRAIT;
         }
 
+        JsonObject withId = json;
+        if (!json.has("id")) {
+            withId = json.deepCopy();
+            withId.addProperty("id", defaultId.toLowerCase().replaceAll("[^a-z0-9/._-]", "/"));
+        }
         try {
-            RaceTrait trait = factory.create(json);
+            RaceTrait trait = factory.create(withId);
             if (trait == null) {
                 CreRaces.LOGGER.error("Trait factory for {} returned null - skipping.", type);
                 return NO_OP_TRAIT;
             }
-            String id = json.has("id") ? json.get("id").getAsString() : defaultId;
-            trait.setTraitId(id);
+            trait.setTraitId(withId.get("id").getAsString());
             return trait;
         } catch (Exception e) {
             // Skip only this trait; letting it throw would make RaceManager drop the whole race.
@@ -157,13 +158,11 @@ public class TraitRegistry {
         OnLandTrait.register();
         OnRespawnTrait.register();
         OnSelectTrait.register();
-        OnEventsTrait.register();
         OnDeathTrait.register();
         OnItemPickupTrait.register();
         FoodMultiplierTrait.register();
-        TetherTrait.register();
-        DomainTrait.register();
         OnAbilityUseTrait.register();
         AttributeModifierTrait.register();
+        KeepEffectTrait.register();
     }
 }

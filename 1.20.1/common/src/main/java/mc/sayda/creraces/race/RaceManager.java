@@ -39,6 +39,8 @@ import java.util.Set;
  */
 public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLocation, JsonElement>> {
     private static final String FOLDER = "races";
+    /** The selection screen draws difficulties 0 to 4. */
+    private static final int MAX_DIFFICULTY = 4;
     private static final Set<String> FOOD_CATEGORIES = Set.of(
             "meat", "vegetable", "fruit", "grain", "sweet", "dairy", "seafood", "fishes");
 
@@ -102,12 +104,6 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
         }
 
         CreRaces.LOGGER.info("Loaded {} races.", count);
-        for (Race race : RaceRegistry.getAll()) {
-            if (race.passives() != null && race.passives().liquidSpeedMultiplier().base() != 1.0) {
-                CreRaces.LOGGER.debug("Race {} has liquid speed multiplier: {}", race.id(),
-                        race.passives().liquidSpeedMultiplier().base());
-            }
-        }
     }
 
     private static Race parseRace(ResourceLocation id, JsonObject json) {
@@ -126,10 +122,11 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
         int baseAp = GsonHelper.getAsInt(json, "creraces:base_ap", 0);
         int baseAd = GsonHelper.getAsInt(json, "creraces:base_ad", 0);
         int baseAh = GsonHelper.getAsInt(json, "creraces:base_ah", 0);
-        int baseCr = GsonHelper.getAsInt(json, "creraces:base_cr", 0);
+        // 5 is the crit_rate default, so picking a race without base_cr keeps it.
+        int baseCr = GsonHelper.getAsInt(json, "creraces:base_cr", 5);
         ResourceType resourceType = parseResourceType(id, json);
         RaceScale scale = RaceScale.fromJson(json.get("creraces:scale"));
-        int difficulty = GsonHelper.getAsInt(json, "creraces:difficulty", 0);
+        int difficulty = parseDifficulty(id, json);
 
         int splashX = GsonHelper.getAsInt(json, "creraces:splash_x", 15);
         int splashY = GsonHelper.getAsInt(json, "creraces:splash_y", -10);
@@ -183,7 +180,7 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                 .startingItems(startingItems)
                 .passives(parsePassives(json))
                 .traits(traits)
-                .overlayBars(OverlayBar.collectOverlayBarsResult(json))
+                .overlayBars(OverlayBar.listFromJson(json))
                 .isSpirit(GsonHelper.getAsBoolean(json, "creraces:is_spirit", false))
                 .isTiny(GsonHelper.getAsBoolean(json, "creraces:is_tiny", false))
                 .isAquatic(GsonHelper.getAsBoolean(json, "creraces:is_aquatic", false))
@@ -200,6 +197,17 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                 .claimBiomeThreshold(GsonHelper.getAsFloat(json, "creraces:territory_biome_threshold", 0.5f))
                 .enableTerritory(GsonHelper.getAsBoolean(json, "creraces:enable_territory", false))
                 .build();
+    }
+
+    /** creraces:difficulty, 0 to 4; anything else is logged and shows as 0. */
+    private static int parseDifficulty(ResourceLocation id, JsonObject json) {
+        int difficulty = GsonHelper.getAsInt(json, "creraces:difficulty", 0);
+        if (difficulty < 0 || difficulty > MAX_DIFFICULTY) {
+            CreRaces.LOGGER.warn("Race {} has difficulty {}, but it must be 0 to {}; showing 0", id, difficulty,
+                    MAX_DIFFICULTY);
+            return 0;
+        }
+        return difficulty;
     }
 
     /** Parses a texture location, falling back when the key is missing or malformed. */
@@ -329,20 +337,12 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
         return new double[] { pos.get("x").getAsDouble(), pos.get("y").getAsDouble(), pos.get("z").getAsDouble() };
     }
 
+    /** The ids in creraces:parent_races, in order and without repeats. */
     private static List<ResourceLocation> parseParentRaces(JsonObject json) {
         List<ResourceLocation> parentRaces = new ArrayList<>();
-        String singleParent = GsonHelper.getNullableString(json, "creraces:parent_race", null);
-        if (singleParent != null) {
-            ResourceLocation parentId = ResourceLocation.tryParse(singleParent);
-            if (parentId != null)
+        for (ResourceLocation parentId : parseIdList(json, "creraces:parent_races")) {
+            if (!parentRaces.contains(parentId))
                 parentRaces.add(parentId);
-        }
-        if (json.has("creraces:parent_races") && json.get("creraces:parent_races").isJsonArray()) {
-            for (JsonElement e : json.getAsJsonArray("creraces:parent_races")) {
-                ResourceLocation parentId = ResourceLocation.tryParse(e.getAsString());
-                if (parentId != null && !parentRaces.contains(parentId))
-                    parentRaces.add(parentId);
-            }
         }
         return parentRaces;
     }
@@ -357,24 +357,11 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
 
         JsonObject current = data.get(id).getAsJsonObject().deepCopy();
 
-        String singleParent = GsonHelper.getNullableString(current, "creraces:parent_race", null);
-        if (singleParent != null) {
-            ResourceLocation parentId = ResourceLocation.tryParse(singleParent);
-            if (parentId != null && data.containsKey(parentId)) {
+        for (ResourceLocation parentId : parseParentRaces(current)) {
+            if (data.containsKey(parentId)) {
                 current = mergeRaces(resolveInheritance(parentId, data, visited), current);
-            } else if (parentId != null) {
+            } else {
                 CreRaces.LOGGER.warn("Race {} references missing parent race: {}", id, parentId);
-            }
-        }
-
-        if (current.has("creraces:parent_races") && current.get("creraces:parent_races").isJsonArray()) {
-            for (JsonElement e : current.getAsJsonArray("creraces:parent_races")) {
-                ResourceLocation parentId = ResourceLocation.tryParse(e.getAsString());
-                if (parentId != null && data.containsKey(parentId)) {
-                    current = mergeRaces(resolveInheritance(parentId, data, visited), current);
-                } else if (parentId != null) {
-                    CreRaces.LOGGER.warn("Race {} references missing multi-parent race: {}", id, parentId);
-                }
             }
         }
 
@@ -386,7 +373,6 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
 
         // Selection metadata belongs to the parent itself and is never inherited.
         merged.remove("creraces:selectable");
-        merged.remove("creraces:parent_race");
         merged.remove("creraces:parent_races");
         merged.remove("creraces:index");
 
@@ -421,6 +407,7 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                 || key.equals("creraces:starting_abilities") || key.equals("starting_abilities")
                 || key.equals("creraces:starting_items") || key.equals("starting_items")
                 || key.equals("creraces:race_addons") || key.equals("race_addons")
+                || key.equals("creraces:overlay_bars")
                 || !key.contains(":");
     }
 
@@ -500,6 +487,8 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
         return new Race.Passives(
                 // Breathing & Environmental
                 GsonHelper.getAsBoolean(p, "creraces:can_breathe_underwater", false),
+                GsonHelper.getAsBoolean(p, "creraces:can_breathe_in_water", false),
+                GsonHelper.getAsBoolean(p, "creraces:can_breathe_in_lava", false),
                 landSuffocationInterval,
                 sunlightBurnInterval,
                 parseStandardizedIdList(p, "creraces:immune_to_damage"),
@@ -510,19 +499,16 @@ public class RaceManager extends SimplePreparableReloadListener<Map<ResourceLoca
                 GsonHelper.getAsBoolean(p, "creraces:lava_vision", false),
 
                 // Movement & Physics
-                GsonHelper.getAsBoolean(p, "creraces:can_fly", false),
                 ScalingValue.fromJson(p, "creraces:liquid_speed_multiplier", 1.0),
                 GsonHelper.getAsBoolean(p, "creraces:unaffected_by_water", false),
                 GsonHelper.getAsBoolean(p, "creraces:unaffected_by_lava", false),
                 GsonHelper.getAsBoolean(p, "creraces:cannot_sprint", false),
 
-                // Health & Regeneration
-                GsonHelper.getAsBoolean(p, "creraces:no_natural_regeneration", false),
+                // Health & Regeneration: 0 stops natural regeneration
                 ScalingValue.fromJson(p, "creraces:regeneration_multiplier", 1.0),
 
                 // Combat & Damage
                 GsonHelper.getAsBoolean(p, "creraces:immune_to_knockback", false),
-                ScalingValue.fromJson(p, "creraces:invulnerability_ticks_multiplier", 1.0),
 
                 // Food & Hunger
                 GsonHelper.getAsBoolean(p, "creraces:no_hunger", false),

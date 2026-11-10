@@ -1,19 +1,17 @@
 {
     "creraces:name": "ability.creraces.trophy_hunter.name",
     "creraces:description": "ability.creraces.trophy_hunter.description",
-    "creraces:type": "ACTIVE",
+    "creraces:type": "active",
     "creraces:icon": "creraces:textures/icons/note.png",
     "creraces:cooldown": 20,
     "creraces:cost": 0,
-    "creraces:race": [
-        "creraces:lycan"
-    ],
+    "creraces:race": ["creraces:lycan"],
     "creraces:actions": [
         {
             "type": "creraces:message",
             "text": "ability.creraces.trophy_hunter.stacks",
-            "value": "state:creraces:stacks",
-            "actionbar": true
+            "actionbar": true,
+            "values": ["state:creraces:stacks"]
         },
         {
             "type": "creraces:play_sound",

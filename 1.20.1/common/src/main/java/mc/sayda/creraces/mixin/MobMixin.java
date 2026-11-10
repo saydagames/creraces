@@ -1,6 +1,7 @@
 package mc.sayda.creraces.mixin;
 
 import mc.sayda.creraces.engine.SpiritMobilityHandler;
+import mc.sayda.creraces.effect.CharmedEffect;
 import mc.sayda.creraces.race.SocialPassivesHelper;
 import mc.sayda.creraces.registry.ModMobEffects;
 import mc.sayda.creraces.util.CombatUtils;
@@ -35,6 +36,10 @@ public abstract class MobMixin {
      */
     @Inject(method = "setTarget", at = @At("HEAD"), cancellable = true)
     private void creraces$preventRespectedTargeting(LivingEntity target, CallbackInfo ci) {
+        if (target != null && CharmedEffect.isCharmedBy((Mob) (Object) this, target)) {
+            ci.cancel();
+            return;
+        }
         if (target instanceof Player player && SocialPassivesHelper.isRespectedBy(player, (Mob) (Object) this)) {
             ci.cancel();
             return;
@@ -60,6 +65,12 @@ public abstract class MobMixin {
             return false;
         Player targetOwner = CombatUtils.getRootOwner(target);
         return targetOwner != null && mobOwner.getUUID().equals(targetOwner.getUUID());
+    }
+
+    @Inject(method = "serverAiStep", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/world/entity/ai/control/MoveControl;tick()V"))
+    private void creraces$charmedSteering(CallbackInfo ci) {
+        CharmedEffect.steer((Mob) (Object) this);
     }
 
     /** Once a second, an idle mob picks a fight with the nearest player whose race it hates ("hatedByEntities"). */

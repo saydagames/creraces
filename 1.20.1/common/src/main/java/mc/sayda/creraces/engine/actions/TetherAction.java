@@ -3,8 +3,8 @@ package mc.sayda.creraces.engine.actions;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.engine.ActionRegistry;
+import mc.sayda.creraces.engine.EventContext;
 import mc.sayda.creraces.engine.ScalingValue;
-import mc.sayda.creraces.engine.TargetFilter;
 import mc.sayda.creraces.network.BoundaryHandler;
 import mc.sayda.creraces.network.SyncTetherPacket;
 import mc.sayda.creraces.util.GsonHelper;
@@ -17,17 +17,17 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Links the caster to a target for a duration. While linked, "actions" run every interval; the
+ * Links the caster to the target for a duration. While linked, "actions" run every interval; the
  * tether completes (on_complete) when the duration runs out and breaks (on_break) if the target
- * gets further away than max_distance. Tethers are ticked through {@link #tickTethers}.
+ * gets further away than "range". An aoe or raycast around it picks whom to tether. Tethers are
+ * ticked through {@link #tickTethers}.
  */
 public class TetherAction implements ActionRegistry.RaceAction {
-    public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "tether");
+    public static final ResourceLocation ID = CreRaces.id("tether");
 
     // Sent in the sync packet to tell the client to clear a tether visual.
     private static final ResourceLocation NO_TEXTURE = new ResourceLocation("minecraft", "air");
@@ -36,7 +36,7 @@ public class TetherAction implements ActionRegistry.RaceAction {
     private static final Map<UUID, Map<UUID, TetherData>> ACTIVE_TETHERS = new ConcurrentHashMap<>();
 
     private final ScalingValue duration;
-    private final ScalingValue maxDistance;
+    private final ScalingValue range;
     private final ScalingValue interval;
     private final List<ActionRegistry.RaceAction> actions;
     private final List<ActionRegistry.RaceAction> onCompleteActions;
@@ -44,14 +44,13 @@ public class TetherAction implements ActionRegistry.RaceAction {
     private final ResourceLocation texture;
     private final ScalingValue width;
     private final boolean effects;
-    private final TargetFilter targets;
 
-    public TetherAction(ScalingValue duration, ScalingValue maxDistance, ScalingValue interval,
+    public TetherAction(ScalingValue duration, ScalingValue range, ScalingValue interval,
             List<ActionRegistry.RaceAction> actions, List<ActionRegistry.RaceAction> onCompleteActions,
             List<ActionRegistry.RaceAction> onBreakActions, ResourceLocation texture, ScalingValue width,
-            boolean effects, TargetFilter targets) {
+            boolean effects) {
         this.duration = duration;
-        this.maxDistance = maxDistance;
+        this.range = range;
         this.interval = interval;
         this.actions = actions;
         this.onCompleteActions = onCompleteActions;
@@ -59,23 +58,22 @@ public class TetherAction implements ActionRegistry.RaceAction {
         this.texture = texture;
         this.width = width;
         this.effects = effects;
-        this.targets = targets;
     }
 
     @Override
     public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
             @Nullable BlockPos interactPos) {
-        if (player.level().isClientSide() || target == null || target == player || !targets.isValid(target, player)) {
+        if (player.level().isClientSide() || target == null || target == player) {
             return false;
         }
 
         TetherData data = new TetherData(
-                (int) duration.evaluate(player, target, slot),
-                (float) maxDistance.evaluate(player, target, slot),
-                (int) interval.evaluate(player, target, slot),
-                actions, onCompleteActions, onBreakActions, target, slot);
+                (int) duration.evaluate(player, target, slot, interactPos),
+                (float) range.evaluate(player, target, slot, interactPos),
+                (int) interval.evaluate(player, target, slot, interactPos),
+                actions, onCompleteActions, onBreakActions, target, slot, EventContext.current());
         ACTIVE_TETHERS.computeIfAbsent(player.getUUID(), k -> new ConcurrentHashMap<>()).put(target.getUUID(), data);
-        sync(player, target.getUUID(), true, texture, (float) width.evaluate(player, target, slot), effects);
+        sync(player, target.getUUID(), true, texture, (float) width.evaluate(player, target, slot, interactPos), effects);
         return true;
     }
 
@@ -105,17 +103,17 @@ public class TetherAction implements ActionRegistry.RaceAction {
             }
 
             if (data.maxDistance > 0 && caster.distanceToSqr(linked) > data.maxDistance * data.maxDistance) {
-                ActionRegistry.runAll(data.onBreakActions, caster, linked, data.slot, null);
+                data.event.run(() -> ActionRegistry.runChain(data.onBreakActions, caster, linked, data.slot, null));
                 finished.add(entry.getKey());
                 continue;
             }
 
             data.ticksAlive++;
             if (data.interval > 0 && data.ticksAlive % data.interval == 0) {
-                ActionRegistry.runAll(data.actions, caster, linked, data.slot, null);
+                data.event.run(() -> ActionRegistry.runChain(data.actions, caster, linked, data.slot, null));
             }
             if (data.ticksAlive >= data.durationTicks) {
-                ActionRegistry.runAll(data.onCompleteActions, caster, linked, data.slot, null);
+                data.event.run(() -> ActionRegistry.runChain(data.onCompleteActions, caster, linked, data.slot, null));
                 finished.add(entry.getKey());
             }
         }
@@ -142,17 +140,15 @@ public class TetherAction implements ActionRegistry.RaceAction {
     public static void register() {
         ActionRegistry.register(ID, json -> new TetherAction(
                 ScalingValue.fromJson(json, "duration", 100.0),
-                ScalingValue.fromJson(json, "max_distance", 10.0),
+                ScalingValue.fromJson(json, "range", 10.0),
                 ScalingValue.fromJson(json, "interval", 20.0),
                 ActionRegistry.listFromJson(json, "actions"),
-                // "on_fill" is the older name for on_complete.
-                ActionRegistry.listFromJson(json, json.has("on_complete") ? "on_complete" : "on_fill"),
+                ActionRegistry.listFromJson(json, "on_complete"),
                 ActionRegistry.listFromJson(json, "on_break"),
                 new ResourceLocation(GsonHelper.getAsString(json, "texture",
                         "minecraft:textures/entity/guardian_beam.png")),
                 ScalingValue.fromJson(json, "width", 0.1),
-                GsonHelper.getAsBoolean(json, "effects", true),
-                TargetFilter.fromJson(json, "targets", Set.of("enemies"))));
+                GsonHelper.getAsBoolean(json, "effects", true)));
     }
 
     private static class TetherData {
@@ -165,11 +161,13 @@ public class TetherAction implements ActionRegistry.RaceAction {
         final LivingEntity targetEntity;
         @Nullable
         final AbilitySlot slot;
+        /** The event the tether started from, kept for the actions it runs later. */
+        final EventContext event;
         int ticksAlive = 0;
 
         TetherData(int durationTicks, float maxDistance, int interval, List<ActionRegistry.RaceAction> actions,
                 List<ActionRegistry.RaceAction> onCompleteActions, List<ActionRegistry.RaceAction> onBreakActions,
-                LivingEntity targetEntity, @Nullable AbilitySlot slot) {
+                LivingEntity targetEntity, @Nullable AbilitySlot slot, EventContext event) {
             this.durationTicks = durationTicks;
             this.maxDistance = maxDistance;
             this.interval = interval;
@@ -178,6 +176,7 @@ public class TetherAction implements ActionRegistry.RaceAction {
             this.onBreakActions = onBreakActions;
             this.targetEntity = targetEntity;
             this.slot = slot;
+            this.event = event;
         }
     }
 }

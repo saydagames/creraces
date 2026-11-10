@@ -1,13 +1,11 @@
 {
     "creraces:name": "ability.creraces.entanglement.name",
     "creraces:description": "ability.creraces.entanglement.description",
-    "creraces:type": "ACTIVE",
+    "creraces:type": "active",
     "creraces:icon": "creraces:textures/icons/entanglement.png",
     "creraces:cooldown": 480,
     "creraces:cost": 25,
-    "creraces:race": [
-        "creraces:dryad"
-    ],
+    "creraces:race": ["creraces:dryad"],
     "creraces:actions": [
         {
             "type": "creraces:aoe",
@@ -31,8 +29,7 @@
                     "type": "creraces:play_sound",
                     "sound": "minecraft:block.wood.place",
                     "volume": 0.8,
-                    "pitch": 0.6,
-                    "use_target": true
+                    "pitch": 0.6
                 }
             ]
         }

@@ -1,6 +1,6 @@
 {
     "creraces:name": "race.creraces.dryad.name",
-    "creraces:parent_race": "creraces:nymph",
+    "creraces:parent_races": ["creraces:nymph"],
     "creraces:enable_territory": true,
     "creraces:territory_valid_biomes": ["#minecraft:is_forest"],
     "creraces:index": 9.3,
@@ -9,8 +9,8 @@
     "creraces:splash": "creraces:textures/screens/dryad_splash.png",
     "creraces:portrait": "creraces:textures/screens/dryad_portrait.png",
     "creraces:name_texture": "creraces:textures/screens/dryad_text.png",
-    "creraces:resource_type": "MANA",
-    "creraces:gstate": "FEMALE",
+    "creraces:resource_type": "mana",
+    "creraces:gstate": "female",
     "creraces:difficulty": 2,
     "creraces:regeneration_multiplier": 1.15,
     "creraces:starting_abilities": [
@@ -19,17 +19,13 @@
         "creraces:entanglement",
         "creraces:quick_escape"
     ],
-    "creraces:starting_items": [
-        "creraces:dryad_sapling"
-    ],
+    "creraces:starting_items": ["creraces:dryad_sapling"],
+    "creraces:respected_by_entities": ["#creraces:animals"],
     "nature_passive": [
         {
             "type": "creraces:damage_multiplier",
-            "multiplier": 0.0,
-            "condition": {
-                "type": "creraces:entity",
-                "tag": "#c:is_peaceful"
-            }
+            "multiplier": 0,
+            "condition": { "type": "creraces:entity_type", "entity_type": "#c:is_peaceful" }
         }
     ],
     "sapling_mechanics": [
@@ -38,147 +34,24 @@
             "block": "creraces:dryad_sapling",
             "actions": [
                 {
-                    "type": "creraces:conditional",
-                    "condition": {
-                        "type": "creraces:state",
-                        "state": "state:node_x",
-                        "operator": "!=",
-                        "value": 0.0
-                    },
-                    "if_true": [
-                        {
-                            "type": "creraces:message",
-                            "text": "msg.creraces.dryad.already_has_tree",
-                            "actionbar": true
-                        },
-                        {
-                            "type": "creraces:cancel"
-                        }
-                    ]
-                },
-                {
-                    "type": "creraces:claim_territory",
-                    "valid_biomes": ["#minecraft:is_forest"],
-                    "on_success": [
-                        {
-                            "type": "creraces:place_block",
-                            "block": "creraces:dryad_root",
-                            "use_target_block": true,
-                            "offset_y": -1,
-                            "overwrite": true
-                        },
-                        {
-                            "type": "creraces:modify_value",
-                            "resource": "state:node_x",
-                            "mode": "TARGET_BLOCK_X",
-                            "persistent": true
-                        },
-                        {
-                            "type": "creraces:modify_value",
-                            "resource": "state:node_y",
-                            "mode": "TARGET_BLOCK_Y",
-                            "offset_y": -1,
-                            "persistent": true
-                        },
-                        {
-                            "type": "creraces:modify_value",
-                            "resource": "state:node_z",
-                            "mode": "TARGET_BLOCK_Z",
-                            "persistent": true
-                        },
-                        {
-                            "type": "creraces:spawn_particles",
-                            "particle": "minecraft:happy_villager",
-                            "count": 15,
-                            "spread_x": 0.5,
-                            "spread_y": 0.5,
-                            "spread_z": 0.5,
-                            "use_target": true
-                        },
-                        {
-                            "type": "creraces:play_sound",
-                            "sound": "minecraft:item.bone_meal.use",
-                            "volume": 1.0,
-                            "pitch": 1.0,
-                            "use_target": true
-                        },
-                        {
-                            "type": "creraces:message",
-                            "text": "msg.creraces.dryad.sapling_claimed_success",
-                            "actionbar": true
-                        }
-                    ],
-                    "on_partial": [
-                        {
-                            "type": "creraces:modify_value",
-                            "resource": "state:node_x",
-                            "mode": "TARGET_BLOCK_X",
-                            "persistent": true
-                        },
-                        {
-                            "type": "creraces:modify_value",
-                            "resource": "state:node_y",
-                            "mode": "TARGET_BLOCK_Y",
-                            "offset_y": -1,
-                            "persistent": true
-                        },
-                        {
-                            "type": "creraces:modify_value",
-                            "resource": "state:node_z",
-                            "mode": "TARGET_BLOCK_Z",
-                            "persistent": true
-                        }
-                    ],
-                    "on_invalid_biome": [
-                        {
-                            "type": "creraces:message",
-                            "text": "msg.creraces.dryad.invalid_biome",
-                            "actionbar": true
-                        },
-                        {
-                            "type": "creraces:cancel"
-                        }
-                    ],
-                    "on_enemy_territory": [
-                        {
-                            "type": "creraces:message",
-                            "text": "msg.creraces.dryad.enemy_territory",
-                            "actionbar": true
-                        }
-                    ],
-                    "on_inside_own": [
-                        {
-                            "type": "creraces:place_block",
-                            "block": "creraces:dryad_root",
-                            "use_target_block": true,
-                            "offset_y": -1,
-                            "overwrite": true
-                        },
-                        {
-                            "type": "creraces:modify_value",
-                            "resource": "state:node_x",
-                            "mode": "TARGET_BLOCK_X",
-                            "persistent": true
-                        },
-                        {
-                            "type": "creraces:modify_value",
-                            "resource": "state:node_y",
-                            "mode": "TARGET_BLOCK_Y",
-                            "offset_y": -1,
-                            "persistent": true
-                        },
-                        {
-                            "type": "creraces:modify_value",
-                            "resource": "state:node_z",
-                            "mode": "TARGET_BLOCK_Z",
-                            "persistent": true
-                        },
-                        {
-                            "type": "creraces:message",
-                            "text": "msg.creraces.dryad.tree_relocated",
-                            "actionbar": true
-                        }
-                    ]
+                    "type": "creraces:template",
+                    "template": "creraces:territory/claim_node",
+                    "args": {
+                        "anchor_y_offset": -1,
+                        "on_claimed": [
+                            {
+                                "type": "creraces:place_block",
+                                "block": "creraces:dryad_root",
+                                "position": { "from": "block", "y": -1 },
+                                "overwrite": true
+                            }
+                        ],
+                        "msg_already_has_node": "msg.creraces.dryad.already_has_tree",
+                        "msg_claimed": "msg.creraces.dryad.sapling_claimed_success",
+                        "msg_relocated": "msg.creraces.dryad.tree_relocated",
+                        "msg_invalid_biome": "msg.creraces.dryad.invalid_biome",
+                        "msg_enemy_territory": "msg.creraces.dryad.enemy_territory"
+                    }
                 }
             ]
         },
@@ -187,98 +60,40 @@
             "block": "creraces:dryad_root",
             "actions": [
                 {
-                    "type": "creraces:conditional",
-                    "condition": {
-                        "type": "creraces:and",
-                        "conditions": [
+                    "type": "creraces:template",
+                    "template": "creraces:territory/remove_node",
+                    "args": {
+                        "on_removed": [
                             {
-                                "type": "creraces:sneaking",
-                                "value": true
-                            },
-                            {
-                                "type": "creraces:is_position",
-                                "use_target_block": true,
-                                "x": "state:node_x",
-                                "y": "state:node_y",
-                                "z": "state:node_z"
-                            }
-                        ]
-                    },
-                    "if_true": [
-                        {
-                            "type": "creraces:conditional",
-                            "condition": {
-                                "type": "creraces:is_block",
-                                "block": "creraces:dryad_log",
-                                "offset_y": 2,
-                                "math": "round"
-                            },
-                            "if_true": [
-                                {
-                                    "type": "creraces:give_item",
-                                    "item": "creraces:dryad_sapling",
-                                    "amount": 1
-                                }
-                            ]
-                        },
-                        {
-                            "type": "creraces:place_block",
-                            "block": "minecraft:coarse_dirt",
-                            "use_target_block": true,
-                            "overwrite": true
-                        },
-                        {
-                            "type": "creraces:modify_value",
-                            "resource": "state:node_x",
-                            "value": 0.0,
-                            "persistent": true
-                        },
-                        {
-                            "type": "creraces:modify_value",
-                            "resource": "state:node_y",
-                            "value": 0.0,
-                            "persistent": true
-                        },
-                        {
-                            "type": "creraces:modify_value",
-                            "resource": "state:node_z",
-                            "value": 0.0,
-                            "persistent": true
-                        },
-                        {
-                            "type": "creraces:message",
-                            "text": "msg.creraces.node_removed",
-                            "actionbar": true
-                        }
-                    ],
-                    "if_false": [
-                        {
-                            "type": "creraces:conditional",
-                            "condition": {
-                                "type": "creraces:and",
-                                "conditions": [
+                                "type": "creraces:conditional",
+                                "condition": {
+                                    "type": "creraces:block",
+                                    "block": "creraces:dryad_log",
+                                    "position": { "from": "block", "y": 2 }
+                                },
+                                "if_true": [
                                     {
-                                        "type": "creraces:sneaking",
-                                        "value": false
-                                    },
-                                    {
-                                        "type": "creraces:is_position",
-                                        "use_target_block": true,
-                                        "x": "state:node_x",
-                                        "y": "state:node_y",
-                                        "z": "state:node_z"
+                                        "type": "creraces:give_item",
+                                        "item": "creraces:dryad_sapling",
+                                        "amount": 1
                                     }
                                 ]
                             },
-                            "if_true": [
-                                {
-                                    "type": "creraces:message",
-                                    "text": "msg.creraces.tree_location_check",
-                                    "actionbar": true
-                                }
-                            ]
-                        }
-                    ]
+                            {
+                                "type": "creraces:place_block",
+                                "block": "minecraft:coarse_dirt",
+                                "position": { "from": "block" },
+                                "overwrite": true
+                            }
+                        ],
+                        "on_inspect": [
+                            {
+                                "type": "creraces:message",
+                                "text": "msg.creraces.tree_location_check",
+                                "actionbar": true
+                            }
+                        ]
+                    }
                 }
             ]
         }
@@ -287,20 +102,18 @@
         {
             "type": "creraces:block_interaction",
             "block": "creraces:dryad_log",
-            "condition": {
-                "type": "creraces:sneaking"
-            },
+            "condition": { "type": "creraces:sneaking" },
             "actions": [
                 {
                     "type": "creraces:enter_pocket",
                     "structure": "creraces:dryad_box_1",
-                    "return_offset_z": -1.0,
+                    "return_offset_z": -1,
                     "condition": {
                         "type": "creraces:or",
                         "conditions": [
-                            { "type": "creraces:state", "state": "node_x", "operator": "!=", "value": 0 },
-                            { "type": "creraces:state", "state": "node_y", "operator": "!=", "value": 0 },
-                            { "type": "creraces:state", "state": "node_z", "operator": "!=", "value": 0 }
+                            { "type": "creraces:compare", "value": "state:node_x", "to": 0, "operator": "!=" },
+                            { "type": "creraces:compare", "value": "state:node_y", "to": 0, "operator": "!=" },
+                            { "type": "creraces:compare", "value": "state:node_z", "to": 0, "operator": "!=" }
                         ]
                     },
                     "blocked_message": "msg.creraces.dryad.no_tree"
@@ -312,71 +125,89 @@
             "block": "creraces:dryad_expansion_panel",
             "actions": [
                 {
-                    "type": "creraces:expand_pocket",
-                    "cost": 200.0,
-                    "limit": 8.0,
-                    "door_block": "creraces:dryad_expansion_panel",
-                    "door_width": 3,
-                    "door_height": 3,
-                    "door_depth": 2,
-                    "faces": {
-                        "north": {
-                            "structure": "creraces:dryad_box_1",
-                            "check_block": "creraces:dryad_petrified_wood",
-                            "check_x": 0,
-                            "check_y": -3,
-                            "check_z": 5,
-                            "offset_x": -5,
-                            "offset_y": -3,
-                            "offset_z": 0
+                    "type": "creraces:conditional",
+                    "condition": {
+                        "type": "creraces:compare",
+                        "value": "resource:coins",
+                        "to": 200,
+                        "operator": ">="
+                    },
+                    "if_true": [
+                        {
+                            "type": "creraces:expand_pocket",
+                            "limit": 8,
+                            "door_block": "creraces:dryad_expansion_panel",
+                            "door_width": 3,
+                            "door_height": 3,
+                            "door_depth": 2,
+                            "faces": {
+                                "north": {
+                                    "structure": "creraces:dryad_box_1",
+                                    "check_block": "creraces:dryad_petrified_wood",
+                                    "check_x": 0,
+                                    "check_y": -3,
+                                    "check_z": 5,
+                                    "offset_x": -5,
+                                    "offset_y": -3,
+                                    "offset_z": 0
+                                },
+                                "south": {
+                                    "structure": "creraces:dryad_box_1",
+                                    "check_block": "creraces:dryad_petrified_wood",
+                                    "check_x": 0,
+                                    "check_y": -3,
+                                    "check_z": -5,
+                                    "offset_x": -5,
+                                    "offset_y": -3,
+                                    "offset_z": -10
+                                },
+                                "west": {
+                                    "structure": "creraces:dryad_box_1",
+                                    "check_block": "creraces:dryad_petrified_wood",
+                                    "check_x": 5,
+                                    "check_y": -3,
+                                    "check_z": 0,
+                                    "offset_x": 0,
+                                    "offset_y": -3,
+                                    "offset_z": -5
+                                },
+                                "east": {
+                                    "structure": "creraces:dryad_box_1",
+                                    "check_block": "creraces:dryad_petrified_wood",
+                                    "check_x": -5,
+                                    "check_y": -3,
+                                    "check_z": 0,
+                                    "offset_x": -10,
+                                    "offset_y": -3,
+                                    "offset_z": -5
+                                },
+                                "down": {
+                                    "mode": "shell",
+                                    "shell_block": "creraces:dryad_petrified_wood",
+                                    "shell_radius": 14,
+                                    "shell_height": 7
+                                }
+                            }
                         },
-                        "south": {
-                            "structure": "creraces:dryad_box_1",
-                            "check_block": "creraces:dryad_petrified_wood",
-                            "check_x": 0,
-                            "check_y": -3,
-                            "check_z": -5,
-                            "offset_x": -5,
-                            "offset_y": -3,
-                            "offset_z": -10
-                        },
-                        "west": {
-                            "structure": "creraces:dryad_box_1",
-                            "check_block": "creraces:dryad_petrified_wood",
-                            "check_x": 5,
-                            "check_y": -3,
-                            "check_z": 0,
-                            "offset_x": 0,
-                            "offset_y": -3,
-                            "offset_z": -5
-                        },
-                        "east": {
-                            "structure": "creraces:dryad_box_1",
-                            "check_block": "creraces:dryad_petrified_wood",
-                            "check_x": -5,
-                            "check_y": -3,
-                            "check_z": 0,
-                            "offset_x": -10,
-                            "offset_y": -3,
-                            "offset_z": -5
-                        },
-                        "down": {
-                            "mode": "SHELL",
-                            "shell_block": "creraces:dryad_petrified_wood",
-                            "shell_radius": 14,
-                            "shell_height": 7
+                        {
+                            "type": "creraces:modify_value",
+                            "resource": "coins",
+                            "operation": "add",
+                            "value": -200
                         }
-                    }
+                    ],
+                    "if_false": [
+                        {
+                            "type": "creraces:message",
+                            "text": "msg.creraces.expand_pocket.no_coins",
+                            "values": ["resource:coins", 200]
+                        }
+                    ]
                 }
             ]
         }
     ],
-    "cosmetics": [
-        {
-            "type": "creraces:addon",
-            "addon_id": "dryad_body"
-        }
-    ],
+    "cosmetics": [{ "type": "creraces:addon", "addon": "dryad_body" }],
     "creraces:wiki_page": "Dryad",
     "creraces:splash_x": -15,
     "creraces:splash_y": -3,

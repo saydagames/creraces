@@ -9,6 +9,7 @@ import mc.sayda.creraces.effect.BlindedEffect;
 import mc.sayda.creraces.effect.BoilingEffect;
 import mc.sayda.creraces.effect.BrokenWingsEffect;
 import mc.sayda.creraces.effect.CamouflageEffect;
+import mc.sayda.creraces.effect.CharmedEffect;
 import mc.sayda.creraces.effect.DizzinessEffect;
 import mc.sayda.creraces.effect.FairyDustEffect;
 import mc.sayda.creraces.effect.FeatherstormEffect;
@@ -83,6 +84,8 @@ public class ModMobEffects {
     public static final RegistrySupplier<MobEffect> BOILING = MOB_EFFECTS.register("boiling",
             BoilingEffect::new);
 
+    public static final RegistrySupplier<MobEffect> CHARMED = MOB_EFFECTS.register("charmed",
+            CharmedEffect::new);
     public static final RegistrySupplier<MobEffect> BLEEDING = MOB_EFFECTS.register("bleeding",
             BleedingEffect::new);
 

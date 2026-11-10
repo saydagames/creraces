@@ -10,5 +10,6 @@ public class ModDamageTags {
     public static final TagKey<DamageType> IS_MAGIC = TagKey.create(Registries.DAMAGE_TYPE, new ResourceLocation("creraces", "is_magic"));
     public static final TagKey<DamageType> IS_TRUE = TagKey.create(Registries.DAMAGE_TYPE, new ResourceLocation("creraces", "is_true"));
     public static final TagKey<DamageType> NO_KNOCKBACK = TagKey.create(Registries.DAMAGE_TYPE, new ResourceLocation("minecraft", "no_knockback"));
+    public static final TagKey<DamageType> CANNOT_CRITICALLY_STRIKE = TagKey.create(Registries.DAMAGE_TYPE, new ResourceLocation("creraces", "cannot_critically_strike"));
 
 }

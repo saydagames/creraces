@@ -35,11 +35,12 @@ import java.util.Map;
 /**
  * Grows a pocket dimension room through the expansion panel the player interacted with. Each panel
  * face has its own rule: place a structure template behind it, or fill a hollow shell of blocks.
- * Expansions cost coins, count towards a limit and must stay inside the owner's pocket plot.
+ * Expansions count towards a "limit" and must stay inside the owner's pocket plot. The action only
+ * succeeds when it builds a new room, so a cost paid by the actions after it (e.g. modify_value
+ * coins with fail_if_insufficient checked beforehand) is never charged for a failed or free expansion.
  */
 @SuppressWarnings("null")
 public class ExpandPocketAction implements ActionRegistry.RaceAction {
-    private final ScalingValue cost;
     private final ScalingValue limit;
     private final Map<Direction, ExpansionRule> rules;
     private final boolean defaultDoorwayClearance;
@@ -49,10 +50,9 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
     private final int doorHeight;
     private final int doorDepth;
 
-    public ExpandPocketAction(ScalingValue cost, ScalingValue limit, Map<Direction, ExpansionRule> rules,
+    public ExpandPocketAction(ScalingValue limit, Map<Direction, ExpansionRule> rules,
             boolean defaultDoorwayClearance, @Nullable ResourceLocation doorBlock, int doorWidth, int doorHeight,
             int doorDepth) {
-        this.cost = cost;
         this.limit = limit;
         this.rules = rules;
         this.defaultDoorwayClearance = defaultDoorwayClearance;
@@ -63,7 +63,7 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
     }
 
     /**
-     * How one panel face expands. {@code mode} is "STRUCTURE" (the default) or "SHELL".
+     * How one panel face expands. {@code mode} is "structure" (the default) or "shell".
      * When {@code checkBlock} is set and found at the check position, the room behind the panel
      * already exists, so only the door is opened: free of charge and not counted towards the limit.
      * The check position is the explicit check offset if any axis is given, else one block through the panel.
@@ -74,7 +74,7 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
             @Nullable Integer checkY, @Nullable Integer checkZ) {
 
         boolean isShell() {
-            return "SHELL".equalsIgnoreCase(mode);
+            return "shell".equals(mode);
         }
 
         BlockPos checkPos(BlockPos panelPos, Direction facing) {
@@ -117,15 +117,17 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
             return false;
         }
 
-        DataUtils.getVariables(player).ifPresentOrElse(
-                vars -> expand(level, player, target, slot, interactPos, facing, rule, vars),
-                () -> showNotSupported(player));
-        return true;
+        IPlayerVariables vars = DataUtils.getVariables(player).orElse(null);
+        if (vars == null) {
+            showNotSupported(player);
+            return false;
+        }
+        return expand(level, player, target, slot, interactPos, facing, rule, vars);
     }
 
-    private void expand(ServerLevel level, Player player, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
+    /** Returns true only when a new room was built. */
+    private boolean expand(ServerLevel level, Player player, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
             BlockPos panelPos, Direction facing, ExpansionRule rule, IPlayerVariables vars) {
-        double currentCost = cost.evaluate(player, target, slot);
         int maxLimit = (int) Math.round(limit.evaluate(player, target, slot));
 
         // Expansions must stay inside this player's own pocket plot.
@@ -135,7 +137,7 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
         if (dx * dx + dz * dz > boundary * boundary) {
             playNote(level, panelPos, SoundEvents.NOTE_BLOCK_BASS);
             player.displayClientMessage(Component.translatable("msg.creraces.pocket.boundary"), true);
-            return;
+            return false;
         }
 
         BlockState door = BuiltInRegistries.BLOCK.get(doorBlock).defaultBlockState();
@@ -143,33 +145,28 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
             clearDoorway(level, panelPos, door, facing);
             playNote(level, panelPos, SoundEvents.NOTE_BLOCK_CHIME);
             player.displayClientMessage(Component.translatable("msg.creraces.expand_pocket.existing"), true);
-            return;
+            return false;
         }
 
         if (vars.getPocketSize() >= maxLimit) {
             playNote(level, panelPos, SoundEvents.NOTE_BLOCK_BASS);
             player.displayClientMessage(Component.translatable("msg.creraces.expand_pocket.max_limit",
                     (int) vars.getPocketSize(), maxLimit), true);
-            return;
-        }
-        if (vars.getCoins() < currentCost) {
-            player.displayClientMessage(Component.translatable("msg.creraces.expand_pocket.no_coins",
-                    (int) vars.getCoins(), (int) currentCost), false);
-            return;
+            return false;
         }
 
         boolean built = rule.isShell()
                 ? buildShell(level, player, panelPos, facing, rule)
                 : placeStructure(level, player, target, slot, panelPos, facing, rule, door);
         if (!built) {
-            return;
+            return false;
         }
 
         playNote(level, panelPos, SoundEvents.NOTE_BLOCK_CHIME);
-        vars.setCoins(vars.getCoins() - currentCost);
         vars.setPocketSize(vars.getPocketSize() + 1);
         player.displayClientMessage(Component.translatable("msg.creraces.expand_pocket.remaining",
                 (int) vars.getPocketSize(), maxLimit), true);
+        return true;
     }
 
     private static boolean roomAlreadyExists(ServerLevel level, BlockPos panelPos, Direction facing,
@@ -244,7 +241,7 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
     }
 
     public static void register() {
-        ActionRegistry.register(ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "expand_pocket"), json -> {
+        ActionRegistry.register(CreRaces.id("expand_pocket"), json -> {
             String doorBlock = GsonHelper.getNullableString(json, "door_block", null);
 
             Map<Direction, ExpansionRule> rules = new HashMap<>();
@@ -263,14 +260,13 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
                         ScalingValue.fromJson(json, "offset_x", 0.0),
                         ScalingValue.fromJson(json, "offset_y", 0.0),
                         ScalingValue.fromJson(json, "offset_z", 0.0),
-                        "STRUCTURE", ResourceLocation.parse("minecraft:air"), 0, 0, null, null, null, null);
+                        "structure", ResourceLocation.parse("minecraft:air"), 0, 0, null, null, null, null);
                 for (Direction dir : Direction.Plane.HORIZONTAL) {
                     rules.put(dir, shared);
                 }
             }
 
             return new ExpandPocketAction(
-                    ScalingValue.fromJson(json, "cost", 200.0),
                     ScalingValue.fromJson(json, "limit", 9.0),
                     rules,
                     GsonHelper.getAsBoolean(json, "doorway_clearance", true),
@@ -289,7 +285,7 @@ public class ExpandPocketAction implements ActionRegistry.RaceAction {
                 ScalingValue.fromJson(face, "offset_x", 0.0),
                 ScalingValue.fromJson(face, "offset_y", 0.0),
                 ScalingValue.fromJson(face, "offset_z", 0.0),
-                GsonHelper.getAsString(face, "mode", "STRUCTURE"),
+                GsonHelper.getAsString(face, "mode", "structure"),
                 shellBlock != null ? ResourceLocation.parse(shellBlock) : null,
                 GsonHelper.getAsInt(face, "shell_radius", 14),
                 GsonHelper.getAsInt(face, "shell_height", 7),

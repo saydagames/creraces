@@ -5,13 +5,15 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 
 /**
- * LoL-style combat stat getters. Each goes through ModAttributes.resolve, so Apothic Attributes'
- * version of a stat is used when that mod is loaded and CreRaces' own attribute otherwise.
+ * LoL-style combat stat getters. All but healing go through ModAttributes.resolve, so Apothic
+ * Attributes' version of a stat is used when that mod is loaded and CreRaces' own attribute otherwise.
  */
 public class CombatAttributes {
 
+    // Always our own: Apothic Attributes applies its healing_received itself, and effects such as
+    // Grievous Wounds modify ours.
     public static double getHealingReceived(LivingEntity entity) {
-        return entity.getAttributeValue(ModAttributes.resolve(ModAttributes.HEALING_RECEIVED));
+        return entity.getAttributeValue(ModAttributes.HEALING_RECEIVED.get());
     }
 
     public static double getArmor(LivingEntity entity) {

@@ -4,7 +4,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import mc.sayda.creraces.engine.ScalingValue;
 
-import java.util.ArrayList;
 
 /**
  * Per-race scale values, one for each Pehkui ScaleType the mod drives.
@@ -100,7 +99,7 @@ public class RaceScale {
             unscaled());
 
     private static ScalingValue unscaled() {
-        return new ScalingValue(1.0, null, 0, new ArrayList<>());
+        return ScalingValue.fixed(1.0);
     }
 
     public static RaceScale fromJson(JsonElement json) {

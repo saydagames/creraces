@@ -1,0 +1,26 @@
+{
+    "actions": [
+        {
+            "type": "creraces:conditional",
+            "condition": {
+                "type": "creraces:same_position",
+                "position": { "from": "block" },
+                "to": { "from": "origin", "x": "state:node_x", "y": "state:node_y", "z": "state:node_z" }
+            },
+            "if_true": [
+                {
+                    "type": "creraces:conditional",
+                    "condition": { "type": "creraces:sneaking" },
+                    "if_true": [
+                        "$(on_removed)",
+                        { "type": "creraces:modify_value", "state": "node_x", "value": 0, "persistent": true },
+                        { "type": "creraces:modify_value", "state": "node_y", "value": 0, "persistent": true },
+                        { "type": "creraces:modify_value", "state": "node_z", "value": 0, "persistent": true },
+                        { "type": "creraces:message", "text": "msg.creraces.node_removed", "actionbar": true }
+                    ],
+                    "if_false": ["$(on_inspect)"]
+                }
+            ]
+        }
+    ]
+}

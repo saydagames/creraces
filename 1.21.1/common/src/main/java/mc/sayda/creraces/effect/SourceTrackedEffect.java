@@ -6,4 +6,9 @@ package mc.sayda.creraces.effect;
  */
 public interface SourceTrackedEffect {
     String SOURCE_KEY = "creraces:source";
+
+    /** The persistent data key this effect's applier is recorded under. */
+    default String sourceKey() {
+        return SOURCE_KEY;
+    }
 }

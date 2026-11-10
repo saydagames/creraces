@@ -1,46 +1,38 @@
 {
     "creraces:name": "ability.creraces.summon_undead.name",
     "creraces:description": "ability.creraces.summon_undead.description",
-    "creraces:type": "ACTIVE",
+    "creraces:type": "active",
     "creraces:icon": "minecraft:textures/item/bone.png",
     "creraces:cooldown": 420,
     "creraces:cost": 30,
-    "creraces:race": [
-        "creraces:undead"
-    ],
+    "creraces:race": ["creraces:undead"],
     "creraces:actions": [
         {
-            "type": "creraces:mass_summon",
-            "min_count": {
-                "base": 3
-            },
-            "max_count": {
-                "base": 5
-            },
-            "range": 6.0,
-            "tag_data": [
-                { "key": "creraces:servant_of", "value": { "type": "uuid", "property": "uuid", "entity": "self" } }
+            "type": "creraces:summon_entity",
+            "entity_type": [
+                { "entity_type": "minecraft:zombie", "weight": 40 },
+                { "entity_type": "minecraft:skeleton", "weight": 30 },
+                { "entity_type": "minecraft:husk", "weight": 15 },
+                { "entity_type": "minecraft:stray", "weight": 10 },
+                { "entity_type": "minecraft:wither_skeleton", "weight": 5 }
             ],
-            "pool": [
+            "count": { "base": 3, "scales_with": "random", "factor": 3, "math": "floor" },
+            "spread": 6,
+            "natural_spawn": true,
+            "persistent": true,
+            "tag_data": [
                 {
-                    "entity": "minecraft:zombie",
-                    "weight": 40
-                },
+                    "key": "creraces:servant_of",
+                    "value": { "type": "uuid", "property": "uuid", "entity": "self" }
+                }
+            ],
+            "actions": [
                 {
-                    "entity": "minecraft:skeleton",
-                    "weight": 30
-                },
-                {
-                    "entity": "minecraft:husk",
-                    "weight": 15
-                },
-                {
-                    "entity": "minecraft:stray",
-                    "weight": 10
-                },
-                {
-                    "entity": "minecraft:wither_skeleton",
-                    "weight": 5
+                    "type": "creraces:spawn_particles",
+                    "particle": "minecraft:soul",
+                    "count": 10,
+                    "spread": 0.5,
+                    "speed": 0.05
                 }
             ]
         },

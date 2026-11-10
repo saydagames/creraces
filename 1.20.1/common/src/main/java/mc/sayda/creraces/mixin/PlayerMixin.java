@@ -1,11 +1,16 @@
 package mc.sayda.creraces.mixin;
 
 import mc.sayda.creraces.CreRaces;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.capability.IPlayerVariables;
 import mc.sayda.creraces.capability.PlayerVariables;
+import mc.sayda.creraces.effect.ShieldEffect;
 import mc.sayda.creraces.engine.ActionRegistry;
+import mc.sayda.creraces.engine.AttackCharge;
+import mc.sayda.creraces.engine.Breathing;
 import mc.sayda.creraces.engine.ManagedModifier;
 import mc.sayda.creraces.network.BoundaryHandler;
 import mc.sayda.creraces.race.Race;
@@ -13,6 +18,7 @@ import mc.sayda.creraces.race.RaceRegistry;
 import mc.sayda.creraces.race.ResourceTicker;
 import mc.sayda.creraces.registry.ModAttributes;
 import mc.sayda.creraces.registry.ModMobEffects;
+import mc.sayda.creraces.util.CriticalStrikes;
 import mc.sayda.creraces.util.RaceUtils;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.particles.SimpleParticleType;
@@ -28,7 +34,10 @@ import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyConstant;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import net.minecraft.world.item.ItemStack;
@@ -39,6 +48,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import mc.sayda.creraces.item.CommandingStaffItem;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.level.material.Fluid;
 
 import java.util.Collection;
 import java.util.Map;
@@ -64,11 +75,13 @@ public class PlayerMixin implements IPlayerVariables {
         ResourceTicker.tick(player);
     }
 
-    @Inject(method = "die", at = @At("HEAD"))
-    private void creraces$onDeath(DamageSource source, CallbackInfo ci) {
-        Player player = (Player)(Object)this;
-        if (player.level().isClientSide()) return;
-        this.resetOnDeath();
+    /** Runs before vanilla empties the attack meter, so attack_charged can still read this swing. */
+    @Inject(method = "attack", at = @At("HEAD"))
+    private void creraces$rememberAttackCharge(Entity target, CallbackInfo ci) {
+        Player player = (Player) (Object) this;
+        if (!player.level().isClientSide()) {
+            AttackCharge.remember(player);
+        }
     }
 
     @Inject(method = "attack", at = @At("HEAD"), cancellable = true)
@@ -82,6 +95,24 @@ public class PlayerMixin implements IPlayerVariables {
                 (frozen != null && player.hasEffect(frozen))) {
             ci.cancel();
         }
+    }
+
+    @WrapOperation(method = "turtleHelmetTick", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/world/entity/player/Player;isEyeInFluid(Lnet/minecraft/tags/TagKey;)Z"))
+    private boolean creraces$turtleHelmetWater(Player player, TagKey<Fluid> fluid, Operation<Boolean> original) {
+        return Breathing.turtleHelmetSeesWater(player, original.call(player, fluid));
+    }
+
+    /** The only 1.5F in attack() is the jump crit multiplier on every loader. */
+    @ModifyConstant(method = "attack", constant = @Constant(floatValue = 1.5F))
+    private float creraces$jumpCritDamage(float vanilla) {
+        return CriticalStrikes.jumpCritMultiplier((Player) (Object) this, vanilla);
+    }
+
+    /** Player replaces LivingEntity.actuallyHurt without calling it, so shields need this hook too. */
+    @ModifyVariable(method = "actuallyHurt", at = @At("HEAD"), argsOnly = true)
+    private float creraces$applyPlayerShields(float amount, DamageSource source) {
+        return ShieldEffect.absorb((Player) (Object) this, source, amount);
     }
 
     @Inject(method = "canEat", at = @At("HEAD"), cancellable = true)
@@ -139,6 +170,7 @@ public class PlayerMixin implements IPlayerVariables {
                     ModAttributes.ABILITY_POWER.get(),
                     ModAttributes.ATTACK_DAMAGE.get(),
                     ModAttributes.CRIT_RATE.get(),
+                    ModAttributes.CRIT_DAMAGE.get(),
                     ModAttributes.ABILITY_HASTE.get(),
                     ModAttributes.MANA_REGEN.get(),
                     ModAttributes.ENERGY_REGEN.get(),
@@ -427,6 +459,11 @@ public class PlayerMixin implements IPlayerVariables {
     }
 
     @Override
+    public Set<String> getRacialAddons() {
+        return creraces$variables.getRacialAddons();
+    }
+
+    @Override
     public void setCustomization(String key, String value) {
         creraces$variables.setCustomization(key, value);
     }
@@ -657,13 +694,13 @@ public class PlayerMixin implements IPlayerVariables {
     }
 
     @Override
-    public boolean isSmallBuild() {
-        return creraces$variables.isSmallBuild();
+    public boolean isMiniBuild() {
+        return creraces$variables.isMiniBuild();
     }
 
     @Override
-    public void setSmallBuild(boolean smallBuild) {
-        creraces$variables.setSmallBuild(smallBuild);
+    public void setMiniBuild(boolean miniBuild) {
+        creraces$variables.setMiniBuild(miniBuild);
     }
 
     @Override

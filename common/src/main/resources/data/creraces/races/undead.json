@@ -1,45 +1,30 @@
 {
     "creraces:name": "race.creraces.undead.name",
-    "creraces:index": 1.0,
-    "creraces:state": "EXPERIMENTAL",
+    "creraces:index": 1,
+    "creraces:state": "experimental",
     "creraces:description": "race.creraces.undead.description",
     "creraces:icon": "creraces:textures/screens/undead_icon.png",
     "creraces:splash": "creraces:textures/screens/undead_splash.png",
-    "creraces:resource_type": "MANA",
+    "creraces:resource_type": "mana",
     "creraces:difficulty": 2,
     "creraces:portrait": "creraces:textures/screens/undead_portrait.png",
     "creraces:name_texture": "creraces:textures/screens/undead_text.png",
     "creraces:is_undead": true,
-    "creraces:can_breathe_underwater": true,
+    "creraces:can_breathe_in_water": true,
     "creraces:burns_in_sunlight": 100,
-    "creraces:no_natural_regeneration": true,
+    "creraces:regeneration_multiplier": 0,
     "creraces:no_hunger_drain": true,
     "creraces:can_eat_when_full": true,
-    "creraces:negate_effects": [
-        "creraces:life_drain"
-    ],
-    "creraces:hated_by_entities": [
-        "minecraft:villager",
-        "minecraft:iron_golem"
-    ],
-    "creraces:respected_by_entities": [
-        "#minecraft:undead",
-        "#minecraft:skeletons"
-    ],
-    "creraces:defended_by_entities": [
-        "#minecraft:undead"
-    ],
+    "creraces:negate_effects": ["creraces:life_drain"],
+    "creraces:hated_by_entities": ["minecraft:villager", "minecraft:iron_golem"],
+    "creraces:respected_by_entities": ["#minecraft:undead", "#minecraft:skeletons"],
+    "creraces:defended_by_entities": ["#minecraft:undead"],
     "creraces:can_command_socials": true,
     "life_steal": [
         {
             "type": "creraces:on_kill",
             "actions": [
-                {
-                    "type": "creraces:heal",
-                    "amount": {
-                        "base": 2.0
-                    }
-                }
+                { "type": "creraces:heal", "amount": { "base": 2 }, "entity": "self" }
             ]
         },
         {
@@ -48,12 +33,8 @@
                 {
                     "type": "creraces:apply_effect",
                     "effect": "creraces:life_drain",
-                    "duration": {
-                        "base": 200.0
-                    },
-                    "amplifier": {
-                        "base": 0.0
-                    },
+                    "duration": { "base": 200 },
+                    "amplifier": { "base": 0 },
                     "visible": true
                 }
             ]
@@ -65,14 +46,11 @@
             "actions": [
                 {
                     "type": "creraces:summon_entity",
-                    "entity": "creraces:remains",
-                    "use_target": true
+                    "entity_type": "creraces:remains",
+                    "position": { "from": "target" }
                 }
             ],
-            "condition": {
-                "type": "creraces:entity",
-                "not_category": "misc"
-            }
+            "condition": { "type": "creraces:entity_type", "not_category": "misc" }
         }
     ],
     "creraces:starting_abilities": [

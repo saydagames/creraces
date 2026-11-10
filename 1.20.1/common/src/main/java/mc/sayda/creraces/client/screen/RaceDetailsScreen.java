@@ -5,6 +5,7 @@ import mc.sayda.creraces.ability.Ability;
 import mc.sayda.creraces.ability.AbilityRegistry;
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.client.ClientAccess;
+import mc.sayda.creraces.client.ModKeyMappings;
 import mc.sayda.creraces.config.CreRacesConfig;
 import mc.sayda.creraces.engine.GState;
 import mc.sayda.creraces.network.BoundaryHandler;
@@ -84,7 +85,7 @@ public class RaceDetailsScreen extends Screen {
                         Component.translatable("gui.creraces.button.select"), btn -> {
                             ClientAccess.isWaitingForRaceSelection = true;
                             vars.setHasChosenRace(true); // Optimistic update
-                            BoundaryHandler.sendSetRace(new SetRacePacket(race.id()));
+                            BoundaryHandler.sendSetRace(new SetRacePacket(race.id(), ModKeyMappings.boundAbilitySlots()));
                             if (this.minecraft != null && this.minecraft.player != null) {
                                 this.minecraft.player.closeContainer();
                                 this.minecraft.setScreen(null);
@@ -271,6 +272,6 @@ public class RaceDetailsScreen extends Screen {
 
     @Override
     public boolean isPauseScreen() {
-        return false;
+        return true;
     }
 }

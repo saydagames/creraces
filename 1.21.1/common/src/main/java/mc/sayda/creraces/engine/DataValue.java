@@ -18,7 +18,6 @@ import net.minecraft.world.entity.OwnableEntity;
 import net.minecraft.world.entity.player.Player;
 
 import javax.annotation.Nullable;
-import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -35,7 +34,7 @@ public class DataValue {
     private static final String SERVANT_OWNER_KEY = "creraces:servant_of";
 
     private final DataType type;
-    private final boolean useTarget;
+    private final EntitySelector entity;
     @Nullable
     private final Object literal;
     @Nullable
@@ -45,10 +44,10 @@ public class DataValue {
     @Nullable
     private final ScalingValue scaling;
 
-    private DataValue(DataType type, boolean useTarget, @Nullable Object literal, @Nullable String key,
+    private DataValue(DataType type, EntitySelector entity, @Nullable Object literal, @Nullable String key,
             @Nullable Property property, @Nullable ScalingValue scaling) {
         this.type = type;
-        this.useTarget = useTarget;
+        this.entity = entity;
         this.literal = literal;
         this.key = key;
         this.property = property;
@@ -60,7 +59,7 @@ public class DataValue {
     }
 
     public static DataValue literal(DataType type, Object value) {
-        return new DataValue(type, false, value, null, null, null);
+        return new DataValue(type, EntitySelector.SELF, value, null, null, null);
     }
 
     /**
@@ -79,21 +78,22 @@ public class DataValue {
             return type == DataType.INT ? (int) Math.round(val) : (Object) val;
         }
 
-        LivingEntity entity = resolveEntity(useTarget, player, target);
-        if (entity == null) {
+        // Ownership data (servant_of, owner) names the player even while a clone repeats the cast.
+        LivingEntity subject = entity == EntitySelector.SELF ? player : entity.resolve(player, target);
+        if (subject == null) {
             return null;
         }
 
         if (key != null) {
-            return readTag(((IPersistentDataAccessor) entity).creraces$getPersistentData(), key, type);
+            return readTag(((IPersistentDataAccessor) subject).creraces$getPersistentData(), key, type);
         }
 
         if (property != null) {
             Object raw = switch (property) {
-                case UUID -> entity.getUUID();
-                case OWNER -> readOwner(entity);
-                case ENTITY_TYPE -> BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
-                case NAME -> entity.getName().getString();
+                case UUID -> subject.getUUID();
+                case OWNER -> readOwner(subject);
+                case ENTITY_TYPE -> BuiltInRegistries.ENTITY_TYPE.getKey(subject.getType()).toString();
+                case NAME -> subject.getName().getString();
             };
             return coerce(raw, type);
         }
@@ -136,12 +136,12 @@ public class DataValue {
         if (el.isJsonPrimitive()) {
             JsonPrimitive prim = el.getAsJsonPrimitive();
             if (prim.isBoolean()) {
-                return new DataValue(DataType.BOOLEAN, false, prim.getAsBoolean(), null, null, null);
+                return new DataValue(DataType.BOOLEAN, EntitySelector.SELF, prim.getAsBoolean(), null, null, null);
             }
             if (prim.isNumber()) {
-                return new DataValue(DataType.DOUBLE, false, prim.getAsDouble(), null, null, null);
+                return new DataValue(DataType.DOUBLE, EntitySelector.SELF, prim.getAsDouble(), null, null, null);
             }
-            return new DataValue(DataType.STRING, false, prim.getAsString(), null, null, null);
+            return new DataValue(DataType.STRING, EntitySelector.SELF, prim.getAsString(), null, null, null);
         }
 
         if (!el.isJsonObject()) {
@@ -159,7 +159,7 @@ public class DataValue {
             return null;
         }
 
-        boolean useTarget = readUseTarget(obj, false);
+        EntitySelector entity = EntitySelector.fromJson(obj, EntitySelector.SELF);
 
         if (obj.has("value")) {
             Object literal = coerceLiteral(obj.get("value"), type);
@@ -167,11 +167,11 @@ public class DataValue {
                 CreRaces.LOGGER.error("DataValue: could not parse literal 'value' as {} in {}", type, member);
                 return null;
             }
-            return new DataValue(type, useTarget, literal, null, null, null);
+            return new DataValue(type, entity, literal, null, null, null);
         }
 
         if (obj.has("key")) {
-            return new DataValue(type, useTarget, null, GsonHelper.getAsString(obj, "key"), null, null);
+            return new DataValue(type, entity, null, GsonHelper.getAsString(obj, "key"), null, null);
         }
 
         if (obj.has("scaling")) {
@@ -180,7 +180,7 @@ public class DataValue {
                         type, member);
                 return null;
             }
-            return new DataValue(type, useTarget, null, null, null, ScalingValue.fromJson(obj, "scaling", 0.0));
+            return new DataValue(type, entity, null, null, null, ScalingValue.fromJson(obj, "scaling", 0.0));
         }
 
         if (obj.has("property")) {
@@ -190,7 +190,7 @@ public class DataValue {
                 CreRaces.LOGGER.error("DataValue: unknown property '{}' in {}", propStr, member);
                 return null;
             }
-            return new DataValue(type, useTarget, null, null, property, null);
+            return new DataValue(type, entity, null, null, property, null);
         }
 
         Property defaultProperty = switch (type) {
@@ -202,26 +202,7 @@ public class DataValue {
             CreRaces.LOGGER.error("DataValue: {} has no source (value/key/property/scaling) and no default", member);
             return null;
         }
-        return new DataValue(type, useTarget, null, null, defaultProperty, null);
-    }
-
-    /**
-     * "self" is always the player, "target" is the resolved target (may be null) - unlike
-     * TargetFilter.resolveSmartTarget, this never silently falls through to the target when
-     * "self" was asked for.
-     */
-    @Nullable
-    public static LivingEntity resolveEntity(boolean useTarget, Player player, @Nullable LivingEntity target) {
-        return useTarget ? target : player;
-    }
-
-    /** Reads json["entity"] ("self"|"target"), falling back to the legacy json["use_target"]. */
-    public static boolean readUseTarget(JsonObject json, boolean fallback) {
-        String entity = GsonHelper.getNullableString(json, "entity", null);
-        if (entity != null) {
-            return entity.equalsIgnoreCase("target");
-        }
-        return GsonHelper.getAsBoolean(json, "use_target", fallback);
+        return new DataValue(type, entity, null, null, defaultProperty, null);
     }
 
     @Nullable
@@ -251,33 +232,6 @@ public class DataValue {
             return key.substring(0, maxLen);
         }
         return key;
-    }
-
-    /** Numeric operators use the engine's usual epsilon compare; other types only support ==/!=. */
-    public static boolean compare(@Nullable Object current, @Nullable Object expected, String operator) {
-        if (current instanceof Number cn && expected instanceof Number en) {
-            double c = cn.doubleValue();
-            double e = en.doubleValue();
-            return switch (operator) {
-                case ">=" -> c >= e;
-                case "<=" -> c <= e;
-                case ">" -> c > e;
-                case "<" -> c < e;
-                case "!=" -> Math.abs(c - e) >= 0.001;
-                default -> Math.abs(c - e) < 0.001;
-            };
-        }
-
-        boolean equal = Objects.equals(current, expected);
-        return switch (operator) {
-            case "!=" -> !equal;
-            case "==" -> equal;
-            default -> {
-                CreRaces.LOGGER.warn("DataValue.compare: operator '{}' only supports ==/!= for non-numeric types",
-                        operator);
-                yield equal;
-            }
-        };
     }
 
     @Nullable

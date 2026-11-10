@@ -23,6 +23,6 @@ public class CancelAction implements ActionRegistry.RaceAction {
     }
 
     public static void register() {
-        ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "cancel"), json -> new CancelAction());
+        ActionRegistry.register(CreRaces.id("cancel"), json -> new CancelAction());
     }
 }

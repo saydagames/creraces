@@ -1,25 +1,34 @@
 package mc.sayda.creraces.mixin;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import mc.sayda.creraces.CreRaces;
+import mc.sayda.creraces.IncidentResolver;
 import mc.sayda.creraces.block.entity.MicroBlockEntity;
 import mc.sayda.creraces.capability.IPlayerVariables;
 import mc.sayda.creraces.effect.FairyDustEffect;
+import mc.sayda.creraces.effect.ShieldEffect;
 import mc.sayda.creraces.effect.ThornsEffect;
 import mc.sayda.creraces.engine.AquaticMovementHandler;
+import mc.sayda.creraces.engine.Breathing;
 import mc.sayda.creraces.engine.ChannelingManager;
 import mc.sayda.creraces.engine.SpiritMobilityHandler;
 import mc.sayda.creraces.engine.TraitDispatch;
 import mc.sayda.creraces.network.BoundaryHandler;
 import mc.sayda.creraces.race.ResourceType;
+import mc.sayda.creraces.race.StandInEntityTypes;
 import mc.sayda.creraces.registry.ModDamageTags;
 import mc.sayda.creraces.registry.ModMobEffects;
 import mc.sayda.creraces.registry.ModParticles;
 import mc.sayda.creraces.team.RaceTeamManager;
 import mc.sayda.creraces.util.CombatAttributes;
+import mc.sayda.creraces.util.DamageGuard;
 import mc.sayda.creraces.util.CombatUtils;
+import mc.sayda.creraces.util.CriticalStrikes;
 import mc.sayda.creraces.util.IPersistentDataAccessor;
 import mc.sayda.creraces.util.ISleepSlotTracker;
 import mc.sayda.creraces.capability.DataUtils;
+import mc.sayda.creraces.effect.CharmedEffect;
 import mc.sayda.creraces.race.Race;
 import mc.sayda.creraces.race.RaceRegistry;
 import mc.sayda.creraces.registry.ModAttributes;
@@ -30,11 +39,10 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.DamageTypeTags;
-import net.minecraft.tags.FluidTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.effect.MobEffect;
-import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -122,71 +130,28 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
         }
     }
 
-    @Inject(method = "baseTick", at = @At("TAIL"))
-    private void creraces$landSuffocation(CallbackInfo ci) {
-        SpiritMobilityHandler.tick((LivingEntity) (Object) this);
-        AquaticMovementHandler.buoyancyTick((LivingEntity) (Object) this);
-        if ((Object) this instanceof Player) {
-            Player player = (Player) (Object) this;
-            if (player.isAlive() && !player.level().isClientSide()) {
-                DataUtils.getVariables(player).ifPresent(vars -> {
-                    Race race = RaceRegistry.get(vars.getRace());
-                    if (race != null) {
-                        Race.Passives passives = race.passives();
-                        if (passives != null) {
-                            // Water breathers refill air while submerged.
-                            boolean canBreatheWater = vars.isAquatic() || vars.isUndead()
-                                    || passives.canBreatheUnderwater();
-                            var waterTag = FluidTags.WATER;
-                            if (canBreatheWater && waterTag != null && player.isEyeInFluid(waterTag)) {
-                                if (player.getAirSupply() < player.getMaxAirSupply()) {
-                                    player.setAirSupply(this.increaseAirSupply(player.getAirSupply()));
-                                }
-                            }
-
-                            // Aquatic races lose a point of air every landSuffocationInterval ticks on land (every tick if unset).
-                            int airInterval = passives.landSuffocationInterval();
-                            boolean mustBeInWater = (vars.isAquatic() || airInterval > 0) && !vars.isUndead();
-                            var waterBreathing = MobEffects.WATER_BREATHING;
-                            if (mustBeInWater && !player.isInWaterRainOrBubble()
-                                    && (waterBreathing == null || !player.hasEffect(waterBreathing))) {
-
-                                int interval = airInterval > 0 ? airInterval : 1;
-                                if (player.tickCount % interval == 0) {
-                                    int air = player.getAirSupply();
-                                    player.setAirSupply(this.decreaseAirSupply(air));
-                                }
-                                if (player.getAirSupply() <= -20) {
-                                    player.setAirSupply(0);
-                                    var drownSource = player.damageSources().drown();
-                                    if (drownSource != null)
-                                        player.hurt(drownSource, 2.0F);
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-        }
+    /** Takes air over from vanilla for races that breathe differently; see Breathing. */
+    @Inject(method = "baseTick", at = @At("HEAD"))
+    private void creraces$takeOverBreathing(CallbackInfo ci) {
+        Breathing.beginBaseTick((LivingEntity) (Object) this);
     }
 
+    @Inject(method = "baseTick", at = @At("TAIL"))
+    private void creraces$afterBaseTick(CallbackInfo ci) {
+        LivingEntity self = (LivingEntity) (Object) this;
+        SpiritMobilityHandler.tick(self);
+        AquaticMovementHandler.buoyancyTick(self);
+        Breathing.endBaseTick(self, air -> this.decreaseAirSupply(air), air -> this.increaseAirSupply(air));
+    }
+
+    /** Reports the race's water breathing to anything that asks, such as Forge's canDrownInFluidType. */
     @Inject(method = "canBreatheUnderwater", at = @At("HEAD"), cancellable = true)
     private void creraces$canBreatheUnderwater(CallbackInfoReturnable<Boolean> cir) {
-        if ((Object) this instanceof Player) {
-            Player player = (Player) (Object) this;
-            DataUtils.getVariables(player).ifPresent(vars -> {
-                if (vars.isAquatic() || vars.isUndead()) {
-                    cir.setReturnValue(true);
-                    return;
-                }
-                Race race = RaceRegistry.get(vars.getRace());
-                if (race != null) {
-                    Race.Passives passives = race.passives();
-                    if (passives != null && passives.canBreatheUnderwater()) {
-                        cir.setReturnValue(true);
-                    }
-                }
-            });
+        if ((Object) this instanceof Player player) {
+            Race race = DataUtils.getVariables(player).map(vars -> RaceRegistry.get(vars.getRace())).orElse(null);
+            if (race != null && race.passives() != null && race.passives().canBreatheUnderwater()) {
+                cir.setReturnValue(true);
+            }
         }
     }
 
@@ -227,8 +192,13 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
     @Unique
     private boolean creraces$hitNegated;
 
+    // Whether this hit rolled a critical strike; creraces$showHitParticles shows it if the hit lands.
+    @Unique
+    private boolean creraces$hitCrit;
+
     @ModifyVariable(method = "hurt", at = @At("HEAD"), argsOnly = true)
     private float creraces$applyDamageModifiers(float amount, DamageSource source) {
+        this.creraces$hitCrit = false;
         float modified = creraces$modifyIncomingDamage(amount, source);
         this.creraces$hitNegated = amount > 0 && modified <= 0;
         return modified;
@@ -270,7 +240,7 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
                         if (passives.unaffectedByWater()) {
                             String dmgType = source.typeHolder().unwrapKey()
                                     .map(k -> k.location().getPath()).orElse("");
-                            if (dmgType.equals("drown") || dmgType.equals("drowned"))
+                            if (dmgType.equals("drown"))
                                 return 0.0f;
                         }
                     }
@@ -278,7 +248,8 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
             }
         }
 
-        float currentAmount = amount;
+        float currentAmount = CriticalStrikes.roll((LivingEntity) (Object) this, source, amount);
+        this.creraces$hitCrit = currentAmount > amount;
         if ((Object) this instanceof Player player) {
             currentAmount = TraitDispatch.runFloatChain("modifyDamageTaken", player,
                     currentAmount, (trait, value) -> trait.modifyDamageTaken(player, source, value));
@@ -314,13 +285,13 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
             return;
         }
 
-        if (amount > 0 && !this.level().isClientSide() && (Object) this instanceof Player channelTarget) {
-            ChannelingManager.onDamage(channelTarget);
-        }
-
         // Friendly fire / Team check
         if (source.getEntity() instanceof LivingEntity) {
             LivingEntity attacker = (LivingEntity) source.getEntity();
+            if (CharmedEffect.isCharmedBy(attacker, (LivingEntity) (Object) this)) {
+                cir.setReturnValue(false);
+                return;
+            }
             if (!RaceTeamManager.canHurt((LivingEntity) (Object) this, attacker)) {
                 creraces$healBlockedServantFire((LivingEntity) (Object) this, attacker, amount);
                 cir.setReturnValue(false);
@@ -328,33 +299,23 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
             }
         }
 
-        // Vanilla's own zero-damage hits (snowballs, eggs) keep their knockback and aggro, but trigger
-        // none of the on-hit effects below.
-        if (amount <= 0) {
+    }
+
+    /**
+     * Effects of a hit, run as vanilla applies its damage: after invulnerability frames, shield
+     * blocking and fire resistance have let it through, while the victim is still alive.
+     */
+    @Inject(method = "hurt", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/world/entity/LivingEntity;actuallyHurt(Lnet/minecraft/world/damagesource/DamageSource;F)V"))
+    private void creraces$onHitLanded(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+        // Vanilla's own zero-damage hits (snowballs, eggs) and hits a shield fully blocked keep their
+        // knockback and aggro, but trigger none of these effects.
+        if (amount <= 0 || this.level().isClientSide()) {
             return;
         }
 
-        // Particles showing whether the hit was magic, physical or true damage
-        if (!this.level().isClientSide()) {
-            SimpleParticleType pt = null;
-            var magicTag = ModDamageTags.IS_MAGIC;
-            var physicalTag = ModDamageTags.IS_PHYSICAL;
-            var trueTag = ModDamageTags.IS_TRUE;
-
-            if (magicTag != null && source.is(magicTag)) {
-                pt = ModParticles.MAGIC_DAMAGE.get();
-            } else if (physicalTag != null && source.is(physicalTag)) {
-                pt = ModParticles.PHYSICAL_DAMAGE.get();
-            } else if (trueTag != null && source.is(trueTag)) {
-                pt = ModParticles.TRUE_DAMAGE.get();
-            }
-
-            if (pt != null && this.level() instanceof ServerLevel) {
-                ServerLevel serverLevel = (ServerLevel) this
-                        .level();
-                // Spawn particles on server-side to sync with all clients
-                serverLevel.sendParticles(pt, this.getX(), this.getY(0.5), this.getZ(), 15, 0.2, 0.2, 0.2, 0.1);
-            }
+        if ((Object) this instanceof Player channelTarget) {
+            ChannelingManager.onDamage(channelTarget);
         }
 
         // Attacker side: rage races build rage when they land a hit.
@@ -385,8 +346,8 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
         if ((Object) this instanceof Player) {
             Player victimPlayer = (Player) (Object) this;
             if (!victimPlayer.level().isClientSide()) {
-                // This runs before vanilla's invulnerability frames, so thorns damage must not trigger
-                // thorns again or two players with the effect would bounce it back and forth forever.
+                // Thorns damage never triggers thorns, or two players with the effect would bounce it
+                // back and forth forever.
                 MobEffectInstance thorns = victimPlayer.getEffect(ModMobEffects.THORNS);
                 if (thorns != null && !source.is(DamageTypes.THORNS)) {
                     Entity currentAttacker = source.getEntity();
@@ -429,39 +390,46 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
                             BoundaryHandler.resyncVariables(victimPlayer, victimPlayer, true);
                         }
 
-                        // Data-driven on_hurt traits
-                        TraitDispatch.runVoid("onHurt", victimPlayer,
-                                trait -> trait.onHurt(victimPlayer, source, amount));
+                        // Data-driven on_hurt traits. Damage they deal fires no traits itself, or a
+                        // trait that hurts its own player would recurse until the stack overflows.
+                        if (!DamageGuard.isProcessing()) {
+                            DamageGuard.setProcessing(true);
+                            try {
+                                TraitDispatch.runVoid("onHurt", victimPlayer,
+                                        trait -> trait.onHurt(victimPlayer, source, amount));
+                            } finally {
+                                DamageGuard.setProcessing(false);
+                            }
+                        }
                     }
                 });
             }
         }
+
+        // The attacking player's on_hit traits, projectile hit actions and on_entity_hurt globals.
+        IncidentResolver.onHitLanded((LivingEntity) (Object) this, source, amount);
     }
 
-    /**
-     * Stops vanilla refilling air on land for races that can't breathe there. Otherwise the refill
-     * and the baseTick drain fight each other every tick and the air bubbles flicker.
-     */
-    @Inject(method = "increaseAirSupply", at = @At("HEAD"), cancellable = true)
-    private void creraces$suppressLandAirRefill(int air, CallbackInfoReturnable<Integer> cir) {
-        if ((Object) this instanceof Player) {
-            Player player = (Player) (Object) this;
-            if (!player.level().isClientSide()) {
-                var varsOpt = DataUtils.getVariables(player);
-                if (varsOpt.isPresent()) {
-                    IPlayerVariables vars = varsOpt.get();
-                    Race race = RaceRegistry.get(vars.getRace());
-                    Race.Passives passives = race != null ? race.passives() : null;
+    // At RETURN so a hit stopped by invulnerability frames or a shield shows nothing.
+    @Inject(method = "hurt", at = @At("RETURN"))
+    private void creraces$showHitParticles(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+        if (!cir.getReturnValue() || amount <= 0 || !(this.level() instanceof ServerLevel level))
+            return;
 
-                    int airInterval = passives != null ? passives.landSuffocationInterval() : -1;
-                    boolean mustBeInWater = (vars.isAquatic() || airInterval > 0) && !vars.isUndead();
-                    var waterBreathing = MobEffects.WATER_BREATHING;
-                    if (mustBeInWater && !player.isInWaterRainOrBubble()
-                            && (waterBreathing == null || !player.hasEffect(waterBreathing))) {
-                        cir.setReturnValue(air);
-                    }
-                }
-            }
+        if (this.creraces$hitCrit) {
+            CriticalStrikes.showCrit((LivingEntity) (Object) this);
+        }
+
+        SimpleParticleType particle = null;
+        if (source.is(ModDamageTags.IS_MAGIC)) {
+            particle = ModParticles.MAGIC_DAMAGE.get();
+        } else if (source.is(ModDamageTags.IS_PHYSICAL)) {
+            particle = ModParticles.PHYSICAL_DAMAGE.get();
+        } else if (source.is(ModDamageTags.IS_TRUE)) {
+            particle = ModParticles.TRUE_DAMAGE.get();
+        }
+        if (particle != null) {
+            level.sendParticles(particle, this.getX(), this.getY(0.5), this.getZ(), 15, 0.2, 0.2, 0.2, 0.1);
         }
     }
 
@@ -558,6 +526,8 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
                 double pierce = CombatAttributes.getArmorPierce(leAttacker);
                 double shred = CombatAttributes.getArmorShred(leAttacker);
 
+                // Toughness weakens pierce and shred by 2% per point, up to 60%. Adapted from Apothic
+                // Attributes by Shadows_of_Fire, MIT License (META-INF/licenses/apothic_attributes.txt).
                 double penEff = Math.max(0.4, 1.0 - (toughness * 0.02));
                 double effectiveArmor = (armor * (1.0 - (shred * penEff))) - (pierce * penEff);
 
@@ -648,105 +618,10 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
         }
     }
 
-    @Inject(method = "die", at = @At("HEAD"))
-    private void creraces$onDeath(DamageSource source, CallbackInfo ci) {
-        if (this.level().isClientSide())
-            return;
-
-        // spawnOnDeath passive
-        if ((Object) this instanceof Player) {
-            Player player = (Player) (Object) this;
-            DataUtils.getVariables(player).ifPresent(vars -> {
-                Race race = RaceRegistry.get(vars.getRace());
-                if (race != null) {
-                    Race.Passives passives = race.passives();
-                    if (passives != null) {
-                        Race.EntitySpawnData data = passives.spawnOnDeath();
-                        if (data != null) {
-                            // tryParse so a malformed entity id in JSON can't crash the death handler
-                            ResourceLocation entityTypeKey = ResourceLocation.tryParse(data.entityType());
-                            for (int i = 0; i < data.count(); i++) {
-                                var type = entityTypeKey != null ? BuiltInRegistries.ENTITY_TYPE.get(entityTypeKey)
-                                        : null;
-                                if (type != null) {
-                                    var level = player.level();
-                                    if (level != null) {
-                                        Entity entity = type.create(level);
-                                        if (entity != null) {
-                                            entity.moveTo(player.getX(), player.getY(), player.getZ(), player.getYRot(),
-                                                    player.getXRot());
-                                            level.addFreshEntity(entity);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-    }
-
+    // Player replaces actuallyHurt without calling this version, so PlayerMixin has the same hook.
     @ModifyVariable(method = "actuallyHurt", at = @At("HEAD"), argsOnly = true)
     private float creraces$applyShields(float amount, DamageSource source) {
-        if (amount <= 0)
-            return amount;
-        LivingEntity victim = (LivingEntity) (Object) this;
-        float currentAmount = amount;
-
-        // Shields soak damage after armor but before absorption and health.
-        @SuppressWarnings("unchecked")
-        final Holder<MobEffect>[] shields =
-                new Holder[] {
-                ModMobEffects.SHIELD,
-                ModMobEffects.AP_SHIELD,
-                ModMobEffects.AD_SHIELD
-        };
-
-        for (Holder<MobEffect> shield : shields) {
-            if (shield == null)
-                continue;
-            if (victim.hasEffect(shield)) {
-                boolean blocks = false;
-                if (shield == ModMobEffects.SHIELD) {
-                    blocks = true;
-                } else if (shield == ModMobEffects.AP_SHIELD) {
-                    blocks = source.is(ModDamageTags.IS_MAGIC);
-                } else if (shield == ModMobEffects.AD_SHIELD) {
-                    blocks = source.is(ModDamageTags.IS_PHYSICAL);
-                }
-
-                if (!blocks)
-                    continue;
-
-                var inst = victim.getEffect(shield);
-                if (inst != null) {
-                    // Shield level (amplifier + 1) doubles as the shield's remaining HP.
-                    float shieldHp = inst.getAmplifier() + 1.0f;
-                    if (shieldHp >= currentAmount) {
-                        float remaining = shieldHp - currentAmount;
-                        victim.removeEffect(shield);
-                        if (remaining > 0.1f) {
-                            victim.addEffect(new MobEffectInstance(
-                                    shield, -1, (int) remaining - 1, false, true));
-                        }
-                        victim.level().playSound((Player) null, victim.getX(),
-                                victim.getY(), victim.getZ(),
-                                SoundEvents.ITEM_BREAK,
-                                SoundSource.NEUTRAL, 1.0f, 0.8f);
-                        return 0.0f;
-                    } else {
-                        currentAmount -= shieldHp;
-                        victim.removeEffect(shield);
-                        victim.level().playSound((Player) null, victim.getX(),
-                                victim.getY(), victim.getZ(),
-                                SoundEvents.ITEM_BREAK,
-                                SoundSource.NEUTRAL, 1.0f, 0.5f);
-                    }
-                }
-            }
-        }
-        return currentAmount;
+        return ShieldEffect.absorb((LivingEntity) (Object) this, source, amount);
     }
 
     @Inject(method = "addEffect(Lnet/minecraft/world/effect/MobEffectInstance;Lnet/minecraft/world/entity/Entity;)Z", at = @At("HEAD"), cancellable = true)
@@ -788,22 +663,13 @@ public abstract class LivingEntityMixin extends Entity implements ISleepSlotTrac
         }
     }
 
-    // MobType was removed in 1.21+; heal/harm potion inversion for undead now goes through
-    // this method instead (see LivingEntity#isInvertedHealAndHarm, vanilla default checks
-    // EntityTypeTags.INVERTED_HEALING_AND_HARM). The old aquatic/MobType.WATER branch had no
-    // direct replacement - it only affected Impaling's bonus damage, which 1.21+ resolves
-    // through data-driven enchantment effect components rather than an overridable method.
-    @Inject(method = "isInvertedHealAndHarm", at = @At("HEAD"), cancellable = true)
-    private void creraces$isInvertedHealAndHarm(CallbackInfoReturnable<Boolean> cir) {
-        if ((Object) this instanceof Player) {
-            Player player = (Player) (Object) this;
-            DataUtils.getVariables(player).ifPresent(vars -> {
-                Race race = RaceRegistry.get(vars.getRace());
-                if (vars.isUndead() || (race != null && race.isUndead())) {
-                    cir.setReturnValue(true);
-                }
-            });
-        }
+    // Effect immunities (poison and regeneration for undead), healing/harming inversion and
+    // underwater breathing also check the player's stand-in types.
+    @WrapOperation(method = { "canBeAffected", "isInvertedHealAndHarm", "canBreatheUnderwater" }, at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/world/entity/EntityType;is(Lnet/minecraft/tags/TagKey;)Z"))
+    private boolean creraces$checkStandInTypes(EntityType<?> type, TagKey<EntityType<?>> tag,
+            Operation<Boolean> original) {
+        return original.call(type, tag) || StandInEntityTypes.standInIs(this, tag);
     }
 
     // 0.02F is vanilla's base swim-force constant in LivingEntity#travel, used

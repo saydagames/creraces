@@ -1,6 +1,6 @@
 package mc.sayda.creraces.engine;
 
-import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import mc.sayda.creraces.CreRaces;
@@ -20,6 +20,9 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
@@ -29,98 +32,66 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 /**
- * A number read from JSON: a constant, a single stat, or {@code base + stat * factor} plus any
- * number of extra stat terms, optionally rounded and clamped. Stat keys are parsed into evaluators
- * once, when the JSON is loaded.
+ * A number read from JSON. It is a plain number, a single stat name, or an object:
+ * <pre>{ "base": 2, "scales_with": "creraces:ability_power", "factor": 0.05, "entity": "target",
+ *   "scales": [{ "stat": "...", "factor": ..., "entity": "..." }], "math": "floor", "min": 0, "max": 10 }</pre>
+ * Every term adds stat * factor to the base. A factor can itself be a scaling value, which is how
+ * two stats are multiplied. Stat names are parsed into evaluators once, when the JSON loads.
+ * <p>
+ * A stat is an attribute id, "random", resource:/state:/cooldown:/ability_level:/custom:/config:/race:
+ * followed by a name, flag: followed by a flag (1 when set, else 0), an event: value, or one of the
+ * functions effect(), enchantment() and position().
+ * Every number the engine stores can be read this way, so the compare condition checks any of them.
  */
+@SuppressWarnings("null")
 public class ScalingValue {
-    // Members of a scaling object that are not "<stat>": factor shorthand entries.
-    private static final Set<String> RESERVED_KEYS =
-            Set.of("base", "scales_with", "factor", "scales", "scaling", "math", "min", "max");
+    private static final Set<String> KEYS =
+            Set.of("base", "scales_with", "factor", "entity", "scales", "math", "min", "max");
 
     private final double base;
-    private final Evaluator evaluator;
-    private final double factor;
-    private final boolean useTarget;
-    private final List<ScalingComponent> additionalScales;
+    private final List<Term> terms;
     private final MathOp math;
+    @Nullable
     private final Double min;
+    @Nullable
     private final Double max;
 
     public enum MathOp {
         NONE, ROUND, FLOOR, CEIL, SQRT, ABS
     }
 
-    public ScalingValue(double base, @Nullable Evaluator evaluator, double factor,
-            List<ScalingComponent> additionalScales) {
-        this(base, evaluator, factor, false, additionalScales, MathOp.NONE, null, null);
-    }
-
-    public ScalingValue(double base, @Nullable Evaluator evaluator, double factor, boolean useTarget,
-            List<ScalingComponent> additionalScales, MathOp math, Double min, Double max) {
-        this.base = base;
-        this.evaluator = evaluator;
-        this.factor = factor;
-        this.useTarget = useTarget;
-        this.additionalScales = additionalScales != null ? additionalScales : new ArrayList<>();
-        this.math = math != null ? math : MathOp.NONE;
-        this.min = min;
-        this.max = max;
-    }
-
-    public double base() {
-        return base;
-    }
-
-    public boolean isZero() {
-        return base == 0 && evaluator == null && additionalScales.isEmpty();
-    }
-
-    public static class ScalingComponent {
-        private final Evaluator evaluator;
-        private final double factor;
-        private final boolean useTarget;
-
-        public ScalingComponent(Evaluator evaluator, double factor) {
-            this(evaluator, factor, false);
-        }
-
-        public ScalingComponent(Evaluator evaluator, double factor, boolean useTarget) {
-            this.evaluator = evaluator;
-            this.factor = factor;
-            this.useTarget = useTarget;
-        }
-
-        public Evaluator evaluator() {
-            return evaluator;
-        }
-
-        public double factor() {
-            return factor;
-        }
-
-        public boolean useTarget() {
-            return useTarget;
-        }
-    }
-
-    public static ScalingValue fixed(double value) {
-        return new ScalingValue(value, null, 0, false, new ArrayList<>(), MathOp.NONE, null, null);
-    }
-
-    /** Reads one stat from {@code subject}: the player, or the target when the term has use_target. */
+    /** Reads one stat from {@code subject}, the caster or the target depending on the term's "entity". */
     @FunctionalInterface
     public interface Evaluator {
         double evaluate(LivingEntity subject, Player player, @Nullable LivingEntity target,
                 @Nullable AbilitySlot slot, @Nullable BlockPos interactPos);
     }
 
+    private record Term(Evaluator stat, ScalingValue factor, boolean onTarget) {
+    }
+
+    private ScalingValue(double base, List<Term> terms, MathOp math, @Nullable Double min, @Nullable Double max) {
+        this.base = base;
+        this.terms = terms;
+        this.math = math;
+        this.min = min;
+        this.max = max;
+    }
+
+    public static ScalingValue fixed(double value) {
+        return new ScalingValue(value, List.of(), MathOp.NONE, null, null);
+    }
+
+    public boolean isConstant() {
+        return terms.isEmpty();
+    }
+
     public double evaluate(Player player) {
-        return evaluate(player, null);
+        return evaluate(player, null, null, null);
     }
 
     public double evaluate(Player player, @Nullable LivingEntity target) {
-        return evaluate(player, target, null);
+        return evaluate(player, target, null, null);
     }
 
     public double evaluate(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot slot) {
@@ -130,14 +101,13 @@ public class ScalingValue {
     public double evaluate(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
             @Nullable BlockPos interactPos) {
         double result = base;
-        if (evaluator != null) {
-            LivingEntity subject = (useTarget && target != null) ? target : player;
-            result += evaluator.evaluate(subject, player, target, slot, interactPos) * factor;
-        }
-
-        for (ScalingComponent comp : additionalScales) {
-            LivingEntity subject = (comp.useTarget() && target != null) ? target : player;
-            result += comp.evaluator().evaluate(subject, player, target, slot, interactPos) * comp.factor();
+        for (Term term : terms) {
+            // A term that reads the target adds nothing when there is no target.
+            LivingEntity subject = term.onTarget() ? target : player;
+            if (subject != null) {
+                result += term.stat().evaluate(subject, player, target, slot, interactPos)
+                        * term.factor().evaluate(player, target, slot, interactPos);
+            }
         }
 
         switch (math) {
@@ -149,236 +119,324 @@ public class ScalingValue {
             default -> {
             }
         }
-
-        if (min != null)
+        if (min != null) {
             result = Math.max(min, result);
-        if (max != null)
+        }
+        if (max != null) {
             result = Math.min(max, result);
-
+        }
         return result;
     }
 
-    private static Evaluator parseEvaluator(String statKey) {
-        if (statKey == null || statKey.isEmpty())
-            return (s, p, t, sl, ip) -> 0.0;
+    public static ScalingValue fromJson(JsonObject json, String key, double defaultBase) {
+        if (!json.has(key)) {
+            return fixed(defaultBase);
+        }
+        return fromElement(json.get(key), defaultBase);
+    }
 
-        final String stat = statKey.toLowerCase();
-
-        // Aliases for the CreRaces combat attributes. They go through ModAttributes.resolve so an
-        // Apothic Attributes replacement is used when that mod is loaded.
-        if (stat.equals("creraces:ap") || stat.equals("creraces:ability_power")) {
-            return (s, p, t, sl, ip) -> attributeValue(s, ModAttributes.resolve(ModAttributes.ABILITY_POWER));
-        }
-        if (stat.equals("creraces:ad") || stat.equals("creraces:attack_damage")) {
-            return (s, p, t, sl, ip) -> attributeValue(s, ModAttributes.resolve(ModAttributes.ATTACK_DAMAGE));
-        }
-        if (stat.equals("creraces:crit") || stat.equals("creraces:crit_rate")) {
-            return (s, p, t, sl, ip) -> attributeValue(s, ModAttributes.resolve(ModAttributes.CRIT_RATE));
-        }
-        if (stat.equals("creraces:health")) {
-            return (s, p, t, sl, ip) -> s.getHealth();
-        }
-        if (stat.equals("creraces:max_health")) {
-            return (s, p, t, sl, ip) -> s.getMaxHealth();
-        }
-        if (stat.equals("creraces:ability_haste")) {
-            return (s, p, t, sl, ip) -> {
-                Attribute attr = ModAttributes.resolve(ModAttributes.ABILITY_HASTE);
-                return attr != null ? Math.min(attributeValue(s, attr), CreRacesConfig.ABILITY_HASTE_CAP.get()) : 0.0;
-            };
-        }
-        if (stat.equals("creraces:armor_shred")) {
-            return (s, p, t, sl, ip) -> attributeValue(s, ModAttributes.resolve(ModAttributes.ARMOR_SHRED));
-        }
-
-        if (stat.startsWith("race:")) {
-            return raceEvaluator(stat.substring(5));
-        }
-        if (stat.startsWith("custom:")) {
-            return customizationEvaluator(stat.substring(7));
-        }
-        if (stat.startsWith("var:")) {
-            return variableEvaluator(stat.substring(4));
-        }
-        if (stat.startsWith("state:")) {
-            return stateEvaluator(stat.substring(6));
-        }
-        if (stat.startsWith("effect(") && stat.endsWith(")")) {
-            Evaluator effect = effectEvaluator(stat.substring(7, stat.length() - 1));
-            if (effect != null) {
-                return effect;
+    private static ScalingValue fromElement(JsonElement element, double defaultBase) {
+        if (element.isJsonPrimitive()) {
+            JsonPrimitive primitive = element.getAsJsonPrimitive();
+            if (primitive.isNumber()) {
+                return fixed(primitive.getAsDouble());
+            }
+            if (primitive.isString()) {
+                return new ScalingValue(0, List.of(new Term(parseStat(primitive.getAsString()), fixed(1), false)),
+                        MathOp.NONE, null, null);
             }
         }
-        if (stat.startsWith("config:")) {
-            return configEvaluator(stat.substring(7).toUpperCase());
+        if (!element.isJsonObject()) {
+            CreRaces.LOGGER.error("Expected a number, stat or scaling object, got {}", element);
+            return fixed(defaultBase);
         }
 
-        // Anything else is an attribute id, defaulting to the minecraft namespace.
-        final String resLocStr = stat.contains(":") ? stat : "minecraft:" + stat;
-        final ResourceLocation attrId = ResourceLocation.tryParse(resLocStr);
-        if (attrId == null) {
-            CreRaces.LOGGER.error("Invalid attribute/stat ID in ScalingValue: {}", resLocStr);
+        JsonObject obj = element.getAsJsonObject();
+        for (String member : obj.keySet()) {
+            if (!KEYS.contains(member)) {
+                CreRaces.LOGGER.warn("Unknown key '{}' in scaling value {}", member, obj);
+            }
+        }
+
+        List<Term> terms = new ArrayList<>();
+        if (obj.has("scales_with")) {
+            terms.add(new Term(parseStat(GsonHelper.getAsString(obj, "scales_with")), fromJson(obj, "factor", 1.0),
+                    readsTarget(obj)));
+        }
+        if (obj.has("scales") && obj.get("scales").isJsonArray()) {
+            for (JsonElement entry : obj.getAsJsonArray("scales")) {
+                if (entry.isJsonObject() && entry.getAsJsonObject().has("stat")) {
+                    JsonObject scale = entry.getAsJsonObject();
+                    terms.add(new Term(parseStat(GsonHelper.getAsString(scale, "stat")), fromJson(scale, "factor", 1.0),
+                            readsTarget(scale)));
+                }
+            }
+        }
+        Double min = obj.has("min") ? obj.get("min").getAsDouble() : null;
+        Double max = obj.has("max") ? obj.get("max").getAsDouble() : null;
+        return new ScalingValue(GsonHelper.getAsDouble(obj, "base", defaultBase), terms, parseMath(obj, MathOp.NONE),
+                min, max);
+    }
+
+    private static boolean readsTarget(JsonObject term) {
+        return EntitySelector.fromJson(term, EntitySelector.SELF) == EntitySelector.TARGET;
+    }
+
+    /** Reads "math"; a missing or unknown mode gives {@code fallback}. */
+    public static MathOp parseMath(JsonObject json, MathOp fallback) {
+        if (!json.has("math")) {
+            return fallback;
+        }
+        String name = json.get("math").getAsString();
+        try {
+            return MathOp.valueOf(name.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            CreRaces.LOGGER.error("Unknown math mode '{}' in {}", name, json);
+            return fallback;
+        }
+    }
+
+    private static Evaluator parseStat(String text) {
+        String stat = text.trim().toLowerCase();
+        Evaluator function = parseFunction(stat);
+        if (function != null) {
+            return function;
+        }
+
+        switch (stat) {
+            case "random" -> {
+                return (s, p, t, sl, ip) -> p.getRandom().nextDouble();
+            }
+            case "creraces:ability_haste" -> {
+                return (s, p, t, sl, ip) -> Math.min(
+                        attributeValue(s, ModAttributes.resolve(ModAttributes.ABILITY_HASTE)),
+                        CreRacesConfig.ABILITY_HASTE_CAP.get());
+            }
+            case "event:damage" -> {
+                return (s, p, t, sl, ip) -> EventContext.current().damage();
+            }
+            case "event:fall_distance" -> {
+                return (s, p, t, sl, ip) -> EventContext.current().fallDistance();
+            }
+            case "event:item_count" -> {
+                return (s, p, t, sl, ip) -> EventContext.current().item().getCount();
+            }
+            default -> {
+            }
+        }
+
+        int colon = stat.indexOf(':');
+        String prefix = colon > 0 ? stat.substring(0, colon) : "";
+        String rest = colon > 0 ? stat.substring(colon + 1) : stat;
+        switch (prefix) {
+            case "resource" -> {
+                Resources.Resource resource = Resources.get(rest);
+                if (resource == null) {
+                    CreRaces.LOGGER.error("Unknown resource '{}' in scaling value; known: {}", rest, Resources.knownNames());
+                    return (s, p, t, sl, ip) -> 0.0;
+                }
+                return (s, p, t, sl, ip) -> resource.read(s);
+            }
+            case "state" -> {
+                return playerNumber(rest, IPlayerVariables::getPersistentState);
+            }
+            case "flag" -> {
+                EntityFlag flag = EntityFlag.byId(rest);
+                if (flag == null) {
+                    CreRaces.LOGGER.error("Unknown flag '{}' in scaling value; known: {}", rest, EntityFlag.knownIds());
+                    return (s, p, t, sl, ip) -> 0.0;
+                }
+                return (s, p, t, sl, ip) -> flag.get(s) ? 1.0 : 0.0;
+            }
+            case "cooldown" -> {
+                return playerNumber(rest, IPlayerVariables::getCooldown);
+            }
+            case "ability_level" -> {
+                return playerNumber(rest, IPlayerVariables::getAbilityLevel);
+            }
+            case "custom" -> {
+                return customizationEvaluator(rest);
+            }
+            case "config" -> {
+                return configEvaluator(rest.toUpperCase());
+            }
+            case "race" -> {
+                return raceEvaluator(rest);
+            }
+            case "event" -> {
+                CreRaces.LOGGER.error("Unknown stat '{}' in scaling value", stat);
+                return (s, p, t, sl, ip) -> 0.0;
+            }
+            default -> {
+            }
+        }
+
+        // Anything else is an attribute id, defaulting to the minecraft namespace. Our own attributes
+        // read Apothic Attributes' equivalent when that mod is loaded.
+        ResourceLocation attributeId = ResourceLocation.tryParse(stat.contains(":") ? stat : "minecraft:" + stat);
+        if (attributeId == null || !BuiltInRegistries.ATTRIBUTE.containsKey(attributeId)) {
+            // Logged rather than rejected: the attribute may belong to an optional mod that isn't loaded.
+            CreRaces.LOGGER.warn("Stat '{}' is not a known attribute; it reads as 0 unless that attribute exists", stat);
+        }
+        return (s, p, t, sl, ip) -> {
+            Attribute attribute = attributeId != null ? ModAttributes.getAttribute(attributeId) : null;
+            return attribute != null && s.getAttributes().hasAttribute(attribute) ? attributeValue(s, attribute) : 0.0;
+        };
+    }
+
+    /** effect(id, property), enchantment(id, slot) and position(from, axis); null when the text isn't a function. */
+    @Nullable
+    private static Evaluator parseFunction(String stat) {
+        int open = stat.indexOf('(');
+        if (open <= 0 || !stat.endsWith(")")) {
+            return null;
+        }
+        String name = stat.substring(0, open);
+        String[] args = stat.substring(open + 1, stat.length() - 1).split(",");
+        if (args.length != 2) {
+            CreRaces.LOGGER.error("Stat '{}' needs exactly two arguments", stat);
             return (s, p, t, sl, ip) -> 0.0;
         }
-
-        return (s, p, t, sl, ip) -> {
-            Attribute attr = BuiltInRegistries.ATTRIBUTE.get(attrId);
-            return attr != null && s.getAttributes().hasAttribute(attr) ? attributeValue(s, attr) : 0.0;
+        String first = args[0].trim();
+        String second = args[1].trim();
+        return switch (name) {
+            case "effect" -> effectEvaluator(first, second);
+            case "enchantment" -> enchantmentEvaluator(first, second);
+            case "position" -> positionEvaluator(first, second);
+            default -> {
+                CreRaces.LOGGER.error("Unknown stat function '{}' in '{}'", name, stat);
+                yield (s, p, t, sl, ip) -> 0.0;
+            }
         };
     }
 
     /** Percent-style attributes (crit chance, cooldown reduction, ...) are reported on a 0-100 scale. */
-    private static double attributeValue(LivingEntity subject, @Nullable Attribute attr) {
-        if (attr == null)
+    private static double attributeValue(LivingEntity subject, @Nullable Attribute attribute) {
+        if (attribute == null) {
             return 0.0;
-        double val = subject.getAttributeValue(attr);
-        return ModAttributes.isPercentAttribute(attr) ? val * 100.0 : val;
+        }
+        double value = subject.getAttributeValue(attribute);
+        return ModAttributes.isPercentAttribute(attribute) ? value * 100.0 : value;
     }
 
-    private static Evaluator raceEvaluator(String key) {
+    /** Reads one of a player's per-id numbers (a state, cooldown or ability level). */
+    @FunctionalInterface
+    private interface PlayerNumber {
+        double read(IPlayerVariables vars, ResourceLocation id);
+    }
+
+    /** A per-id number of the subject player, 0 for other entities. "self" is the caster's casting ability. */
+    private static Evaluator playerNumber(String key, PlayerNumber number) {
+        boolean self = key.equals("self");
+        ResourceLocation fixedId = self ? null : IdRef.parse(key);
+        if (!self && fixedId == null) {
+            CreRaces.LOGGER.error("Invalid id '{}' in scaling value", key);
+            return (s, p, t, sl, ip) -> 0.0;
+        }
         return (s, p, t, sl, ip) -> {
-            if (!(s instanceof Player sp)) {
-                return 0.0;
-            }
-            IPlayerVariables vars = DataUtils.getVariables(sp).orElse(null);
-            if (vars == null) {
-                return 0.0;
-            }
-            Race race = RaceRegistry.get(vars.getRace());
-            if (race == null || race.respawnPos() == null) {
-                return 0.0;
-            }
-            double[] pos = race.respawnPos();
-            return switch (key) {
-                case "respawn_x" -> pos[0];
-                case "respawn_y" -> pos[1];
-                case "respawn_z" -> pos[2];
-                default -> 0.0;
-            };
+            ResourceLocation id = self ? IdRef.resolve(key, p, sl) : fixedId;
+            IPlayerVariables vars = s instanceof Player sp ? DataUtils.getVariables(sp).orElse(null) : null;
+            return id != null && vars != null ? number.read(vars, id) : 0.0;
         };
     }
 
     private static Evaluator customizationEvaluator(String key) {
         return (s, p, t, sl, ip) -> {
-            if (s instanceof Player sp) {
-                IPlayerVariables vars = DataUtils.getVariables(sp).orElse(null);
-                if (vars != null) {
-                    String val = vars.getCustomization(key);
-                    try {
-                        return val != null ? Double.parseDouble(val) : 0.0;
-                    } catch (NumberFormatException ignored) {
-                        // Non-numeric customizations (colours, variant names) count as 0.
-                    }
-                }
+            String value = s instanceof Player sp
+                    ? DataUtils.getVariables(sp).map(vars -> vars.getCustomization(key)).orElse(null)
+                    : null;
+            if (value == null) {
+                return 0.0;
             }
-            return 0.0;
+            try {
+                return Double.parseDouble(value);
+            } catch (NumberFormatException e) {
+                // Non-numeric customizations (colors, variant names) count as 0.
+                return 0.0;
+            }
         };
     }
 
-    private static Evaluator variableEvaluator(String key) {
+    private static Evaluator raceEvaluator(String key) {
+        int axis = switch (key) {
+            case "respawn_x" -> 0;
+            case "respawn_y" -> 1;
+            case "respawn_z" -> 2;
+            default -> -1;
+        };
+        if (axis < 0) {
+            CreRaces.LOGGER.error("Unknown race stat 'race:{}'; known: respawn_x, respawn_y, respawn_z", key);
+            return (s, p, t, sl, ip) -> 0.0;
+        }
         return (s, p, t, sl, ip) -> {
             if (!(s instanceof Player sp)) {
                 return 0.0;
             }
-            IPlayerVariables vars = DataUtils.getVariables(sp).orElse(null);
-            if (vars == null) {
-                return 0.0;
-            }
-            return switch (key) {
-                case "mana" -> vars.getMana();
-                case "energy" -> vars.getEnergy();
-                case "grit" -> vars.getGrit();
-                case "rage" -> vars.getRage();
-                case "karma" -> vars.getKarma();
-                case "soul" -> vars.getSoul();
-                case "coins" -> vars.getCoins();
-                case "passive_cd" -> vars.getPassiveCooldown();
-                case "gstate" -> (double) vars.getGState();
-                case "pos_x" -> ip != null ? (double) ip.getX() : sp.getX();
-                case "pos_y" -> ip != null ? (double) ip.getY() : sp.getY();
-                case "pos_z" -> ip != null ? (double) ip.getZ() : sp.getZ();
-                case "player_x" -> sp.getX();
-                case "player_y" -> sp.getY();
-                case "player_z" -> sp.getZ();
-                case "target_x" -> t != null ? t.getX() : sp.getX();
-                case "target_y" -> t != null ? t.getY() : sp.getY();
-                case "target_z" -> t != null ? t.getZ() : sp.getZ();
-                case "level" -> abilityLevel(vars, sl);
-                default -> 0.0;
-            };
+            Race race = DataUtils.getVariables(sp).map(vars -> RaceRegistry.get(vars.getRace())).orElse(null);
+            return race != null && race.respawnPos() != null ? race.respawnPos()[axis] : 0.0;
         };
     }
 
-    /** Level of the ability in the given slot, else of the active ability, else 1. */
-    private static double abilityLevel(IPlayerVariables vars, @Nullable AbilitySlot slot) {
-        ResourceLocation id;
-        if (slot != null) {
-            id = vars.getAbilityInSlot(slot);
-        } else if (vars.isAbilityActive()) {
-            id = vars.getActiveAbility();
-        } else {
-            return 1.0;
-        }
-        return id != null ? (double) vars.getAbilityLevel(id) : 1.0;
-    }
-
-    private static Evaluator stateEvaluator(String key) {
-        if (key.equals("self")) {
-            return (s, p, t, sl, ip) -> {
-                if (sl != null) {
-                    IPlayerVariables vars = DataUtils.getVariables(p).orElse(null);
-                    if (vars != null) {
-                        ResourceLocation abilityId = vars.getAbilityInSlot(sl);
-                        return abilityId != null ? vars.getPersistentState(abilityId) : 0.0;
-                    }
-                }
-                return 0.0;
-            };
-        }
-        String stateKey = key.contains(":") ? key : "creraces:" + key;
-        final ResourceLocation stateId = ResourceLocation.tryParse(stateKey);
-        if (stateId == null) {
-            CreRaces.LOGGER.error("Invalid state ID in ScalingValue: {}", stateKey);
+    private static Evaluator effectEvaluator(String idText, String property) {
+        ResourceLocation effectId = ResourceLocation.tryParse(idText.contains(":") ? idText : "minecraft:" + idText);
+        if (effectId == null) {
+            CreRaces.LOGGER.error("Invalid effect id '{}' in scaling value", idText);
             return (s, p, t, sl, ip) -> 0.0;
         }
         return (s, p, t, sl, ip) -> {
-            IPlayerVariables vars = DataUtils.getVariables(p).orElse(null);
-            return vars != null ? vars.getPersistentState(stateId) : 0.0;
-        };
-    }
-
-    /**
-     * Parses the inside of {@code effect(id, property)}. Returns null when it is malformed, which
-     * leaves the key to the attribute fallback and its error log.
-     */
-    @Nullable
-    private static Evaluator effectEvaluator(String content) {
-        String[] parts = content.split(",", 2);
-        if (parts.length != 2) {
-            return null;
-        }
-        String idStr = parts[0].trim();
-        final String property = parts[1].trim().toLowerCase();
-        if (!idStr.contains(":")) {
-            idStr = "minecraft:" + idStr;
-        }
-        final ResourceLocation effectId = ResourceLocation.tryParse(idStr);
-        if (effectId == null) {
-            return null;
-        }
-        return (s, p, t, sl, ip) -> {
             MobEffect effect = BuiltInRegistries.MOB_EFFECT.get(effectId);
-            MobEffectInstance inst = effect != null ? s.getEffect(effect) : null;
-            if (inst == null) {
+            MobEffectInstance instance = effect != null ? s.getEffect(effect) : null;
+            if (instance == null) {
                 return 0.0;
             }
             return switch (property) {
-                case "duration" -> (double) inst.getDuration();
-                case "amplifier" -> (double) inst.getAmplifier();
-                case "visible" -> inst.isVisible() ? 1.0 : 0.0;
-                case "ambient" -> inst.isAmbient() ? 1.0 : 0.0;
+                case "duration" -> instance.getDuration();
+                case "amplifier" -> instance.getAmplifier();
+                case "visible" -> instance.isVisible() ? 1.0 : 0.0;
+                case "ambient" -> instance.isAmbient() ? 1.0 : 0.0;
                 default -> 0.0;
             };
+        };
+    }
+
+    private static Evaluator enchantmentEvaluator(String idText, String slot) {
+        ResourceLocation enchantmentId = ResourceLocation.tryParse(idText.contains(":") ? idText : "minecraft:" + idText);
+        if (enchantmentId == null) {
+            CreRaces.LOGGER.error("Invalid enchantment id '{}' in scaling value", idText);
+            return (s, p, t, sl, ip) -> 0.0;
+        }
+        return (s, p, t, sl, ip) -> {
+            Enchantment enchantment = BuiltInRegistries.ENCHANTMENT.get(enchantmentId);
+            if (enchantment == null) {
+                return 0.0;
+            }
+            int best = 0;
+            for (var stack : ItemSlots.stacks(s, slot)) {
+                best = Math.max(best, EnchantmentHelper.getItemEnchantmentLevel(enchantment, stack));
+            }
+            return best;
+        };
+    }
+
+    private static Evaluator positionEvaluator(String from, String axis) {
+        Position.Source source = Position.parseSource(from);
+        int index = switch (axis) {
+            case "x" -> 0;
+            case "y" -> 1;
+            case "z" -> 2;
+            default -> -1;
+        };
+        if (source == null || index < 0) {
+            CreRaces.LOGGER.error("position({}, {}) needs a source (self, target, block, look, origin) and x, y or z",
+                    from, axis);
+            return (s, p, t, sl, ip) -> 0.0;
+        }
+        return (s, p, t, sl, ip) -> {
+            Vec3 point = Position.base(source, p, t, ip);
+            if (point == null) {
+                return 0.0;
+            }
+            return index == 0 ? point.x : index == 1 ? point.y : point.z;
         };
     }
 
@@ -387,7 +445,7 @@ public class ScalingValue {
         try {
             field = CreRacesConfig.class.getField(fieldName);
         } catch (NoSuchFieldException e) {
-            CreRaces.LOGGER.error("Unknown config value '{}' in ScalingValue", fieldName);
+            CreRaces.LOGGER.error("Unknown config value '{}' in scaling value", fieldName);
             return (s, p, t, sl, ip) -> 0.0;
         }
         return (s, p, t, sl, ip) -> {
@@ -395,86 +453,16 @@ public class ScalingValue {
                 // Read the field on every call: the loader swaps in new suppliers when the config loads.
                 if (field.get(null) instanceof Supplier<?> supplier) {
                     Object value = supplier.get();
-                    if (value instanceof Number num) {
-                        return num.doubleValue();
+                    if (value instanceof Number number) {
+                        return number.doubleValue();
                     } else if (value instanceof Boolean bool) {
                         return bool ? 1.0 : 0.0;
                     }
                 }
             } catch (Exception e) {
-                CreRaces.LOGGER.error("Failed to read config value '{}' in ScalingValue", fieldName);
+                CreRaces.LOGGER.error("Failed to read config value '{}' in scaling value", fieldName);
             }
             return 0.0;
         };
-    }
-
-    public static ScalingValue fromJson(JsonObject json, String key, double defaultBase) {
-        if (!json.has(key)) {
-            return fixed(defaultBase);
-        }
-
-        if (json.get(key).isJsonObject()) {
-            JsonObject obj = json.get(key).getAsJsonObject();
-            double base = GsonHelper.getAsDouble(obj, "base", defaultBase);
-            String stat = GsonHelper.getNullableString(obj, "scales_with", null);
-            double factor = GsonHelper.getAsDouble(obj, "factor", 1.0);
-            boolean useTargetRoot = GsonHelper.getAsBoolean(obj, "use_target", false);
-
-            List<ScalingComponent> additional = new ArrayList<>();
-
-            if (obj.has("scales") && obj.get("scales").isJsonArray()) {
-                JsonArray array = obj.getAsJsonArray("scales");
-                for (int i = 0; i < array.size(); i++) {
-                    if (!array.get(i).isJsonObject())
-                        continue;
-                    JsonObject scaleObj = array.get(i).getAsJsonObject();
-                    String s = GsonHelper.getNullableString(scaleObj, "stat", null);
-                    double f = GsonHelper.getAsDouble(scaleObj, "factor", 1.0);
-                    boolean ut = GsonHelper.getAsBoolean(scaleObj, "use_target", false);
-                    if (s != null) {
-                        additional.add(new ScalingComponent(parseEvaluator(s), f, ut));
-                    }
-                }
-            }
-
-            if (obj.has("scaling") && obj.get("scaling").isJsonObject()) {
-                addStatFactors(obj.get("scaling").getAsJsonObject(), additional, false);
-            }
-            addStatFactors(obj, additional, true);
-
-            MathOp math = MathOp.NONE;
-            if (obj.has("math")) {
-                try {
-                    math = MathOp.valueOf(obj.get("math").getAsString().toUpperCase());
-                } catch (IllegalArgumentException e) {
-                    CreRaces.LOGGER.warn("Unknown math operation: {}", obj.get("math").getAsString());
-                }
-            }
-            Double min = obj.has("min") ? obj.get("min").getAsDouble() : null;
-            Double max = obj.has("max") ? obj.get("max").getAsDouble() : null;
-
-            return new ScalingValue(base, parseEvaluator(stat), factor, useTargetRoot, additional, math, min, max);
-        } else if (json.get(key).isJsonPrimitive()) {
-            JsonPrimitive primitive = json.get(key).getAsJsonPrimitive();
-            if (primitive.isString()) {
-                return new ScalingValue(0.0, parseEvaluator(primitive.getAsString()), 1.0, false, new ArrayList<>(),
-                        MathOp.NONE, null, null);
-            } else if (primitive.isNumber()) {
-                return fixed(primitive.getAsDouble());
-            }
-        }
-        return fixed(defaultBase);
-    }
-
-    /** Adds every numeric {@code "<stat>": factor} member of {@code obj} as an extra scaling term. */
-    private static void addStatFactors(JsonObject obj, List<ScalingComponent> additional, boolean skipReserved) {
-        for (String statKey : obj.keySet()) {
-            if (skipReserved && RESERVED_KEYS.contains(statKey)) {
-                continue;
-            }
-            if (obj.get(statKey).isJsonPrimitive() && obj.get(statKey).getAsJsonPrimitive().isNumber()) {
-                additional.add(new ScalingComponent(parseEvaluator(statKey), obj.get(statKey).getAsDouble()));
-            }
-        }
     }
 }

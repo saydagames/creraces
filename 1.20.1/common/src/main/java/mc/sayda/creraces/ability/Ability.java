@@ -28,6 +28,7 @@ public class Ability {
     @Nullable
     private final String conditionFailMessage;
     private final List<OverlayBar> overlayBars;
+    private final boolean copiedByClones;
 
     public Ability(ResourceLocation id, Component name,
             Component description, AbilityType type, ResourceLocation icon, int cooldown,
@@ -36,7 +37,8 @@ public class Ability {
             List<RaceAction> onDeactivate,
             Condition condition,
             @Nullable String conditionFailMessage,
-            List<OverlayBar> overlayBars) {
+            List<OverlayBar> overlayBars,
+            boolean copiedByClones) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -51,6 +53,7 @@ public class Ability {
         this.condition = condition;
         this.conditionFailMessage = conditionFailMessage;
         this.overlayBars = overlayBars;
+        this.copiedByClones = copiedByClones;
     }
 
     public Condition condition() {
@@ -108,6 +111,11 @@ public class Ability {
 
     public List<OverlayBar> overlayBars() {
         return overlayBars;
+    }
+
+    /** Whether clones that copy abilities repeat this one (creraces:copied_by_clones, default true). */
+    public boolean copiedByClones() {
+        return copiedByClones;
     }
 
     public String getTranslationKey() {

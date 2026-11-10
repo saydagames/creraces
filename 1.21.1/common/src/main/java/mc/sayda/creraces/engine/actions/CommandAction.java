@@ -17,7 +17,7 @@ import javax.annotation.Nullable;
  * of the caster and the target.
  */
 public class CommandAction implements ActionRegistry.RaceAction {
-    public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "command");
+    public static final ResourceLocation ID = CreRaces.id("command");
 
     private static final int OPERATOR_PERMISSION_LEVEL = 4;
 

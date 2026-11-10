@@ -314,7 +314,7 @@ public class CreracesCommand {
                         BoundaryHandler.resyncForAllTrackers(target);
                         BoundaryHandler.resyncVariables(target, target);
                     }
-                    case "minibuild" -> vars.setSmallBuild(finalValue.equals("1.0"));
+                    case "minibuild" -> vars.setMiniBuild(finalValue.equals("1.0"));
                     case "gstate" -> vars.setGState(Integer.parseInt(finalValue));
                     case "a1", "a2", "a3", "a4", "a5" -> {
                         ResourceLocation id = abilityInSlot(vars, varLower);

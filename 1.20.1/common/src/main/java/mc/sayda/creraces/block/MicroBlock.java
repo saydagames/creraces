@@ -96,10 +96,10 @@ public class MicroBlock extends BaseEntityBlock {
 
     @Override
     public float getDestroyProgress(BlockState state, Player player, BlockGetter level, BlockPos pos) {
-        boolean isSmallBuild = DataUtils.getVariables(player)
-                .map(IPlayerVariables::isSmallBuild)
+        boolean isMiniBuild = DataUtils.getVariables(player)
+                .map(IPlayerVariables::isMiniBuild)
                 .orElse(false);
-        if (isSmallBuild || !player.isShiftKeyDown()) {
+        if (isMiniBuild || !player.isShiftKeyDown()) {
             return 0.0f;
         }
         return super.getDestroyProgress(state, player, level, pos);

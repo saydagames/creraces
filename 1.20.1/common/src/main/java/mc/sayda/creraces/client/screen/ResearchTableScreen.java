@@ -94,7 +94,9 @@ public class ResearchTableScreen extends AbstractContainerScreen<ResearchTableMe
     protected void init() {
         super.init();
         this.leftPos += 2;
-        this.topPos += 35;
+        // Centres the drawn part of the texture (rows 2 to 299). A screen too short for it keeps the
+        // top on screen, where the quill and scroll slots are, and lets the hotbar run off the bottom.
+        this.topPos = Math.max(2, this.topPos + 35);
         this.tablePos = this.menu.getTablePos();
         craftButton = addRenderableWidget(Button.builder(
                 Component.translatable("gui.creraces.research"),

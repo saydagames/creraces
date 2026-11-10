@@ -20,7 +20,7 @@ Thumbs.db
 /run-data/
 
 # Gradle caches and local config
-/.gradle/
+.gradle/
 gradle-local.properties
 
 # Project metadata (Eclipse)
@@ -33,11 +33,13 @@ gradle-local.properties
 hs_err_pid*
 *.tmp
 *.swp
+*.class
 
 # Minecraft / Forge MDK local caches and run folders
 *.lock
 *.cache
 run/
+run-server/
 run-data/
 build/
 out/
@@ -103,6 +105,7 @@ local.properties
 *.txt
 !LICENSE.txt
 !CREDITS.txt
+!/common/src/main/resources/META-INF/licenses/*.txt
 *.ps1
 /1.20.1/common/bin
 /1.20.1/forge/bin
@@ -114,3 +117,8 @@ local.properties
 /1.21.1/common/bin
 /1.21.1/neoforge/bin
 /1.21.1/fabric/bin
+/.misc/
+/1.21.1/fabric/src/gametest
+/1.20.1/fabric/src/gametest
+/1.20.1/forge/src/gametest
+/1.21.1/neoforge/src/gametest

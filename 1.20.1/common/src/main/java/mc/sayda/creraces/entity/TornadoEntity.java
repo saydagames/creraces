@@ -40,7 +40,7 @@ import java.util.List;
 
 /**
  * A flying vortex that deflects hostile projectiles and pulls in and dizzies enemies within its
- * radius until its lifetime runs out.
+ * radius until its lifetime runs out. Its owner and their allies are left alone, shots included.
  */
 @SuppressWarnings("null")
 public class TornadoEntity extends TamableAnimal {
@@ -130,13 +130,7 @@ public class TornadoEntity extends TamableAnimal {
 
         // Deflect moving projectiles that aren't from the owner's side.
         List<Projectile> projectiles = this.level().getEntitiesOfClass(Projectile.class, area,
-                p -> {
-                    if (p.getDeltaMovement().lengthSqr() <= 0)
-                        return false;
-                    Entity shooter = p.getOwner();
-                    return owner == null || (shooter instanceof LivingEntity le && RaceTeamManager.canHurt(le, owner))
-                            || shooter == null;
-                });
+                p -> p.getDeltaMovement().lengthSqr() > 0 && !isOnOwnersSide(p.getOwner(), owner));
         for (Projectile p : projectiles) {
             Vec3 away = p.position().subtract(center).normalize().scale(1.2);
             p.setDeltaMovement(away);
@@ -144,7 +138,7 @@ public class TornadoEntity extends TamableAnimal {
         }
 
         List<LivingEntity> targets = level().getEntitiesOfClass(LivingEntity.class, area,
-                entity -> entity != this && entity != owner && (owner == null || RaceTeamManager.canHurt(entity, owner))
+                entity -> entity != this && !isOnOwnersSide(entity, owner)
                         && !RaceUtils.isImmuneToEffect(entity, DIZZINESS_ID));
 
         for (LivingEntity target : targets) {
@@ -158,6 +152,24 @@ public class TornadoEntity extends TamableAnimal {
                         .add(delta.normalize().scale(CreRacesConfig.ENTITY_TORNADO_PULL_FORCE.get())));
             }
         }
+    }
+
+    /**
+     * The owner, their pets and their allies, matching the "allies" target filter. An untamed tornado
+     * has no side, and neither does a projectile without a shooter.
+     */
+    private static boolean isOnOwnersSide(@Nullable Entity entity, @Nullable LivingEntity owner) {
+        if (entity == null || owner == null) {
+            return false;
+        }
+        return entity == owner || (entity instanceof LivingEntity living && !RaceTeamManager.canHurt(living, owner));
+    }
+
+    // Projectiles go straight through the vortex: hostile ones are flung away before they reach it,
+    // and the owner's side can shoot through it.
+    @Override
+    public boolean canBeHitByProjectile() {
+        return false;
     }
 
     @Override

@@ -1,7 +1,7 @@
 {
     "creraces:name": "ability.creraces.dash.name",
     "creraces:description": "ability.creraces.dash.description",
-    "creraces:type": "ACTIVE",
+    "creraces:type": "active",
     "creraces:icon": "minecraft:textures/item/feather.png",
     "creraces:cooldown": 240,
     "creraces:cost": 10,
@@ -9,25 +9,15 @@
         {
             "type": "creraces:dash",
             "direction": "forward",
-            "power": {
-                "base": 1.2
-            },
-            "y_multiplier": {
-                "base": 0.8
-            },
-            "y_boost": {
-                "base": 0.4
-            }
+            "strength": { "base": 1.2 },
+            "y_multiplier": { "base": 0.8 },
+            "y_boost": { "base": 0.4 }
         },
         {
             "type": "creraces:play_sound",
             "sound": "minecraft:block.wool.break",
-            "volume": {
-                "base": 1.0
-            },
-            "pitch": {
-                "base": 1.8
-            }
+            "volume": { "base": 1 },
+            "pitch": { "base": 1.8 }
         }
     ],
     "creraces:wiki_page": "Ability:Dash"

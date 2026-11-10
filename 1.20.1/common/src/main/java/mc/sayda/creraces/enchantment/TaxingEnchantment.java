@@ -24,8 +24,9 @@ public class TaxingEnchantment extends Enchantment {
         return 4;
     }
 
+    // Like Mending: from librarians and loot, never the enchanting table.
     @Override
     public boolean isTreasureOnly() {
-        return false;
+        return true;
     }
 }

@@ -1,7 +1,7 @@
 package mc.sayda.creraces.race;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.util.GsonHelper;
 import net.minecraft.resources.ResourceLocation;
 
@@ -13,8 +13,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A customization option for a race (tails, colours, ...). It can carry raw addon JSON so the
- * matching cosmetics are applied automatically.
+ * A customization option for a race (tails, colors, ...): an "id", a "type" ("property", or "tint"
+ * for a "#RRGGBB" value that tints its addon), the "options", a "default" and "hidden". "addon" is
+ * an addon always shown with it, and "addons" maps each value to the addons it shows. Per-race
+ * defaults come from the race's creraces:race_defaults.
  */
 public class RaceCustomization {
     private final String id;
@@ -90,24 +92,17 @@ public class RaceCustomization {
             raceDefaults.putAll(externalDefaults);
         }
 
-        if (json.has("creraces:race_defaults") || json.has("race_defaults")) {
-            JsonObject rdObj = json.has("creraces:race_defaults") ? json.getAsJsonObject("creraces:race_defaults")
-                    : json.getAsJsonObject("race_defaults");
-            for (Map.Entry<String, JsonElement> entry : rdObj.entrySet()) {
-                raceDefaults.put(entry.getKey(), entry.getValue().getAsString());
-            }
+        String type = GsonHelper.getAsString(json, "type", "property");
+        if (!type.equals("property") && !type.equals("tint")) {
+            CreRaces.LOGGER.error("Unknown customization type '{}' (property, tint) in {}", type, json);
         }
-
-        String defaultValue = json.has("defaultValue") ? json.get("defaultValue").getAsString()
-                : (json.has("default") ? json.get("default").getAsString() : "");
-
         return new RaceCustomization(
                 GsonHelper.getAsString(json, "id", "unknown"),
-                GsonHelper.getAsString(json, "type", "property"),
-                GsonHelper.getNullableString(json, "addonId", null),
+                type,
+                GsonHelper.getNullableString(json, "addon", null),
                 json.has("addons") ? json.getAsJsonObject("addons") : null,
                 options,
-                defaultValue,
+                GsonHelper.getAsString(json, "default", ""),
                 raceDefaults,
                 GsonHelper.getAsBoolean(json, "hidden", false));
     }

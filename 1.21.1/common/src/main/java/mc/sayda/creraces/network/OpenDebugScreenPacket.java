@@ -4,7 +4,6 @@ import dev.architectury.networking.NetworkManager;
 import dev.architectury.utils.Env;
 import dev.architectury.utils.EnvExecutor;
 import mc.sayda.creraces.CreRaces;
-import mc.sayda.creraces.client.ClientAccess;
 import mc.sayda.creraces.client.screen.DebugScreen;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
@@ -26,6 +25,6 @@ public class OpenDebugScreenPacket {
 
     public void handle(Supplier<NetworkManager.PacketContext> contextSupplier) {
         NetworkManager.PacketContext context = contextSupplier.get();
-        context.queue(() -> EnvExecutor.runInEnv(Env.CLIENT, () -> () -> ClientAccess.setScreen(new DebugScreen())));
+        context.queue(() -> EnvExecutor.runInEnv(Env.CLIENT, () -> () -> DebugScreen.open()));
     }
 }

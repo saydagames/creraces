@@ -26,7 +26,7 @@ public class ClearCooldownsAction implements ActionRegistry.RaceAction {
     }
 
     public static void register() {
-        ActionRegistry.register(ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "clear_cooldowns"),
+        ActionRegistry.register(CreRaces.id("clear_cooldowns"),
                 json -> new ClearCooldownsAction());
     }
 }

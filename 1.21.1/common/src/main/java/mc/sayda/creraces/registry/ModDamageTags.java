@@ -9,4 +9,5 @@ public class ModDamageTags {
     public static final TagKey<DamageType> IS_PHYSICAL = TagKey.create(Registries.DAMAGE_TYPE, ResourceLocation.fromNamespaceAndPath("creraces", "is_physical"));
     public static final TagKey<DamageType> IS_MAGIC = TagKey.create(Registries.DAMAGE_TYPE, ResourceLocation.fromNamespaceAndPath("creraces", "is_magic"));
     public static final TagKey<DamageType> IS_TRUE = TagKey.create(Registries.DAMAGE_TYPE, ResourceLocation.fromNamespaceAndPath("creraces", "is_true"));
+    public static final TagKey<DamageType> CANNOT_CRITICALLY_STRIKE = TagKey.create(Registries.DAMAGE_TYPE, ResourceLocation.fromNamespaceAndPath("creraces", "cannot_critically_strike"));
 }

@@ -95,6 +95,6 @@ public class SubRaceScreen extends Screen {
 
     @Override
     public boolean isPauseScreen() {
-        return false;
+        return true;
     }
 }

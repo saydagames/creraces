@@ -1,25 +1,38 @@
 package mc.sayda.creraces.engine.traits;
 
+import com.google.gson.JsonObject;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.engine.ScalingValue;
 import mc.sayda.creraces.engine.TraitRegistry;
-import net.minecraft.resources.ResourceLocation;
+import mc.sayda.creraces.engine.condition.Condition;
+import mc.sayda.creraces.engine.condition.ConditionRegistry;
+import net.minecraft.world.entity.player.Player;
 
-/** Scales the food gained from eating; read through RaceUtils.getFoodMultiplier. */
+import javax.annotation.Nullable;
+
+/**
+ * Multiplies the food and saturation the player gets from eating by "multiplier" while "condition"
+ * holds. Several of these multiply together (see RaceUtils.getFoodMultiplier).
+ */
 public class FoodMultiplierTrait implements TraitRegistry.RaceTrait {
-
     private final ScalingValue multiplier;
+    @Nullable
+    private final Condition condition;
 
-    public FoodMultiplierTrait(ScalingValue multiplier) {
-        this.multiplier = multiplier;
+    FoodMultiplierTrait(JsonObject json) {
+        this.multiplier = ScalingValue.fromJson(json, "multiplier", 1.0);
+        this.condition = ConditionRegistry.optional(json, "condition");
     }
 
     public ScalingValue getMultiplier() {
         return multiplier;
     }
 
+    public boolean applies(Player player) {
+        return condition == null || condition.evaluate(player, null, null, null);
+    }
+
     public static void register() {
-        TraitRegistry.register(new ResourceLocation(CreRaces.MODID, "food_multiplier"),
-                json -> new FoodMultiplierTrait(ScalingValue.fromJson(json, "multiplier", 1.0)));
+        TraitRegistry.register(CreRaces.id("food_multiplier"), FoodMultiplierTrait::new);
     }
 }

@@ -1,33 +1,27 @@
 {
     "creraces:name": "ability.creraces.rat_tunnels.name",
     "creraces:description": "ability.creraces.rat_tunnels.description",
-    "creraces:type": "ACTIVE",
+    "creraces:type": "active",
     "creraces:icon": "minecraft:textures/item/rabbit_foot.png",
     "creraces:cooldown": 20,
     "creraces:cost": 20,
     "creraces:persistent": true,
-    "creraces:race": [
-        "creraces:ratkin"
-    ],
+    "creraces:race": ["creraces:ratkin"],
     "creraces:actions": [
         {
             "type": "creraces:conditional",
             "condition": {
-                "type": "creraces:scaling_compare",
-                "first": "state:rat_tunnels",
+                "type": "creraces:compare",
+                "value": "state:rat_tunnels",
                 "operator": "<",
-                "second": {
-                    "base": 0,
-                    "scales_with": "config:MAX_RAT_TUNNELS",
-                    "factor": 2.0
-                }
+                "to": { "base": 0, "scales_with": "config:MAX_RAT_TUNNELS", "factor": 2 }
             },
             "if_true": [
                 {
                     "type": "creraces:conditional",
                     "condition": {
                         "type": "creraces:modulo",
-                        "state": "rat_tunnels",
+                        "value": "state:rat_tunnels",
                         "divisor": 2,
                         "remainder": 0
                     },
@@ -35,96 +29,116 @@
                         {
                             "type": "creraces:place_block",
                             "block": "creraces:rat_hole",
-                            "particle": "minecraft:dirt",
-                            "sound": "minecraft:block.gravel.place",
                             "data": [
                                 {
                                     "key": "owner",
-                                    "value": 1
+                                    "value": { "type": "uuid", "property": "uuid", "entity": "self" }
                                 }
                             ]
                         },
                         {
+                            "type": "creraces:spawn_particles",
+                            "particle": "minecraft:block",
+                            "count": 10,
+                            "spread": 0.2,
+                            "position": { "from": "self", "x": 0.5, "y": 0.5, "z": 0.5 },
+                            "block": "minecraft:dirt"
+                        },
+                        {
+                            "type": "creraces:play_sound",
+                            "sound": "minecraft:block.gravel.place",
+                            "source": "blocks",
+                            "position": { "from": "self" }
+                        },
+                        {
                             "type": "creraces:modify_value",
-                            "resource": "state:hole_x",
-                            "mode": "BLOCK_X",
+                            "state": "hole_x",
+                            "value": { "scales_with": "position(self, x)", "math": "floor" },
                             "persistent": true
                         },
                         {
                             "type": "creraces:modify_value",
-                            "resource": "state:hole_y",
-                            "mode": "BLOCK_Y",
+                            "state": "hole_y",
+                            "value": { "scales_with": "position(self, y)", "math": "floor" },
                             "persistent": true
                         },
                         {
                             "type": "creraces:modify_value",
-                            "resource": "state:hole_z",
-                            "mode": "BLOCK_Z",
+                            "state": "hole_z",
+                            "value": { "scales_with": "position(self, z)", "math": "floor" },
                             "persistent": true
                         },
                         {
                             "type": "creraces:modify_value",
-                            "resource": "state:rat_tunnels",
-                            "persistent": true,
-                            "value": {
-                                "base": 1.0,
-                                "scales_with": "state:rat_tunnels"
-                            }
+                            "state": "rat_tunnels",
+                            "value": { "base": 1, "scales_with": "state:rat_tunnels" },
+                            "persistent": true
                         }
                     ],
                     "if_false": [
                         {
                             "type": "creraces:place_block",
                             "block": "creraces:rat_hole",
-                            "particle": "minecraft:dirt",
-                            "sound": "minecraft:block.gravel.place",
                             "data": [
                                 {
                                     "key": "owner",
-                                    "value": 1
+                                    "value": { "type": "uuid", "property": "uuid", "entity": "self" }
                                 },
-                                {
-                                    "key": "destX",
-                                    "value": "state:hole_x"
-                                },
-                                {
-                                    "key": "destY",
-                                    "value": "state:hole_y"
-                                },
-                                {
-                                    "key": "destZ",
-                                    "value": "state:hole_z"
-                                }
+                                { "key": "destX", "value": { "type": "int", "scaling": "state:hole_x" } },
+                                { "key": "destY", "value": { "type": "int", "scaling": "state:hole_y" } },
+                                { "key": "destZ", "value": { "type": "int", "scaling": "state:hole_z" } }
                             ]
                         },
                         {
+                            "type": "creraces:spawn_particles",
+                            "particle": "minecraft:block",
+                            "count": 10,
+                            "spread": 0.2,
+                            "position": { "from": "self", "x": 0.5, "y": 0.5, "z": 0.5 },
+                            "block": "minecraft:dirt"
+                        },
+                        {
+                            "type": "creraces:play_sound",
+                            "sound": "minecraft:block.gravel.place",
+                            "source": "blocks",
+                            "position": { "from": "self" }
+                        },
+                        {
                             "type": "creraces:update_block",
-                            "absolute": true,
-                            "offset_x": "state:hole_x",
-                            "offset_y": "state:hole_y",
-                            "offset_z": "state:hole_z",
+                            "position": {
+                                "from": "origin",
+                                "x": "state:hole_x",
+                                "y": "state:hole_y",
+                                "z": "state:hole_z"
+                            },
                             "data": [
                                 {
                                     "key": "destX",
-                                    "value": "var:pos_x"
+                                    "value": {
+                                        "type": "int",
+                                        "scaling": { "scales_with": "position(self, x)", "math": "floor" }
+                                    }
                                 },
                                 {
                                     "key": "destY",
-                                    "value": "var:pos_y"
+                                    "value": {
+                                        "type": "int",
+                                        "scaling": { "scales_with": "position(self, y)", "math": "floor" }
+                                    }
                                 },
                                 {
                                     "key": "destZ",
-                                    "value": "var:pos_z"
+                                    "value": {
+                                        "type": "int",
+                                        "scaling": { "scales_with": "position(self, z)", "math": "floor" }
+                                    }
                                 }
                             ]
                         },
                         {
                             "type": "creraces:modify_value",
-                            "resource": "state:rat_tunnels",
-                            "value": {
-                                "base": 1.0,
-                                "scales_with": "state:rat_tunnels"
-                            },
+                            "state": "rat_tunnels",
+                            "value": { "base": 1, "scales_with": "state:rat_tunnels" },
                             "persistent": true
                         }
                     ]
@@ -136,9 +150,7 @@
                     "text": "msg.creraces.rat_tunnels.max_tunnels",
                     "actionbar": true
                 },
-                {
-                    "type": "creraces:cancel"
-                }
+                { "type": "creraces:cancel" }
             ]
         }
     ],

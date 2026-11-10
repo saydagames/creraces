@@ -148,6 +148,8 @@ public class FabricConfig {
         // Fairy Realm
         CreRacesConfig.FAIRY_REALM_BORDER_SIZE = () -> common.fairyRealm.fairy_realm_border_size;
         CreRacesConfig.VEILWOOD_FOREST_ENABLED = () -> common.fairyRealm.veilwood_forest_enabled;
+        CreRacesConfig.FAIRY_SOURCE_PICKUP_ENABLED = () -> common.fairyRealm.fairy_source_pickup_enabled;
+        CreRacesConfig.FAIRY_SOURCE_CONVERSION_ENABLED = () -> common.fairyRealm.fairy_source_conversion_enabled;
 
         // Essence
         CreRacesConfig.ESSENCE_VORTEX_WORLDGEN_ENABLED = () -> common.essence.essence_vortex_worldgen_enabled;
@@ -321,6 +323,8 @@ public class FabricConfig {
         public static class FairyRealm {
             public int fairy_realm_border_size = CreRacesConfig.FAIRY_REALM_BORDER_SIZE.get();
             public boolean veilwood_forest_enabled = CreRacesConfig.VEILWOOD_FOREST_ENABLED.get();
+            public boolean fairy_source_pickup_enabled = CreRacesConfig.FAIRY_SOURCE_PICKUP_ENABLED.get();
+            public boolean fairy_source_conversion_enabled = CreRacesConfig.FAIRY_SOURCE_CONVERSION_ENABLED.get();
         }
 
         public static class Essence {

@@ -103,6 +103,9 @@ public class BoundaryHandler {
      * Architectury 13 has to know every S2C id before it can send one. Clients declare them by
      * registering receivers, but a dedicated server has no receivers to register, so there the ids
      * are only declared. Without that, every server-to-client send fails on a dedicated server.
+     *
+     * Packet classes also load on a dedicated server, so a handler may only call static methods on client
+     * classes. Building or passing a client object there makes the JVM load that class and stops the server.
      */
     private static void registerS2C(boolean withReceivers) {
         receiveS2C(withReceivers, SyncRacesPacket.ID, SyncRacesPacket::new, SyncRacesPacket::handle);
@@ -414,6 +417,13 @@ public class BoundaryHandler {
         RegistryFriendlyByteBuf buf = newBuf();
         encoder.accept(buf);
         NetworkManager.sendToServer(id, buf);
+    }
+
+    /** Sends to every player on the server. */
+    public static void sendToAll(MinecraftServer server, ResourceLocation id, Consumer<FriendlyByteBuf> encoder) {
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            send(player, id, encoder);
+        }
     }
 
     private static void send(ServerPlayer player, ResourceLocation id, Consumer<FriendlyByteBuf> encoder) {

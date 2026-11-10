@@ -1,5 +1,5 @@
 {
-    "creraces:parent_race": "creraces:elves",
+    "creraces:parent_races": ["creraces:elves"],
     "creraces:index": 12.2,
     "creraces:name": "race.creraces.velox.name",
     "creraces:description": "race.creraces.velox.description",
@@ -13,78 +13,51 @@
             "id": "race_attack_speed",
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.attack_speed",
-            "value": 2.0,
-            "operation": "addition"
+            "value": 2
         }
     ],
     "stealth_mechanics": [
         {
-            "type": "creraces:on_tick",
-            "interval": 5,
-            "actions": [
-                {
-                    "type": "creraces:conditional",
-                    "condition": {
-                        "type": "creraces:sneaking",
-                        "value": true
-                    },
-                    "if_true": [
-                        {
-                            "type": "creraces:apply_effect",
-                            "effect": "creraces:true_invisibility",
-                            "duration": 20,
-                            "amplifier": 0,
-                            "visible": false
-                        }
-                    ],
-                    "if_false": [
-                        {
-                            "type": "creraces:remove_effect",
-                            "effect": "creraces:true_invisibility"
-                        }
-                    ]
-                }
-            ]
+            "id": "velox_stealth",
+            "type": "creraces:keep_effect",
+            "effect": "creraces:true_invisibility",
+            "visible": false,
+            "condition": { "type": "creraces:sneaking" }
         }
     ],
     "foul_play_logic": [
         {
             "type": "creraces:on_hit",
-            "condition": {
-                "type": "creraces:attack_charged"
-            },
+            "condition": { "type": "creraces:attack_charged" },
             "actions": [
                 {
                     "type": "creraces:conditional",
                     "condition": {
-                        "type": "creraces:has_effect",
-                        "effect": "creraces:foul_play",
-                        "amplifier": 1,
-                        "use_target": true
+                        "type": "creraces:compare",
+                        "value": {
+                            "scales_with": "effect(creraces:foul_play, amplifier)",
+                            "entity": "target"
+                        },
+                        "to": 1,
+                        "operator": ">="
                     },
                     "if_true": [
                         {
                             "type": "creraces:damage",
                             "amount": {
                                 "base": 2,
-                                "scales_with": "creraces:ad",
+                                "scales_with": "creraces:attack_damage",
                                 "factor": 0.02,
                                 "scales": [
                                     {
-                                        "stat": "creraces:max_health",
-                                        "use_target": true,
+                                        "stat": "minecraft:generic.max_health",
+                                        "entity": "target",
                                         "factor": 0.1
                                     }
                                 ]
-                            },
-                            "damage_type": "minecraft:player_attack",
-                            "source": "self"
+                            }
                         },
-                        {
-                            "type": "creraces:remove_effect",
-                            "effect": "creraces:foul_play",
-                            "use_target": true
-                        },
+                        { "type": "creraces:remove_effect", "effect": "creraces:foul_play" },
                         {
                             "type": "creraces:play_sound",
                             "sound": "minecraft:block.anvil.hit",
@@ -100,12 +73,7 @@
                     "if_false": [
                         {
                             "type": "creraces:conditional",
-                            "condition": {
-                                "type": "creraces:has_effect",
-                                "effect": "creraces:foul_play",
-                                "amplifier": 0,
-                                "use_target": true
-                            },
+                            "condition": { "type": "creraces:has_effect", "effect": "creraces:foul_play" },
                             "if_true": [
                                 {
                                     "type": "creraces:apply_effect",
@@ -134,19 +102,11 @@
         {
             "type": "creraces:on_kill",
             "actions": [
-                {
-                    "type": "creraces:modify_value",
-                    "resource": "energy",
-                    "operation": "add",
-                    "value": 20
-                }
+                { "type": "creraces:modify_value", "resource": "energy", "operation": "add", "value": 20 }
             ]
         }
     ],
-    "creraces:starting_abilities": [
-        "creraces:slash_n_dash",
-        "creraces:crescent_swivel"
-    ],
+    "creraces:starting_abilities": ["creraces:slash_n_dash", "creraces:crescent_swivel"],
     "creraces:wiki_page": "Velox",
     "creraces:splash_x": 13,
     "creraces:splash_y": -13,

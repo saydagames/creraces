@@ -33,8 +33,12 @@ public class StopSoundAction implements ActionRegistry.RaceAction {
     }
 
     public static void register() {
-        ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "stop_sound"), json -> new StopSoundAction(
-                new ResourceLocation(GsonHelper.getAsString(json, "sound", "")),
-                SoundSource.valueOf(GsonHelper.getAsString(json, "source", "PLAYERS").toUpperCase())));
+        ActionRegistry.register(CreRaces.id("stop_sound"), json -> {
+            ResourceLocation sound = ResourceLocation.tryParse(GsonHelper.getAsString(json, "sound"));
+            if (sound == null) {
+                throw new IllegalArgumentException("malformed sound id");
+            }
+            return new StopSoundAction(sound, PlaySoundAction.parseSource(json));
+        });
     }
 }

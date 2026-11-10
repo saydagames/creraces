@@ -1,6 +1,6 @@
 {
     "creraces:name": "race.creraces.oread.name",
-    "creraces:parent_race": "creraces:nymph",
+    "creraces:parent_races": ["creraces:nymph"],
     "creraces:enable_territory": true,
     "creraces:index": 9.1,
     "creraces:description": "race.creraces.oread.description",
@@ -8,18 +8,12 @@
     "creraces:splash": "creraces:textures/screens/oread_splash.png",
     "creraces:portrait": "creraces:textures/screens/oread_portrait.png",
     "creraces:name_texture": "creraces:textures/screens/oread_text.png",
-    "creraces:resource_type": "MANA",
-    "creraces:gstate": "FEMALE",
+    "creraces:resource_type": "mana",
+    "creraces:gstate": "female",
     "creraces:difficulty": 2,
     "creraces:lava_vision": true,
     "creraces:unaffected_by_lava": true,
     "creraces:regeneration_multiplier": 1.1,
-    "creraces:immune_to_damage": [
-        "minecraft:fire",
-        "minecraft:lava",
-        "minecraft:in_fire",
-        "minecraft:on_fire"
-    ],
     "creraces:starting_abilities": [
         "creraces:searing_charge",
         "creraces:mountains_fury",
@@ -28,38 +22,18 @@
     ],
     "magmatic_metabolism": [
         {
-            "name": "magmatic_slowness",
-            "type": "creraces:on_tick",
-            "interval": 1,
-            "condition": {
-                "type": "creraces:state",
-                "state": "mountains_fury",
-                "value": 1.0
-            },
-            "actions": [
-                {
-                    "type": "creraces:apply_effect",
-                    "effect": "minecraft:slowness",
-                    "amplifier": 1,
-                    "duration": -1,
-                    "visible": false
-                }
-            ],
-            "on_fail": [
-                {
-                    "type": "creraces:remove_effect",
-                    "effect": "minecraft:slowness"
-                }
-            ]
+            "id": "magmatic_slowness",
+            "type": "creraces:keep_effect",
+            "effect": "minecraft:slowness",
+            "amplifier": 1,
+            "visible": false,
+            "condition": { "type": "creraces:compare", "value": "state:mountains_fury", "to": 1 }
         },
         {
-            "name": "magmatic_strength",
+            "id": "magmatic_strength",
             "type": "creraces:on_tick",
             "interval": 10,
-            "condition": {
-                "type": "creraces:is_burning",
-                "value": true
-            },
+            "condition": { "type": "creraces:burning", "value": true },
             "actions": [
                 {
                     "type": "creraces:apply_effect",
@@ -71,22 +45,18 @@
             ]
         },
         {
-            "name": "fury_maxed_feedback",
+            "id": "fury_maxed_feedback",
             "type": "creraces:on_tick",
             "interval": 1,
             "condition": {
                 "type": "creraces:and",
                 "conditions": [
+                    { "type": "creraces:compare", "value": "state:mountains_fury", "to": 1 },
                     {
-                        "type": "creraces:state",
-                        "state": "mountains_fury",
-                        "value": 1.0
-                    },
-                    {
-                        "type": "creraces:resource_level",
-                        "resource": "state:creraces:stacks",
-                        "operator": "==",
-                        "value": 999
+                        "type": "creraces:compare",
+                        "value": "state:creraces:stacks",
+                        "to": 999,
+                        "operator": "=="
                     }
                 ]
             },
@@ -94,8 +64,8 @@
                 {
                     "type": "creraces:play_sound",
                     "sound": "minecraft:item.flintandsteel.use",
-                    "volume": 1.0,
-                    "pitch": 1.0
+                    "volume": 1,
+                    "pitch": 1
                 },
                 {
                     "type": "creraces:message",
@@ -105,85 +75,51 @@
             ]
         },
         {
-            "name": "fury_stack_accumulation",
+            "id": "fury_stack_accumulation",
             "type": "creraces:on_tick",
             "interval": 1,
             "condition": {
                 "type": "creraces:and",
                 "conditions": [
+                    { "type": "creraces:compare", "value": "state:mountains_fury", "to": 1 },
                     {
-                        "type": "creraces:state",
-                        "state": "mountains_fury",
-                        "value": 1.0
-                    },
-                    {
-                        "type": "creraces:resource_level",
-                        "resource": "state:creraces:stacks",
-                        "operator": "<",
-                        "value": 1000
+                        "type": "creraces:compare",
+                        "value": "state:creraces:stacks",
+                        "to": 1000,
+                        "operator": "<"
                     }
                 ]
             },
             "actions": [
                 {
-                    "label": "Fury Stacks",
                     "type": "creraces:modify_value",
-                    "resource": "state:creraces:stacks",
+                    "state": "creraces:stacks",
                     "operation": "add",
-                    "value": 1,
-                    "show_bar": true,
-                    "bar_max": 1000,
-                    "bar_color": "#FF4500"
+                    "value": 1
                 }
             ]
         },
         {
-            "name": "magmatic_metabolism",
+            "id": "magmatic_metabolism",
             "type": "creraces:on_tick",
             "interval": 10,
             "condition": {
                 "type": "creraces:and",
                 "conditions": [
-                    {
-                        "type": "creraces:sneaking"
-                    },
-                    {
-                        "type": "creraces:holding_item",
-                        "item": "#c:cobblestones"
-                    },
-                    {
-                        "type": "creraces:state",
-                        "state": "magmamancy",
-                        "value": 1.0
-                    }
+                    { "type": "creraces:sneaking" },
+                    { "type": "creraces:has_item", "slot": "hands", "item": "#c:cobblestones" },
+                    { "type": "creraces:compare", "value": "state:magmamancy", "to": 1 }
                 ]
             },
             "actions": [
-                {
-                    "type": "creraces:consume_item",
-                    "item": "#c:cobblestones",
-                    "amount": 1
-                },
+                { "type": "creraces:consume_item", "item": "#c:cobblestones", "amount": 1 },
+                { "type": "creraces:modify_value", "resource": "food", "operation": "add", "value": 2 },
+                { "type": "creraces:modify_value", "resource": "saturation", "operation": "add", "value": 2 },
                 {
                     "type": "creraces:modify_value",
-                    "resource": "food",
+                    "state": "creraces:stored_material",
                     "operation": "add",
-                    "value": 2
-                },
-                {
-                    "type": "creraces:modify_value",
-                    "resource": "saturation",
-                    "operation": "add",
-                    "value": 2
-                },
-                {
-                    "label": "Stored Material",
-                    "type": "creraces:modify_value",
-                    "resource": "state:creraces:stored_material",
-                    "operation": "add",
-                    "value": 1,
-                    "show_bar": true,
-                    "bar_max": 64
+                    "value": 1
                 },
                 {
                     "type": "creraces:play_sound",
@@ -196,48 +132,19 @@
     ],
     "hot_headed_logic": [
         {
-            "name": "hot_headed_effects",
-            "type": "creraces:on_tick",
-            "interval": 1,
-            "condition": {
-                "type": "creraces:state",
-                "state": "hot_headed",
-                "value": 1.0
-            },
-            "actions": [
-                {
-                    "type": "creraces:apply_effect",
-                    "effect": "minecraft:resistance",
-                    "amplifier": 1,
-                    "duration": -1
-                },
-                {
-                    "type": "creraces:apply_effect",
-                    "effect": "minecraft:hunger",
-                    "amplifier": 1,
-                    "duration": -1
-                }
+            "id": "hot_headed_effects",
+            "type": "creraces:keep_effect",
+            "effects": [
+                { "effect": "minecraft:resistance", "amplifier": 1 },
+                { "effect": "minecraft:hunger", "amplifier": 1 }
             ],
-            "on_fail": [
-                {
-                    "type": "creraces:remove_effect",
-                    "effect": "minecraft:resistance"
-                },
-                {
-                    "type": "creraces:remove_effect",
-                    "effect": "minecraft:hunger"
-                }
-            ]
+            "condition": { "type": "creraces:compare", "value": "state:hot_headed", "to": 1 }
         },
         {
-            "name": "hot_headed_burning",
+            "id": "hot_headed_burning",
             "type": "creraces:on_tick",
             "interval": 20,
-            "condition": {
-                "type": "creraces:state",
-                "state": "hot_headed",
-                "value": 1.0
-            },
+            "condition": { "type": "creraces:compare", "value": "state:hot_headed", "to": 1 },
             "actions": [
                 {
                     "type": "creraces:apply_effect",
@@ -245,31 +152,25 @@
                     "duration": 40,
                     "visible": false
                 },
-                {
-                    "type": "creraces:set_on_fire",
-                    "duration": 2
-                }
+                { "type": "creraces:set_on_fire", "duration": 40, "entity": "self" }
             ]
         },
         {
             "type": "creraces:on_hit",
-            "condition": {
-                "type": "creraces:state",
-                "state": "hot_headed",
-                "value": 1.0
-            },
-            "actions": [
-                {
-                    "type": "creraces:set_on_fire",
-                    "duration": 5,
-                    "use_target": true
-                }
-            ]
+            "condition": { "type": "creraces:compare", "value": "state:hot_headed", "to": 1 },
+            "actions": [{ "type": "creraces:set_on_fire", "duration": 100 }]
         }
     ],
     "creraces:territory_valid_biomes": ["temp>=1.0"],
-    "creraces:starting_items": [
-        "creraces:volcanic_idol"
+    "creraces:starting_items": ["creraces:volcanic_idol"],
+    "creraces:overlay_bars": [
+        {
+            "source": "state:creraces:stacks",
+            "max": 1000,
+            "color": "#FF4500",
+            "name": "gui.creraces.bar.fury_stacks"
+        },
+        { "source": "state:creraces:stored_material", "max": 64, "name": "gui.creraces.bar.stored_material" }
     ],
     "sapling_mechanics": [
         {
@@ -277,48 +178,17 @@
             "block": "creraces:volcanic_idol",
             "actions": [
                 {
-                    "type": "creraces:conditional",
-                    "condition": {
-                        "type": "creraces:state",
-                        "state": "state:node_x",
-                        "operator": "!=",
-                        "value": 0.0
-                    },
-                    "if_true": [
-                        { "type": "creraces:message", "text": "msg.creraces.oread.already_has_node", "actionbar": true },
-                        { "type": "creraces:cancel" }
-                    ]
-                },
-                {
-                    "type": "creraces:claim_territory",
-                    "valid_biomes": ["temp>=1.0"],
-                    "anchor_y_offset": 0,
-                    "on_success": [
-                        { "type": "creraces:modify_value", "resource": "state:node_x", "mode": "TARGET_BLOCK_X", "persistent": true },
-                        { "type": "creraces:modify_value", "resource": "state:node_y", "mode": "TARGET_BLOCK_Y", "persistent": true },
-                        { "type": "creraces:modify_value", "resource": "state:node_z", "mode": "TARGET_BLOCK_Z", "persistent": true },
-                        { "type": "creraces:spawn_particles", "particle": "minecraft:happy_villager", "count": 15, "spread_x": 0.5, "spread_y": 0.5, "spread_z": 0.5, "use_target": true },
-                        { "type": "creraces:play_sound", "sound": "minecraft:item.bone_meal.use", "volume": 1.0, "pitch": 1.0, "use_target": true },
-                        { "type": "creraces:message", "text": "msg.creraces.oread.claimed_success", "actionbar": true }
-                    ],
-                    "on_partial": [
-                        { "type": "creraces:modify_value", "resource": "state:node_x", "mode": "TARGET_BLOCK_X", "persistent": true },
-                        { "type": "creraces:modify_value", "resource": "state:node_y", "mode": "TARGET_BLOCK_Y", "persistent": true },
-                        { "type": "creraces:modify_value", "resource": "state:node_z", "mode": "TARGET_BLOCK_Z", "persistent": true }
-                    ],
-                    "on_invalid_biome": [
-                        { "type": "creraces:message", "text": "msg.creraces.oread.invalid_biome", "actionbar": true },
-                        { "type": "creraces:cancel" }
-                    ],
-                    "on_enemy_territory": [
-                        { "type": "creraces:message", "text": "msg.creraces.oread.enemy_territory", "actionbar": true }
-                    ],
-                    "on_inside_own": [
-                        { "type": "creraces:modify_value", "resource": "state:node_x", "mode": "TARGET_BLOCK_X", "persistent": true },
-                        { "type": "creraces:modify_value", "resource": "state:node_y", "mode": "TARGET_BLOCK_Y", "persistent": true },
-                        { "type": "creraces:modify_value", "resource": "state:node_z", "mode": "TARGET_BLOCK_Z", "persistent": true },
-                        { "type": "creraces:message", "text": "msg.creraces.oread.node_relocated", "actionbar": true }
-                    ]
+                    "type": "creraces:template",
+                    "template": "creraces:territory/claim_node",
+                    "args": {
+                        "anchor_y_offset": 0,
+                        "on_claimed": [],
+                        "msg_already_has_node": "msg.creraces.oread.already_has_node",
+                        "msg_claimed": "msg.creraces.oread.claimed_success",
+                        "msg_relocated": "msg.creraces.oread.node_relocated",
+                        "msg_invalid_biome": "msg.creraces.oread.invalid_biome",
+                        "msg_enemy_territory": "msg.creraces.oread.enemy_territory"
+                    }
                 }
             ]
         },
@@ -327,32 +197,25 @@
             "block": "creraces:volcanic_idol",
             "actions": [
                 {
-                    "type": "creraces:conditional",
-                    "condition": {
-                        "type": "creraces:and",
-                        "conditions": [
-                            { "type": "creraces:sneaking", "value": true },
-                            { "type": "creraces:is_position", "use_target_block": true, "x": "state:node_x", "y": "state:node_y", "z": "state:node_z" }
-                        ]
-                    },
-                    "if_true": [
-                        { "type": "creraces:give_item", "item": "creraces:volcanic_idol", "amount": 1 },
-                        { "type": "creraces:place_block", "block": "minecraft:air", "use_target_block": true, "overwrite": true },
-                        { "type": "creraces:modify_value", "resource": "state:node_x", "value": 0.0, "persistent": true },
-                        { "type": "creraces:modify_value", "resource": "state:node_y", "value": 0.0, "persistent": true },
-                        { "type": "creraces:modify_value", "resource": "state:node_z", "value": 0.0, "persistent": true },
-                        { "type": "creraces:message", "text": "msg.creraces.node_removed", "actionbar": true }
-                    ]
+                    "type": "creraces:template",
+                    "template": "creraces:territory/remove_node",
+                    "args": {
+                        "on_removed": [
+                            { "type": "creraces:give_item", "item": "creraces:volcanic_idol", "amount": 1 },
+                            {
+                                "type": "creraces:place_block",
+                                "block": "minecraft:air",
+                                "position": { "from": "block" },
+                                "overwrite": true
+                            }
+                        ],
+                        "on_inspect": []
+                    }
                 }
             ]
         }
     ],
-    "cosmetics": [
-        {
-            "type": "creraces:addon",
-            "addon_id": "oread_body"
-        }
-    ],
+    "cosmetics": [{ "type": "creraces:addon", "addon": "oread_body" }],
     "creraces:wiki_page": "Oread",
     "creraces:splash_x": -7,
     "creraces:splash_y": -38,

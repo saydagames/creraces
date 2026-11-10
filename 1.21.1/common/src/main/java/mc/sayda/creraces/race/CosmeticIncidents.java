@@ -8,6 +8,7 @@ import mc.sayda.creraces.config.CreRacesConfig;
 import mc.sayda.creraces.engine.GState;
 import mc.sayda.creraces.engine.TraitDispatch;
 import mc.sayda.creraces.engine.condition.Condition;
+import mc.sayda.creraces.engine.condition.ConditionRegistry;
 import mc.sayda.creraces.engine.traits.AddonTrait;
 import mc.sayda.twilight_lib.TwilightConstants;
 import mc.sayda.twilight_lib.capabilities.DataUtils;
@@ -44,8 +45,8 @@ public class CosmeticIncidents {
         if (addons == null)
             return;
 
-        // Owned addons (supporter/admin grants) survive this.
-        clearRacialAddons(addons);
+        // Only addons this mod put on come off, so other mods' and commands' addons stay.
+        clearRacialAddons(player, addons);
 
         if (!CreRacesConfig.RACE_ADDONS_ENABLED.get()) {
             syncAddons(player);
@@ -59,9 +60,9 @@ public class CosmeticIncidents {
                 applyAddonData(player, cust.addonData(), value, custMap, addons);
             }
 
-            // A fixed addonId is always shown; a "tint" customization colours it.
+            // A fixed addon is always shown; a "tint" customization tints it.
             if (cust.addonId() != null) {
-                setAddonActiveRobust(addons, cust.addonId(), true, true);
+                equipRacialAddon(player, addons, cust.addonId());
                 if (cust.type().equals("tint")) {
                     addons.setAddonTint(cust.addonId(), parseHex(value, 0xFFFFFF));
                 }
@@ -77,7 +78,7 @@ public class CosmeticIncidents {
                 continue;
 
             String addonId = resolvePlaceholders(addonTrait.getAddonId(), custMap, race);
-            setAddonActiveRobust(addons, addonId, true, true);
+            equipRacialAddon(player, addons, addonId);
 
             if (addonTrait.getTint() != null && !addonTrait.getTint().isEmpty()) {
                 addons.setAddonTint(addonId, resolveColor(addonTrait.getTint(), custMap));
@@ -92,6 +93,12 @@ public class CosmeticIncidents {
         syncAddons(player);
     }
 
+    /**
+     * Sends the player's addons to everyone and saves them to Twilight Lib's persistent copy.
+     * Twilight Lib restores addons from that copy on login and respawn, and only refreshes it
+     * itself, so without this everything applied here since then (race addons, the gState chest)
+     * would be lost.
+     */
     public static void syncAddons(Player player) {
         if (!(player instanceof ServerPlayer))
             return;
@@ -99,6 +106,8 @@ public class CosmeticIncidents {
         IAddons addons = DataUtils.getAddonsData(player);
         if (addons == null)
             return;
+
+        DataUtils.getPersistentData(player).put(TwilightConstants.NBT_ADDONS, addons.serialize());
 
         var pkt = createSyncPacket(player.getUUID(), addons.getActiveAddons(),
                 getExternalGrantsRobust(addons), addons.getAllAddonTints());
@@ -128,7 +137,7 @@ public class CosmeticIncidents {
 
         if (data.has("pattern")) {
             String addonId = data.get("pattern").getAsString().replace("{self}", value);
-            setAddonActiveRobust(addons, resolvePlaceholders(addonId, custMap, null), true, true);
+            equipRacialAddon(player, addons, resolvePlaceholders(addonId, custMap, null));
         }
     }
 
@@ -136,7 +145,7 @@ public class CosmeticIncidents {
     private static boolean applyComplexAddon(Player player, JsonElement element, Map<String, String> custMap,
             IAddons addons) {
         if (element.isJsonPrimitive()) {
-            setAddonActiveRobust(addons, resolvePlaceholders(element.getAsString(), custMap, null), true, true);
+            equipRacialAddon(player, addons, resolvePlaceholders(element.getAsString(), custMap, null));
             return true;
         }
         if (!element.isJsonObject())
@@ -144,16 +153,16 @@ public class CosmeticIncidents {
 
         JsonObject obj = element.getAsJsonObject();
         if (obj.has("condition") && player != null) {
-            Condition cond = Condition.fromJson(obj.getAsJsonObject("condition"));
+            Condition cond = ConditionRegistry.fromJson(obj.getAsJsonObject("condition"));
             if (!cond.evaluate(player, null, null, null)) {
                 return false;
             }
         }
 
-        if (!obj.has("id"))
+        if (!obj.has("addon"))
             return false;
-        String id = resolvePlaceholders(obj.get("id").getAsString(), custMap, null);
-        setAddonActiveRobust(addons, id, true, true);
+        String id = resolvePlaceholders(obj.get("addon").getAsString(), custMap, null);
+        equipRacialAddon(player, addons, id);
         if (obj.has("tint")) {
             addons.setAddonTint(id, resolveColor(obj.get("tint").getAsString(), custMap));
         }
@@ -163,22 +172,38 @@ public class CosmeticIncidents {
     public static void clearAllRacialAddons(Player player) {
         IAddons addons = DataUtils.getAddonsData(player);
         if (addons != null) {
-            clearRacialAddons(addons);
+            clearRacialAddons(player, addons);
             syncAddons(player);
         }
     }
 
     /**
-     * Deactivates every addon the player does not permanently own (supporter/admin grants),
-     * which covers both racial addons and Mirror selections.
+     * Takes off the addons this mod put on: race addons and Mirror choices. Addons the player owns
+     * stay on, and so does anything put on by commands or other mods.
      */
-    private static void clearRacialAddons(IAddons addons) {
+    private static void clearRacialAddons(Player player, IAddons addons) {
         Set<String> owned = addons.getAddons();
-        for (String id : new HashSet<>(addons.getActiveAddons())) {
-            if (!owned.contains(id)) {
-                CreRaces.LOGGER.debug("Deactivating non-owned addon on reset: {}", id);
-                setAddonActiveRobust(addons, id, false, true);
+        mc.sayda.creraces.capability.DataUtils.getVariables(player).ifPresent(vars -> {
+            for (String id : new HashSet<>(vars.getRacialAddons())) {
+                if (!owned.contains(id)) {
+                    setAddonActiveRobust(addons, id, false, true);
+                }
             }
+            vars.getRacialAddons().clear();
+        });
+    }
+
+    /** Puts an addon on for the race and remembers it, so the next clear takes it off again. */
+    private static void equipRacialAddon(@Nullable Player player, IAddons addons, String id) {
+        setAddonActiveRobust(addons, id, true, true);
+        rememberRacialAddon(player, id);
+    }
+
+    /** Records that this mod put an addon on, for addons applied outside applyCustomizations. */
+    public static void rememberRacialAddon(@Nullable Player player, String id) {
+        if (player != null && id != null && !id.isEmpty()) {
+            mc.sayda.creraces.capability.DataUtils.getVariables(player)
+                    .ifPresent(vars -> vars.getRacialAddons().add(id));
         }
     }
 
@@ -283,7 +308,11 @@ public class CosmeticIncidents {
 
         IAddons addons = DataUtils.getAddonsData(player);
         if (addons != null) {
-            setAddonActiveRobust(addons, "chest", female, true);
+            if (female) {
+                equipRacialAddon(player, addons, "chest");
+            } else {
+                setAddonActiveRobust(addons, "chest", false, true);
+            }
             if (sync) {
                 syncAddons(player);
             }

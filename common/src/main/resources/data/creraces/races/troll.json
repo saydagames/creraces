@@ -1,60 +1,34 @@
 {
     "creraces:name": "race.creraces.troll.name",
-    "creraces:index": 15.0,
-    "creraces:scale": {
-        "base": 1.2
-    },
+    "creraces:index": 15,
+    "creraces:scale": { "base": 1.2 },
     "creraces:description": "race.creraces.troll.description",
     "creraces:icon": "creraces:textures/screens/troll_icon.png",
     "creraces:splash": "creraces:textures/screens/troll_splash.png",
-    "creraces:resource_type": "RAGE",
+    "creraces:resource_type": "rage",
     "creraces:difficulty": 1,
-    "creraces:allowed_food_types": [
-        "meat",
-        "#minecraft:fishes"
-    ],
+    "creraces:allowed_food_types": ["meat", "#minecraft:fishes"],
     "base_stats": [
         {
             "id": "troll_health",
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.max_health",
-            "value": 10.0,
-            "operation": "addition"
+            "value": 10
         },
         {
             "id": "troll_damage",
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.attack_damage",
-            "value": 3.0,
-            "operation": "addition"
+            "value": 3
         }
     ],
     "regeneration_logic": [
         {
-            "name": "regeneration_effect",
-            "type": "creraces:on_tick",
-            "interval": 1,
-            "condition": {
-                "type": "creraces:not",
-                "condition": {
-                    "type": "creraces:is_burning"
-                }
-            },
-            "actions": [
-                {
-                    "type": "creraces:apply_effect",
-                    "effect": "minecraft:regeneration",
-                    "amplifier": 0,
-                    "duration": -1,
-                    "visible": false
-                }
-            ],
-            "on_fail": [
-                {
-                    "type": "creraces:remove_effect",
-                    "effect": "minecraft:regeneration"
-                }
-            ]
+            "id": "regeneration_effect",
+            "type": "creraces:keep_effect",
+            "effect": "minecraft:regeneration",
+            "visible": false,
+            "condition": { "type": "creraces:not", "condition": { "type": "creraces:burning" } }
         }
     ],
     "sunlight_penalty": [
@@ -64,16 +38,8 @@
             "condition": {
                 "type": "creraces:and",
                 "conditions": [
-                    {
-                        "type": "creraces:in_sunlight"
-                    },
-                    {
-                        "type": "creraces:not",
-                        "condition": {
-                            "type": "creraces:wearing_armor",
-                            "slot": "head"
-                        }
-                    }
+                    { "type": "creraces:in_sunlight" },
+                    { "type": "creraces:not", "condition": { "type": "creraces:has_item", "slot": "head" } }
                 ]
             },
             "actions": [
@@ -91,9 +57,7 @@
         {
             "type": "creraces:on_tick",
             "interval": 40,
-            "condition": {
-                "type": "creraces:is_burning"
-            },
+            "condition": { "type": "creraces:burning" },
             "actions": [
                 {
                     "type": "creraces:apply_effect",
@@ -118,20 +82,13 @@
             "condition": {
                 "type": "creraces:and",
                 "conditions": [
+                    { "type": "creraces:attack_charged" },
+                    { "type": "creraces:has_effect", "effect": "creraces:maul" },
                     {
-                        "type": "creraces:attack_charged"
-                    },
-                    {
-                        "type": "creraces:has_effect",
-                        "effect": "creraces:maul",
-                        "use_target": true
-                    },
-                    {
-                        "type": "creraces:not",
-                        "condition": {
-                            "type": "creraces:cooldown",
-                            "state": "maul_passive"
-                        }
+                        "type": "creraces:compare",
+                        "value": "cooldown:maul_passive",
+                        "to": 0,
+                        "operator": "<="
                     }
                 ]
             },
@@ -140,35 +97,19 @@
                     "type": "creraces:heal",
                     "amount": {
                         "base": 0,
-                        "scales_with": "creraces:max_health",
-                        "use_target": true,
-                        "factor": 0.1
-                    }
+                        "scales_with": "minecraft:generic.max_health",
+                        "factor": 0.1,
+                        "entity": "target"
+                    },
+                    "entity": "self"
                 },
                 {
                     "type": "creraces:damage",
-                    "amount": {
-                        "base": 2.0,
-                        "scales_with": "creraces:ad",
-                        "factor": 0.02
-                    },
-                    "damage_type": "minecraft:player_attack"
+                    "amount": { "base": 2, "scales_with": "creraces:attack_damage", "factor": 0.02 }
                 },
-                {
-                    "type": "creraces:remove_effect",
-                    "effect": "creraces:maul",
-                    "use_target": true
-                },
-                {
-                    "type": "creraces:set_cooldown",
-                    "state": "maul_passive",
-                    "value": 240
-                },
-                {
-                    "type": "creraces:spawn_particles",
-                    "particle": "minecraft:damage_indicator",
-                    "count": 5
-                }
+                { "type": "creraces:remove_effect", "effect": "creraces:maul" },
+                { "type": "creraces:modify_value", "cooldown": "maul_passive", "value": 240 },
+                { "type": "creraces:spawn_particles", "particle": "minecraft:damage_indicator", "count": 5 }
             ]
         },
         {
@@ -176,16 +117,10 @@
             "condition": {
                 "type": "creraces:and",
                 "conditions": [
-                    {
-                        "type": "creraces:attack_charged"
-                    },
+                    { "type": "creraces:attack_charged" },
                     {
                         "type": "creraces:not",
-                        "condition": {
-                            "type": "creraces:has_effect",
-                            "effect": "creraces:maul",
-                            "use_target": true
-                        }
+                        "condition": { "type": "creraces:has_effect", "effect": "creraces:maul" }
                     }
                 ]
             },
@@ -195,8 +130,7 @@
                     "effect": "creraces:maul",
                     "duration": 240,
                     "amplifier": 0,
-                    "visible": true,
-                    "use_target": true
+                    "visible": true
                 }
             ]
         }
@@ -207,14 +141,8 @@
             "condition": {
                 "type": "creraces:and",
                 "conditions": [
-                    {
-                        "type": "creraces:attack_charged"
-                    },
-                    {
-                        "type": "creraces:state",
-                        "state": "adrenaline_rush",
-                        "value": 1.0
-                    }
+                    { "type": "creraces:attack_charged" },
+                    { "type": "creraces:compare", "value": "state:adrenaline_rush", "to": 1 }
                 ]
             },
             "actions": [
@@ -223,21 +151,13 @@
                     "effect": "creraces:stunned",
                     "duration": 60,
                     "amplifier": 0,
-                    "visible": true,
-                    "use_target": true
+                    "visible": true
                 },
-                {
-                    "type": "creraces:modify_value",
-                    "resource": "state:adrenaline_rush",
-                    "value": 0
-                }
+                { "type": "creraces:modify_value", "state": "adrenaline_rush", "value": 0 }
             ]
         }
     ],
-    "creraces:starting_abilities": [
-        "creraces:adrenaline_rush",
-        "creraces:troll_pillar"
-    ],
+    "creraces:starting_abilities": ["creraces:adrenaline_rush", "creraces:troll_pillar"],
     "creraces:portrait": "creraces:textures/screens/troll_portrait.png",
     "creraces:name_texture": "creraces:textures/screens/troll_text.png",
     "creraces:wiki_page": "Troll",

@@ -3,7 +3,7 @@ package mc.sayda.creraces.engine.actions;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.engine.ActionRegistry;
-import mc.sayda.creraces.util.GsonHelper;
+import mc.sayda.creraces.engine.ScalingValue;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -21,9 +21,9 @@ import java.util.Optional;
 /** Instantly smelts up to "amount" items from the caster's main hand using the furnace recipes. */
 public class SmeltItemAction implements ActionRegistry.RaceAction {
 
-    private final int amount;
+    private final ScalingValue amount;
 
-    private SmeltItemAction(int amount) {
+    private SmeltItemAction(ScalingValue amount) {
         this.amount = amount;
     }
 
@@ -44,7 +44,7 @@ public class SmeltItemAction implements ActionRegistry.RaceAction {
             return true;
         }
         ItemStack singleResult = recipe.get().getResultItem(player.level().registryAccess()).copy();
-        int toSmelt = Math.min(amount, stack.getCount());
+        int toSmelt = Math.min((int) amount.evaluate(player, target, slot, interactPos), stack.getCount());
         stack.shrink(toSmelt);
 
         int remaining = singleResult.getCount() * toSmelt;
@@ -66,7 +66,7 @@ public class SmeltItemAction implements ActionRegistry.RaceAction {
     }
 
     public static void register() {
-        ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "smelt_item"),
-                json -> new SmeltItemAction(GsonHelper.getAsInt(json, "amount", 1)));
+        ActionRegistry.register(CreRaces.id("smelt_item"),
+                json -> new SmeltItemAction(ScalingValue.fromJson(json, "amount", 1.0)));
     }
 }

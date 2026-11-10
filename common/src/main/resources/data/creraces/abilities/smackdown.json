@@ -1,20 +1,16 @@
 {
     "creraces:name": "ability.creraces.smackdown.name",
     "creraces:description": "ability.creraces.smackdown.description",
-    "creraces:type": "ACTIVE",
+    "creraces:type": "active",
     "creraces:icon": "minecraft:anvil",
     "creraces:cooldown": 480,
     "creraces:cost": 30,
-    "creraces:race": [
-        "creraces:aurai"
-    ],
+    "creraces:race": ["creraces:aurai"],
     "creraces:actions": [
         {
             "type": "creraces:aoe",
             "radius": 8,
-            "targets": [
-                "enemies"
-            ],
+            "targets": ["enemies"],
             "actions": [
                 {
                     "type": "creraces:apply_effect",
@@ -24,21 +20,12 @@
                 },
                 {
                     "type": "creraces:delay",
-                    "ticks": 20,
+                    "duration": 20,
                     "actions": [
-                        {
-                            "type": "creraces:apply_velocity",
-                            "use_target": true,
-                            "y": -4,
-                            "absolute": true
-                        },
+                        { "type": "creraces:apply_velocity", "y": -4, "operation": "set" },
                         {
                             "type": "creraces:damage",
-                            "amount": {
-                                "base": 2,
-                                "scales_with": "creraces:ap",
-                                "factor": 0.01
-                            },
+                            "amount": { "base": 2, "scales_with": "creraces:ability_power", "factor": 0.01 },
                             "damage_type": "minecraft:fall"
                         }
                     ]

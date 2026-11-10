@@ -1,6 +1,5 @@
 package mc.sayda.creraces.engine.actions;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.ability.AbilitySlot;
@@ -8,6 +7,7 @@ import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.capability.IPlayerVariables;
 import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.engine.BiomeChecker;
+import mc.sayda.creraces.network.BoundaryHandler;
 import mc.sayda.creraces.race.Race;
 import mc.sayda.creraces.race.RaceRegistry;
 import mc.sayda.creraces.territory.FactionLeaderManager;
@@ -24,19 +24,20 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
 /**
  * Claims the territory island around the interacted block (or the caster) for the caster's race,
- * then runs the branch matching the claim result.
+ * provided enough of the chunk lies in the race's creraces:territory_valid_biomes. Then runs the
+ * branch matching the claim result: on_success, on_inside_own, on_enemy_territory, on_invalid_biome
+ * or on_not_leader. A successful claim stores its anchor block (the interacted block lifted by
+ * "anchor_y_offset") in the node states, "node_x_state" etc. (creraces:node_x by default).
  */
 public class ClaimTerritoryAction implements ActionRegistry.RaceAction {
 
-    public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "claim_territory");
+    public static final ResourceLocation ID = CreRaces.id("claim_territory");
 
-    private final List<String> validBiomes;
     private final boolean leaderOnly;
     private final int anchorYOffset;
     private final ResourceLocation nodeXState;
@@ -48,12 +49,11 @@ public class ClaimTerritoryAction implements ActionRegistry.RaceAction {
     private final List<ActionRegistry.RaceAction> onEnemyTerritory;
     private final List<ActionRegistry.RaceAction> onInsideOwn;
 
-    public ClaimTerritoryAction(List<String> validBiomes, boolean leaderOnly, int anchorYOffset,
+    public ClaimTerritoryAction(boolean leaderOnly, int anchorYOffset,
             ResourceLocation nodeXState, ResourceLocation nodeYState, ResourceLocation nodeZState,
             List<ActionRegistry.RaceAction> onSuccess, List<ActionRegistry.RaceAction> onNotLeader,
             List<ActionRegistry.RaceAction> onInvalidBiome, List<ActionRegistry.RaceAction> onEnemyTerritory,
             List<ActionRegistry.RaceAction> onInsideOwn) {
-        this.validBiomes = validBiomes;
         this.leaderOnly = leaderOnly;
         this.anchorYOffset = anchorYOffset;
         this.nodeXState = nodeXState;
@@ -82,8 +82,8 @@ public class ClaimTerritoryAction implements ActionRegistry.RaceAction {
             return false;
         }
 
-        // Fall back to the race's own biome list so the sapling placement check and the map preview agree.
-        List<String> biomes = validBiomes.isEmpty() ? race.claimValidBiomes() : validBiomes;
+        // The race's own list, so the claim, in_habitable_biome and the map preview always agree.
+        List<String> biomes = race.claimValidBiomes();
         float threshold = race.claimBiomeThreshold();
         if (!biomes.isEmpty() && !isChunkBiomeValid(serverPlayer, interactPos, biomes, threshold)) {
             return ActionRegistry.runChain(onInvalidBiome, player, target, slot, interactPos);
@@ -111,6 +111,7 @@ public class ClaimTerritoryAction implements ActionRegistry.RaceAction {
                 && (!result.newClaims.isEmpty() || !result.preExistingClaims.isEmpty())) {
             BlockPos anchorPos = interactPos != null ? interactPos.offset(0, anchorYOffset, 0) : player.blockPosition();
             territories.placeRootBlock(anchorPos, result.newClaims, result.preExistingClaims);
+            recordNode(serverPlayer, anchorPos);
         }
         return switch (result.type) {
             case SUCCESS              -> ActionRegistry.runChain(onSuccess, player, target, slot, interactPos);
@@ -119,6 +120,19 @@ public class ClaimTerritoryAction implements ActionRegistry.RaceAction {
             case INVALID_BIOME        -> ActionRegistry.runChain(onInvalidBiome, player, target, slot, interactPos);
             case INSUFFICIENT_COINS, ANCHOR_CHUNK, UNCLAIM_SUCCESS, OUT_OF_RANGE, NOT_LEADER, MAX_NODES_REACHED -> false;
         };
+    }
+
+    /** Stores the claim's anchor in the node states, where data reads it back (quick escape, node removal). */
+    private void recordNode(ServerPlayer player, BlockPos anchor) {
+        DataUtils.getVariables(player).ifPresent(vars -> {
+            vars.setPersistentState(nodeXState, anchor.getX());
+            vars.setPersistentState(nodeYState, anchor.getY());
+            vars.setPersistentState(nodeZState, anchor.getZ());
+            vars.setStatePersistent(nodeXState, true);
+            vars.setStatePersistent(nodeYState, true);
+            vars.setStatePersistent(nodeZState, true);
+            BoundaryHandler.resyncVariables(player, player);
+        });
     }
 
     /**
@@ -153,31 +167,22 @@ public class ClaimTerritoryAction implements ActionRegistry.RaceAction {
     }
 
     public static void register() {
-        ActionRegistry.register(ID, json -> {
-            List<String> validBiomes = new ArrayList<>();
-            if (json.has("valid_biomes")) {
-                for (JsonElement biome : json.getAsJsonArray("valid_biomes")) {
-                    validBiomes.add(biome.getAsString());
-                }
-            }
-            return new ClaimTerritoryAction(
-                    validBiomes,
-                    GsonHelper.getAsBoolean(json, "leader_only", false),
-                    GsonHelper.getAsInt(json, "anchor_y_offset", -1),
-                    stateKey(json, "node_x_state", "node_x"),
-                    stateKey(json, "node_y_state", "node_y"),
-                    stateKey(json, "node_z_state", "node_z"),
-                    ActionRegistry.listFromJson(json, "on_success"),
-                    ActionRegistry.listFromJson(json, "on_not_leader"),
-                    ActionRegistry.listFromJson(json, "on_invalid_biome"),
-                    ActionRegistry.listFromJson(json, "on_enemy_territory"),
-                    ActionRegistry.listFromJson(json, "on_inside_own"));
-        });
+        ActionRegistry.register(ID, json -> new ClaimTerritoryAction(
+                GsonHelper.getAsBoolean(json, "leader_only", false),
+                GsonHelper.getAsInt(json, "anchor_y_offset", -1),
+                stateKey(json, "node_x_state", "node_x"),
+                stateKey(json, "node_y_state", "node_y"),
+                stateKey(json, "node_z_state", "node_z"),
+                ActionRegistry.listFromJson(json, "on_success"),
+                ActionRegistry.listFromJson(json, "on_not_leader"),
+                ActionRegistry.listFromJson(json, "on_invalid_biome"),
+                ActionRegistry.listFromJson(json, "on_enemy_territory"),
+                ActionRegistry.listFromJson(json, "on_inside_own")));
     }
 
     private static ResourceLocation stateKey(JsonObject json, String key, String defaultPath) {
         return json.has(key)
-                ? ResourceLocation.parse(json.get(key).getAsString())
-                : ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, defaultPath);
+                ? ResourceLocation.tryParse(json.get(key).getAsString())
+                : CreRaces.id(defaultPath);
     }
 }

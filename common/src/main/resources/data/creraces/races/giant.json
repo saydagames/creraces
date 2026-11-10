@@ -1,64 +1,31 @@
 {
     "creraces:name": "race.creraces.giant.name",
-    "creraces:index": 11.0,
-    "creraces:scale": {
-        "base": 2.0
-    },
+    "creraces:index": 11,
+    "creraces:scale": { "base": 2 },
     "creraces:description": "race.creraces.giant.description",
     "creraces:icon": "creraces:textures/screens/giant_icon.png",
     "creraces:splash": "creraces:textures/screens/giant_splash.png",
-    "creraces:resource_type": "GRIT",
+    "creraces:resource_type": "grit",
     "creraces:difficulty": 3,
     "creraces:immune_to_knockback": true,
-    "creraces:negate_effects": [
-        "minecraft:levitation",
-        "minecraft:slowness"
-    ],
+    "creraces:negate_effects": ["minecraft:levitation", "minecraft:slowness"],
     "giant_attributes": [
         {
             "id": "giant_damage",
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.attack_damage",
-            "value": {
-                "base": 3.0
-            },
-            "operation": "addition"
+            "value": { "base": 3 }
         },
         {
             "id": "giant_health",
             "type": "creraces:attribute_modifier",
             "attribute": "minecraft:generic.max_health",
-            "value": {
-                "base": 12.0
-            },
-            "operation": "addition"
+            "value": { "base": 12 }
         }
     ],
-    "grit_mechanics": [
+    "respawn_shield": [
         {
-            "type": "creraces:on_hurt",
-            "condition": {
-                "type": "creraces:attack_charged"
-            },
-            "actions": [
-                {
-                    "type": "creraces:modify_value",
-                    "resource": "grit",
-                    "operation": "add",
-                    "value": 5.0
-                }
-            ]
-        }
-    ],
-    "final_stand": [
-        {
-            "type": "creraces:on_death",
-            "condition": {
-                "type": "creraces:resource_level",
-                "resource": "grit",
-                "operator": ">",
-                "value": 0
-            },
+            "type": "creraces:on_respawn",
             "actions": [
                 {
                     "type": "creraces:apply_effect",
@@ -70,10 +37,7 @@
             ]
         }
     ],
-    "creraces:starting_abilities": [
-        "creraces:unstoppable_force",
-        "creraces:tectonic_smash"
-    ],
+    "creraces:starting_abilities": ["creraces:unstoppable_force", "creraces:tectonic_smash"],
     "creraces:portrait": "creraces:textures/screens/giant_portrait.png",
     "creraces:name_texture": "creraces:textures/screens/giant_text.png",
     "creraces:wiki_page": "Giant",

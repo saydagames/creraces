@@ -116,6 +116,29 @@ public class GsonHelper {
         return map;
     }
 
+    /**
+     * Reads a "#RRGGBB" or "#AARRGGBB" colour as ARGB. A missing key gives {@code fallback}; a
+     * malformed one is reported and gives it too.
+     */
+    public static int getAsColor(JsonObject json, String memberName, int fallback) {
+        if (!json.has(memberName)) {
+            return fallback;
+        }
+        String text = json.get(memberName).getAsString();
+        String hex = text.startsWith("#") ? text.substring(1) : "";
+        if (hex.length() != 6 && hex.length() != 8) {
+            CreRaces.LOGGER.error("Colour '{}' in '{}' should be \"#RRGGBB\" or \"#AARRGGBB\"", text, memberName);
+            return fallback;
+        }
+        try {
+            long value = Long.parseLong(hex, 16);
+            return (int) (hex.length() == 6 ? 0xFF000000L | value : value);
+        } catch (NumberFormatException e) {
+            CreRaces.LOGGER.error("Colour '{}' in '{}' is not hexadecimal", text, memberName);
+            return fallback;
+        }
+    }
+
     private static void scanDevDirectory(File dir, String namespace, String prefix,
             Map<ResourceLocation, JsonElement> map) {
         File[] files = dir.listFiles();

@@ -33,6 +33,7 @@ import net.minecraft.world.level.block.StonecutterBlock;
 import net.minecraft.world.level.block.state.BlockState;
 
 import javax.annotation.Nullable;
+import java.util.List;
 
 /**
  * Opens a screen for the caster. The crafting grid and ender chest open anywhere; container types
@@ -42,7 +43,10 @@ import javax.annotation.Nullable;
  */
 @SuppressWarnings("null")
 public class OpenGUIAction implements ActionRegistry.RaceAction {
-    public static final ResourceLocation ID = new ResourceLocation(CreRaces.MODID, "open_gui");
+    public static final ResourceLocation ID = CreRaces.id("open_gui");
+    private static final List<String> GUIS = List.of("crafting_table", "ender_chest", "chest", "barrel", "furnace",
+            "smoker", "blast_furnace", "loom", "cartography", "grindstone", "stonecutter", "anvil", "race_selection",
+            "skill_wheel", "team_menu", "mirror", "debug");
 
     private final String guiId;
     private final ScalingValue radius;
@@ -60,11 +64,11 @@ public class OpenGUIAction implements ActionRegistry.RaceAction {
         }
 
         return switch (guiId) {
-            case "crafting_table", "crafting" -> openCraftingGrid(serverPlayer);
-            case "ender_chest", "enderchest" -> openEnderChest(serverPlayer);
-            case "inventory", "chest", "barrel", "furnace", "smoker", "blast_furnace", "loom", "cartography",
+            case "crafting_table" -> openCraftingGrid(serverPlayer);
+            case "ender_chest" -> openEnderChest(serverPlayer);
+            case "chest", "barrel", "furnace", "smoker", "blast_furnace", "loom", "cartography",
                     "grindstone", "stonecutter", "anvil" -> openNearestContainer(serverPlayer, interactPos, slot);
-            case "race_selection", "race_menu" -> {
+            case "race_selection" -> {
                 BoundaryHandler.sendOpenSelection(serverPlayer);
                 yield true;
             }
@@ -84,10 +88,8 @@ public class OpenGUIAction implements ActionRegistry.RaceAction {
                 BoundaryHandler.sendOpenDebug(serverPlayer);
                 yield true;
             }
-            default -> {
-                CreRaces.LOGGER.warn("[OpenGUIAction] Unknown gui id '{}' - no screen opened.", guiId);
-                yield false;
-            }
+            // Unknown ids are rejected when the JSON loads.
+            default -> false;
         };
     }
 
@@ -148,7 +150,7 @@ public class OpenGUIAction implements ActionRegistry.RaceAction {
     private boolean isMatchingContainer(BlockState state) {
         Block block = state.getBlock();
         return switch (guiId) {
-            case "inventory", "chest" -> block instanceof ChestBlock || block instanceof ShulkerBoxBlock;
+            case "chest" -> block instanceof ChestBlock || block instanceof ShulkerBoxBlock;
             case "barrel" -> block instanceof BarrelBlock;
             case "furnace" -> block instanceof FurnaceBlock;
             case "smoker" -> block instanceof SmokerBlock;
@@ -163,8 +165,12 @@ public class OpenGUIAction implements ActionRegistry.RaceAction {
     }
 
     public static void register() {
-        ActionRegistry.register(ID, json -> new OpenGUIAction(
-                GsonHelper.getAsString(json, "gui", "inventory").toLowerCase(),
-                ScalingValue.fromJson(json, "radius", 4.0)));
+        ActionRegistry.register(ID, json -> {
+            String gui = GsonHelper.getAsString(json, "gui");
+            if (!GUIS.contains(gui)) {
+                throw new IllegalArgumentException("unknown gui '" + gui + "'; known: " + String.join(", ", GUIS));
+            }
+            return new OpenGUIAction(gui, ScalingValue.fromJson(json, "radius", 4.0));
+        });
     }
 }

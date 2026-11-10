@@ -2,6 +2,7 @@ package mc.sayda.creraces.mixin;
 
 import mc.sayda.creraces.capability.DataUtils;
 import mc.sayda.creraces.engine.AquaticMovementHandler;
+import mc.sayda.creraces.engine.Breathing;
 import mc.sayda.creraces.race.Race;
 import mc.sayda.creraces.race.RaceRegistry;
 import mc.sayda.creraces.registry.ModMobEffects;
@@ -9,7 +10,6 @@ import mc.sayda.creraces.util.IPersistentDataAccessor;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.tags.TagKey;
-import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -69,16 +69,10 @@ public abstract class EntityMixin implements IPersistentDataAccessor {
         }
     }
 
-    /**
-     * Races that can't breathe on land get no air back out of water (unless under Water Breathing).
-     * Resetting air to 0 is still allowed.
-     */
+    /** While Breathing runs a player's air, vanilla's own changes to it are ignored. */
     @Inject(method = "setAirSupply", at = @At("HEAD"), cancellable = true)
-    private void creraces$preventRefill(int air, CallbackInfo ci) {
-        if ((Object) this instanceof Player player && !player.level().isClientSide()
-                && air > player.getAirSupply() && air != 0
-                && !player.isInWaterRainOrBubble() && !player.hasEffect(MobEffects.WATER_BREATHING)
-                && creraces$hasPassive(player, passives -> !passives.canBreatheOnLand())) {
+    private void creraces$ignoreVanillaAir(int air, CallbackInfo ci) {
+        if (Breathing.ignoresVanillaAir((Entity) (Object) this)) {
             ci.cancel();
         }
     }

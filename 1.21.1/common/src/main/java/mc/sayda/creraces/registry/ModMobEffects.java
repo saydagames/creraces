@@ -9,6 +9,7 @@ import mc.sayda.creraces.effect.BlindedEffect;
 import mc.sayda.creraces.effect.BoilingEffect;
 import mc.sayda.creraces.effect.BrokenWingsEffect;
 import mc.sayda.creraces.effect.CamouflageEffect;
+import mc.sayda.creraces.effect.CharmedEffect;
 import mc.sayda.creraces.effect.DizzinessEffect;
 import mc.sayda.creraces.effect.FairyDustEffect;
 import mc.sayda.creraces.effect.FeatherstormEffect;
@@ -88,6 +89,8 @@ public class ModMobEffects {
     private static final RegistrySupplier<MobEffect> BOILING_ENTRY = MOB_EFFECTS.register("boiling",
             BoilingEffect::new);
 
+    private static final RegistrySupplier<MobEffect> CHARMED_ENTRY = MOB_EFFECTS.register("charmed",
+            CharmedEffect::new);
     private static final RegistrySupplier<MobEffect> BLEEDING_ENTRY = MOB_EFFECTS.register("bleeding",
             BleedingEffect::new);
 
@@ -164,6 +167,7 @@ public class ModMobEffects {
     public static Holder<MobEffect> MAUL;
     public static Holder<MobEffect> BOILING;
     public static Holder<MobEffect> BLEEDING;
+    public static Holder<MobEffect> CHARMED;
     public static Holder<MobEffect> BROKEN_WINGS;
     public static Holder<MobEffect> FAIRY_DUST_EFFECT;
     public static Holder<MobEffect> AIR_ELEMENT;
@@ -206,6 +210,7 @@ public class ModMobEffects {
         MAUL_ENTRY.listen(v -> MAUL = BuiltInRegistries.MOB_EFFECT.wrapAsHolder(v));
         BOILING_ENTRY.listen(v -> BOILING = BuiltInRegistries.MOB_EFFECT.wrapAsHolder(v));
         BLEEDING_ENTRY.listen(v -> BLEEDING = BuiltInRegistries.MOB_EFFECT.wrapAsHolder(v));
+        CHARMED_ENTRY.listen(v -> CHARMED = BuiltInRegistries.MOB_EFFECT.wrapAsHolder(v));
         BROKEN_WINGS_ENTRY.listen(v -> BROKEN_WINGS = BuiltInRegistries.MOB_EFFECT.wrapAsHolder(v));
         FAIRY_DUST_EFFECT_ENTRY.listen(v -> FAIRY_DUST_EFFECT = BuiltInRegistries.MOB_EFFECT.wrapAsHolder(v));
         AIR_ELEMENT_ENTRY.listen(v -> AIR_ELEMENT = BuiltInRegistries.MOB_EFFECT.wrapAsHolder(v));

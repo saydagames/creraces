@@ -5,7 +5,6 @@ import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.util.GsonHelper;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -16,38 +15,26 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * With a chance, takes a target player's item into the caster's inventory: the "mainhand" or
- * "offhand" stack, or a "random" non-empty hotbar stack.
+ * Takes an item from the target player into the caster's inventory: the "slot" "mainhand",
+ * "offhand" or "random" (a random filled hotbar slot). Use the generic "chance" for a chance to fail.
  */
 public class StealItemAction implements ActionRegistry.RaceAction {
+    private final String slot;
 
-    private static final double DEFAULT_CHANCE = 0.5;
-
-    // 1.0 unless the JSON leaves out "chance": an explicit one is already rolled by the generic wrapper
-    // in ActionRegistry.fromJson, and rolling it here as well would square it.
-    private final double ownChance;
-    private final String targetSlot;
-
-    public StealItemAction(double ownChance, String targetSlot) {
-        this.ownChance = ownChance;
-        this.targetSlot = targetSlot;
+    public StealItemAction(String slot) {
+        this.slot = slot;
     }
 
     @Override
-    public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
+    public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot abilitySlot,
             @Nullable BlockPos interactPos) {
         if (!(target instanceof Player victim)) {
             return true;
         }
-        if (player.level().random.nextDouble() >= ownChance) {
-            return true;
-        }
-
-        ItemStack stolen = switch (targetSlot) {
+        ItemStack stolen = switch (slot) {
             case "mainhand" -> take(victim.getMainHandItem());
             case "offhand" -> take(victim.getOffhandItem());
-            case "random" -> takeRandomHotbarItem(player, victim.getInventory());
-            default -> ItemStack.EMPTY;
+            default -> takeRandomHotbarItem(player, victim.getInventory());
         };
         if (!stolen.isEmpty() && !player.getInventory().add(stolen)) {
             player.drop(stolen, false);
@@ -78,8 +65,12 @@ public class StealItemAction implements ActionRegistry.RaceAction {
     }
 
     public static void register() {
-        ActionRegistry.register(new ResourceLocation(CreRaces.MODID, "steal_item"), json -> new StealItemAction(
-                json.has("chance") ? 1.0 : DEFAULT_CHANCE,
-                GsonHelper.getAsString(json, "slot", "random")));
+        ActionRegistry.register(CreRaces.id("steal_item"), json -> {
+            String slot = GsonHelper.getAsString(json, "slot", "random");
+            if (!slot.equals("mainhand") && !slot.equals("offhand") && !slot.equals("random")) {
+                throw new IllegalArgumentException("unknown slot '" + slot + "' (mainhand, offhand, random)");
+            }
+            return new StealItemAction(slot);
+        });
     }
 }

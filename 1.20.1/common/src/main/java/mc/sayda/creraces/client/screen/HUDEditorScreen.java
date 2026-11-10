@@ -83,6 +83,10 @@ public class HUDEditorScreen extends Screen {
     private final List<AbstractWidget> toggleableWidgets = new ArrayList<>();
     private boolean widgetsVisible = true;
 
+    public static void open() {
+        Minecraft.getInstance().setScreen(new HUDEditorScreen());
+    }
+
     public HUDEditorScreen() {
         super(Component.translatable("gui.creraces.hud_editor.title"));
     }

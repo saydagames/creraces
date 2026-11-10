@@ -26,6 +26,10 @@ public class CreRacesConfig {
     // [SECTION: FAIRY REALM]
     public static Supplier<Integer> FAIRY_REALM_BORDER_SIZE = () -> 1000;
     public static Supplier<Boolean> VEILWOOD_FOREST_ENABLED = () -> true;
+    /** Lets buckets pick up Fairy Source. Off by default, so its springs stay where they are. */
+    public static Supplier<Boolean> FAIRY_SOURCE_PICKUP_ENABLED = () -> false;
+    /** Lets Fairy Source form a new source block between two sources, as water does. */
+    public static Supplier<Boolean> FAIRY_SOURCE_CONVERSION_ENABLED = () -> false;
 
     // [SECTION: ESSENCE]
     public static Supplier<Boolean> ESSENCE_VORTEX_WORLDGEN_ENABLED = () -> true;

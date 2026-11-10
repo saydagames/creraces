@@ -1,13 +1,11 @@
 {
     "creraces:name": "ability.creraces.quick_escape.name",
     "creraces:description": "ability.creraces.quick_escape.description",
-    "creraces:type": "ACTIVE",
+    "creraces:type": "active",
     "creraces:icon": "minecraft:textures/item/ender_pearl.png",
     "creraces:cost": 200,
     "creraces:cooldown": 1800,
-    "creraces:race": [
-        "creraces:dryad"
-    ],
+    "creraces:race": ["creraces:dryad"],
     "creraces:actions": [
         {
             "type": "creraces:conditional",
@@ -15,63 +13,32 @@
                 "type": "creraces:and",
                 "conditions": [
                     {
-                        "type": "creraces:state",
-                        "state": "state:node_x",
-                        "operator": "!=",
-                        "value": 0.0
+                        "type": "creraces:or",
+                        "conditions": [
+                            { "type": "creraces:compare", "value": "state:node_x", "to": 0, "operator": "!=" },
+                            { "type": "creraces:compare", "value": "state:node_y", "to": 0, "operator": "!=" },
+                            { "type": "creraces:compare", "value": "state:node_z", "to": 0, "operator": "!=" }
+                        ]
                     },
-                    {
-                        "type": "creraces:state",
-                        "state": "state:node_y",
-                        "operator": "!=",
-                        "value": 0.0
-                    },
-                    {
-                        "type": "creraces:state",
-                        "state": "state:node_z",
-                        "operator": "!=",
-                        "value": 0.0
-                    },
-                    {
-                        "type": "creraces:has_effect",
-                        "effect": "creraces:nymph_call"
-                    }
+                    { "type": "creraces:has_effect", "effect": "creraces:nymph_call" }
                 ]
             },
             "if_true": [
                 {
                     "type": "creraces:teleport",
-                    "x": {
-                        "base": 0.5,
-                        "scales_with": "state:node_x",
-                        "factor": 1.0
-                    },
-                    "y": {
-                        "base": 1.0,
-                        "scales_with": "state:node_y",
-                        "factor": 1.0
-                    },
-                    "z": {
-                        "base": -0.5,
-                        "scales_with": "state:node_z",
-                        "factor": 1.0
+                    "position": {
+                        "from": "origin",
+                        "x": { "base": 0.5, "scales_with": "state:node_x", "factor": 1 },
+                        "y": { "base": 1, "scales_with": "state:node_y", "factor": 1 },
+                        "z": { "base": -0.5, "scales_with": "state:node_z", "factor": 1 }
                     },
                     "dimension": "minecraft:overworld"
                 },
-                {
-                    "type": "creraces:play_sound",
-                    "sound": "minecraft:entity.enderman.teleport"
-                }
+                { "type": "creraces:play_sound", "sound": "minecraft:entity.enderman.teleport" }
             ],
             "if_false": [
-                {
-                    "type": "creraces:message",
-                    "text": "msg.creraces.dryad.no_tree",
-                    "actionbar": true
-                },
-                {
-                    "type": "creraces:cancel"
-                }
+                { "type": "creraces:message", "text": "msg.creraces.dryad.no_tree", "actionbar": true },
+                { "type": "creraces:cancel" }
             ]
         }
     ],

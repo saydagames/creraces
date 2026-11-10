@@ -1,24 +1,18 @@
 {
     "creraces:name": "ability.creraces.spicy_whirlpool.name",
     "creraces:description": "ability.creraces.spicy_whirlpool.description",
-    "creraces:type": "ACTIVE",
+    "creraces:type": "active",
     "creraces:icon": "creraces:textures/mob_effect/boiling.png",
     "creraces:cooldown": 600,
     "creraces:condition_fail_message": "msg.creraces.water_fail_message",
     "creraces:cost": 0,
-    "creraces:race": [
-        "creraces:mermaid"
-    ],
-    "creraces:condition": {
-        "type": "creraces:in_water"
-    },
+    "creraces:race": ["creraces:mermaid", "creraces:siren"],
+    "creraces:condition": { "type": "creraces:in_water" },
     "creraces:actions": [
         {
             "type": "creraces:aoe",
-            "radius": 5.0,
-            "targets": [
-                "enemies"
-            ],
+            "radius": 5,
+            "targets": ["enemies"],
             "actions": [
                 {
                     "type": "creraces:apply_effect",
@@ -29,30 +23,10 @@
                 }
             ]
         },
-        {
-            "type": "creraces:play_sound",
-            "sound": "minecraft:block.lava.pop",
-            "volume": 1.0,
-            "pitch": 0.8
-        },
-        {
-            "type": "creraces:spawn_particles",
-            "particle": "minecraft:bubble",
-            "count": 160,
-            "spread": 2.0
-        },
-        {
-            "type": "creraces:spawn_particles",
-            "particle": "minecraft:large_smoke",
-            "count": 10,
-            "spread": 2.0
-        },
-        {
-            "type": "creraces:spawn_particles",
-            "particle": "minecraft:flame",
-            "count": 40,
-            "spread": 2.0
-        }
+        { "type": "creraces:play_sound", "sound": "minecraft:block.lava.pop", "volume": 1, "pitch": 0.8 },
+        { "type": "creraces:spawn_particles", "particle": "minecraft:bubble", "count": 160, "spread": 2 },
+        { "type": "creraces:spawn_particles", "particle": "minecraft:large_smoke", "count": 10, "spread": 2 },
+        { "type": "creraces:spawn_particles", "particle": "minecraft:flame", "count": 40, "spread": 2 }
     ],
     "creraces:wiki_page": "Ability:Spicy_Whirlpool"
 }

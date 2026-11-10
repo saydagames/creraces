@@ -1,5 +1,6 @@
 package mc.sayda.creraces.race;
 
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.capability.DataUtils;
@@ -16,6 +17,10 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.TagParser;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -27,16 +32,33 @@ import virtuoel.pehkui.api.ScaleType;
 import virtuoel.pehkui.api.ScaleTypes;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public class RaceIncidents {
     private static final ResourceLocation FAIRY_REALM = new ResourceLocation(CreRaces.MODID, "fairy_realm");
     private static final float FAIRY_REALM_SCALE_MULTIPLIER = 4.0f;
-    // Set once a player has placed a territory root; such players are no longer "fresh".
-    // Starting abilities fill these slots in order; any beyond them are only unlocked.
-    private static final AbilitySlot[] STARTING_ABILITY_SLOTS = { AbilitySlot.A1, AbilitySlot.A2 };
+    /** Starting abilities always fill these slots first. */
+    private static final List<AbilitySlot> DEFAULT_STARTING_SLOTS = List.of(AbilitySlot.A1, AbilitySlot.A2);
+
+    /** A1 and A2, plus each later slot whose ability key the player has bound (a bit per slot ordinal). */
+    public static List<AbilitySlot> startingSlots(int boundAbilityKeys) {
+        List<AbilitySlot> slots = new ArrayList<>(DEFAULT_STARTING_SLOTS);
+        for (AbilitySlot slot : AbilitySlot.values()) {
+            if (!slots.contains(slot) && (boundAbilityKeys & (1 << slot.ordinal())) != 0) {
+                slots.add(slot);
+            }
+        }
+        return slots;
+    }
 
     public static void transformPlayer(ServerPlayer player, ResourceLocation raceId) {
+        transformPlayer(player, raceId, DEFAULT_STARTING_SLOTS);
+    }
+
+    /** Starting abilities fill startingSlots in order; any beyond them are only unlocked. */
+    public static void transformPlayer(ServerPlayer player, ResourceLocation raceId, List<AbilitySlot> startingSlots) {
         if (raceId.equals(RaceRegistry.NONE)) {
             leaveCurrentRace(player, null);
             resetToNoRace(player);
@@ -84,8 +106,8 @@ public class RaceIncidents {
                 int index = 0;
                 for (ResourceLocation abilityId : race.startingAbilities()) {
                     vars.unlockAbility(abilityId);
-                    if (index < STARTING_ABILITY_SLOTS.length) {
-                        vars.equipAbility(STARTING_ABILITY_SLOTS[index], abilityId);
+                    if (index < startingSlots.size()) {
+                        vars.equipAbility(startingSlots.get(index), abilityId);
                     }
                     index++;
                 }
@@ -248,6 +270,55 @@ public class RaceIncidents {
             setScale(ScaleTypes.BASE.getScaleData(entity), scale);
         } catch (Throwable e) {
             CreRaces.LOGGER.warn("Failed to apply flat scale for {}: {}", entity.getName().getString(), e.getMessage());
+        }
+    }
+
+    /** Spawns the race's creraces:spawn_on_death entities where the player died, with their NBT as /summon would. */
+    public static void spawnOnDeath(ServerPlayer player, Race race) {
+        Race.EntitySpawnData spawn = race.passives() != null ? race.passives().spawnOnDeath() : null;
+        if (spawn == null) {
+            return;
+        }
+        CompoundTag tag;
+        try {
+            tag = TagParser.parseTag(spawn.nbt());
+        } catch (CommandSyntaxException e) {
+            CreRaces.LOGGER.warn("Race {} has malformed spawn_on_death nbt '{}': {}", race.id(), spawn.nbt(), e.getMessage());
+            return;
+        }
+        tag.putString("id", spawn.entityType());
+        ServerLevel level = player.serverLevel();
+        for (int i = 0; i < spawn.count(); i++) {
+            Entity entity = EntityType.loadEntityRecursive(tag, level, created -> {
+                created.moveTo(player.getX(), player.getY(), player.getZ(), player.getYRot(), player.getXRot());
+                return created;
+            });
+            if (entity == null) {
+                CreRaces.LOGGER.warn("Race {} has an unknown spawn_on_death entity '{}'", race.id(), spawn.entityType());
+                return;
+            }
+            level.tryAddFreshEntityWithPassengers(entity);
+        }
+    }
+
+    /**
+     * Gives {@code copy} the same Pehkui size as {@code original}: how big it looks and how big its
+     * hitbox is. Other scales (health, motion, reach, ...) are left alone.
+     */
+    public static void copySize(LivingEntity original, LivingEntity copy) {
+        try {
+            ScaleType[] sizeTypes = {ScaleTypes.BASE, ScaleTypes.WIDTH, ScaleTypes.HEIGHT, ScaleTypes.EYE_HEIGHT,
+                    ScaleTypes.HITBOX_WIDTH, ScaleTypes.HITBOX_HEIGHT, ScaleTypes.MODEL_WIDTH, ScaleTypes.MODEL_HEIGHT};
+            for (ScaleType type : sizeTypes) {
+                ScaleData from = type.getScaleData(original);
+                ScaleData to = type.getScaleData(copy);
+                // Only on a change, so Pehkui doesn't resync every tick.
+                if (to.getBaseScale() != from.getBaseScale() || to.getTargetScale() != from.getTargetScale()) {
+                    to.fromScale(from);
+                }
+            }
+        } catch (Throwable e) {
+            CreRaces.LOGGER.warn("Failed to copy scale from {}: {}", original.getName().getString(), e.getMessage());
         }
     }
 

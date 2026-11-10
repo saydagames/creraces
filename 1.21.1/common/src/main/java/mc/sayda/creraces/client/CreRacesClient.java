@@ -7,7 +7,6 @@ import dev.architectury.event.events.client.ClientTickEvent;
 import dev.architectury.platform.Platform;
 import dev.architectury.registry.client.level.entity.EntityModelLayerRegistry;
 import dev.architectury.registry.client.level.entity.EntityRendererRegistry;
-import dev.architectury.registry.client.particle.ParticleProviderRegistry;
 import dev.architectury.registry.client.rendering.BlockEntityRendererRegistry;
 import dev.architectury.registry.client.rendering.ColorHandlerRegistry;
 import dev.architectury.registry.client.rendering.RenderTypeRegistry;
@@ -25,13 +24,8 @@ import mc.sayda.creraces.client.model.PoisonEmitterModel;
 import mc.sayda.creraces.client.model.RemainsModel;
 import mc.sayda.creraces.client.model.TornadoModel;
 import mc.sayda.creraces.client.model.TrollPillarModel;
-import mc.sayda.creraces.client.particle.DamageCritParticle;
-import mc.sayda.creraces.client.particle.EssenceParticle;
-import mc.sayda.creraces.client.particle.MarkerParticle;
-import mc.sayda.creraces.client.particle.PoisonEmitterParticle;
-import mc.sayda.creraces.client.particle.VeilEmberParticle;
-import mc.sayda.creraces.client.particle.VeilMistParticle;
 import mc.sayda.creraces.client.render.DryadBoatRenderer;
+import mc.sayda.creraces.client.render.CloneRenderer;
 import mc.sayda.creraces.client.render.ElysianVeilBloomBlockEntityRenderer;
 import mc.sayda.creraces.client.render.EssenceVortexRenderer;
 import mc.sayda.creraces.client.render.FloatingMoteRenderer;
@@ -82,6 +76,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.entity.NoopRenderer;
 import net.minecraft.client.renderer.entity.ThrownItemRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
@@ -100,7 +95,7 @@ public class CreRacesClient {
         BoundaryHandler.registerS2C();
         SpiritMobilityClient.init();
 
-        registerParticles();
+        // Particle providers are registered per loader (CreRacesFabricClient, CreRacesNeoForgeClient).
         registerVeilwoodEmbers();
         registerMenuScreens();
         registerColorHandlers();
@@ -134,19 +129,6 @@ public class CreRacesClient {
         registerTickHandler();
 
         CreRaces.LOGGER.info("CreRaces Client initialized.");
-    }
-
-    private static void registerParticles() {
-        ParticleProviderRegistry.register(ModParticles.MARKER, MarkerParticle.Provider::new);
-        ParticleProviderRegistry.register(ModParticles.MARKER_MOVE, MarkerParticle.Provider::new);
-        ParticleProviderRegistry.register(ModParticles.MARKER_ATTACK, MarkerParticle.Provider::new);
-        ParticleProviderRegistry.register(ModParticles.POISON_EMITTER, PoisonEmitterParticle.Provider::new);
-        ParticleProviderRegistry.register(ModParticles.MAGIC_DAMAGE, DamageCritParticle.Provider::new);
-        ParticleProviderRegistry.register(ModParticles.PHYSICAL_DAMAGE, DamageCritParticle.Provider::new);
-        ParticleProviderRegistry.register(ModParticles.TRUE_DAMAGE, DamageCritParticle.Provider::new);
-        ParticleProviderRegistry.register(ModParticles.VEIL_EMBER, VeilEmberParticle.Provider::new);
-        ParticleProviderRegistry.register(ModParticles.VEIL_MIST, VeilMistParticle.Provider::new);
-        ParticleProviderRegistry.register(ModParticles.ESSENCE_PARTICLE, EssenceParticle.Provider::new);
     }
 
     /**
@@ -205,6 +187,7 @@ public class CreRacesClient {
         EntityModelLayerRegistry.register(RemainsModel.LAYER_LOCATION, RemainsModel::createBodyLayer);
         EntityRendererRegistry.register(ModEntities.REMAINS, RemainsRenderer::new);
         EntityRendererRegistry.register(ModEntities.REMAINS_UNDEAD, RemainsRenderer::new);
+        EntityRendererRegistry.register(ModEntities.CLONE, CloneRenderer::new);
 
         EntityRendererRegistry.register(ModEntities.FLOATING_MOTE, FloatingMoteRenderer::new);
 
@@ -213,6 +196,10 @@ public class CreRacesClient {
         EntityRendererRegistry.register(ModEntities.VEIL_WILLOW_BOAT, ctx -> new VeilWillowBoatRenderer(ctx, false));
         EntityRendererRegistry.register(ModEntities.VEIL_WILLOW_CHEST_BOAT,
                 ctx -> new VeilWillowBoatRenderer(ctx, true));
+
+        // The stand-in types never spawn; these only stop vanilla's missing renderer warning.
+        EntityRendererRegistry.register(ModEntities.UNDEAD_PLAYER, NoopRenderer::new);
+        EntityRendererRegistry.register(ModEntities.AQUATIC_PLAYER, NoopRenderer::new);
     }
 
     private static void registerClientSetupHandlers() {

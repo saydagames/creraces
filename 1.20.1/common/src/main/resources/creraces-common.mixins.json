@@ -11,6 +11,7 @@
         "EntityMixin",
         "MobMixin",
         "MobGoalMixin",
+        "TargetingConditionsMixin",
         "FoodDataMixin",
         "LivingEntityMixin",
         "BlockStateSolidityMixin",
@@ -27,10 +28,15 @@
         "TreeDecoratorTypeAccessor",
         "SpawnPlacementsAccessor",
         "LakeFeatureMixin",
-        "FireBlockAccessor"
+        "FireBlockAccessor",
+        "EnchantmentMixin",
+        "ItemStackMixin"
     ],
     "client": [
         "LivingEntityRendererMixin",
+        "LocalPlayerMixin",
+        "MouseHandlerMixin",
+        "PlayerRendererMixin",
         "LevelRendererMixin",
         "MiniBlockPlaceMixin",
         "HumanoidModelMixin",

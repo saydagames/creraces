@@ -58,6 +58,10 @@ public class DebugScreen extends Screen {
     private Button applyButton;
     private Button cancelButton;
 
+    public static void open() {
+        Minecraft.getInstance().setScreen(new DebugScreen());
+    }
+
     public DebugScreen() {
         super(Component.translatable("gui.creraces.debug.title"));
     }
@@ -256,9 +260,12 @@ public class DebugScreen extends Screen {
 
     private void addGlobalSection(Player player) {
         addHeader("GLOBAL");
+        // Editing one keeps the other: a new time stays on the same day, a new day keeps the time.
         long dayTime = player.level().getDayTime();
-        addLine("  Time: ", String.valueOf(dayTime), ChatFormatting.WHITE);
-        addLine("  Day: ", String.valueOf(dayTime / 24000L), ChatFormatting.WHITE);
+        String timeOfDay = String.valueOf(dayTime % 24000L);
+        String day = String.valueOf(dayTime / 24000L);
+        addEditableLine("  Time: ", timeOfDay, ChatFormatting.WHITE, "time", "time", timeOfDay);
+        addEditableLine("  Day: ", day, ChatFormatting.WHITE, "time", "day", day);
         addFlagLine("  Spirit Moon: ", WorldState.isSpiritMoon(player.level()));
         addLine("  Dimension: ", player.level().dimension().location().toString(), ChatFormatting.DARK_AQUA);
     }
@@ -279,10 +286,10 @@ public class DebugScreen extends Screen {
 
         addFlagLine("    inSpirit: ", vars.isInSpiritRealm());
         markEditable("flag", "inSpirit", String.valueOf(vars.isInSpiritRealm()));
-        addFlagLine("    Morphed: ", vars.isMorphed());
+        addFlagLine("    morphed: ", vars.isMorphed());
         markEditable("flag", "morphed", String.valueOf(vars.isMorphed()));
-        addFlagLine("    smallBuild: ", vars.isSmallBuild());
-        markEditable("flag", "smallBuild", String.valueOf(vars.isSmallBuild()));
+        addFlagLine("    miniBuild: ", vars.isMiniBuild());
+        markEditable("flag", "miniBuild", String.valueOf(vars.isMiniBuild()));
         addEditableLine("    gState: ", String.valueOf(vars.getGState()), ChatFormatting.WHITE,
                 "flag", "gstate", String.valueOf(vars.getGState()));
     }

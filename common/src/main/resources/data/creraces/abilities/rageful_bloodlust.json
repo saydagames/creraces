@@ -1,34 +1,15 @@
 {
     "creraces:name": "ability.creraces.rageful_bloodlust.name",
     "creraces:description": "ability.creraces.rageful_bloodlust.description",
-    "creraces:type": "ACTIVE",
+    "creraces:type": "active",
     "creraces:icon": "minecraft:textures/item/ghast_tear.png",
     "creraces:cooldown": 520,
     "creraces:cost": 0,
-    "creraces:race": [
-        "creraces:orc"
-    ],
+    "creraces:race": ["creraces:orc"],
     "creraces:actions": [
-        {
-            "type": "creraces:heal",
-            "amount": {
-                "base": 1.0,
-                "scales_with": "var:rage",
-                "factor": 0.1
-            }
-        },
-        {
-            "type": "creraces:modify_value",
-            "resource": "rage",
-            "operation": "set",
-            "value": 0
-        },
-        {
-            "type": "creraces:play_sound",
-            "sound": "minecraft:entity.player.burp",
-            "volume": 1.0,
-            "pitch": 0.5
-        },
+        { "type": "creraces:heal", "amount": { "base": 1, "scales_with": "resource:rage", "factor": 0.1 } },
+        { "type": "creraces:modify_value", "resource": "rage", "value": 0 },
+        { "type": "creraces:play_sound", "sound": "minecraft:entity.player.burp", "volume": 1, "pitch": 0.5 },
         {
             "type": "creraces:spawn_particles",
             "particle": "minecraft:heart",

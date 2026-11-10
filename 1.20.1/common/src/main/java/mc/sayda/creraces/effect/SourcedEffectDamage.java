@@ -32,9 +32,15 @@ final class SourcedEffectDamage {
     /** The recorded applier, or null if none was recorded or it is no longer loaded. */
     @Nullable
     static Entity findSource(LivingEntity target) {
+        return findSource(target, SourceTrackedEffect.SOURCE_KEY);
+    }
+
+    /** The applier recorded under {@code key}, or null if none was recorded or it is no longer loaded. */
+    @Nullable
+    static Entity findSource(LivingEntity target, String key) {
         if (!(target instanceof IPersistentDataAccessor accessor) || !(target.level() instanceof ServerLevel level))
             return null;
-        String uuid = accessor.creraces$getPersistentData().getString(SourceTrackedEffect.SOURCE_KEY);
+        String uuid = accessor.creraces$getPersistentData().getString(key);
         if (uuid.isEmpty())
             return null;
         try {

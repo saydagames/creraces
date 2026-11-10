@@ -4,6 +4,7 @@ import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.config.CreRacesConfig;
 import mc.sayda.creraces.engine.TraitRegistry;
 import mc.sayda.creraces.engine.condition.Condition;
+import mc.sayda.creraces.engine.condition.ConditionRegistry;
 import mc.sayda.creraces.race.CosmeticIncidents;
 import mc.sayda.creraces.util.GsonHelper;
 import mc.sayda.twilight_lib.capabilities.DataUtils;
@@ -23,8 +24,12 @@ public class AddonTrait implements TraitRegistry.RaceTrait {
     private static final int CONDITION_CHECK_INTERVAL = 20;
 
     private final String addonId;
+    /**
+     * A "#RRGGBB" tint (Twilight Lib's name for an addon's color), or a {customization} placeholder
+     * holding one.
+     */
     @Nullable
-    private final String tint; // hex colour
+    private final String tint;
     @Nullable
     private final Condition condition;
     /**
@@ -61,6 +66,9 @@ public class AddonTrait implements TraitRegistry.RaceTrait {
         if (conditionMet == current) return;
 
         CosmeticIncidents.setAddonActiveRobust(addons, addonId, conditionMet, false);
+        if (conditionMet) {
+            CosmeticIncidents.rememberRacialAddon(player, addonId);
+        }
 
         var pkt = CosmeticIncidents.createSyncPacket(
                 player.getUUID(),
@@ -91,11 +99,11 @@ public class AddonTrait implements TraitRegistry.RaceTrait {
     }
 
     public static void register() {
-        TraitRegistry.register(new ResourceLocation(CreRaces.MODID, "addon"), json -> {
-            String addonId = GsonHelper.getAsString(json, "addon_id");
+        TraitRegistry.register(CreRaces.id("addon"), json -> {
+            String addonId = GsonHelper.getAsString(json, "addon");
             String tint = GsonHelper.getNullableString(json, "tint", null);
             String configGroup = GsonHelper.getAsString(json, "config", "race_addons");
-            Condition condition = json.has("condition") ? Condition.fromJson(json.getAsJsonObject("condition")) : null;
+            Condition condition = ConditionRegistry.optional(json, "condition");
             return new AddonTrait(addonId, tint, condition, configGroup);
         });
     }

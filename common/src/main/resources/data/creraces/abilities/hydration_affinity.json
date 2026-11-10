@@ -1,0 +1,39 @@
+{
+  "creraces:name": "ability.creraces.hydration_affinity.name",
+  "creraces:description": "ability.creraces.hydration_affinity.description",
+  "creraces:type": "passive",
+  "creraces:icon": "minecraft:water_bucket",
+  "creraces:cooldown": 0,
+  "creraces:cost": 0,
+  "creraces:race": ["creraces:mermaid", "creraces:siren"],
+  "creraces:condition": {
+    "type": "creraces:or",
+    "conditions": [
+      { "type": "creraces:in_water" },
+      { "type": "creraces:exposed_to_rain" }
+    ]
+  },
+  "creraces:actions": [
+    {
+      "type": "creraces:apply_effect",
+      "effect": "minecraft:speed",
+      "duration": 40,
+      "amplifier": 1,
+      "show_icon": true
+    },
+    {
+      "type": "creraces:apply_effect",
+      "effect": "minecraft:regeneration",
+      "duration": 40,
+      "amplifier": 0,
+      "show_icon": true
+    },
+    {
+      "type": "creraces:spawn_particles",
+      "particle": "minecraft:bubble",
+      "count": 2,
+      "spread": 0.2
+    }
+  ],
+  "creraces:wiki_page": "Ability:Hydration_Affinity"
+}

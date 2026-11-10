@@ -95,7 +95,7 @@ public class SubRaceScreen extends Screen {
 
     @Override
     public boolean isPauseScreen() {
-        return false;
+        return true;
     }
 
     // Drawn at the top of render() instead, so Screen.render() does not blur over the panel.

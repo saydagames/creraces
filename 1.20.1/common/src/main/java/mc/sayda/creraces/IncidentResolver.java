@@ -15,6 +15,9 @@ import mc.sayda.creraces.capability.IPlayerVariables;
 import mc.sayda.creraces.config.CreRacesConfig;
 import mc.sayda.creraces.engine.ActionRegistry;
 import mc.sayda.creraces.engine.ChannelingManager;
+import mc.sayda.creraces.engine.CloneManager;
+import mc.sayda.creraces.engine.GlideTracker;
+import mc.sayda.creraces.engine.ProjectileHooks;
 import mc.sayda.creraces.engine.TraitDispatch;
 import mc.sayda.creraces.engine.TraitRegistry;
 import mc.sayda.creraces.global.GlobalDispatcher;
@@ -54,6 +57,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.monster.AbstractIllager;
@@ -89,6 +93,14 @@ public class IncidentResolver {
         PlayerEvent.PLAYER_CLONE.register((oldPlayer, newPlayer, wonGame) -> onIncidentClone(oldPlayer, newPlayer, !wonGame));
         PlayerEvent.CHANGE_DIMENSION.register(IncidentResolver::onIncidentTransition);
         PlayerEvent.PLAYER_RESPAWN.register((player, conqueredEnd) -> onRespawn(player));
+        // A swing at an entity: clones that copy attacks swing too. Fires before the hit, while the
+        // attack meter still holds the swing's charge.
+        PlayerEvent.ATTACK_ENTITY.register((player, level, target, hand, hit) -> {
+            if (!level.isClientSide()) {
+                CloneManager.copyAttack(player);
+            }
+            return EventResult.pass();
+        });
         PlayerEvent.PICKUP_ITEM_POST.register((player, itemEntity, stack) -> {
             if (player instanceof ServerPlayer sp) {
                 onIncidentPickup(sp, stack);
@@ -144,6 +156,9 @@ public class IncidentResolver {
         });
 
         EntityEvent.LIVING_DEATH.register((entity, source) -> {
+            if (entity instanceof ServerPlayer victim) {
+                onIncidentDeath(victim, source);
+            }
             Player killer = CombatUtils.getRootOwner(source.getEntity());
             if (killer instanceof ServerPlayer sp) {
                 onIncidentVictory(sp, entity);
@@ -170,14 +185,6 @@ public class IncidentResolver {
             if (placer instanceof ServerPlayer sp && !level.isClientSide()) {
                 return onIncidentBlockPlace(sp, pos, state);
             }
-            return EventResult.pass();
-        });
-
-        EntityEvent.LIVING_HURT.register((entity, source, amount) -> {
-            if (source.getEntity() instanceof ServerPlayer player) {
-                onIncidentAttack(player, entity);
-            }
-            GlobalDispatcher.onLivingHurt(entity, source);
             return EventResult.pass();
         });
 
@@ -256,7 +263,19 @@ public class IncidentResolver {
         return EventResult.pass();
     }
 
-    private static void onIncidentAttack(ServerPlayer player, LivingEntity victim) {
+    /**
+     * A hit landed on the victim. Called from LivingEntityMixin as vanilla applies the damage, so hits
+     * stopped by invulnerability frames or a shield never get here.
+     */
+    public static void onHitLanded(LivingEntity victim, DamageSource source, float amount) {
+        if (source.getEntity() instanceof ServerPlayer player) {
+            onIncidentAttack(player, victim, source, amount);
+        }
+        ProjectileHooks.onHurt(victim, source, amount);
+        GlobalDispatcher.onLivingHurt(victim, source);
+    }
+
+    private static void onIncidentAttack(ServerPlayer player, LivingEntity victim, DamageSource source, float amount) {
         if (DamageGuard.isProcessing()) {
             return;
         }
@@ -268,9 +287,18 @@ public class IncidentResolver {
 
         DamageGuard.setProcessing(true);
         try {
-            TraitDispatch.runVoid("onIncidentAttack", player, trait -> trait.onHit(player, victim));
+            TraitDispatch.runVoid("onIncidentAttack", player, trait -> trait.onHit(player, victim, source, amount));
         } finally {
             DamageGuard.setProcessing(false);
+        }
+    }
+
+    /** Runs before respawning resets the player's data, so on_death still sees their resources and states. */
+    private static void onIncidentDeath(ServerPlayer player, DamageSource source) {
+        TraitDispatch.runVoid("onIncidentDeath", player, trait -> trait.onDeath(player, source));
+        Race race = DataUtils.getVariables(player).map(vars -> RaceRegistry.get(vars.getRace())).orElse(null);
+        if (race != null) {
+            RaceIncidents.spawnOnDeath(player, race);
         }
     }
 
@@ -417,6 +445,7 @@ public class IncidentResolver {
         }
 
         Scheduler.tick();
+        GlideTracker.tick(server);
         RaceTeamManager.tick(server);
         TerritoryManager.get().tick(server);
         ChannelingManager.tick(server);

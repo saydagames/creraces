@@ -12,6 +12,12 @@ loom {
         defaultRefmapName = "creraces-neoforge.refmap.json"
     }
     accessWidenerPath = project(":1.21.1:common").file("src/main/resources/creraces.accesswidener")
+    runs {
+        // Its own folder, so a dev server can run beside the dev client without sharing logs or config.
+        server {
+            runDir "run-server"
+        }
+    }
 }
 
 configurations {
@@ -45,7 +51,7 @@ dependencies {
 processResources {
     var replaceProperties = [
             minecraft_version: rootProject.property('1_21_1_minecraft_version'),
-            minecraft_version_range: "[1.21.1,1.22)",
+            minecraft_version_range: "[1.21.1]",
             neoforge_version: rootProject.property('1_21_1_neoforge_version'),
             neoforge_version_range: "[21.1,)",
             loader_version_range: "[4,)",

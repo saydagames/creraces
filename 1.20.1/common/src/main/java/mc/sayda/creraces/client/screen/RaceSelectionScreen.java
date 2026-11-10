@@ -3,6 +3,7 @@ package mc.sayda.creraces.client.screen;
 import com.mojang.blaze3d.systems.RenderSystem;
 import mc.sayda.creraces.race.Race;
 import mc.sayda.creraces.race.RaceRegistry;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -20,6 +21,10 @@ public class RaceSelectionScreen extends Screen {
     private int topPos;
     private int page = 0;
     private List<RaceEntry> raceEntries = new ArrayList<>();
+
+    public static void open() {
+        Minecraft.getInstance().setScreen(new RaceSelectionScreen());
+    }
 
     public RaceSelectionScreen() {
         super(Component.translatable("screen.creraces.race_selection_grid"));
@@ -138,7 +143,7 @@ public class RaceSelectionScreen extends Screen {
 
     @Override
     public boolean isPauseScreen() {
-        return false;
+        return true;
     }
 
     private record RaceEntry(ResourceLocation id, Component name, ResourceLocation portrait, boolean isParentGroup,

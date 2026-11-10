@@ -11,10 +11,11 @@ import net.minecraft.resources.ResourceLocation;
 import java.util.UUID;
 import java.util.function.Supplier;
 
-/** S2C: toggles a named player animation on the client. Only "beam_casting" is handled so far. */
+/** S2C: toggles a named player animation on the client: "beam_casting" or "gliding". */
 public class SyncAnimationPacket {
     public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "sync_animation");
 
+    public static final String GLIDING = "gliding";
     private static final int ANIMATION_MAX_LEN = 256;
 
     private final UUID playerId;
@@ -44,6 +45,8 @@ public class SyncAnimationPacket {
         context.queue(() -> {
             if (animation.equals("beam_casting")) {
                 EnvExecutor.runInEnv(Env.CLIENT, () -> () -> AnimationHandler.setBeamCasting(playerId, active));
+            } else if (animation.equals(GLIDING)) {
+                EnvExecutor.runInEnv(Env.CLIENT, () -> () -> AnimationHandler.setGliding(playerId, active));
             }
         });
     }

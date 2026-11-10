@@ -3,158 +3,120 @@ package mc.sayda.creraces.engine.actions;
 import mc.sayda.creraces.CreRaces;
 import mc.sayda.creraces.ability.AbilitySlot;
 import mc.sayda.creraces.engine.ActionRegistry;
+import mc.sayda.creraces.engine.CastSource;
+import mc.sayda.creraces.engine.EntitySelector;
 import mc.sayda.creraces.engine.ScalingValue;
-import mc.sayda.creraces.engine.TargetFilter;
 import mc.sayda.creraces.team.RaceTeamManager;
 import mc.sayda.creraces.util.GsonHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.damagesource.DamageTypes;
-import net.minecraft.world.effect.MobEffect;
-import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nullable;
-import java.util.Set;
 
 /**
- * Damages the target (or the caster when there is none), with optional fire, knockback, lifesteal
- * and bonus damage per stack of an effect on the victim.
+ * Hurts an entity (the target unless "entity" says "self"). "source" is who the damage counts as
+ * coming from: "self" (default), "target" or "none". Allies are never hurt while friendly fire is off.
  */
 @SuppressWarnings("null")
 public class DamageAction implements ActionRegistry.RaceAction {
+    private enum Source { SELF, TARGET, NONE }
 
     private final ScalingValue amount;
-    private final String damageTypeId;
+    private final ResourceLocation damageType;
+    private final Source source;
     @Nullable
     private final ScalingValue knockback;
-    private final String sourceEntity;
-    private final ScalingValue fireDuration;
-    @Nullable
-    private final ScalingValue healAmount;
-    @Nullable
-    private final ScalingValue damagePerStack;
-    @Nullable
-    private final Holder<MobEffect> stackEffect;
-    private final TargetFilter targets;
     private final boolean disableKnockback;
+    private final EntitySelector entity;
 
-    public DamageAction(ScalingValue amount, String damageTypeId, @Nullable ScalingValue knockback, String sourceEntity,
-            ScalingValue fireDuration, @Nullable ScalingValue healAmount, @Nullable ScalingValue damagePerStack,
-            String stackEffect, TargetFilter targets, boolean disableKnockback) {
+    public DamageAction(ScalingValue amount, ResourceLocation damageType, Source source,
+            @Nullable ScalingValue knockback, boolean disableKnockback, EntitySelector entity) {
         this.amount = amount;
-        this.damageTypeId = damageTypeId;
+        this.damageType = damageType;
+        this.source = source;
         this.knockback = knockback;
-        this.sourceEntity = sourceEntity;
-        this.fireDuration = fireDuration;
-        this.healAmount = healAmount;
-        this.damagePerStack = damagePerStack;
-        this.stackEffect = stackEffect.isEmpty() ? null
-                : BuiltInRegistries.MOB_EFFECT.getHolder(ResourceLocation.parse(stackEffect)).orElse(null);
-        this.targets = targets;
         this.disableKnockback = disableKnockback;
+        this.entity = entity;
     }
 
     @Override
     public boolean execute(Player player, @Nullable LivingEntity target, @Nullable AbilitySlot slot,
             @Nullable BlockPos interactPos) {
-        targets.applyToSingleTarget(player, target, (p, victim) -> applyDamage(p, victim, slot));
-        return true;
-    }
-
-    private void applyDamage(Player player, LivingEntity victim, @Nullable AbilitySlot slot) {
-        // Allies are never hurt while friendly fire is off, whatever the target filter allows.
-        if (victim != player && !RaceTeamManager.canHurt(victim, player)) {
-            return;
+        LivingEntity victim = entity.resolve(player, target);
+        if (victim == null || victim != player && !RaceTeamManager.canHurt(victim, player)) {
+            return true;
         }
-
-        double damage = amount.evaluate(player, victim, slot);
-        if (damagePerStack != null && stackEffect != null) {
-            MobEffectInstance stacks = victim.getEffect(stackEffect);
-            if (stacks != null) {
-                damage += (stacks.getAmplifier() + 1) * damagePerStack.evaluate(player, victim, slot);
-            }
-        }
-        double fireSeconds = fireDuration.evaluate(player, victim, slot);
-        if (damage <= 0 && fireSeconds <= 0) {
-            return;
-        }
-
-        DamageSource source = createDamageSource(player, victim);
-        if (fireSeconds > 0) {
-            victim.igniteForSeconds((float) fireSeconds);
-        }
+        double damage = amount.evaluate(player, target, slot, interactPos) * CastSource.damageMultiplier();
         if (damage > 0) {
+            DamageSource damageSource = createDamageSource(player, target);
             if (disableKnockback) {
                 Vec3 motion = victim.getDeltaMovement();
-                victim.hurt(source, (float) damage);
+                victim.hurt(damageSource, (float) damage);
                 victim.setDeltaMovement(motion);
                 // Players only pick up the restored motion when it is force-synced.
                 victim.hurtMarked = true;
             } else {
-                victim.hurt(source, (float) damage);
+                victim.hurt(damageSource, (float) damage);
             }
         }
-
         if (knockback != null) {
-            float strength = (float) knockback.evaluate(player, victim, slot);
+            float strength = (float) knockback.evaluate(player, target, slot, interactPos);
             if (strength > 0) {
-                victim.knockback(strength, player.getX() - victim.getX(), player.getZ() - victim.getZ());
+                LivingEntity source = CastSource.self(player);
+                victim.knockback(strength, source.getX() - victim.getX(), source.getZ() - victim.getZ());
             }
         }
-        if (healAmount != null) {
-            float heal = (float) healAmount.evaluate(player, victim, slot);
-            if (heal > 0) {
-                player.heal(heal);
-            }
-        }
+        return true;
     }
 
-    private DamageSource createDamageSource(Player player, LivingEntity victim) {
-        if (damageTypeId.isEmpty()) {
-            return player.damageSources().playerAttack(player);
-        }
-        Entity attacker = "self".equalsIgnoreCase(sourceEntity) ? player
-                : "target".equalsIgnoreCase(sourceEntity) ? victim : null;
+    private DamageSource createDamageSource(Player player, @Nullable LivingEntity target) {
+        Entity attacker = switch (source) {
+            case SELF -> player;
+            case TARGET -> target;
+            case NONE -> null;
+        };
         Registry<DamageType> registry = player.level().registryAccess().registryOrThrow(Registries.DAMAGE_TYPE);
-        // An id without a namespace resolves to a vanilla damage type.
-        ResourceLocation typeId = ResourceLocation.parse(damageTypeId);
-        Holder<DamageType> type = registry.getHolder(ResourceKey.create(Registries.DAMAGE_TYPE, typeId))
+        Holder<DamageType> type = registry.getHolder(ResourceKey.create(Registries.DAMAGE_TYPE, damageType))
                 .orElseGet(() -> {
-                    CreRaces.LOGGER.warn("DamageAction: unknown damage type '{}', falling back to player_attack",
-                            typeId);
+                    CreRaces.LOGGER.warn("DamageAction: unknown damage type '{}', using player_attack", damageType);
                     return registry.getHolderOrThrow(DamageTypes.PLAYER_ATTACK);
                 });
         return new DamageSource(type, attacker, attacker);
     }
 
     public static void register() {
-        ActionRegistry.register(ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "damage"), json -> {
-            String stackEffect = GsonHelper.getAsString(json, "stack_effect", "");
-            if (!stackEffect.isEmpty() && !BuiltInRegistries.MOB_EFFECT.containsKey(ResourceLocation.parse(stackEffect))) {
-                CreRaces.LOGGER.error("DamageAction: Unknown mob effect ID '{}' in stack_effect field.", stackEffect);
+        ActionRegistry.register(CreRaces.id("damage"), json -> {
+            String typeText = GsonHelper.getAsString(json, "damage_type", "minecraft:player_attack");
+            // An id without a namespace is a vanilla damage type.
+            ResourceLocation damageType = ResourceLocation.tryParse(typeText.contains(":") ? typeText : "minecraft:" + typeText);
+            if (damageType == null) {
+                throw new IllegalArgumentException("malformed damage_type '" + typeText + "'");
             }
+            String sourceName = GsonHelper.getAsString(json, "source", "self");
+            Source source = switch (sourceName) {
+                case "self" -> Source.SELF;
+                case "target" -> Source.TARGET;
+                case "none" -> Source.NONE;
+                default -> throw new IllegalArgumentException("unknown source '" + sourceName + "' (self, target, none)");
+            };
             return new DamageAction(
                     ScalingValue.fromJson(json, "amount", 1.0),
-                    GsonHelper.getAsString(json, "damage_type", "minecraft:player_attack"),
+                    damageType,
+                    source,
                     json.has("knockback") ? ScalingValue.fromJson(json, "knockback", 0.0) : null,
-                    GsonHelper.getAsString(json, "source", "self"),
-                    ScalingValue.fromJson(json, "fire_duration", 0.0),
-                    json.has("heal_amount") ? ScalingValue.fromJson(json, "heal_amount", 0.0) : null,
-                    json.has("damage_per_stack") ? ScalingValue.fromJson(json, "damage_per_stack", 0.0) : null,
-                    stackEffect,
-                    TargetFilter.fromJson(json, "targets", Set.of("enemies")),
-                    GsonHelper.getAsBoolean(json, "disable_knockback", false));
+                    GsonHelper.getAsBoolean(json, "disable_knockback", false),
+                    EntitySelector.fromJson(json, EntitySelector.TARGET));
         });
     }
 }

@@ -1,60 +1,40 @@
 package mc.sayda.creraces.engine.traits;
 
+import com.google.gson.JsonObject;
 import mc.sayda.creraces.CreRaces;
-import mc.sayda.creraces.engine.ActionRegistry;
+import mc.sayda.creraces.engine.EventContext;
 import mc.sayda.creraces.engine.TraitRegistry;
-import mc.sayda.creraces.engine.condition.Condition;
 import mc.sayda.creraces.util.GsonHelper;
 import mc.sayda.creraces.util.ItemUtils;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
-import javax.annotation.Nullable;
-import java.util.List;
-
 /**
- * Runs actions when the player right-clicks with a matching item. A match consumes the click even
- * if an action fails; the item is only used up (with "consume") when every action succeeded.
+ * Runs when the player uses an "item" (an id or #tag) from their hand. With "consume", one is used
+ * up when the actions complete; a failed or cancelled run keeps it.
  */
-public class ItemInteractionTrait implements TraitRegistry.RaceTrait {
-    private final String itemDefinition;
-    private final List<ActionRegistry.RaceAction> actions;
-    private final boolean consumeItem;
-    @Nullable
-    private final Condition condition;
+public class ItemInteractionTrait extends EventTrait {
+    private final String item;
+    private final boolean consume;
 
-    public ItemInteractionTrait(String itemDefinition, List<ActionRegistry.RaceAction> actions, boolean consumeItem,
-            @Nullable Condition condition) {
-        this.itemDefinition = itemDefinition;
-        this.actions = actions;
-        this.consumeItem = consumeItem;
-        this.condition = condition;
-    }
-
-    public static void register() {
-        TraitRegistry.register(ResourceLocation.fromNamespaceAndPath(CreRaces.MODID, "item_interaction"), data -> {
-            String itemStr = GsonHelper.getAsString(data, "item", "minecraft:air");
-            boolean consume = GsonHelper.getAsBoolean(data, "consume", false);
-            Condition condition = data.has("condition") ? Condition.fromJson(data.getAsJsonObject("condition")) : null;
-            return new ItemInteractionTrait(itemStr, ActionRegistry.listFromJson(data, "actions"), consume, condition);
-        });
+    ItemInteractionTrait(JsonObject json) {
+        super(json, null);
+        this.item = GsonHelper.getAsString(json, "item");
+        this.consume = GsonHelper.getAsBoolean(json, "consume", false);
     }
 
     @Override
     public boolean onInteraction(Player player, ItemStack stack) {
-        if (!ItemUtils.matches(stack, itemDefinition))
+        if (!ItemUtils.matches(stack, item)) {
             return false;
-        if (condition != null && !condition.evaluate(player, null, null, null))
-            return false;
-
-        if (ActionRegistry.runChain(actions, player, null, null, null)) {
-            if (consumeItem && !player.isCreative()) {
-                stack.shrink(1);
-            }
-        } else {
-            CreRaces.LOGGER.debug("ItemInteractionTrait: an action failed or was cancelled, skipping consumption.");
+        }
+        if (fire(player, null, null, EventContext.ofItem(stack)) && consume && !player.isCreative()) {
+            stack.shrink(1);
         }
         return true;
+    }
+
+    public static void register() {
+        TraitRegistry.register(CreRaces.id("item_interaction"), ItemInteractionTrait::new);
     }
 }
